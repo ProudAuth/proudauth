@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "note": "Pinned independent SDK CI and synthetic-contract snapshot. Checked on 2026-10-13; not a package registry release, certification, or independent security review. Service traceability credits only local tests; SDK tests execute in these workflows.",
+  "repositories": [
+    {
+      "language": "go",
+      "repository": "proudbase/proudauth-sdk-go",
+      "revision": "116f9fa19d0b0174a0c270763e2ef6abf872233b",
+      "workflow_path": ".github/workflows/ci.yml",
+      "workflow_sha256": "459da5ed32342959c16b12c2b9048e631c269a1ed704064fa16a800f76ca276f",
+      "workflow": "name: ci\n\non:\n  push:\n    branches: [main]\n  pull_request:\n  workflow_dispatch:\n\npermissions:\n  contents: read\n\nconcurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true\n\njobs:\n  test:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 15\n    steps:\n      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4\n      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5\n        with:\n          go-version-file: go.mod\n          cache: true\n      - name: Verify vendored contracts\n        run: python3 scripts/check-contracts.py\n      - name: Verify module and formatting\n        run: |\n          go mod verify\n          test -z \"$(gofmt -l admin internal oidcclient verifier)\"\n          go vet ./...\n      - name: Unit, negative, concurrency and shared-fixture tests\n        run: go test -race -count=1 ./...\n      - name: Verifier fuzz smoke\n        run: |\n          go test ./verifier -run '^$' -fuzz '^FuzzVerify$' -fuzztime 30s\n          go test ./verifier -run '^$' -fuzz '^FuzzSenderURLNormalization$' -fuzztime 30s\n",
+      "ci_run": "https://github.com/proudbase/proudauth-sdk-go/actions/runs/38452064468",
+      "ci_conclusion": "success",
+      "fixtures": {
+        "access-tokens/cases.json": "2140c779c7267b225713b8f1b198676822fc31ebe19f674b710279163a0eeba3",
+        "support-operations/cases.json": "5a6d2905db711c8728fe88f6707d76fc22d973ea5d2117ffe67840c4d98cf749"
+      }
+    },
+    {
+      "language": "node",
+      "repository": "proudbase/proudauth-sdk-node",
+      "revision": "52b94c0f5f4d0a2180a0295cd941ab6de2556d29",
+      "workflow_path": ".github/workflows/ci.yml",
+      "workflow_sha256": "843dea85fe7b4407a13925737bd63962c828804a39552354c48c64109351da85",
+      "workflow": "name: ci\n\non:\n  push:\n    branches: [main]\n  pull_request:\n  workflow_dispatch:\n\npermissions:\n  contents: read\n\nconcurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true\n\njobs:\n  test:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 15\n    strategy:\n      matrix:\n        node: [\"20.10.0\", \"22\", \"24\"]\n    steps:\n      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4\n      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4\n        with:\n          node-version: ${{ matrix.node }}\n          cache: npm\n      - name: Verify vendored contracts\n        run: python3 scripts/check-contracts.py\n      - name: Locked dependencies\n        run: npm ci\n      - name: Audit build dependencies\n        run: npm audit --audit-level=high\n      - name: SDK tests and package contents\n        run: |\n          npm test\n          node scripts/check-package.mjs\n",
+      "ci_run": "https://github.com/proudbase/proudauth-sdk-node/actions/runs/38454708063",
+      "ci_conclusion": "success",
+      "fixtures": {
+        "access-tokens/cases.json": "2140c779c7267b225713b8f1b198676822fc31ebe19f674b710279163a0eeba3",
+        "support-operations/cases.json": "5a6d2905db711c8728fe88f6707d76fc22d973ea5d2117ffe67840c4d98cf749"
+      }
+    },
+    {
+      "language": "dart",
+      "repository": "proudbase/proudauth-sdk-dart",
+      "revision": "5b3f5b69e179f86874a6f212e716664e390dfe3c",
+      "workflow_path": ".github/workflows/ci.yml",
+      "workflow_sha256": "be997877bd8f022feb1351dfdceca3475796717a0065be5358c7f3480b761a7c",
+      "workflow": "name: ci\n\non:\n  push:\n    branches: [main]\n  pull_request:\n  workflow_dispatch:\n\npermissions:\n  contents: read\n\nconcurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true\n\njobs:\n  test:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 15\n    steps:\n      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4\n      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1\n        with:\n          sdk: \"3.13.3\"\n      - name: Verify vendored contracts\n        run: python3 scripts/check-contracts.py\n      - name: Locked dependencies\n        run: dart pub get --enforce-lockfile\n      - name: Analyze, format and test\n        run: |\n          dart analyze\n          dart format --output=none --set-exit-if-changed .\n          dart test\n",
+      "ci_run": "https://github.com/proudbase/proudauth-sdk-dart/actions/runs/38454711866",
+      "ci_conclusion": "success",
+      "fixtures": {
+        "access-tokens/cases.json": "2140c779c7267b225713b8f1b198676822fc31ebe19f674b710279163a0eeba3",
+        "support-operations/cases.json": "5a6d2905db711c8728fe88f6707d76fc22d973ea5d2117ffe67840c4d98cf749"
+      }
+    },
+    {
+      "language": "php",
+      "repository": "proudbase/proudauth-sdk-php",
+      "revision": "db4d236611991e722bc793433a54f156ea3bf5e3",
+      "workflow_path": ".github/workflows/ci.yml",
+      "workflow_sha256": "caf196dea2e840a5fc08939729eb72e0be97b603ff473198f76865d59f2e94bd",
+      "workflow": "name: ci\n\non:\n  push:\n    branches: [main]\n  pull_request:\n  workflow_dispatch:\n\npermissions:\n  contents: read\n\nconcurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true\n\njobs:\n  test:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 15\n    strategy:\n      matrix:\n        php: [\"8.2\", \"8.5\"]\n    steps:\n      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4\n      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2\n        with:\n          php-version: ${{ matrix.php }}\n          extensions: openssl, sodium, curl, json\n          tools: composer:v2\n      - name: Verify vendored contracts\n        run: python3 scripts/check-contracts.py\n      - name: Package metadata and syntax\n        run: |\n          composer validate --no-check-publish\n          find src tests -name '*.php' -print0 | xargs -0 -n1 php -l\n      - name: SDK security fixtures and unit tests\n        run: php -d error_reporting=-1 -d display_errors=1 tests/run.php\n      - name: Verify the documented public VCS consumer\n        if: github.ref == 'refs/heads/main'\n        env:\n          PROUDAUTH_SDK_SOURCE_COMMIT: ${{ github.sha }}\n        run: |\n          consumer_dir=$(mktemp -d)\n          trap 'rm -rf \"$consumer_dir\"' EXIT\n          python3 - \"$consumer_dir\" <<'PY'\n          import json, os, pathlib, sys\n          document = {\n              \"name\": \"proudbase/sdk-install-smoke\",\n              \"repositories\": [{\"type\": \"vcs\", \"url\": \"https://github.com/proudbase/proudauth-sdk-php.git\"}],\n              \"require\": {\"proudauth/sdk\": \"dev-main#\" + os.environ[\"PROUDAUTH_SDK_SOURCE_COMMIT\"]},\n              \"config\": {\"allow-plugins\": False}\n          }\n          pathlib.Path(sys.argv[1], 'composer.json').write_text(json.dumps(document, indent=2) + '\\n')\n          PY\n          composer install --working-dir=\"$consumer_dir\" --no-interaction --no-progress --no-scripts\n          php -r 'require $argv[1] . \"/vendor/autoload.php\"; if (ProudAuth\\Sdk\\Version::SDK_VERSION !== \"0.2.0\") { exit(1); } echo \"Public VCS consumer installed and autoloaded successfully\\n\";' \"$consumer_dir\"\n",
+      "ci_run": "https://github.com/proudbase/proudauth-sdk-php/actions/runs/38458929979",
+      "ci_conclusion": "success",
+      "fixtures": {
+        "access-tokens/cases.json": "2140c779c7267b225713b8f1b198676822fc31ebe19f674b710279163a0eeba3",
+        "support-operations/cases.json": "5a6d2905db711c8728fe88f6707d76fc22d973ea5d2117ffe67840c4d98cf749"
+      }
+    },
+    {
+      "language": "dotnet",
+      "repository": "proudbase/proudauth-sdk-dotnet",
+      "revision": "db8ce83532d6cf777d53adfd15861c8846789c63",
+      "workflow_path": ".github/workflows/ci.yml",
+      "workflow_sha256": "d87a3d3912085ff42ce115dfb183a7b2dc29d9211d9c0191c85ea9b69fa42619",
+      "workflow": "name: ci\n\non:\n  push:\n    branches: [main]\n  pull_request:\n  workflow_dispatch:\n\npermissions:\n  contents: read\n\nconcurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true\n\njobs:\n  test:\n    timeout-minutes: 20\n    strategy:\n      matrix:\n        os: [ubuntu-24.04, macos-14, windows-2022]\n    runs-on: ${{ matrix.os }}\n    steps:\n      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4\n      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5\n        with:\n          dotnet-version: \"8.0.x\"\n      - name: Verify vendored contracts\n        run: python scripts/check-contracts.py\n      - name: Locked restore\n        run: dotnet restore ProudAuth.Sdk.sln --locked-mode\n      - name: Build\n        run: dotnet build ProudAuth.Sdk.sln -c Release --no-restore\n      - name: Execute the SDK test runner\n        run: dotnet run --project tests/ProudAuth.Sdk.Tests -c Release --no-build --no-restore\n      - name: Formatting and NuGet packages\n        run: |\n          dotnet format ProudAuth.Sdk.sln --verify-no-changes --no-restore\n          dotnet pack ProudAuth.Sdk.sln -c Release -o artifacts --no-build --no-restore\n",
+      "ci_run": "https://github.com/proudbase/proudauth-sdk-dotnet/actions/runs/38455791245",
+      "ci_conclusion": "success",
+      "fixtures": {
+        "access-tokens/cases.json": "2140c779c7267b225713b8f1b198676822fc31ebe19f674b710279163a0eeba3",
+        "support-operations/cases.json": "5a6d2905db711c8728fe88f6707d76fc22d973ea5d2117ffe67840c4d98cf749"
+      }
+    }
+  ]
+}

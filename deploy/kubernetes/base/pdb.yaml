@@ -1,0 +1,17 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: proudauth-server
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: proudauth, app.kubernetes.io/component: server}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: proudauth-worker
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: proudauth, app.kubernetes.io/component: worker}

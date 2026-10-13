@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/user.locked.v1.json",
+  "title": "user.locked (v1)",
+  "description": "An administrator locked a user account. Emitted when an administrator sets the account state to \"locked\". All sessions and grants are revoked in the same transaction (session.revoked with reason \"account_locked\"). Automatic sign-in throttling does not change the account state and does not emit this event. Emitted by every successful call, even when the account was already in that state. org_id is never set.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "user.locked"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "user_id",
+        "state"
+      ],
+      "properties": {
+        "user_id": {
+          "$ref": "envelope.v1.json#/$defs/user_id",
+          "description": "The user whose account state changed."
+        },
+        "state": {
+          "type": "string",
+          "const": "locked",
+          "description": "The new account state."
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Never set for this event type by the current server."
+    }
+  },
+  "x-event-type": "user.locked",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/identity/identity.go: (*Service).SetStateTx (admin API PATCH user state)"
+  ],
+  "x-org-scoped": "never",
+  "examples": [
+    {
+      "event_id": "obx_01jbyajjrzt4ddkgmhtwtd2hnb",
+      "event_type": "user.locked",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "state": "locked"
+      }
+    }
+  ]
+}

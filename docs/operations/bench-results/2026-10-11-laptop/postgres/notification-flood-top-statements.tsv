@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+492	127230.6	258.599	492	SELECT pg_advisory_xact_lock(hashtext($1))
+492	61198.6	124.387	492	UPDATE jobs SET state='running', lease_owner=$1, lease_expires_at=$2, attempts=attempts+1, updated_at=$3 WHERE id = (SELECT id FROM jobs j WHERE type = ANY($4) AND ((state='queued' AND run_after <= $3
+7657	22905.1	2.991	7657	INSERT INTO rate_limit_counters (bucket, window_start, count, expires_at) VALUES ($1, $2, $4, $3) ON CONFLICT (bucket, window_start) DO UPDATE SET count = rate_limit_counters.count + $5 RETURNING coun
+49198	205.1	0.004	0	SELECT user_id FROM user_identifiers WHERE realm_id=$1 AND type=$2 AND canonical_value=$3
+49198	196.3	0.004	0	SELECT m.local_id, coalesce(u.state,'deleted') FROM import_mappings m LEFT JOIN users u ON u.id=m.local_id WHERE m.realm_id=$1 AND m.source_system=$2 AND m.source_type='user' AND m.source_id=$3
+983	169.4	0.172	983	UPDATE jobs SET progress=$2, checkpoint=$2, lease_expires_at=$3, updated_at=$4 WHERE id=$1 AND lease_owner=$5 RETURNING cancel_requested
+2	154.4	77.213	10000	UPDATE audit_events SET batch_id=$1 WHERE id = ANY($2)
+492	117.5	0.239	52644	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+49198	109.8	0.002	49198	SELECT EXISTS (SELECT 1 FROM deletion_tombstones WHERE realm_id=$1 AND reference_type=$2 AND reference_digest=$3)
+1	74.2	74.236	0	SELECT DISTINCT e.batch_id FROM audit_events e LEFT JOIN unnest($1::text[], $2::timestamptz[]) AS rc(category, cutoff) ON rc.category = e.category LEFT JOIN unnest($7::text[], $8::timestamptz[]) AS rr
+491	67.1	0.137	491	UPDATE jobs SET state='succeeded', result=$2, result_ciphertext=$3, key_version=$4, result_expires_at=$5, finished_at=$6, lease_owner=NULL, lease_expires_at=NULL, updated_at=$6, input_ciphertext=NULL 
+49748	62.1	0.001	0	begin isolation level read committed

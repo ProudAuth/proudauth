@@ -1,0 +1,35 @@
+[
+  {
+    "scenario": "complex-filter",
+    "started": "2026-10-11T17:12:58Z",
+    "ended": "2026-10-11T17:25:03Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 133405,
+    "throughput_per_s": 2223.4,
+    "latency_ms": {
+      "mean": 14.3,
+      "p50": 7.17,
+      "p90": 15.87,
+      "p99": 63.49,
+      "p999": 1114.11,
+      "max": 1373.11
+    },
+    "outcomes": {
+      "bounded_false": 339,
+      "bounded_true": 338,
+      "invalid_filter_bytes": 351,
+      "invalid_filter_nodes": 351,
+      "rate_limited": 132026
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 724.48,
+      "identity_server": 194.42,
+      "identity_worker": 10.16,
+      "postgres_container": 164.37,
+      "docker_vm_and_proxy": 700.07,
+      "identity_bench": 47.95
+    }
+  }
+]

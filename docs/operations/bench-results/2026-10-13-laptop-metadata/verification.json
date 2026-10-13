@@ -1,0 +1,115 @@
+{
+  "format_version": "1",
+  "source_digest_sha256_16": "a9d95f06c64af14e",
+  "environment": "environment.json",
+  "scope": "Benchmark-only addition to the preceding server metadata-fetch budget correction; earlier full-module evidence retains its separate build.",
+  "checks": {
+    "new_metadata_unit_race": {
+      "command": "go test -race -count=3 ./internal/bench -run '^TestBenchMetadata'",
+      "pass": true,
+      "package_elapsed_s": 1.585
+    },
+    "bench_and_cli_unit_race": {
+      "command": "go test -race -count=1 ./internal/bench ./cmd/identity-bench",
+      "pass": true,
+      "package_elapsed_s": {
+        "internal/bench": 12.073,
+        "cmd/identity-bench": 2.108
+      }
+    },
+    "all_scenario_smoke": {
+      "pass": true,
+      "package_elapsed_s": 54.798,
+      "top_level_tests": 1,
+      "subtests": 0,
+      "command": "go test -json -race -count=1 -timeout=5m ./tests/e2e -run '^TestBenchSuiteSmoke$'",
+      "scenario_count": 26,
+      "scenarios": [
+        "audit-query",
+        "client-credentials",
+        "complex-audit-filter",
+        "complex-filter",
+        "complex-group-filter",
+        "email-delivery",
+        "failed-password",
+        "import",
+        "introspection",
+        "metadata-fetch",
+        "mixed",
+        "mixed-delivery",
+        "mixed-email",
+        "mixed-extended",
+        "notification-flood",
+        "otp-guess",
+        "oversized-input",
+        "passkey-assertion",
+        "password-login",
+        "policy",
+        "refresh",
+        "refresh-race",
+        "scim",
+        "unknown-key",
+        "webhook-delivery",
+        "webhook-retry"
+      ],
+      "test_elapsed_s": 53.28
+    },
+    "complete_contract_package": {
+      "pass": true,
+      "package_elapsed_s": 28.111,
+      "top_level_tests": 36,
+      "subtests": 0,
+      "command": "go test -json -race -count=1 -timeout=3m ./tests/contract"
+    },
+    "traceability_preview": {
+      "pass": true,
+      "copied_files": 1062,
+      "contract_test_files": 18,
+      "package_elapsed_s": 8.11,
+      "changed_evidence_rows": [
+        "NFR-006",
+        "NFR-008"
+      ],
+      "priorities_and_statuses_unchanged": true
+    },
+    "vet": {
+      "pass": true,
+      "packages": [
+        "./internal/bench",
+        "./cmd/identity-bench",
+        "./tests/e2e"
+      ]
+    },
+    "formatting": {
+      "pass": true
+    },
+    "shell_syntax": {
+      "pass": true
+    },
+    "secret_scan": {
+      "pass": true
+    },
+    "license_check": {
+      "pass": true
+    }
+  },
+  "source_file_sha256": {
+    "internal/bench/metadata.go": "d3124a9c44ad41edbe139c7e53fb3a1c9a2769254b4bdd9c9d90d57e6ac79dc6",
+    "internal/bench/metadata_receiver.go": "d7643c657ab49dea62cdbeebc368a50a4a02d991988bfef63942ccc6f055575c",
+    "internal/bench/metadata_test.go": "93499c7014cb368a2651bed52422fe985c13798596a57a7480a3038817823366",
+    "internal/bench/client.go": "94d2009d4e57a42c90c8eb43929cebf413e4cda44d22f1d3a97ccc49c0fc8178",
+    "internal/bench/scenarios.go": "c03763bc7a4abcafe78d10e0f133e60bf0257332bf162bb1a0a0fc3d77f56a4b",
+    "cmd/identity-bench/metadata_receiver.go": "875686b0a16e05fbbc88c3c2e6846df0b7995c233115a9ae4a39ccf4af17bab5",
+    "cmd/identity-bench/main.go": "0014b6b105c6aed254823d91cd4cf60ae5099d9f30b27cc6b96729745df2378b",
+    "tests/e2e/bench_test.go": "b6f6d4955943abc317c57ba69e373d99fcf12cacc832bdffb835bf921b500000",
+    "scripts/bench-local.sh": "b3a95ec9e5e6537d8faf456ae42524240090ca6c4f0712d1cc8d9a65c511acb1",
+    "tests/contract/traceability_test.go": "a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6"
+  },
+  "protected_contract_sha256": "a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6",
+  "limits": [
+    "One cohosted laptop; cached refusals dominate latency; no new soak.",
+    "Preparation contacts and drained boundary fetches are counted by the receiver; unfinished operations are excluded from latency.",
+    "Sustained OIDC/Shared Signals, multiple server-process aggregate bounds and multi-host capacity are unmeasured.",
+    "Independent security review has not occurred; no hardened release or full-current-module pass is claimed."
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "phase": "SMTP configuration restart before seeding or measurement",
+  "measured": false,
+  "error": "delivery.email.from is required for the smtp adapter",
+  "classification": "local runner configuration defect; server correctly refused invalid configuration",
+  "correction": "configure from=noreply@bench.test; validate the complete SMTP configuration in TestBenchSuiteSmoke",
+  "notes": "No result JSON was produced. SMTP receiver accepted zero messages. Temporary database, processes and credentials were removed by the cleanup trap. Only public settings and build information are retained."
+}

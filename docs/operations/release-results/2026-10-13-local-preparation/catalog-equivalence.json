@@ -1,0 +1,16 @@
+{
+  "catalog_image_source_id": "66ea6708ce1d7b84e62479d7b60ad396e3ac38348aa4ef7295f568b223437b12",
+  "final_image_id": "sha256:c8054fe9146af0db77b4523b2dd9c81a1f09b8ce051b76851f4152cc4c34f8ce",
+  "hashed_files_compared": 952,
+  "missing_files": [],
+  "different_files": [],
+  "package_sets_equal": true,
+  "packages_compared": 102,
+  "pass": true,
+  "excluded_from_package_comparison": "SPDX document-described image identity package; image manifest/config differ between local invocations",
+  "spdx_source_identity_excluded": [
+    "SPDXRef-DocumentRoot-Image-ProudAuth-image"
+  ],
+  "package_instances_compared": 102,
+  "distinct_package_coordinates": 38
+}

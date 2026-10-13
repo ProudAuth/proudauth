@@ -1,0 +1,22 @@
+# Development configuration. Secrets are file references (DEP-006).
+mode: development
+server:
+  public_listen: ":8080"
+  internal_listen: ":9090"
+  public_origin: "http://localhost:8080"
+storage:
+  database_url: "file:/run/secrets/database_url"
+keys:
+  root_keys:
+    - version: 1
+      ref: "file:/run/secrets/root_key"
+  active_version: 1
+sessions:
+  cookie_insecure_dev: true
+delivery:
+  email:
+    adapter: dev_sink
+impersonation:
+  enabled: true
+observability:
+  log_format: json

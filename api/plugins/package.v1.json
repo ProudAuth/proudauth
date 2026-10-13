@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/plugins/package.v1.json",
+  "title": "Plugin package upload (POST /plugins)",
+  "description": "Manifest and payload travel as base64 (standard alphabet) of their exact bytes, so the signature survives any JSON tooling. The manifest is at most 16 KiB and the payload at most 160 KiB; the payload is a JSON object with hooks (HookInput), webhooks (webhook subscription input, realm-wide) and workflows ({name, description, definition}), at most 20 of each, validated exactly like the corresponding APIs.",
+  "type": "object",
+  "required": [
+    "manifest",
+    "payload",
+    "signature"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "manifest": {
+      "type": "string",
+      "contentEncoding": "base64",
+      "description": "base64 of manifest.v1.json bytes"
+    },
+    "payload": {
+      "type": "string",
+      "contentEncoding": "base64"
+    },
+    "signature": {
+      "type": "object",
+      "required": [
+        "key_id",
+        "algorithm",
+        "value"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "key_id": {
+          "type": "string"
+        },
+        "algorithm": {
+          "const": "Ed25519"
+        },
+        "value": {
+          "type": "string",
+          "description": "base64 Ed25519 signature over \"proudauth-plugin-v1\\n\" + manifest bytes"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "manifest": "eyJtYW5pZmVzdF92ZXJzaW9uIjoxfQ==",
+      "payload": "eyJob29rcyI6W119",
+      "signature": {
+        "key_id": "acme-2026",
+        "algorithm": "Ed25519",
+        "value": "c2lnbmF0dXJl"
+      }
+    }
+  ]
+}

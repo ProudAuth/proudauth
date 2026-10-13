@@ -1,0 +1,131 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "webhook-delivery",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T14:26:20.342365Z",
+  "duration_s": 60.000161334,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 1248,
+  "outcomes": {
+    "ok": 1248
+  },
+  "throughput_per_s": 20.79994407103039,
+  "latency_ms": {
+    "mean": 1514.6881274038462,
+    "p50": 1835.008,
+    "p90": 2031.616,
+    "p99": 2097.152,
+    "p999": 2106.199,
+    "max": 2106.199
+  },
+  "histogram": [
+    {
+      "le_ms": 917.504,
+      "count": 15
+    },
+    {
+      "le_ms": 950.272,
+      "count": 14
+    },
+    {
+      "le_ms": 983.04,
+      "count": 2
+    },
+    {
+      "le_ms": 1015.808,
+      "count": 147
+    },
+    {
+      "le_ms": 1048.576,
+      "count": 167
+    },
+    {
+      "le_ms": 1114.112,
+      "count": 93
+    },
+    {
+      "le_ms": 1179.648,
+      "count": 148
+    },
+    {
+      "le_ms": 1245.184,
+      "count": 22
+    },
+    {
+      "le_ms": 1835.008,
+      "count": 60
+    },
+    {
+      "le_ms": 1900.544,
+      "count": 58
+    },
+    {
+      "le_ms": 1966.08,
+      "count": 294
+    },
+    {
+      "le_ms": 2031.616,
+      "count": 131
+    },
+    {
+      "le_ms": 2097.152,
+      "count": 90
+    },
+    {
+      "le_ms": 2228.224,
+      "count": 7
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:55808; private signing keys only in memory",
+    "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+    "unmeasured public-API readiness cycle took 344.370 s (15 min preparation deadline) to cross any seed outbox backlog before warm-up; measured operations retain their 30 s timeout"
+  ],
+  "observations": {
+    "after": {
+      "active_cycles": 0,
+      "cumulative": {
+        "received": 2754,
+        "accepted": 2690,
+        "intentional_503": 0,
+        "recovered": 0,
+        "invalid": 0,
+        "ignored_abandoned_or_old_events": 64,
+        "first_retry_at": "0001-01-01T00:00:00Z",
+        "last_retry_at": "0001-01-01T00:00:00Z",
+        "last_recovery_at": "0001-01-01T00:00:00Z"
+      },
+      "readiness_cycle_s": 344.370499958,
+      "receiver": "http://127.0.0.1:55808",
+      "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+      "subscriptions": 32
+    },
+    "before": {
+      "active_cycles": 0,
+      "cumulative": {
+        "received": 194,
+        "accepted": 194,
+        "intentional_503": 0,
+        "recovered": 0,
+        "invalid": 0,
+        "ignored_abandoned_or_old_events": 0,
+        "first_retry_at": "0001-01-01T00:00:00Z",
+        "last_retry_at": "0001-01-01T00:00:00Z",
+        "last_recovery_at": "0001-01-01T00:00:00Z"
+      },
+      "readiness_cycle_s": 344.370499958,
+      "receiver": "http://127.0.0.1:55808",
+      "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+      "subscriptions": 32
+    }
+  }
+}

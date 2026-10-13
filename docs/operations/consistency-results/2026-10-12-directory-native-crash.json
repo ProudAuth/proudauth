@@ -1,0 +1,155 @@
+{
+  "cleanup": {
+    "dedicated_postgresql_container": "removed",
+    "private_logs": "not published; removed after verification",
+    "worker_processes": "killed and reaped; failure paths also kill/reap"
+  },
+  "command": "go test -json -race -count=3 -failfast -timeout=5m ./tests/e2e -run '^(TestDirectoryProcessCrashRecovery|TestReplicaDirectoryScheduleStress|TestReplicaDirectoryExpiredLeaseRecovery|TestReplicaDirectorySynchronizationStress|TestReplicaRecoveryConsumptionStress|TestReplicaRefreshRotationStress)$'",
+  "date": "2026-10-12",
+  "environment": {
+    "cpu": "Apple M4 Pro",
+    "cpu_count": 12,
+    "directory": "loopback LDAPS test service with Active Directory attributes, USN tracking and page size two",
+    "go": "go1.27.1 darwin/arm64",
+    "harness": "development, 8MiB/one-pass password hashing, RSA-2048, no artificial authentication delay",
+    "machine_model": "Mac16,8",
+    "memory_bytes": 25769803776,
+    "os": "macOS 27.0.1 (26A434)",
+    "postgresql": "18.6",
+    "postgresql_settings": {
+      "host_authentication": "trust",
+      "host_binding": "127.0.0.1",
+      "host_port": 63434,
+      "max_connections": 120,
+      "memory_limit": "2GiB",
+      "shared_buffers": "128MB",
+      "tmpfs_data": "1GiB"
+    },
+    "replica_topology": "three in-process HTTP runtimes with independent pools 20/10/10 and keyrings; separately execd worker task in the same compiled race-instrumented test binary"
+  },
+  "git_commit": null,
+  "kill_profile": {
+    "both": {
+      "active_organization_memberships": 8,
+      "all_replica_pools_checked": true,
+      "completion_audits_per_recovered_run": 1,
+      "group_links": 1,
+      "job_attempts": 2,
+      "mapped_group_roles": 1,
+      "user_links": 8
+    },
+    "boundary": "after first LDAP page commits and real progress/checkpoint persists",
+    "full": {
+      "group_members_after_recovery": 2,
+      "retained_original_ids": 2,
+      "total_provisioning_audits": 8,
+      "users_committed_before_kill": 2,
+      "users_created_on_recovery": 6
+    },
+    "incremental": {
+      "baseline_users": 8,
+      "changes_committed_before_kill": 2,
+      "changes_on_recovery": 2,
+      "group_members_after_recovery": 1,
+      "retained_original_ids": 8,
+      "source_user_changes": 4,
+      "total_update_audits": 4
+    },
+    "lease_expiry": "deterministic shared clock advances 61 seconds after the actual OS kill",
+    "method": "os.Process.Kill; confirmed signal termination with exit code -1 on darwin"
+  },
+  "kind": "native-worker-crash-correctness",
+  "limits": [
+    "Correctness profile, not capacity.",
+    "Worker task runs in an execd test binary; production identity-worker startup/drain is not exercised.",
+    "HTTP replicas and the database remain alive on one host; physical machine, network and database failures are not tested.",
+    "Real Windows AD/OpenLDAP counterparts and multi-tenant directory capacity remain outside this profile.",
+    "The earlier full-module report predates these test-only additions; production source is unchanged."
+  ],
+  "offline_environment": {
+    "GOFLAGS": "-mod=readonly -buildvcs=false",
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local"
+  },
+  "production_source_digest": "0a51116192cb1f18",
+  "results": {
+    "case_elapsed_seconds": {
+      "TestDirectoryProcessCrashRecovery": [
+        3.41,
+        3.29,
+        3.48
+      ],
+      "TestDirectoryProcessCrashRecovery/full": [
+        1.68,
+        1.53,
+        1.62
+      ],
+      "TestDirectoryProcessCrashRecovery/incremental": [
+        1.72,
+        1.76,
+        1.86
+      ],
+      "TestReplicaDirectoryExpiredLeaseRecovery": [
+        1.3,
+        1.27,
+        1.34
+      ],
+      "TestReplicaDirectoryScheduleStress": [
+        2.08,
+        2,
+        2.02
+      ],
+      "TestReplicaDirectorySynchronizationStress": [
+        2.12,
+        2.18,
+        2.19
+      ],
+      "TestReplicaRecoveryConsumptionStress": [
+        3.87,
+        3.69,
+        3.73
+      ],
+      "TestReplicaRefreshRotationStress": [
+        6.55,
+        6.43,
+        6.31
+      ],
+      "TestReplicaRefreshRotationStress/offline-jwt": [
+        2.13,
+        2.17,
+        2.05
+      ],
+      "TestReplicaRefreshRotationStress/session-jwt": [
+        2.1,
+        2.14,
+        2.18
+      ],
+      "TestReplicaRefreshRotationStress/session-opaque": [
+        2.32,
+        2.12,
+        2.08
+      ]
+    },
+    "combined_barrier_http_requests": 4704,
+    "exit_code": 0,
+    "failed_tests": [],
+    "new_profile_barrier_http_requests": 672,
+    "packages": {
+      "github.com/proudauth/tests/e2e": {
+        "action": "pass",
+        "elapsed_seconds": 59.209
+      }
+    },
+    "passed_subtests": 15,
+    "passed_top_tests": 18,
+    "skipped_tests": 0,
+    "verified_native_worker_kills": 6
+  },
+  "test_files_sha256": {
+    "tests/e2e/directory_process_crash_test.go": "9b5b321aebc9469adff11e148cace0246d1878a88e6c229f2fad8be65a7ee7f0",
+    "tests/e2e/replica_consistency_test.go": "5682b5a037e667742c02a550b78aaf66a1fe76fe7e775beaa0d22b602ba683b3",
+    "tests/e2e/replica_directory_recovery_test.go": "2c4d587f4811eb789c9f308e22f44274f89219bccd240a51e97e523bb4c40d65",
+    "tests/e2e/replica_directory_test.go": "14466f95afa8862e3723c323f7ace92456300559e93efeae157133900e682c29"
+  }
+}

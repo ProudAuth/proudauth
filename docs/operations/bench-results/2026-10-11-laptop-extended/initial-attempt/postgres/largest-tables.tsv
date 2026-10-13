@@ -1,0 +1,15 @@
+audit_events	68238	78782464
+outbox_events	46323	40476672
+memberships	21956	17285120
+user_identifiers	16988	12271616
+role_assignments	15035	11100160
+users	16987	8273920
+jobs	16	4128768
+credentials	10034	3768320
+import_mappings	10032	3006464
+connector_external_ids	47	1146880
+group_memberships	1000	425984
+organizations	501	311296
+provisioning_connectors	32	270336
+rate_limit_counters	124	163840
+permissions	108	122880

@@ -1,0 +1,169 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "scim",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T12:17:21.690826Z",
+  "duration_s": 60.00035875,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 6351,
+  "outcomes": {
+    "ok": 6351
+  },
+  "throughput_per_s": 105.8493671089925,
+  "latency_ms": {
+    "mean": 301.49118595496776,
+    "p50": 311.296,
+    "p90": 409.6,
+    "p99": 458.752,
+    "p999": 475.136,
+    "max": 487.361
+  },
+  "histogram": [
+    {
+      "le_ms": 122.88,
+      "count": 1
+    },
+    {
+      "le_ms": 126.976,
+      "count": 2
+    },
+    {
+      "le_ms": 131.072,
+      "count": 5
+    },
+    {
+      "le_ms": 139.264,
+      "count": 24
+    },
+    {
+      "le_ms": 147.456,
+      "count": 27
+    },
+    {
+      "le_ms": 155.648,
+      "count": 36
+    },
+    {
+      "le_ms": 163.84,
+      "count": 50
+    },
+    {
+      "le_ms": 172.032,
+      "count": 55
+    },
+    {
+      "le_ms": 180.224,
+      "count": 80
+    },
+    {
+      "le_ms": 188.416,
+      "count": 99
+    },
+    {
+      "le_ms": 196.608,
+      "count": 104
+    },
+    {
+      "le_ms": 204.8,
+      "count": 105
+    },
+    {
+      "le_ms": 212.992,
+      "count": 135
+    },
+    {
+      "le_ms": 221.184,
+      "count": 148
+    },
+    {
+      "le_ms": 229.376,
+      "count": 154
+    },
+    {
+      "le_ms": 237.568,
+      "count": 187
+    },
+    {
+      "le_ms": 245.76,
+      "count": 185
+    },
+    {
+      "le_ms": 253.952,
+      "count": 224
+    },
+    {
+      "le_ms": 262.144,
+      "count": 237
+    },
+    {
+      "le_ms": 278.528,
+      "count": 479
+    },
+    {
+      "le_ms": 294.912,
+      "count": 591
+    },
+    {
+      "le_ms": 311.296,
+      "count": 638
+    },
+    {
+      "le_ms": 327.68,
+      "count": 572
+    },
+    {
+      "le_ms": 344.064,
+      "count": 458
+    },
+    {
+      "le_ms": 360.448,
+      "count": 417
+    },
+    {
+      "le_ms": 376.832,
+      "count": 371
+    },
+    {
+      "le_ms": 393.216,
+      "count": 292
+    },
+    {
+      "le_ms": 409.6,
+      "count": 230
+    },
+    {
+      "le_ms": 425.984,
+      "count": 183
+    },
+    {
+      "le_ms": 442.368,
+      "count": 130
+    },
+    {
+      "le_ms": 458.752,
+      "count": 77
+    },
+    {
+      "le_ms": 475.136,
+      "count": 49
+    },
+    {
+      "le_ms": 491.52,
+      "count": 6
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+    "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+    "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput"
+  ]
+}

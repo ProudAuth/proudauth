@@ -1,0 +1,1557 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/config-document.schema.json",
+  "title": "ProudAuth realm configuration document",
+  "description": "Configuration-as-code document for one realm (httpapi.ConfigDocument, format proudauth.realm-config.v1; APP-019, DEP-020). It is the request body of POST /api/v1/realms/{realm}/configuration/validate (permission realm.configuration.import; returns the plan, with status 200 even when it lists errors) and POST /api/v1/realms/{realm}/configuration/imports (permission realm.configuration.import plus recent authentication for users; ?dry_run=true returns only the plan, and a plan with errors is returned with status 422). The config.export job (POST .../configuration/exports, permission realm.configuration.export) writes this same format, so an export can be validated and imported into another realm; it leaves out built-in resources, the proudauth-cli client and clients that are not active, built-in roles and roles that belong to one organization or project, built-in and non-application permissions, and every secret (listed in excluded). Bodies are decoded strictly: Content-Type application/json, unknown members rejected at every struct level (additionalProperties: false; encoding/json matches member names case-insensitively), duplicate member names rejected, nesting depth <= 32 and size <= limits.max_body_bytes (256 KiB by default). The decoder accepts JSON null for any member and treats it as absent; this schema allows null only where it is meaningful (policy, requires_organization). Import semantics: policy, when present, is merged over the realm's current policy and validated; resources (matched by audience), clients (by client_id), permissions (by name) and roles (by name within their boundary) that already exist are reported as unchanged and are not updated (with ?mode=reconcile, existing clients, resources and role permissions that differ are updated through the same checks as the API); a client_resource_grants entry that differs from the stored grant is created or replaced. The plan checks the format, the merged policy, expected_policy_revision (required whenever the policy would change), the authority each change needs through the API (realm.settings.write, realm.clients.write, realm.resources.write, realm.roles.write; a real import without it is refused with 403), clients (including environment-bound identifiers and service principal names), the clients and resources that grants refer to, and roles; resource and permission rules are enforced when applying. Everything is applied in one database transaction through the normal domain services, checks and audit path: either every change commits or none does.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "description": "Document format identifier. The export writes \"proudauth.realm-config.v1\"; the import accepts that value or an empty string, and any other value is a plan error.",
+      "type": "string",
+      "enum": ["", "proudauth.realm-config.v1"]
+    },
+    "realm": {
+      "description": "Informational metadata written by the export: name, display_name and policy_revision of the exporting realm. Ignored on import.",
+      "type": "object",
+      "examples": [{"name": "main", "display_name": "Main", "policy_revision": 7}]
+    },
+    "policy": {
+      "description": "Realm security policy, merged over the target realm's current policy: members present in the document replace the stored values (objects member by member, lists as a whole) and omitted members keep their current values. The merged policy is validated with realm.ValidatePolicy; when it differs from the current policy it is stored as a new policy revision (audit reason \"configuration import\"). Omit it to leave the policy unchanged.",
+      "anyOf": [
+        {"$ref": "#/$defs/Policy"},
+        {"type": "null"}
+      ]
+    },
+    "expected_policy_revision": {
+      "description": "Optimistic concurrency for reviewed changes: when non-zero and a policy is given, it must equal the target realm's current policy revision; otherwise the plan reports an error, and a change between plan and apply fails the import with 412 precondition_failed. The export does not write it.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "excluded": {
+      "description": "Informational list, written by the export, of what it left out (client secrets, signing keys, encryption keys, connector and identity-provider credentials, user credentials, environment-bound identifiers). Ignored on import.",
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "resources": {
+      "description": "API resources (audiences) to create. Existing audiences are left unchanged; with ?mode=reconcile an existing resource is updated to the members the document states, and members the document omits (impersonation_enabled included) keep their current values.",
+      "type": "array",
+      "items": {"$ref": "#/$defs/ResourceInput"}
+    },
+    "clients": {
+      "description": "OAuth/OIDC clients to create. Existing client_ids are left unchanged.",
+      "type": "array",
+      "items": {"$ref": "#/$defs/ClientInput"}
+    },
+    "permissions": {
+      "description": "Application permissions to register. Names that already exist (including built-in realm., org., support. and platform. permissions) are reported as unchanged and left untouched.",
+      "type": "array",
+      "items": {"$ref": "#/$defs/Permission"}
+    },
+    "roles": {
+      "description": "Roles to create. Roles whose name already exists in their boundary are reported as unchanged and left untouched; a role that sets an environment-bound identifier (organization_id, project_id, composite_role_ids, incompatible_role_ids) is a plan error.",
+      "type": "array",
+      "items": {"$ref": "#/$defs/RoleInput"}
+    },
+    "client_resource_grants": {
+      "description": "Client-to-resource scope ceilings: client_id -> resource audience -> grant. Built-in resources are addressed as builtin:account, builtin:admin and builtin:userinfo, because their audiences contain the realm's issuer. The client and the resource must exist in the realm or be created by the same document (plan error otherwise), every scope must be declared by the resource, and an exchange_policy is validated as the grant API validates it (plan error otherwise). A grant with the same scopes (and, when given, the same subject_types and the same exchange_policy; lists compare as sets) as the stored one is reported as unchanged; otherwise it is created or replaced; subject_types and exchange_policy omitted from the document keep the stored values.",
+      "type": "object",
+      "propertyNames": {"minLength": 1, "maxLength": 128},
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {"$ref": "#/$defs/GrantSpec"}
+      },
+      "examples": [
+        {
+          "orders-web": {"https://api.example.com/orders": ["orders.read", "orders.write"]},
+          "billing-worker": {"https://api.example.com/billing": {"scopes": ["billing.read"], "subject_types": ["service_principal"]}}
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "ScopeName": {
+      "description": "Scope name: 1 to 128 printable ASCII characters excluding space, double quote and backslash.",
+      "type": "string",
+      "pattern": "^[!#-\\[\\]-~]{1,128}$"
+    },
+    "Sensitivity": {
+      "description": "Sensitivity class. An empty string is stored as normal.",
+      "type": "string",
+      "enum": ["", "low", "normal", "high", "privileged"]
+    },
+    "Origin": {
+      "description": "Browser origin scheme://host[:port] without path (a trailing slash is allowed), query, fragment, userinfo or wildcard.",
+      "type": "string",
+      "pattern": "^[Hh][Tt][Tt][Pp][Ss]?://[^/?#@*\\s]+/?$"
+    },
+    "RedirectURI": {
+      "description": "Exactly registered redirect URI (APP-004): 1 to 2048 bytes, absolute, no wildcard, backslash, whitespace, fragment, userinfo, dot segments or encoded . / \\ (%2e, %2f, %5c). https URIs need a host and, for environment production, must not point to localhost or a loopback address. http is allowed only for loopback IP addresses with native or device clients (RFC 8252 \u00a77.3) or for localhost when environment is not production. Other schemes are allowed only for native clients using a private-use reverse-domain scheme (contains a dot, RFC 8252 \u00a77.1).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^*\\\\\\s#]*$",
+      "not": {"pattern": "/\\.\\./|/\\./|/\\.\\.(\\?|$)|%2[EeFf]|%5[Cc]"},
+      "anyOf": [
+        {"description": "https with a host", "pattern": "^[Hh][Tt][Tt][Pp][Ss]://[^/?#@\\s]+([/?]|$)"},
+        {
+          "description": "http to localhost, *.localhost or a loopback IP",
+          "pattern": "^[Hh][Tt][Tt][Pp]://(localhost|[^/?#@:\\s]*\\.localhost|127(\\.[0-9]{1,3}){3}|\\[::1\\])(:[0-9]*)?([/?]|$)"
+        },
+        {
+          "description": "private-use reverse-domain scheme (native clients only)",
+          "pattern": "^[A-Za-z][A-Za-z0-9+-]*\\.[A-Za-z0-9+.-]*:"
+        }
+      ]
+    },
+    "GrantSpec": {
+      "description": "A client's grant to one resource (httpapi.ConfigGrantSpec): a bare array of scope names, or an object with scopes, subject_types and exchange_policy. The export writes the object form, with exchange_policy when the grant has one.",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {"$ref": "#/$defs/ScopeName"}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "scopes": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/ScopeName"}
+            },
+            "subject_types": {
+              "description": "Subject types the grant applies to: user (authorization code and device flows) and service_principal (client credentials); omitted keeps an existing grant's types, and a new grant gets [\"user\"]. Other values are stored but never match.",
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "exchange_policy": {
+              "description": "Token-exchange policy into this resource (TOK-016). max_scopes must name scopes the resource declares and accept_from_audiences must name resource audiences of the realm (or of resources the same document creates), as for PUT /clients/{client}/resource-grants/{resource}. Omitted keeps an existing grant's policy (a new grant gets none).",
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "accept_from_audiences": {"type": "array", "items": {"type": "string"}},
+                "max_scopes": {"type": "array", "items": {"type": "string"}}
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Policy": {
+      "description": "Realm security policy (realm.Policy). In a document it is merged over the target realm's current policy: present members replace stored values (nested objects member by member, lists as a whole) and omitted members keep their current values, so a document may contain only the members it changes. The plan reports the realm policy as an update whenever the merged result differs from the current policy, including changes that only touch a list (an empty list and an omitted one compare equal). Rules that combine several members (at least one sign-in method, allowed_domains for domain_restricted, webauthn origins for an rp_id, phone identifiers for SMS sign-in, registration.required_profile_fields naming profile.attributes) are checked by realm.ValidatePolicy on the merged result, not by this schema. The export writes the complete stored policy. New-realm defaults (realm.DefaultPolicy): registration {mode: closed, require_email_verification: true}, login {identifiers: [email, username], password: true}, mfa {requirement: optional, allowed_factors: [totp, webauthn, recovery_code]}, impersonation {approval: none, notify_customer: true, allow_customer_opt_out: true}, password {revoke_sessions_on_change: true}, webauthn {allow_synced: true, user_verification: preferred}, lifecycle {unverified_account_ttl_hours: 72}.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "registration": {"$ref": "#/$defs/RegistrationPolicy"},
+        "login": {"$ref": "#/$defs/LoginPolicy"},
+        "mfa": {"$ref": "#/$defs/MFAPolicy"},
+        "sessions": {"$ref": "#/$defs/SessionPolicy"},
+        "interaction": {"$ref": "#/$defs/InteractionPolicy"},
+        "impersonation": {"$ref": "#/$defs/RealmImpersonationPolicy"},
+        "password": {"$ref": "#/$defs/PasswordPolicy"},
+        "notifications": {"$ref": "#/$defs/NotificationPolicy"},
+        "webauthn": {"$ref": "#/$defs/WebAuthnPolicy"},
+        "lifecycle": {"$ref": "#/$defs/LifecyclePolicy"},
+        "profile": {"$ref": "#/$defs/ProfilePolicy"},
+        "recovery": {"$ref": "#/$defs/RecoveryPolicy"},
+        "data_access": {"$ref": "#/$defs/DataAccessPolicy"},
+        "tokens": {"$ref": "#/$defs/TokenLifetimePolicy"},
+        "domains": {"$ref": "#/$defs/DomainPolicy"},
+        "machine": {"$ref": "#/$defs/MachinePolicy"},
+        "audit": {
+          "description": "Audit retention scoped to the realm (AUD-009): retention_days (30..3650) keeps the realm's evidence at least that long; it never shortens the deployment's retention.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {"retention_days": {"type": "integer", "minimum": 0, "maximum": 3650}}
+        },
+        "authentication_flow": {
+          "description": "Authentication flow policy (AUT-012, AUT-014): ordered rules with conditions and outcomes (allow, deny, require_mfa, require_phishing_resistant, challenge, review), challenge_provider and email_code_alternative. Validated by realm.ValidatePolicy; see docs/protocols/headless-authentication.md.",
+          "type": "object"
+        },
+        "client_registration": {
+          "description": "Dynamic client registration (APP-016, ADV-003), off by default. Registrations need an initial access token issued by an administrator unless open is set; registrations made without a token are always held for approval. Registered clients are third-party clients that ask for consent and receive at most open_scopes on UserInfo plus the non-privileged scopes their initial access token allows.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "open": {"type": "boolean", "description": "Accept registrations without an initial access token (held for approval)."},
+            "require_approval": {"type": "boolean", "description": "Hold every new registration (suspended) until an administrator approves it."},
+            "open_scopes": {"type": "array", "items": {"type": "string", "enum": ["openid", "profile", "email", "phone", "address"]},
+              "description": "UserInfo scopes registered clients may receive (default openid, profile, email)."}
+          }
+        },
+        "policy_engine": {
+          "description": "External policy engine (AZ-026) named from security.policy_engines. restrict (default): the engine can only deny what local rules allow; decide: its answer is final either way, while published policies and hooks still restrict it. on_error: deny (default) or local.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {"type": "string"},
+            "mode": {"type": "string", "enum": ["restrict", "decide"]},
+            "on_error": {"type": "string", "enum": ["deny", "local"]}
+          }
+        },
+        "extensions": {"$ref": "#/$defs/ExtensionsPolicy"},
+        "shared_signals": {
+          "description": "Shared Signals Framework transmitter (AUD-016): metadata at /.well-known/ssf-configuration, streams for receivers holding realm.ssf_streams.manage, CAEP and RISC events about each receiver's own users. Off by default.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "ExtensionsPolicy": {
+      "description": "Extension governance (EXT-014, EXT-015). plugin_review: second_admin (default) requires an administrator other than the uploader to approve a plugin version before it is installed; single_admin lets the uploader install it (recorded with every installation). workflow_publish_approval: an administrator other than a revision's author must approve each lifecycle workflow revision before it is published.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "plugin_review": {"type": "string", "enum": ["second_admin", "single_admin"]},
+        "workflow_publish_approval": {"type": "boolean"}
+      }
+    },
+    "RegistrationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "description": "Registration mode (REG-001).",
+          "type": "string",
+          "enum": ["public", "closed", "invitation_only", "domain_restricted"]
+        },
+        "allowed_domains": {
+          "description": "Email domains allowed to register. The merged policy must list at least one for domain_restricted.",
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "require_email_verification": {"type": "boolean"},
+        "allow_organization_creation": {"type": "boolean"},
+        "terms_version": {"description": "Terms version users must accept.", "type": "string"},
+        "required_profile_fields": {
+          "description": "Names of profile.attributes that registration and the complete_profile required action must collect; each must be defined in the merged policy's profile.attributes.",
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "require_approval": {
+          "description": "Queue self-registrations without an invitation, upgraded guest accounts and just-in-time federated accounts for review by holders of realm.registrations.review (REG-008).",
+          "type": "boolean"
+        },
+        "allow_guests": {
+          "description": "Allow guest identities (REG-010).",
+          "type": "boolean"
+        }
+      }
+    },
+    "LoginPolicy": {
+      "description": "Enabled sign-in methods. In the merged policy at least one of password, email_otp, magic_link or passkeys must be true.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identifiers": {
+          "description": "Identifier types offered at sign-in. With sms_otp enabled, a non-empty list must include phone.",
+          "type": "array",
+          "items": {"type": "string", "enum": ["email", "username", "phone"]}
+        },
+        "password": {"type": "boolean"},
+        "email_otp": {"type": "boolean"},
+        "magic_link": {"type": "boolean"},
+        "passkeys": {"type": "boolean"},
+        "sms_otp": {
+          "description": "SMS one-time codes. Does not count as the required sign-in method. Requires sms_risk_accepted (PWDLESS-005).",
+          "type": "boolean"
+        },
+        "sms_risk_accepted": {
+          "description": "Explicit acceptance of SIM-swap and delivery risks; required in the merged policy when sms_otp is true (PWDLESS-005).",
+          "type": "boolean"
+        },
+        "certificates": {
+          "description": "X.509 sign-in (PROV-016) with certificates that chain to a user trust anchor and are bound to the account; the login surface submits the certificate step over the mutual-TLS endpoint.",
+          "type": "boolean"
+        },
+        "remember_devices": {
+          "description": "Offer remembered devices that can skip the MFA prompt (AUT-013).",
+          "type": "boolean"
+        },
+        "remember_device_days": {
+          "description": "Remembered-device lifetime in days, 0..90; 0 or omitted means 30.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 90
+        }
+      }
+    },
+    "MFAPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requirement": {"type": "string", "enum": ["optional", "required"]},
+        "allowed_factors": {
+          "description": "Factors users may enroll and use as a second factor. webauthn here also enables passkeys.",
+          "type": "array",
+          "items": {"type": "string", "enum": ["totp", "hotp", "webauthn", "recovery_code", "email_otp", "sms_otp"]}
+        },
+        "hotp": {
+          "description": "Counter-based codes (MFA-013), offered only when hotp is listed in allowed_factors.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "look_ahead": {"type": "integer", "minimum": 0, "maximum": 50, "description": "Counters past the stored one a sign-in code may be; 0 means 10."},
+            "resync_window": {"type": "integer", "minimum": 0, "maximum": 1000, "description": "How far a resynchronization with two consecutive codes may search; 0 means 100."}
+          }
+        },
+        "admin_phishing_resistant": {
+          "description": "Require phishing-resistant MFA for administrators.",
+          "type": "boolean"
+        },
+        "org_admin_mfa_optional": {
+          "description": "Waive MFA for organization administrators changing roles, ownership, domains or organization policy (MFA-003). MFA is required by default.",
+          "type": "boolean"
+        }
+      }
+    },
+    "SessionPolicy": {
+      "description": "Realm session overrides. A realm can only shorten the operator's sessions.idle_timeout and sessions.absolute_timeout; 0 or omitted means the operator value.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "idle_seconds": {"type": "integer", "minimum": 0},
+        "absolute_seconds": {"type": "integer", "minimum": 0},
+        "max_concurrent": {"description": "Not validated.", "type": "integer"},
+        "check_session_iframe": {"description": "OpenID Connect Session Management 1.0 (OIDC-014): publish check_session_iframe and return session_state in authorization responses. Off by default; browsers that block third-party cookies report every session as changed.", "type": "boolean"}
+      }
+    },
+    "InteractionPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "login_ui_url": {
+          "description": "External login UI base URL used for interactive redirects and invitation links, and as the passkey relying-party fallback. Not validated.",
+          "type": "string"
+        }
+      }
+    },
+    "RealmImpersonationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable support impersonation for the realm. Rejected unless the operator configuration sets impersonation.enabled (IMP-001).",
+          "type": "boolean"
+        },
+        "require_ticket": {"type": "boolean"},
+        "approval": {"type": "string", "enum": ["none", "second_operator", "organization_owner", "customer"]},
+        "max_ttl_seconds": {
+          "description": "Maximum impersonation lifetime in seconds, 0..300 (IMP-009); 0 or omitted means the operator maximum.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "notify_customer": {"type": "boolean"},
+        "allow_customer_opt_out": {"type": "boolean"}
+      }
+    },
+    "PasswordPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_length": {
+          "description": "Realm minimum password length: 0 (operator minimum) or at least 8.",
+          "type": "integer",
+          "anyOf": [
+            {"const": 0},
+            {"minimum": 8}
+          ]
+        },
+        "history_count": {
+          "description": "Number of previous passwords that cannot be reused, 0..24; the operator's security.password.history_count is a floor (CRED-010).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 24
+        },
+        "revoke_sessions_on_change": {"type": "boolean"}
+      }
+    },
+    "NotificationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "new_login_alerts": {"type": "boolean"}
+      }
+    },
+    "WebAuthnPolicy": {
+      "description": "Passkey relying-party settings (PASS-001, PASS-008). Without rp_id the relying party is derived from interaction.login_ui_url or the issuer, and origins must then be empty. With rp_id, at least one origin is required and every origin host must equal rp_id or be a subdomain of it.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rp_id": {
+          "description": "Relying party ID: a lower-case domain name containing a dot, or localhost; not an IP address or URL.",
+          "type": "string",
+          "pattern": "^$|^localhost$|^[^A-Z/:@ ]*\\.[^A-Z/:@ ]*$",
+          "not": {"pattern": "^[0-9]{1,3}(\\.[0-9]{1,3}){3}$"}
+        },
+        "rp_name": {
+          "description": "Relying party display name; defaults to the realm display name.",
+          "type": "string"
+        },
+        "origins": {
+          "description": "Allowed WebAuthn origins: https, or http only for localhost and *.localhost.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^([Hh][Tt][Tt][Pp][Ss]://[^/?#@\\s]+|[Hh][Tt][Tt][Pp]://(localhost|[^/?#@\\s]*\\.localhost)(:[0-9]+)?)/?$"
+          }
+        },
+        "allow_synced": {"description": "Allow synced (backup-eligible) passkeys.", "type": "boolean"},
+        "user_verification": {
+          "description": "WebAuthn user verification requirement; empty means preferred.",
+          "type": "string",
+          "enum": ["", "required", "preferred", "discouraged"]
+        },
+        "attestation": {
+          "description": "Attestation conveyance requested at registration (PASS-009). none (default) requests none, so registration reveals nothing about the authenticator model.",
+          "type": "string",
+          "enum": ["", "none", "indirect", "direct", "enterprise"]
+        },
+        "require_trusted_attestation": {
+          "description": "Refuse registrations whose attestation does not chain to trusted metadata for the AAGUID: the realm's trusted authenticators or the operator's webauthn.metadata_file. Requires attestation direct or enterprise.",
+          "type": "boolean"
+        },
+        "allowed_aaguids": {
+          "description": "Admit only these authenticator models (also at sign-in). A zero AAGUID is admitted only when listed. Exclusive with blocked_aaguids. Self-reported unless attestation is trusted.",
+          "type": "array", "maxItems": 200,
+          "items": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"}
+        },
+        "blocked_aaguids": {
+          "description": "Refuse these authenticator models at registration and sign-in.",
+          "type": "array", "maxItems": 200,
+          "items": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"}
+        },
+        "related_origins": {
+          "description": "WebAuthn Level 3 related origins (PASS-010): https origins outside rp_id allowed to use the realm's passkeys, published at https://{rp_id}/.well-known/webauthn. Requires rp_id and the operator switch webauthn.related_origins; at most five registrable domains together with origins.",
+          "type": "array", "maxItems": 20,
+          "items": {"type": "string", "pattern": "^[Hh][Tt][Tt][Pp][Ss]://[^/?#@\\s]+/?$"}
+        },
+        "credential_protection": {
+          "description": "CTAP 2.1 credProtect policy requested at registration (PASS-010).",
+          "type": "string",
+          "enum": ["", "userVerificationOptionalWithCredentialIDList", "userVerificationRequired"]
+        },
+        "enforce_credential_protection": {
+          "description": "Refuse authenticators that do not apply credential_protection instead of accepting them without it.",
+          "type": "boolean"
+        }
+      }
+    },
+    "LifecyclePolicy": {
+      "description": "Account lifecycle rules applied by the worker task lifecycle.users (USR-015).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "unverified_account_ttl_hours": {
+          "description": "Accounts still pending email verification are deleted this many hours after creation; 0 or omitted means 72. Not validated.",
+          "type": "integer"
+        },
+        "dormant_days": {
+          "description": "Active accounts (not protected, not guests) without a sign-in for this many days are handled by dormant_action; 0 or omitted disables the rule.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3650
+        },
+        "dormant_action": {
+          "description": "report (default; flag the account and record user.dormant_detected once per dormancy) or suspend.",
+          "type": "string",
+          "enum": ["", "report", "suspend"]
+        },
+        "guest_ttl_days": {
+          "description": "Guest accounts without a sign-in for this many days are deleted; 0 or omitted means 30.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3650
+        }
+      }
+    },
+    "ProfilePolicy": {
+      "description": "Custom profile attribute schema (USR-007). Self-service may write only attributes defined here as user_editable; an empty schema still rejects undefined attributes.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "attributes": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {"$ref": "#/$defs/AttributeDef"}
+        }
+      }
+    },
+    "AttributeDef": {
+      "description": "One profile attribute (identity.AttributeDef). Names are unique within the schema.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+        "type": {
+          "description": "Empty means string.",
+          "type": "string",
+          "enum": ["", "string", "number", "boolean", "enum"]
+        },
+        "max_length": {"type": "integer", "minimum": 0, "maximum": 4096},
+        "enum": {
+          "description": "Allowed values; 1..100 values required for type enum.",
+          "type": "array",
+          "items": {"type": "string"},
+          "maxItems": 100
+        },
+        "pattern": {
+          "description": "Regular expression (Go RE2 syntax) the value must match; at most 200 characters.",
+          "type": "string",
+          "maxLength": 200
+        },
+        "required": {"type": "boolean"},
+        "user_editable": {
+          "description": "Users may change the attribute themselves; only for visibility self.",
+          "type": "boolean"
+        },
+        "visibility": {
+          "description": "Empty means self.",
+          "type": "string",
+          "enum": ["", "self", "admin", "internal"]
+        },
+        "source": {
+          "description": "Empty means local. Self-service writes are accepted only for local attributes.",
+          "type": "string",
+          "enum": ["", "local", "federation", "directory"]
+        },
+        "claimable": {
+          "description": "Eligible for claim mapping (APP-011): clients' id_token_claims and access_token_claims may release the attribute with {\"$attr\": \"profile.<name>\"}. Checked at token issuance; values of a user_editable attribute are chosen by the user.",
+          "type": "boolean"
+        }
+      },
+      "if": {
+        "required": ["type"],
+        "properties": {
+          "type": {"const": "enum"}
+        }
+      },
+      "then": {
+        "required": ["enum"],
+        "properties": {
+          "enum": {"minItems": 1}
+        }
+      }
+    },
+    "RecoveryPolicy": {
+      "description": "Scheduled assisted recovery (MFA-009). When either member is set, POST /users/{user}/recovery-requests schedules the recovery instead of executing it.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cooling_off_hours": {
+          "description": "Delay before a scheduled recovery runs, during which the owner is warned and can cancel.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 168
+        },
+        "require_approval": {
+          "description": "Require approval by an operator other than the requester and the account owner.",
+          "type": "boolean"
+        }
+      }
+    },
+    "DataAccessPolicy": {
+      "description": "Evidence of reads of identity data (USR-018, AUD-015).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "log_identity_reads": {
+          "description": "Record administrative and support reads of account records (user.read) and account searches (user.search) in the data_access audit category, before the data is returned.",
+          "type": "boolean"
+        },
+        "sample_allowed_decisions_percent": {
+          "description": "Share of ordinary allowed /authorization/check and /check-batch decisions recorded as authorization.decision with metadata.sampled true (AZ-020). Denials, privileged actions and support-token decisions are always recorded. 0 (default) records no ordinary allows.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "TokenLifetimePolicy": {
+      "description": "Realm limits on access-token lifetimes (TOK-018). Each limit only shortens the lifetime set by the resource (access_token_ttl_seconds) and the client (token_policy.access_token_ttl_seconds); the operator's tokens.max_access_token_ttl always applies. 0 or omitted means no realm limit.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "access_token_ttl_seconds": {
+          "description": "Limit for every access token in the realm. It also bounds support grants, whose tokens live as long as the grant.",
+          "$ref": "#/$defs/RealmTokenTTL"
+        },
+        "service_access_token_ttl_seconds": {
+          "description": "Limit for tokens whose subject is a service principal.",
+          "$ref": "#/$defs/RealmTokenTTL"
+        },
+        "single_factor_access_token_ttl_seconds": {
+          "description": "Limit for user tokens whose acr ranks below urn:proudauth:acr:mfa (single-factor, federated, recovery and guest sessions).",
+          "$ref": "#/$defs/RealmTokenTTL"
+        },
+        "impersonation_access_token_ttl_seconds": {
+          "description": "Limit for support (impersonation) grants and so for their tokens, which live as long as the grant. The smallest of this, access_token_ttl_seconds, impersonation.max_ttl_seconds and the operator's impersonation.max_ttl applies.",
+          "$ref": "#/$defs/RealmTokenTTL"
+        }
+      }
+    },
+    "RealmTokenTTL": {
+      "description": "0 (no limit) or 30..86400 seconds.",
+      "type": "integer",
+      "anyOf": [
+        {"const": 0},
+        {"minimum": 30, "maximum": 86400}
+      ]
+    },
+    "DomainPolicy": {
+      "description": "Periodic re-verification of organization domains (TEN-009). The worker task domains.recheck looks up the accepted DNS TXT proof again; a missing proof is retried every 24 hours, and after lapse_after_failures consecutive failures the domain's verification lapses (state expired). Domains verified before migration 0030 are not re-checked.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "recheck_days": {
+          "description": "Days between re-checks of a verified domain; 0 or omitted means 30.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 365
+        },
+        "lapse_after_failures": {
+          "description": "Consecutive failed checks after which the verification lapses; 0 or omitted means 3.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 30
+        }
+      }
+    },
+    "MachinePolicy": {
+      "description": "What happens to a service principal whose accountable owner (owner_user_id) is no longer an active user (MCH-007). The worker task machine.owner_departures detects the departure and audits service_principal.owner_departed once.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "owner_departure": {
+          "description": "flag (default when empty): report only. disable: disable the service principal, revoking its API keys and opaque tokens, owner_departure_grace_days after the departure was detected.",
+          "type": "string",
+          "enum": ["", "flag", "disable"]
+        },
+        "owner_departure_grace_days": {
+          "description": "Days between detection and disabling under disable; 0 (default) disables at the next run.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 90
+        }
+      }
+    },
+    "ResourceInput": {
+      "description": "API resource (resource server) to create (application.ResourceInput). Created with kind business and the operator's keys.signing_algorithm. Validated only when applied, not in the plan.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "audience"],
+      "properties": {
+        "project_id": {"description": "Internal ID of an existing project in the realm.", "type": "string"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "audience": {
+          "description": "Stable audience identifier (APP-006): an http(s) URI or URN of at most 512 bytes without whitespace or *. Unique in the realm; it is the key used to detect existing resources.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^([Hh][Tt][Tt][Pp][Ss]?|[Uu][Rr][Nn]):[^\\s*]*$",
+          "examples": ["https://api.example.com/orders", "urn:example:billing"]
+        },
+        "description": {"type": "string"},
+        "token_format": {
+          "description": "Access token format; empty means jwt.",
+          "type": "string",
+          "enum": ["", "jwt", "opaque"]
+        },
+        "verification_mode": {
+          "description": "How resource servers verify tokens (\u00a713.2); empty means offline. Opaque tokens require online verification.",
+          "type": "string",
+          "enum": ["", "offline", "bounded_online", "strict_online"]
+        },
+        "access_token_ttl_seconds": {
+          "description": "Access token lifetime: 0 (meaning 300) or 30 up to the operator's tokens.max_access_token_ttl in seconds (3600 by default; the database also caps it at 3600).",
+          "type": "integer",
+          "anyOf": [
+            {"const": 0},
+            {"minimum": 30, "maximum": 3600}
+          ]
+        },
+        "requires_organization": {
+          "description": "Whether tokens for this resource require an organization context; null or omitted means true for business resources.",
+          "type": ["boolean", "null"]
+        },
+        "impersonation_enabled": {
+          "description": "Opt the resource into support access. Requires verification_mode strict_online (IMP-010) and impersonation_policy.contract_version (INT-010).",
+          "type": "boolean"
+        },
+        "impersonation_policy": {"$ref": "#/$defs/ResourceImpersonationPolicy"},
+        "signing_algorithm": {
+          "description": "Pins the access-token signing algorithm for this resource (TOK-005); empty means the operator's keys.signing_algorithm. Must be an asymmetric algorithm listed in security.allowed_algorithms.",
+          "type": "string",
+          "examples": ["RS256", "ES256", "PS256", "EdDSA"]
+        },
+        "scopes": {
+          "description": "Scopes declared by the resource. Scope names are unique across the realm.",
+          "type": "array",
+          "items": {"$ref": "#/$defs/ScopeInput"}
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "token_format": {"const": "opaque"}
+            },
+            "required": ["token_format"]
+          },
+          "then": {
+            "required": ["verification_mode"],
+            "properties": {
+              "verification_mode": {"enum": ["bounded_online", "strict_online"]}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "impersonation_enabled": {"const": true}
+            },
+            "required": ["impersonation_enabled"]
+          },
+          "then": {
+            "required": ["verification_mode", "impersonation_policy"],
+            "properties": {
+              "verification_mode": {"const": "strict_online"},
+              "impersonation_policy": {
+                "required": ["contract_version"],
+                "properties": {
+                  "contract_version": {"minLength": 1}
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ResourceImpersonationPolicy": {
+      "description": "A resource's support-access contract (application.ImpersonationPolicy; IMP-001, IMP-011).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowed_scopes": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "write_scopes": {
+          "description": "Explicitly reviewed state-changing scopes.",
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "write_actions": {
+          "description": "Reviewed state-changing actions an allowlisted_write support token may perform through the decision API (IMP-011).",
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "contract_version": {
+          "description": "Validated support contract version; required when impersonation_enabled is true.",
+          "type": "string"
+        },
+        "contract_validated_at": {
+          "description": "When the contract was validated. Free-form string; not parsed.",
+          "type": "string"
+        },
+        "support_client_ids": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "ScopeInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {"$ref": "#/$defs/ScopeName"},
+        "description": {"type": "string"},
+        "consent_text": {"type": "string"},
+        "sensitivity": {"$ref": "#/$defs/Sensitivity"},
+        "is_default": {
+          "description": "Default grant (APP-007): requested on a client's behalf when a request names the scope's resource but none of its scopes, as far as the client's resource grant lists it; it then passes the checks of a requested scope (consent, step-up, organization ceiling, required_permissions).",
+          "type": "boolean"
+        },
+        "required_permissions": {
+          "description": "Existing permissions a subject must hold, in the token's organization or realm context, to receive the scope (TOK-008). At most 10.",
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "step_up_acr": {
+          "description": "Assurance the session must reach before the scope is granted (AUT-010): requesting the scope adds it to the transaction's acr_values, and the scope is left out of tokens (including refreshed ones) whose grant ranks lower. Empty means none, except that a scope with sensitivity privileged requires urn:proudauth:acr:mfa.",
+          "type": "string",
+          "enum": ["", "urn:proudauth:acr:mfa", "urn:proudauth:acr:phishing_resistant"]
+        },
+        "max_auth_age_seconds": {
+          "description": "Maximum authentication age for the scope (AUT-010): 0 (no limit) or 60..86400 seconds. Requesting the scope lowers max_age to it, and the scope is left out of tokens (including refreshed ones) whose grant's auth_time is older.",
+          "type": "integer",
+          "anyOf": [
+            {"const": 0},
+            {"minimum": 60, "maximum": 86400}
+          ]
+        }
+      }
+    },
+    "TokenPolicy": {
+      "description": "Per-client token overrides (TOK-018). high_assurance clients always get require_par true.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "access_token_ttl_seconds": {"type": "integer", "minimum": 0, "maximum": 3600},
+        "refresh_idle_seconds": {"type": "integer"},
+        "refresh_absolute_seconds": {"type": "integer"},
+        "require_dpop": {"type": "boolean"},
+        "require_par": {"type": "boolean"},
+        "require_mfa": {"type": "boolean"},
+        "max_session_age_seconds": {
+          "description": "SSO sessions older than this are not reused for the client, 0..7776000 (SES-002); 0 means no limit.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7776000
+        }
+      }
+    },
+    "ClaimMappings": {
+      "description": "Custom claims added to tokens (APP-011): at most 20, with names of at most 64 characters that are never reserved claim names (TOK-015). Each value is either a static JSON value (anything but an object), released as is, or an attribute mapping (ClaimAttributeMapping). Mappings read the token's user; service-principal tokens have no attributes, so only a mapping's default can apply to them.",
+      "type": "object",
+      "maxProperties": 20,
+      "propertyNames": {
+        "maxLength": 64,
+        "not": {
+          "enum": [
+            "iss",
+            "sub",
+            "aud",
+            "exp",
+            "nbf",
+            "iat",
+            "jti",
+            "client_id",
+            "scope",
+            "token_kind",
+            "act",
+            "may_act",
+            "cnf",
+            "sid",
+            "grant_id",
+            "org_id",
+            "auth_time",
+            "acr",
+            "amr",
+            "azp",
+            "nonce",
+            "at_hash",
+            "c_hash",
+            "authz_version",
+            "events",
+            "impersonation_grant_id",
+            "support_mode",
+            "project_id",
+            "typ"
+          ]
+        }
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {"not": {"type": "object"}},
+          {"$ref": "#/$defs/ClaimAttributeMapping"}
+        ]
+      }
+    },
+    "IDTokenClaimMappings": {
+      "description": "ClaimMappings for ID tokens. OIDC standard user claims come only from the user record and are released by scope (OIDC-007), so they cannot be mapped; at issuance a mapping never replaces a claim already released by scope.",
+      "allOf": [
+        {"$ref": "#/$defs/ClaimMappings"},
+        {
+          "propertyNames": {
+            "not": {
+              "enum": [
+                "name",
+                "given_name",
+                "family_name",
+                "middle_name",
+                "nickname",
+                "preferred_username",
+                "profile",
+                "picture",
+                "website",
+                "email",
+                "email_verified",
+                "gender",
+                "birthdate",
+                "zoneinfo",
+                "locale",
+                "phone_number",
+                "phone_number_verified",
+                "address",
+                "updated_at"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "ClaimAttributeMapping": {
+      "description": "Reads one approved attribute of the token's user, with no expressions (APP-011, application/claimmap.go). String values are cut to 256 characters, then transformed; numbers and booleans of profile attributes pass unchanged. When the attribute is absent (for user.* also when empty) or the profile attribute is not marked claimable in the realm's profile.attributes, default is used, and without a default the claim is left out. Whether a profile attribute is claimable is checked at issuance, not at import.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["$attr"],
+      "properties": {
+        "$attr": {
+          "description": "user.given_name, user.family_name, user.display_name, user.locale, user.zoneinfo, or profile.<name> for a realm profile attribute.",
+          "type": "string",
+          "anyOf": [
+            {"enum": ["user.given_name", "user.family_name", "user.display_name", "user.locale", "user.zoneinfo"]},
+            {"pattern": "^profile\\.[^.]+$"}
+          ]
+        },
+        "transform": {
+          "description": "Case transformation of string values; empty means none.",
+          "type": "string",
+          "enum": ["", "lower", "upper"]
+        },
+        "default": {
+          "description": "Value used when the attribute yields nothing.",
+          "type": "string"
+        }
+      },
+      "examples": [
+        {"$attr": "profile.department", "transform": "upper", "default": "none"}
+      ]
+    },
+    "ClientInput": {
+      "description": "OAuth/OIDC client to create (httpapi.ConfigClient: application.ClientInput plus service_principal), validated by ClientInput.Normalize in the plan and again when created. A client using client_secret_basic or client_secret_post gets a generated secret on creation, returned once in client_secrets. Environment-bound identifiers (project_id, default_resource_id, service_principal_id, owner_user_id) must be empty: setting one is a plan error.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "client_type"],
+      "properties": {
+        "client_id": {
+          "description": "Public client identifier: at most 128 characters without whitespace or any of : / ? # [ ] @. It is the key used to detect existing clients. If omitted a random app_... ID is generated each time the document is applied, so the import is not idempotent for that client.",
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[^ \\t\\r\\n:/?#\\[\\]@]*$"
+        },
+        "project_id": {"description": "Environment-bound; must be empty in a document.", "type": "string", "maxLength": 0},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "description": {"type": "string"},
+        "client_type": {
+          "description": "Client type (APP-002). Determines default and permitted grant types and authentication methods.",
+          "type": "string",
+          "enum": ["confidential", "public_browser", "native", "device", "machine"]
+        },
+        "token_endpoint_auth_method": {
+          "description": "Token endpoint authentication. Empty means client_secret_basic for confidential and machine clients and none for public_browser, native and device clients. confidential clients cannot use none; machine clients can use none only when their only grant is urn:ietf:params:oauth:grant-type:jwt-bearer (workload federation, MCH-011), which the export writes as such; public_browser and native clients must use none.",
+          "type": "string",
+          "enum": ["", "client_secret_basic", "client_secret_post", "private_key_jwt", "none", "tls_client_auth", "self_signed_tls_client_auth"]
+        },
+        "grant_types": {
+          "description": "Enabled grant types; flows not listed are never implied (APP-020). Empty or omitted means [authorization_code, refresh_token] for confidential, public_browser and native, [device_code, refresh_token] for device and [client_credentials] for machine clients. password and implicit are intentionally unsupported.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "authorization_code",
+              "refresh_token",
+              "client_credentials",
+              "urn:ietf:params:oauth:grant-type:device_code",
+              "urn:ietf:params:oauth:grant-type:token-exchange",
+              "urn:ietf:params:oauth:grant-type:jwt-bearer"
+            ]
+          }
+        },
+        "security_profile": {
+          "description": "Security profile (APP-010); empty means standard. third_party: not first-party and consent required. privileged: first-party and not public_browser. high_assurance: private_key_jwt and PAR forced on. fapi2: FAPI 2.0 security profile (ADV-001).",
+          "type": "string",
+          "enum": ["", "standard", "third_party", "privileged", "high_assurance", "fapi2"]
+        },
+        "first_party": {"type": "boolean"},
+        "frontchannel_logout_uri": {"description": "Front-channel logout (SES-018); same origin as a redirect URI.", "type": "string"},
+        "frontchannel_logout_session_required": {"type": "boolean"},
+        "id_token_encrypted_response_alg": {"description": "TOK-020 response encryption: RSA-OAEP-256, ECDH-ES, ECDH-ES+A128KW or ECDH-ES+A256KW (needs a jwks_uri/jwks key).", "type": "string"},
+        "id_token_encrypted_response_enc": {"type": "string", "enum": ["", "A128GCM", "A256GCM"]},
+        "userinfo_signed_response_alg": {"type": "string"},
+        "userinfo_encrypted_response_alg": {"type": "string"},
+        "userinfo_encrypted_response_enc": {"type": "string", "enum": ["", "A128GCM", "A256GCM"]},
+        "authorization_signed_response_alg": {"description": "JARM (ADV-002).", "type": "string"},
+        "authorization_encrypted_response_alg": {"type": "string"},
+        "authorization_encrypted_response_enc": {"type": "string", "enum": ["", "A128GCM", "A256GCM"]},
+        "tls_client_auth_subject_dn": {"description": "tls_client_auth (RFC 8705): exactly one of the tls_client_auth_* members names the expected certificate.", "type": "string"},
+        "tls_client_auth_san_dns": {"type": "string"},
+        "tls_client_auth_san_uri": {"type": "string"},
+        "tls_client_auth_san_ip": {"type": "string"},
+        "tls_client_auth_san_email": {"type": "string"},
+        "tls_client_certificate_bound_access_tokens": {"description": "Bind access tokens to the client certificate (RFC 8705).", "type": "boolean"},
+        "client_uri": {"type": "string"},
+        "logo_uri": {"type": "string"},
+        "policy_uri": {"type": "string"},
+        "tos_uri": {"type": "string"},
+        "consent_mode": {
+          "description": "Empty means preauthorized for first-party clients and required otherwise.",
+          "type": "string",
+          "enum": ["", "required", "preauthorized"]
+        },
+        "consent_terms_version": {
+          "description": "The client's current terms version (APP-013). A consent covers the client only for the version it was given for, so changing it asks users for consent again; pre-authorizations are bound to it as well. Empty means none.",
+          "type": "string",
+          "maxLength": 64
+        },
+        "allow_offline_access": {"type": "boolean"},
+        "allow_remember_me": {"type": "boolean"},
+        "default_resource_id": {
+          "description": "Environment-bound; must be empty in a document.",
+          "type": "string",
+          "maxLength": 0
+        },
+        "service_principal_id": {
+          "description": "Environment-bound; must be empty in a document. Use service_principal.",
+          "type": "string",
+          "maxLength": 0
+        },
+        "service_principal": {
+          "description": "Name of the service principal the client acts as; required when client_credentials is enabled (MCH-002). Exactly one active service principal with this name must exist in the target realm.",
+          "type": "string"
+        },
+        "environment": {
+          "description": "Empty means production. Production clients cannot use loopback redirects or http origins. Fixed once the client exists (APP-015): the API refuses to change it, and token exchange accepts only subject tokens issued to a client of the same environment.",
+          "type": "string",
+          "enum": ["", "development", "staging", "production"]
+        },
+        "subject_type": {
+          "description": "Empty means public. pairwise requires sector_identifier.",
+          "type": "string",
+          "enum": ["", "public", "pairwise"]
+        },
+        "sector_identifier": {"type": "string"},
+        "login_ui_url": {
+          "description": "Client-specific login UI URL; when non-empty it is validated like a confidential client's redirect URI.",
+          "anyOf": [
+            {"const": ""},
+            {
+              "allOf": [
+                {"$ref": "#/$defs/RedirectURI"},
+                {"pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"}
+              ]
+            }
+          ]
+        },
+        "backchannel_logout_uri": {
+          "description": "Back-channel logout endpoint; when non-empty it is validated like a confidential client's redirect URI.",
+          "anyOf": [
+            {"const": ""},
+            {
+              "allOf": [
+                {"$ref": "#/$defs/RedirectURI"},
+                {"pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"}
+              ]
+            }
+          ]
+        },
+        "redirect_uris": {
+          "description": "Exact redirect URIs. At least one is required when authorization_code is enabled (explicitly or by default).",
+          "type": "array",
+          "items": {"$ref": "#/$defs/RedirectURI"}
+        },
+        "post_logout_redirect_uris": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/RedirectURI"}
+        },
+        "allowed_origins": {
+          "description": "CORS/browser origins (APP-005). https, or http only for localhost or loopback hosts when environment is not production. Stored lower-cased.",
+          "type": "array",
+          "items": {"$ref": "#/$defs/Origin"}
+        },
+        "id_token_claims": {"$ref": "#/$defs/IDTokenClaimMappings"},
+        "access_token_claims": {"$ref": "#/$defs/ClaimMappings"},
+        "token_policy": {"$ref": "#/$defs/TokenPolicy"},
+        "owner_user_id": {"description": "Environment-bound; must be empty in a document.", "type": "string", "maxLength": 0},
+        "contacts": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "jwks": {
+          "description": "Public JSON Web Key Set registered for private_key_jwt. Only checked when the client is created: it must contain at least one valid public key.",
+          "type": "object",
+          "required": ["keys"],
+          "properties": {
+            "keys": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "object", "required": ["kty"]}
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "client_type": {"const": "confidential"}
+            },
+            "required": ["client_type"]
+          },
+          "then": {
+            "properties": {
+              "token_endpoint_auth_method": {
+                "not": {"const": "none"}
+              },
+              "grant_types": {
+                "items": {
+                  "enum": [
+                    "authorization_code",
+                    "refresh_token",
+                    "client_credentials",
+                    "urn:ietf:params:oauth:grant-type:token-exchange",
+                    "urn:ietf:params:oauth:grant-type:device_code"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "client_type": {"const": "public_browser"}
+            },
+            "required": ["client_type"]
+          },
+          "then": {
+            "properties": {
+              "token_endpoint_auth_method": {"enum": ["", "none"]},
+              "grant_types": {
+                "items": {"enum": ["authorization_code", "refresh_token"]}
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "client_type": {"const": "native"}
+            },
+            "required": ["client_type"]
+          },
+          "then": {
+            "properties": {
+              "token_endpoint_auth_method": {"enum": ["", "none"]},
+              "grant_types": {
+                "items": {
+                  "enum": [
+                    "authorization_code",
+                    "refresh_token",
+                    "urn:ietf:params:oauth:grant-type:device_code"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "client_type": {"const": "device"}
+            },
+            "required": ["client_type"]
+          },
+          "then": {
+            "properties": {
+              "grant_types": {
+                "items": {"enum": ["urn:ietf:params:oauth:grant-type:device_code", "refresh_token"]}
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "client_type": {"const": "machine"}
+            },
+            "required": ["client_type"]
+          },
+          "then": {
+            "properties": {
+              "grant_types": {
+                "items": {
+                  "enum": [
+                    "client_credentials",
+                    "urn:ietf:params:oauth:grant-type:token-exchange",
+                    "urn:ietf:params:oauth:grant-type:jwt-bearer"
+                  ]
+                }
+              }
+            },
+            "if": {
+              "properties": {
+                "token_endpoint_auth_method": {"const": "none"}
+              },
+              "required": ["token_endpoint_auth_method"]
+            },
+            "then": {
+              "description": "A machine client without client authentication is a workload-federation client (MCH-011): its only grant is jwt-bearer.",
+              "required": ["grant_types"],
+              "properties": {
+                "grant_types": {
+                  "minItems": 1,
+                  "items": {"const": "urn:ietf:params:oauth:grant-type:jwt-bearer"}
+                }
+              }
+            }
+          }
+        },
+        {
+          "$comment": "authorization_code (explicit, or the default for confidential/public_browser/native) needs a redirect URI.",
+          "if": {
+            "anyOf": [
+              {
+                "required": ["grant_types"],
+                "properties": {
+                  "grant_types": {
+                    "type": "array",
+                    "contains": {"const": "authorization_code"}
+                  }
+                }
+              },
+              {
+                "required": ["client_type"],
+                "properties": {
+                  "client_type": {"enum": ["confidential", "public_browser", "native"]}
+                },
+                "not": {
+                  "required": ["grant_types"],
+                  "properties": {
+                    "grant_types": {"type": "array", "minItems": 1}
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "required": ["redirect_uris"],
+            "properties": {
+              "redirect_uris": {"minItems": 1}
+            }
+          }
+        },
+        {
+          "$comment": "client_credentials (explicit, or the default for machine) needs a service principal, named by service_principal.",
+          "if": {
+            "anyOf": [
+              {
+                "required": ["grant_types"],
+                "properties": {
+                  "grant_types": {
+                    "type": "array",
+                    "contains": {"const": "client_credentials"}
+                  }
+                }
+              },
+              {
+                "required": ["client_type"],
+                "properties": {
+                  "client_type": {"const": "machine"}
+                },
+                "not": {
+                  "required": ["grant_types"],
+                  "properties": {
+                    "grant_types": {"type": "array", "minItems": 1}
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "required": ["service_principal"],
+            "properties": {
+              "service_principal": {"minLength": 1}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "subject_type": {"const": "pairwise"}
+            },
+            "required": ["subject_type"]
+          },
+          "then": {
+            "required": ["sector_identifier"],
+            "properties": {
+              "sector_identifier": {"minLength": 1}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "security_profile": {"const": "third_party"}
+            },
+            "required": ["security_profile"]
+          },
+          "then": {
+            "properties": {
+              "first_party": {"const": false},
+              "consent_mode": {"enum": ["", "required"]}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "security_profile": {"const": "privileged"}
+            },
+            "required": ["security_profile"]
+          },
+          "then": {
+            "required": ["first_party"],
+            "properties": {
+              "first_party": {"const": true},
+              "client_type": {
+                "not": {"const": "public_browser"}
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "security_profile": {"const": "high_assurance"}
+            },
+            "required": ["security_profile"]
+          },
+          "then": {
+            "required": ["token_endpoint_auth_method"],
+            "properties": {
+              "token_endpoint_auth_method": {"const": "private_key_jwt"}
+            }
+          }
+        },
+        {
+          "$comment": "Private-use URI schemes are only allowed for native clients.",
+          "if": {
+            "not": {
+              "required": ["client_type"],
+              "properties": {
+                "client_type": {"const": "native"}
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "redirect_uris": {
+                "items": {"pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"}
+              },
+              "post_logout_redirect_uris": {
+                "items": {"pattern": "^[Hh][Tt][Tt][Pp][Ss]?:"}
+              }
+            }
+          }
+        },
+        {
+          "$comment": "Production clients (environment empty or production) must not redirect to localhost or loopback over https, and may use http only for loopback IP redirects of native or device clients.",
+          "if": {
+            "properties": {
+              "environment": {"enum": ["", "production"]}
+            }
+          },
+          "then": {
+            "properties": {
+              "redirect_uris": {
+                "items": {
+                  "not": {"$ref": "#/$defs/LoopbackHTTPSURI"},
+                  "anyOf": [
+                    {
+                      "not": {"pattern": "^[Hh][Tt][Tt][Pp]:"}
+                    },
+                    {"$ref": "#/$defs/LoopbackIPHTTPURI"}
+                  ]
+                }
+              },
+              "post_logout_redirect_uris": {
+                "items": {
+                  "not": {"$ref": "#/$defs/LoopbackHTTPSURI"},
+                  "anyOf": [
+                    {
+                      "not": {"pattern": "^[Hh][Tt][Tt][Pp]:"}
+                    },
+                    {"$ref": "#/$defs/LoopbackIPHTTPURI"}
+                  ]
+                }
+              },
+              "login_ui_url": {
+                "anyOf": [
+                  {"const": ""},
+                  {
+                    "pattern": "^[Hh][Tt][Tt][Pp][Ss]:",
+                    "not": {"$ref": "#/$defs/LoopbackHTTPSURI"}
+                  }
+                ]
+              },
+              "backchannel_logout_uri": {
+                "anyOf": [
+                  {"const": ""},
+                  {
+                    "pattern": "^[Hh][Tt][Tt][Pp][Ss]:",
+                    "not": {"$ref": "#/$defs/LoopbackHTTPSURI"}
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "$comment": "In production, clients other than native and device cannot use http redirect URIs at all.",
+          "if": {
+            "allOf": [
+              {
+                "properties": {
+                  "environment": {"enum": ["", "production"]}
+                }
+              },
+              {
+                "not": {
+                  "required": ["client_type"],
+                  "properties": {
+                    "client_type": {"enum": ["native", "device"]}
+                  }
+                }
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "redirect_uris": {
+                "items": {"pattern": "^[Hh][Tt][Tt][Pp][Ss]:"}
+              },
+              "post_logout_redirect_uris": {
+                "items": {"pattern": "^[Hh][Tt][Tt][Pp][Ss]:"}
+              }
+            }
+          }
+        },
+        {
+          "$comment": "Production clients (environment empty or production) may only register https origins.",
+          "if": {
+            "properties": {
+              "environment": {"enum": ["", "production"]}
+            }
+          },
+          "then": {
+            "properties": {
+              "allowed_origins": {
+                "items": {"pattern": "^[Hh][Tt][Tt][Pp][Ss]://"}
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Permission": {
+      "description": "Application permission (httpapi.ConfigPermission; AZ-001), registered in the application namespace. New names must be namespaced (contain a dot), at most 128 characters without whitespace or *, and must not use the reserved realm., org., support. or platform. namespaces (DOM-005).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[^ \\t\\r\\n*]*\\.[^ \\t\\r\\n*]*$",
+          "examples": ["orders.refund"]
+        },
+        "description": {"type": "string"},
+        "resource_type": {"type": "string"},
+        "sensitivity": {"$ref": "#/$defs/Sensitivity"}
+      }
+    },
+    "RoleInput": {
+      "description": "Role to create (authorization.RoleInput). Created through the normal ceiling checks: the importing principal must be allowed to write roles in the boundary and to delegate every listed permission (AZ-006). Only realm roles and realm-wide organization role templates can be imported: organization_id, project_id, composite_role_ids and incompatible_role_ids are environment-bound and must be empty (plan error otherwise), so project roles cannot be imported.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "boundary_type": {
+          "description": "Administrative boundary; empty means realm.",
+          "type": "string",
+          "enum": ["", "realm", "organization", "project"]
+        },
+        "organization_id": {
+          "description": "Environment-bound; must be empty in a document. An organization role without it is a realm-wide organization role template (requires realm.roles.write).",
+          "type": "string",
+          "maxLength": 0
+        },
+        "project_id": {
+          "description": "Environment-bound; must be empty in a document.",
+          "type": "string",
+          "maxLength": 0
+        },
+        "name": {
+          "description": "Unique (case-insensitively) within the boundary, at most 100 characters, no tab or line breaks.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[^\\t\\r\\n]+$"
+        },
+        "description": {"type": "string"},
+        "permissions": {
+          "description": "Names of existing permissions granted by the role. Organization roles cannot carry realm., support. or platform. permissions; project roles cannot carry realm., org., support. or platform. permissions.",
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "denied_permissions": {
+          "description": "Names of existing permissions explicitly denied.",
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "composite_role_ids": {
+          "description": "Environment-bound; must be empty in a document.",
+          "type": "array",
+          "items": {"type": "string"},
+          "maxItems": 0
+        },
+        "incompatible_role_ids": {
+          "description": "Environment-bound; must be empty in a document.",
+          "type": "array",
+          "items": {"type": "string"},
+          "maxItems": 0
+        },
+        "requires_approval": {"type": "boolean"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "boundary_type": {"const": "organization"}
+            },
+            "required": ["boundary_type"]
+          },
+          "then": {
+            "properties": {
+              "permissions": {
+                "items": {
+                  "not": {"pattern": "^(realm|support|platform)\\."}
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "LoopbackHTTPSURI": {
+      "description": "https URI whose host is localhost, *.localhost or a loopback IP.",
+      "type": "string",
+      "pattern": "^[Hh][Tt][Tt][Pp][Ss]://(localhost|[^/?#@:\\s]*\\.localhost|127(\\.[0-9]{1,3}){3}|\\[::1\\])(:[0-9]*)?([/?]|$)"
+    },
+    "LoopbackIPHTTPURI": {
+      "description": "http URI whose host is a loopback IP address (RFC 8252 \u00a77.3).",
+      "type": "string",
+      "pattern": "^[Hh][Tt][Tt][Pp]://(127(\\.[0-9]{1,3}){3}|\\[::1\\])(:[0-9]*)?([/?]|$)"
+    }
+  }
+}

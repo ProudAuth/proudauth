@@ -1,0 +1,70 @@
+{
+  "profiles": {
+    "http-failure": {
+      "requests": 2,
+      "response_bytes": 0,
+      "request_starts": [
+        "2026-10-12T21:28:40.104508Z",
+        "2026-10-12T21:29:40.107525Z"
+      ]
+    },
+    "malformed": {
+      "requests": 2,
+      "response_bytes": 16,
+      "request_starts": [
+        "2026-10-12T21:28:40.097161Z",
+        "2026-10-12T21:29:40.100526Z"
+      ]
+    },
+    "oversized": {
+      "requests": 2,
+      "response_bytes": 2097154,
+      "request_starts": [
+        "2026-10-12T21:28:40.099985Z",
+        "2026-10-12T21:29:40.10357Z"
+      ]
+    },
+    "private": {
+      "requests": 0,
+      "response_bytes": 0,
+      "request_starts": []
+    },
+    "redirect": {
+      "requests": 2,
+      "response_bytes": 0,
+      "request_starts": [
+        "2026-10-12T21:28:40.107376Z",
+        "2026-10-12T21:29:40.11022Z"
+      ]
+    },
+    "redirect-trap": {
+      "requests": 0,
+      "response_bytes": 0,
+      "request_starts": []
+    },
+    "timeout": {
+      "requests": 2,
+      "response_bytes": 0,
+      "request_starts": [
+        "2026-10-12T21:28:40.109957Z",
+        "2026-10-12T21:29:50.112634Z"
+      ]
+    },
+    "unknown-key": {
+      "requests": 2,
+      "response_bytes": 354,
+      "request_starts": [
+        "2026-10-12T21:28:40.094352Z",
+        "2026-10-12T21:29:40.097044Z"
+      ]
+    },
+    "valid": {
+      "requests": 1,
+      "response_bytes": 177,
+      "request_starts": [
+        "2026-10-12T21:28:40.081239Z"
+      ]
+    }
+  },
+  "inflight": 0
+}

@@ -1,0 +1,43 @@
+# Schema migrations run as a separate, explicit step before rolling out new
+# server/worker versions (expand/migrate/contract, DEP-012). Migrations take an
+# advisory lock, so a duplicate job waits instead of racing.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: proudauth-migrate
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: proudauth
+        app.kubernetes.io/component: migrate
+    spec:
+      serviceAccountName: proudauth
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: migrate
+          image: proudauth
+          command: ["/usr/local/bin/identity-cli", "migrate", "-config", "/etc/proudauth/config.yaml"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {memory: 256Mi}
+          volumeMounts:
+            - {name: config, mountPath: /etc/proudauth, readOnly: true}
+            - {name: secrets, mountPath: /run/secrets, readOnly: true}
+      volumes:
+        - name: config
+          configMap: {name: proudauth-config}
+        - name: secrets
+          secret: {secretName: proudauth-secrets, defaultMode: 0400}

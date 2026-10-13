@@ -1,0 +1,310 @@
+{
+  "local_date": "2026-10-13",
+  "version": "dev-check-20261013-9e46df90789bcd6d",
+  "official_release": false,
+  "checks": [
+    {
+      "name": "build",
+      "exit_code": 0,
+      "wall_s": 25.81,
+      "output_sha256": "10293e3ceb5af2e9575d418f30cb9035d8d6d1ffbb3df7663abbaa06641c58cf"
+    },
+    {
+      "name": "build-stage",
+      "exit_code": 0,
+      "wall_s": 7.323,
+      "output_sha256": "98b5cb279b40ec84a8f1b534ef4e90c200979a5b35585cc6611d7922dc7d55b0"
+    },
+    {
+      "name": "create-scanner",
+      "exit_code": 0,
+      "wall_s": 0.265,
+      "output_sha256": "f2e7f7b97b62fb34ff8b80a373abac24d88564b3dad46d14872b52d05ff58ab4"
+    },
+    {
+      "name": "image-symbol-builds",
+      "exit_code": 0,
+      "wall_s": 1.368,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "vuln-identity-cli",
+      "exit_code": 0,
+      "wall_s": 0.128,
+      "output_sha256": "8e8996ee6bf5544d9e824dbe705280a0cd6be7a05e07ed67d1513c394ac03501"
+    },
+    {
+      "name": "vuln-identity-server",
+      "exit_code": 0,
+      "wall_s": 0.077,
+      "output_sha256": "a51a11a02a34a9e6c80f9a3fab937f9a6fe2b261bfdef7f1a15cb7bc3f80f0f4"
+    },
+    {
+      "name": "vuln-identity-worker",
+      "exit_code": 0,
+      "wall_s": 0.1,
+      "output_sha256": "a51a11a02a34a9e6c80f9a3fab937f9a6fe2b261bfdef7f1a15cb7bc3f80f0f4"
+    },
+    {
+      "name": "create-extract",
+      "exit_code": 0,
+      "wall_s": 0.045,
+      "output_sha256": "952830865eb92b0ce5a1c51fc7f8b8067a114a2f7177a71f5530c5c25740280f"
+    },
+    {
+      "name": "extract-identity-server",
+      "exit_code": 0,
+      "wall_s": 0.122,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "extract-identity-worker",
+      "exit_code": 0,
+      "wall_s": 0.11,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "extract-identity-cli",
+      "exit_code": 0,
+      "wall_s": 0.079,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "sbom-source",
+      "exit_code": 0,
+      "wall_s": 0.675,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "sbom-image",
+      "exit_code": 0,
+      "wall_s": 3.837,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "tls-certificate",
+      "exit_code": 0,
+      "wall_s": 0.039,
+      "output_sha256": "44be66ec2a8fdd7c291c7f3a055bf5c19343985abc10008ea07b00c30bfda639"
+    },
+    {
+      "name": "network",
+      "exit_code": 0,
+      "wall_s": 0.023,
+      "output_sha256": "9c59e4b95aab62a31c92e148ca06950970e026004e444481a38edb886acd7b37"
+    },
+    {
+      "name": "create-pg",
+      "exit_code": 0,
+      "wall_s": 0.041,
+      "output_sha256": "be39f68810f0323789ffaacc3d4ec8ff43472c8d696fbf899d9c0acadcdc4c33"
+    },
+    {
+      "name": "postgres-start",
+      "exit_code": 0,
+      "wall_s": 0.078,
+      "output_sha256": "12e8c33e3b8d8abf5345520b548a9f3cb70462e83c7699a98b5ca0ab88692b54"
+    },
+    {
+      "name": "create-migrate",
+      "exit_code": 0,
+      "wall_s": 0.034,
+      "output_sha256": "7fc2faf7c34d7fae2293fafe538b17ecc172cc0ff0dfd47d2d397811857467e9"
+    },
+    {
+      "name": "migrate",
+      "exit_code": 0,
+      "wall_s": 0.272,
+      "output_sha256": "b066c6ac900cef91d70fad041daa79ef2e98c9133f31b5ba1624633cfa9767f0"
+    },
+    {
+      "name": "create-realm",
+      "exit_code": 0,
+      "wall_s": 0.037,
+      "output_sha256": "4f76713cadccc9753bf042939a0008697623c70fed4b15211fa8238e2ff29e86"
+    },
+    {
+      "name": "realm",
+      "exit_code": 0,
+      "wall_s": 0.378,
+      "output_sha256": "40c1fb6ff67dbeb8907f2173a1a3c03b8ece2ab0f9477502eb973c8954f8a64f"
+    },
+    {
+      "name": "create-server",
+      "exit_code": 0,
+      "wall_s": 0.038,
+      "output_sha256": "c7615abfdabb8d6d9eb2fa6b50c56c338756187c1b6028b3eac14e95bba98fac"
+    },
+    {
+      "name": "server-start",
+      "exit_code": 0,
+      "wall_s": 0.081,
+      "output_sha256": "6174d49398ab98f4f878c8ce3c5da4d141dc39ba791b82353686c3bbf902c343"
+    },
+    {
+      "name": "create-worker",
+      "exit_code": 0,
+      "wall_s": 0.034,
+      "output_sha256": "c054a4d0a3bf373f220134f6dd560aa85a18df060b0899e498fdca2929dd3cf7"
+    },
+    {
+      "name": "worker-once",
+      "exit_code": 0,
+      "wall_s": 0.187,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "image": {
+    "id": "sha256:c8054fe9146af0db77b4523b2dd9c81a1f09b8ce051b76851f4152cc4c34f8ce",
+    "os": "linux",
+    "architecture": "arm64",
+    "user": "65532:65532",
+    "entrypoint": [
+      "/usr/local/bin/identity-server"
+    ],
+    "size_bytes": 24757942
+  },
+  "image_binary_scans": [
+    {
+      "name": "identity-cli",
+      "sha256": "5f23a4ff241332e6153efd3d8e8676a418727153d4f6d5b46cd68ef28680897b",
+      "reachable_findings": 0,
+      "imported_package_findings": 0,
+      "module_only_advisories": [
+        "GO-2026-5932"
+      ]
+    },
+    {
+      "name": "identity-server",
+      "sha256": "85f21cdf5a672b2b561d569605b74f78401318d271d5dc1ee81b93cbe93d93c1",
+      "reachable_findings": 0,
+      "imported_package_findings": 0,
+      "module_only_advisories": [
+        "GO-2026-5932"
+      ]
+    },
+    {
+      "name": "identity-worker",
+      "sha256": "41bf0509e2b3dbe8d1b7dc4f06c845b816aa5ba567c6889f89340626347eab74",
+      "reachable_findings": 0,
+      "imported_package_findings": 0,
+      "module_only_advisories": [
+        "GO-2026-5932"
+      ]
+    }
+  ],
+  "shipped_binaries": [
+    {
+      "name": "identity-cli",
+      "sha256": "a38025da9f948019d3939ea76362f3d62e0791d654f471aa95c231e21265a060",
+      "bytes": 15335548
+    },
+    {
+      "name": "identity-server",
+      "sha256": "c7e2ba3e06731b18082d8d86b9e265376fc9b9dde4c83f495ec5bd8987d29f85",
+      "bytes": 24772732
+    },
+    {
+      "name": "identity-worker",
+      "sha256": "fc4d783e1d165aedb1590192756d37052b04146864e685819dd74fc90b5a5a42",
+      "bytes": 22610044
+    }
+  ],
+  "sboms": {
+    "source": {
+      "format": "SPDX-2.3",
+      "packages": 166,
+      "files": 9,
+      "sha256": "ed3fef0bfd1014a32016eeb6fd07496ec5af48292238a249a0ff26fdff9d5ffa",
+      "tool": "syft v1.18.1",
+      "source_name": "ProudAuth-source"
+    },
+    "image": {
+      "format": "SPDX-2.3",
+      "packages": 103,
+      "files": 952,
+      "sha256": "be8f0974cd3766316d445df67c085df2b833c61084e3db3a359c8bfcc56a725e",
+      "tool": "syft v1.18.1",
+      "source_name": "ProudAuth-image"
+    }
+  },
+  "smoke": {
+    "pass": true,
+    "mode": "production",
+    "tls": "self-signed local test CA, hostname verification enabled",
+    "read_only_root": true,
+    "capabilities": "ALL dropped",
+    "no_new_privileges": true,
+    "outcomes": {
+      "liveness": 200,
+      "readiness": 200,
+      "discovery": 200,
+      "jwks": 200,
+      "password_grant_refusal": 401,
+      "implicit_flow_refusal": 400,
+      "worker_once": "exit 0; no task errors"
+    },
+    "database": {
+      "version": "18.6 (Debian 18.6-1.pgdg13+2)",
+      "shared_buffers": "128MB",
+      "max_connections": 80,
+      "data": "own 2 GiB tmpfs",
+      "transport": "isolated Docker network, sslmode=disable",
+      "role": "postgres; local smoke fixture only"
+    },
+    "configuration_redacted": "mode: production\nserver:\n  public_listen: \"0.0.0.0:8080\"\n  internal_listen: \"127.0.0.1:9090\"\n  public_origin: \"https://127.0.0.1:<free-port>\"\n  tls_cert_file: \"/run/pa/tls.crt\"\n  tls_key_file: \"/run/pa/tls.key\"\nstorage:\n  database_url: \"file:/run/pa/database_url\"\nkeys:\n  root_keys:\n    - version: 1\n      ref: \"file:/run/pa/root_key\"\n  active_version: 1\ndelivery:\n  email:\n    adapter: smtp\n    smtp_host: \"smtp.example.invalid\"\n    from: \"proudauth@example.invalid\"\n    smtp_tls: starttls\nobservability:\n  log_format: json\n"
+  },
+  "pass": true,
+  "cleanup": {
+    "containers": [
+      {
+        "name": "pa-bench-release-26562-worker",
+        "removed": true
+      },
+      {
+        "name": "pa-bench-release-26562-server",
+        "removed": true
+      },
+      {
+        "name": "pa-bench-release-26562-realm",
+        "removed": true
+      },
+      {
+        "name": "pa-bench-release-26562-migrate",
+        "removed": true
+      },
+      {
+        "name": "pa-bench-release-26562-pg",
+        "removed": true
+      },
+      {
+        "name": "pa-bench-release-26562-extract",
+        "removed": true
+      },
+      {
+        "name": "pa-bench-release-26562-scanner",
+        "removed": true
+      }
+    ],
+    "owned_cache_records": 8,
+    "owned_cache_remaining": [
+      "pbqyo54a9mc5j5rey5zmjal0p"
+    ],
+    "baseline_cache_records_retained": 868,
+    "baseline_cache_records": 868,
+    "final_cache_audit": {
+      "remaining_new_ids": [],
+      "baseline_retained": 868,
+      "baseline_records": 868
+    }
+  },
+  "started_at": "2026-10-13T05:33:43.764574+00:00",
+  "ended_at": "2026-10-13T05:34:33.630690+00:00",
+  "source_digest": "9e46df90789bcd6d",
+  "limits": [
+    "Development snapshot, no source tag, official publication, signature or trusted provenance attestation.",
+    "This image profile is Linux arm64 on one laptop.",
+    "No email delivery or first-administrator sign-in is exercised by this image smoke.",
+    "The source SBOM excludes local operational secrets and build output."
+  ]
+}

@@ -1,0 +1,11 @@
+BENCH_PREFIX=pa-bench-email-20261011 \
+BENCH_OUT="$PWD/docs/operations/bench-results/2026-10-11-laptop-email" \
+BENCH_HOST_LABEL=laptop \
+BENCH_SCENARIOS='email-delivery mixed-email notification-flood' BENCH_SOAK=0 \
+  make bench-local VERSION=dev
+
+Run from $CHECKOUT Defaults: duration 60s, concurrency
+32, warmup 5s, dataset seed 1, 10000 users, 500 organizations, 5000 large-org
+members, 20 machine clients, 1000 group members. No downloads or Go tests
+during measurements. Bootstrap uses the development mailbox; measured email
+uses the SMTP adapter and a loopback-only receiver with no TLS/auth or relay.

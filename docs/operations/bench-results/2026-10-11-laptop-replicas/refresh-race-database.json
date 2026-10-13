@@ -1,0 +1,16 @@
+{
+  "observed_families": 2797,
+  "compromised_families": 2794,
+  "active_families": 3,
+  "offline_families": 2797,
+  "retained_offline_sessions": 2797,
+  "max_generation": 2,
+  "max_tokens_per_family": 2,
+  "reuse_audits": 2794,
+  "reuse_outbox_events": 2794,
+  "lineage_violations": 0,
+  "compromise_violations": 0,
+  "completed_measured_races": 2793,
+  "pass": true,
+  "note": "counts cover this scenario only by excluding a private pre-run family-ID snapshot; setup/warm-up/interrupted operations may add families beyond completed measured races; no tokens, digests or IDs are published"
+}

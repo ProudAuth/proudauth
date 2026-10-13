@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+1092	273.1	0.250	96876	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+4400	137.1	0.031	4400	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+177	124.6	0.704	177	SELECT pg_advisory_xact_lock(hashtext($1))
+96	118.7	1.237	96	SELECT EXISTS (SELECT $3 FROM role_assignments ra JOIN roles r ON r.id=ra.role_id WHERE ra.membership_id=$1 AND r.is_owner_role AND (ra.expires_at IS NULL OR ra.expires_at > $2))
+2	97.4	48.724	7694	UPDATE audit_events SET batch_id=$1 WHERE id = ANY($2)
+96	86.4	0.900	96	DELETE FROM role_assignments WHERE membership_id=$1
+32	70.8	2.211	32	SELECT id, realm_id, state, coalesce(display_name,$5), coalesce(given_name,$6), coalesce(family_name,$7), coalesce(locale,$8), coalesce(zoneinfo,$9), profile, admin_metadata, internal_metadata, protec
+44	30.0	0.683	4400	SELECT seq, id, coalesce(realm_id,''), coalesce(organization_id,''), event_type, payload FROM outbox_events WHERE state='pending' ORDER BY seq LIMIT $1 FOR UPDATE SKIP LOCKED
+96	26.4	0.275	96	INSERT INTO role_assignments (id, realm_id, role_id, subject_type, subject_id, membership_id, scope_type, scope_id, conditions, valid_from, expires_at, granted_by_type, granted_by_id, approved_by_id, 
+417	26.4	0.063	417	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+4400	25.8	0.006	0	SELECT id, event_types, payload_form, event_version FROM webhook_subscriptions WHERE realm_id=$1 AND state='active' AND (organization_id IS NULL OR organization_id=$2)
+384	19.2	0.050	384	INSERT INTO outbox_events (id, realm_id, organization_id, event_type, event_version, aggregate_type, aggregate_id, payload, occurred_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)

@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+3434	497011.4	144.733	3434	UPDATE jobs SET state='running', lease_owner=$1, lease_expires_at=$2, attempts=attempts+1, updated_at=$3 WHERE id = (SELECT id FROM jobs j WHERE type = ANY($4) AND ((state='queued' AND run_after <= $3
+3434	315393.3	91.844	3434	SELECT pg_advisory_xact_lock(hashtext($1))
+3385	76722.1	22.665	169250	SELECT seq, id, schema_version, type, occurred_at, coalesce(realm_id,$4), coalesce(organization_id,$5), actor_type, actor_id, coalesce(actor_session_id,$6), coalesce(subject_type,$7), coalesce(subject
+42881	65931.6	1.538	42881	SELECT ra.role_id, ra.conditions FROM role_assignments ra WHERE ra.realm_id=$1 AND ra.scope_type=$5 AND ra.scope_id=$2 AND ra.membership_id=$3 AND (ra.valid_from IS NULL OR ra.valid_from <= $4) AND (r
+1	60843.5	60843.481	79797	COPY public.jobs (id, realm_id, organization_id, type, state, input, checkpoint, result, result_ciphertext, key_version, progress, dry_run, requested_by_type, requested_by_id, idempotency_key, attempt
+14026	25373.0	1.809	14026	SELECT id, verifier, state FROM credentials WHERE user_id=$1 AND type=$2 AND state IN ($3 /*, ... */) ORDER BY state LIMIT $4
+228505	20823.3	0.091	228505	UPDATE client_credentials SET last_used_at=$2 WHERE id=$1
+169664	16312.4	0.096	169664	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+228513	14260.4	0.062	228513	SELECT id FROM client_credentials WHERE client_ref=$1 AND kind=$4 AND state=$5 AND secret_digest=$2 AND (expires_at IS NULL OR expires_at > $3)
+240120	11600.6	0.048	240120	INSERT INTO rate_limit_counters (bucket, window_start, count, expires_at) VALUES ($1, $2, $4, $3) ON CONFLICT (bucket, window_start) DO UPDATE SET count = rate_limit_counters.count + $5 RETURNING coun
+103046	10545.7	0.102	2234037	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+541153	7180.4	0.013	239228	SELECT uri, purpose FROM client_redirect_uris WHERE client_ref=$1 ORDER BY created_at, uri

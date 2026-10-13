@@ -1,0 +1,11 @@
+BENCH_PREFIX=pa-bench-email-repeat-20261011 \
+BENCH_OUT="$PWD/docs/operations/bench-results/2026-10-11-laptop-email/repeat-email" \
+BENCH_HOST_LABEL=laptop \
+BENCH_SCENARIOS='email-delivery' BENCH_SOAK=0 \
+  make bench-local VERSION=dev
+
+Fresh dedicated PostgreSQL 18 database and the full seed-1 cardinalities.
+Duration 60s, concurrency 32, warmup 5s. Same binary hashes, database settings,
+worker defaults and source budgets as the first run. SMTP port 63352 allocated
+by the OS. Passkeys stay at their default disabled setting; this run includes
+no passkey workload. No downloads or Go tests during measurements.

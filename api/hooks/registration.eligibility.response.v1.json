@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/hooks/registration.eligibility.response.v1.json",
+  "title": "registration.eligibility hook response (contract v1)",
+  "description": "Answer with HTTP 200 and this body. Unknown members make the response malformed (the call fails closed).",
+  "x-hook-kind": "registration.eligibility",
+  "x-contract-version": 1,
+  "examples": [
+    {
+      "allow": true
+    },
+    {
+      "allow": false,
+      "reason_code": "DOMAIN_NOT_ELIGIBLE"
+    }
+  ],
+  "type": "object",
+  "required": [
+    "allow"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "allow": {
+      "type": "boolean",
+      "description": "false refuses the action."
+    },
+    "reason_code": {
+      "$ref": "common.v1.json#/$defs/reason_code"
+    },
+    "errors": {
+      "type": "object",
+      "description": "Field validation messages (field: at most 64 characters, message: at most 200); a refusal with errors is reported as a validation failure.",
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 200
+      }
+    }
+  }
+}

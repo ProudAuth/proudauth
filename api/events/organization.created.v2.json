@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/organization.created.v2.json",
+  "title": "organization.created (v2)",
+  "description": "An organization was created. Emitted when an organization is created. When it was created on behalf of a user, the creator's membership and owner role assignment are created in the same transaction; those emit authorization.role.assigned but not organization.membership.added. org_id equals data.organization_id.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v2.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "organization.created"
+    },
+    "event_version": {
+      "const": 2
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. Minimal payload form (the subscription default) omits: slug. Standard form contains every listed member.",
+      "required": [
+        "organization_id"
+      ],
+      "properties": {
+        "organization_id": {
+          "$ref": "envelope.v2.json#/$defs/organization_id",
+          "description": "The new organization."
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$",
+          "description": "The organization's canonical slug (2-63 lower-case letters, digits or dashes). Standard payload form only: removed in the minimal form.",
+          "x-payload-form": "standard"
+        }
+      },
+      "additionalProperties": false
+    },
+    "organization_id": {
+      "description": "Always set for this event type."
+    }
+  },
+  "required": [
+    "organization_id"
+  ],
+  "x-event-type": "organization.created",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/organization/organization.go: (*Service).CreateTx"
+  ],
+  "x-org-scoped": "always",
+  "examples": [
+    {
+      "event_id": "obx_01jb1yte0st3ebjy0rxav4gtk3",
+      "event_type": "organization.created",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+        "slug": "acme"
+      }
+    },
+    {
+      "event_id": "obx_01jb1yte0st3ebjy0rxav4gtk3",
+      "event_type": "organization.created",
+      "event_version": 2,
+      "payload_form": "minimal",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1"
+      }
+    }
+  ]
+}

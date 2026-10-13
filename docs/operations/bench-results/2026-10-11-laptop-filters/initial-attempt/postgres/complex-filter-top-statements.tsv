@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+5000	8955.2	1.791	5000	SELECT EXISTS (SELECT $3 FROM role_assignments ra JOIN roles r ON r.id=ra.role_id WHERE ra.membership_id=$1 AND r.is_owner_role AND (ra.expires_at IS NULL OR ra.expires_at > $2))
+504776	5137.7	0.010	504776	SELECT id, realm_id, state, coalesce(display_name,''), coalesce(given_name,''), coalesce(family_name,''), coalesce(locale,''), coalesce(zoneinfo,''), profile, admin_metadata, internal_metadata, protec
+504763	5057.6	0.010	504764	SELECT id, type, original_value, canonical_value, verified_at, is_primary, source FROM user_identifiers WHERE user_id=$1 ORDER BY created_at, id
+504748	4378.4	0.009	494748	SELECT id, state FROM memberships WHERE organization_id=$1 AND user_id=$2 AND state NOT IN ($3 /*, ... */)
+494792	3733.3	0.008	494792	SELECT x.external_id, x.local_id, x.resource_version, x.created_at, x.updated_at FROM connector_external_ids x WHERE x.connector_id=$1 AND x.resource_type=$3 AND x.local_id=$2
+35001	1299.7	0.037	35001	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+47305	1299.4	0.027	47305	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+1872	1252.2	0.669	1872	SELECT pg_advisory_xact_lock(hashtext($1))
+10000	871.2	0.087	10000	INSERT INTO role_assignments (id, realm_id, role_id, subject_type, subject_id, membership_id, scope_type, scope_id, conditions, valid_from, expires_at, granted_by_type, granted_by_id, approved_by_id, 
+30000	810.4	0.027	30000	SELECT EXISTS (SELECT $2 FROM role_permissions rp JOIN permissions p ON p.id=rp.permission_id WHERE rp.role_id=$1 AND rp.effect<>$3 AND p.sensitivity=$4)
+30001	787.5	0.026	30001	SELECT p.name, rp.effect FROM role_permissions rp JOIN permissions p ON p.id=rp.permission_id WHERE rp.role_id=$1 ORDER BY p.name
+10000	733.2	0.073	10000	INSERT INTO memberships (id, realm_id, organization_id, user_id, state, source, source_reference, joined_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)

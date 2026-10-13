@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+15857	10422.2	0.657	3187257	SELECT id, channel, template, coalesce(recipient_hint,''), state, attempts, coalesce(last_error,''), coalesce(reference_type,''), coalesce(reference_id,''), created_at, updated_at FROM notification_jo
+22127	4938.2	0.223	2019656	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+564	3206.9	5.686	564	SELECT $2 FROM organizations WHERE id=$1 FOR UPDATE
+1681	2003.6	1.192	1681	SELECT ra.role_id, ra.conditions FROM role_assignments ra WHERE ra.realm_id=$1 AND ra.scope_type=$5 AND ra.scope_id=$2 AND ra.membership_id=$3 AND (ra.valid_from IS NULL OR ra.valid_from <= $4) AND (r
+564	1073.1	1.903	564	INSERT INTO memberships (id, realm_id, organization_id, user_id, state, source, source_reference, joined_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)
+616	1004.2	1.630	616	SELECT id, verifier, state FROM credentials WHERE user_id=$1 AND type=$2 AND state IN ($3 /*, ... */) ORDER BY state LIMIT $4
+564	745.5	1.322	564	SELECT EXISTS (SELECT $3 FROM role_assignments ra JOIN roles r ON r.id=ra.role_id WHERE ra.membership_id=$1 AND r.is_owner_role AND (ra.expires_at IS NULL OR ra.expires_at > $2))
+10997	711.4	0.065	10997	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+564	582.3	1.032	564	DELETE FROM role_assignments WHERE membership_id=$1
+707	460.4	0.651	707	SELECT pg_advisory_xact_lock(hashtext($1))
+41918	412.9	0.010	34049	SELECT uri, purpose FROM client_redirect_uris WHERE client_ref=$1 ORDER BY created_at, uri
+32746	398.2	0.012	32746	SELECT id, realm_id, state, coalesce(display_name,''), coalesce(given_name,''), coalesce(family_name,''), coalesce(locale,''), coalesce(zoneinfo,''), profile, admin_metadata, internal_metadata, protec

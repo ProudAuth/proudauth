@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/hooks/common.v1.json",
+  "title": "Pre-action hook contract v1: shared definitions",
+  "description": "Definitions shared by the hook request and response schemas of contract version 1.",
+  "$defs": {
+    "realm_id": {
+      "type": "string",
+      "pattern": "^rlm_[0-9a-z]{26}$",
+      "description": "Realm identifier."
+    },
+    "user_id": {
+      "type": "string",
+      "pattern": "^usr_[0-9a-z]{26}$",
+      "description": "User identifier."
+    },
+    "organization_id": {
+      "type": "string",
+      "pattern": "^org_[0-9a-z]{26}$",
+      "description": "Organization identifier."
+    },
+    "reason_code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Stable, non-sensitive reason code; longer values are ignored."
+    }
+  },
+  "x-headers": {
+    "Content-Type": {
+      "value": "application/json"
+    },
+    "ProudAuth-Hook-Version": {
+      "description": "Hook contract version of the request (the hook registration's contract_version). A response may echo it; an echoed value other than the request's makes the response malformed.",
+      "example": "1"
+    },
+    "Webhook-Id": {
+      "description": "Unique message ID of this call (hkm_ + 26 characters). Different on every call.",
+      "example": "hkm_01jbh0ybgaravg3xcq0zdp2egd"
+    },
+    "Webhook-Timestamp": {
+      "description": "Unix seconds at which the call was signed.",
+      "example": "1791634200"
+    },
+    "Webhook-Signature": {
+      "description": "\"v1,\" + base64(HMAC-SHA256(key, Webhook-Id + \".\" + Webhook-Timestamp + \".\" + raw body)), key = base64-decoded signing secret after the \"hksec_\" prefix.",
+      "example": "v1,ASDtwkTifq0FaSm8BE4GznwV77UL2zkJ40idI04PMrg="
+    }
+  }
+}

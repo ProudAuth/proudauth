@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/authorization.role.assigned.v2.json",
+  "title": "authorization.role.assigned (v2)",
+  "description": "A role was assigned to a user, service principal or group. Emitted for every new role assignment: through the administration API and as a side effect of organization creation (owner role), adding a member, accepting an invitation, approving a join request, ownership transfer, provisioning connectors and import jobs. org_id is set when the assignment is scoped to an organization; realm- and project-scoped assignments carry no org_id. The scope itself and the subject type are not included (the subject type follows from the subject_id prefix).",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v2.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "authorization.role.assigned"
+    },
+    "event_version": {
+      "const": 2
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "subject_id",
+        "role_id",
+        "assignment_id"
+      ],
+      "properties": {
+        "subject_id": {
+          "$ref": "envelope.v2.json#/$defs/role_subject_id"
+        },
+        "role_id": {
+          "$ref": "envelope.v2.json#/$defs/role_id",
+          "description": "The assigned role."
+        },
+        "assignment_id": {
+          "$ref": "envelope.v2.json#/$defs/role_assignment_id",
+          "description": "The new assignment."
+        }
+      },
+      "additionalProperties": false
+    },
+    "organization_id": {
+      "description": "Set only when the event is bound to an organization (see description)."
+    }
+  },
+  "x-event-type": "authorization.role.assigned",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/authorization/rbac.go: (*Service).AssignTx"
+  ],
+  "x-org-scoped": "optional",
+  "examples": [
+    {
+      "event_id": "obx_01jb4r3xkvwezbd4m7y0r4pm87",
+      "event_type": "authorization.role.assigned",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "subject_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "role_id": "rol_01jb2k96nwbdvh1dq1hy8d8mzw",
+        "assignment_id": "ras_01jbnzhf6mk06bnvffc1q0h536"
+      }
+    }
+  ]
+}

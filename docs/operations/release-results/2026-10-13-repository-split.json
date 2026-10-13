@@ -1,0 +1,73 @@
+{
+  "format_version": 1,
+  "recorded_at": "2026-10-13T19:45:32.341488+00:00",
+  "profile": "Service repository split: canonical module, independently published Go SDK, dedicated local PostgreSQL race suite",
+  "module": "github.com/proudbase/proudauth",
+  "go_sdk": {
+    "module": "github.com/proudbase/proudauth-sdk-go",
+    "version": "v0.0.0-20261013190527-116f9fa19d0b",
+    "revision": "116f9fa19d0b0174a0c270763e2ef6abf872233b",
+    "dependency_kind": "normal checksum-verified module; no local replacement/workspace"
+  },
+  "environment": {
+    "go": "go version go1.27.1 darwin/arm64",
+    "machine": [
+      "Mac16,8",
+      "Apple M4 Pro",
+      "12",
+      "25769803776"
+    ],
+    "os": [
+      "ProductName:\t\tmacOS",
+      "ProductVersion:\t\t27.0.1",
+      "BuildVersion:\t\t26A434"
+    ],
+    "database": [
+      "PostgreSQL 18.6 (Debian 18.6-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit",
+      "128MB",
+      "200"
+    ],
+    "database_transport": "dedicated loopback ephemeral test PostgreSQL; test-only role; max_connections=200; shared_buffers=128MB; tmpfs2GiB"
+  },
+  "core_race": {
+    "command": "go test -race -json -count=1 -timeout 30m ./internal/... ./cmd/... ./tests/e2e/... ./examples/...",
+    "started_at": "2026-10-13T22:30:14.109877+03:00",
+    "finished_at": "2026-10-13T22:43:34.086698+03:00",
+    "passed_top_level_tests": 645,
+    "passed_subtests": 499,
+    "failed_events": 0,
+    "skipped_tests": 0,
+    "e2e_elapsed_seconds": 792.998,
+    "raw_log_sha256": "3f4729c949b15ab32a17122908ca97c66e07fd57b5bb1c4986ca8475ee67907d"
+  },
+  "focused_checks": {
+    "go_build": "pass",
+    "go_vet": "pass",
+    "gofmt": "pass",
+    "go_mod_verify": "pass",
+    "license_policy": "pass",
+    "secret_scan": "pass",
+    "sdk_repository_boundaries": "pass",
+    "code_owner_role_boundaries": "pass",
+    "ci_security_and_dependency_contracts": "pass",
+    "release_supply_chain_contracts": "pass",
+    "reproduction_orchestration": "pass: legacy, optional platform builder, deliberate byte mismatch, wrong SDK, unsafe version; all12target and cleanup assertions retained"
+  },
+  "shared_contract_sha256": {
+    "support-operations/cases.json": "5a6d2905db711c8728fe88f6707d76fc22d973ea5d2117ffe67840c4d98cf749",
+    "access-tokens/cases.json": "2140c779c7267b225713b8f1b198676822fc31ebe19f674b710279163a0eeba3"
+  },
+  "original_protected_traceability_test_sha256": "8d9bf0ca7adec58839b4ae73c138497337e2324ea8821afac320b57df5a6f227",
+  "test_infrastructure_correction": "Audit negative test now asserts SQL tampering setup and verification errors instead of ignoring errors and dereferencing a possibly nil report. Focused race and full core race runs pass; no service runtime defect is claimed.",
+  "cleanup": {
+    "owned_containers_removed": true,
+    "existing_service_containers_changed": false,
+    "temporary_database_data": "owned tmpfs removed with container"
+  },
+  "limits": [
+    "Local Go1.27.1 migration run; final hosted CI and tagged release use Go1.27.2 and retain separate exact-commit evidence.",
+    "Full contract suite and regenerated traceability run after final documentation/deployment edits, with their own result.",
+    "Independent SDK tests execute in their own source-pinned workflows; this service report does not re-run all language SDKs.",
+    "No independent security review, certification, new benchmark measurements or off-host reproduction is claimed."
+  ]
+}

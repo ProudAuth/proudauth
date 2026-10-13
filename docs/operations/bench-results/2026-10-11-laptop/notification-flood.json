@@ -1,0 +1,41 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "notification-flood",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T09:44:40.085026Z",
+  "duration_s": 60.000448875,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 7616,
+  "outcomes": {
+    "http_429": 7613,
+    "ok": 3
+  },
+  "throughput_per_s": 126.93238372043763,
+  "latency_ms": {
+    "mean": 251.13456538865546,
+    "p50": 253.82,
+    "p90": 253.82,
+    "p99": 253.82,
+    "p999": 253.82,
+    "max": 253.82
+  },
+  "histogram": [
+    {
+      "le_ms": 253.952,
+      "count": 7616
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "warm-up used benign discovery requests only, so the measured budgets started intact",
+    "202 responses are indistinguishable for known and unknown identifiers; count deliveries in the mail system to confirm the budget"
+  ]
+}

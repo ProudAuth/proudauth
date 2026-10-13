@@ -1,0 +1,28 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "binary-sha256.txt": "a050e65e93149e9d8e2224ccaa2cc8bbbf8d686ea5b1bbfac75092bdcc2c666a",
+    "build-info.txt": "581e580d6d2f5ffa9c01f134d3c5d73d80df5bdc6e673cf77edb147b2f9ea93e",
+    "effective-config-redacted.json": "e651879c4f969fc8347f13f0e75c00ce9d6653ae78544eaacdc4b40dfb9e95f5",
+    "environment.json": "a0d56891bfc126d8bf2baa4d494c1a8507adda0a472fd20ad00dbbe9da663b3c",
+    "postgres/database-size-bytes.txt": "bdce4a7cce7c308789fca5ea85eb533e0974e0a2f8b2e783202947cf66994321",
+    "postgres/largest-tables.tsv": "cb4d64c1843ca38948b47ed74120af90233d34e097500de9ebd9a2c5a592b295",
+    "postgres/refresh-race-top-statements.tsv": "77b45bd85ac432dead1572cacda80d1810ffcfe47b53d3dbb86369f222527537",
+    "postgres/refresh-top-statements.tsv": "d92a33a6a22674114af41d8c9cf032f9d58cf03666709eb01329d73dc778019f",
+    "postgres/settings.tsv": "f181e2ac46f522c90ac3aaa6d589309eacac1f8e2d9ef25786cd9883ba35c73b",
+    "proudauth-config-node-1.yaml": "02ee866ba65104530c242c4ace226545510819d4e1d98539115a5596a849d7d3",
+    "proudauth-config-node-2.yaml": "cd417945194616ea0bebf5a122fe2febb274cc5c624115391583ec9676c2059c",
+    "proudauth-config-node-3.yaml": "1a3db033cd3bda3ba603f611004c7d5539e5e75c0139f58569bed8edfa04ca7c",
+    "proudauth-config.yaml": "02ee866ba65104530c242c4ace226545510819d4e1d98539115a5596a849d7d3",
+    "proxy-stats.json": "34b5e1afe6e552f0d94373e721d5c030132c999f3675b91fb25d46b98044bec4",
+    "refresh-race-database.json": "771ab5f4e1c21c432d05ba24a65288048810a9ac90c2e20a8d124884d2e29179",
+    "refresh-race.json": "5220fff3f8e412ec9c82e3b3d560f155da8d521808976a40b17278002055f951",
+    "refresh.json": "4600d226104dc87eb3a55cae901c6978308e37e03f7e96a683401144f8a870bb",
+    "replica-routing.json": "4a59ad28dccda75a47f749f5d98953faf7267655999414a693d2d211efa911d0",
+    "replica-topology.json": "2328148307717717de8af4ac8b763a8410dd600873d0a0406dbe385dc62fd43d",
+    "replica-validation.json": "634f9ea1b6165e43ddd4d72352f2c2c234d1eba0f69dabad2a5b05325077582f",
+    "runner-info.json": "c565b1b4c8d0ac929418c61312b1bc188a99aec1c5addc22a0ff5a868ec1a986",
+    "seed-spec.json": "6054a3447fe9a41d2bf329134c88c2a1a2dded55194e5446f45432bd4fb75dab",
+    "summary.json": "fc5f4cf8c10fb0e554ae0b4fcabc5519f100b94334f0ee32c001800b001030db"
+  }
+}

@@ -1,0 +1,543 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "metadata-fetch",
+  "target": "http://127.0.0.1:61700",
+  "started_at": "2026-10-12T21:28:55.13287Z",
+  "duration_s": 60.000764291,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 157079,
+  "outcomes": {
+    "http_failure_rejected": 19639,
+    "malformed_rejected": 19639,
+    "oversized_rejected": 19639,
+    "private_rejected": 19638,
+    "redirect_rejected": 19639,
+    "timeout_rejected": 19607,
+    "unknown_key_rejected": 19639,
+    "valid:ok": 19639
+  },
+  "throughput_per_s": 2617.9499854064616,
+  "latency_ms": {
+    "mean": 11.207871090343076,
+    "p50": 9.216,
+    "p90": 24.576,
+    "p99": 27.648,
+    "p999": 34.816,
+    "max": 56.651
+  },
+  "histogram": [
+    {
+      "le_ms": 1.216,
+      "count": 3
+    },
+    {
+      "le_ms": 1.28,
+      "count": 2
+    },
+    {
+      "le_ms": 1.344,
+      "count": 1
+    },
+    {
+      "le_ms": 1.472,
+      "count": 1
+    },
+    {
+      "le_ms": 1.536,
+      "count": 1
+    },
+    {
+      "le_ms": 1.664,
+      "count": 1
+    },
+    {
+      "le_ms": 1.792,
+      "count": 2
+    },
+    {
+      "le_ms": 1.856,
+      "count": 2
+    },
+    {
+      "le_ms": 1.92,
+      "count": 3
+    },
+    {
+      "le_ms": 2.048,
+      "count": 1
+    },
+    {
+      "le_ms": 2.176,
+      "count": 3
+    },
+    {
+      "le_ms": 2.304,
+      "count": 2
+    },
+    {
+      "le_ms": 2.432,
+      "count": 3
+    },
+    {
+      "le_ms": 2.688,
+      "count": 3
+    },
+    {
+      "le_ms": 2.816,
+      "count": 3
+    },
+    {
+      "le_ms": 2.944,
+      "count": 4
+    },
+    {
+      "le_ms": 3.072,
+      "count": 5
+    },
+    {
+      "le_ms": 3.2,
+      "count": 1
+    },
+    {
+      "le_ms": 3.328,
+      "count": 4
+    },
+    {
+      "le_ms": 3.456,
+      "count": 2
+    },
+    {
+      "le_ms": 3.584,
+      "count": 5
+    },
+    {
+      "le_ms": 3.712,
+      "count": 5
+    },
+    {
+      "le_ms": 3.84,
+      "count": 3
+    },
+    {
+      "le_ms": 3.968,
+      "count": 3
+    },
+    {
+      "le_ms": 4.096,
+      "count": 5
+    },
+    {
+      "le_ms": 4.352,
+      "count": 16
+    },
+    {
+      "le_ms": 4.608,
+      "count": 11
+    },
+    {
+      "le_ms": 4.864,
+      "count": 12
+    },
+    {
+      "le_ms": 5.12,
+      "count": 4
+    },
+    {
+      "le_ms": 5.376,
+      "count": 2
+    },
+    {
+      "le_ms": 5.632,
+      "count": 10
+    },
+    {
+      "le_ms": 6.144,
+      "count": 9
+    },
+    {
+      "le_ms": 6.4,
+      "count": 8
+    },
+    {
+      "le_ms": 6.656,
+      "count": 9
+    },
+    {
+      "le_ms": 6.912,
+      "count": 11
+    },
+    {
+      "le_ms": 7.168,
+      "count": 41
+    },
+    {
+      "le_ms": 7.424,
+      "count": 196
+    },
+    {
+      "le_ms": 7.68,
+      "count": 814
+    },
+    {
+      "le_ms": 7.936,
+      "count": 2638
+    },
+    {
+      "le_ms": 8.192,
+      "count": 6332
+    },
+    {
+      "le_ms": 8.704,
+      "count": 29527
+    },
+    {
+      "le_ms": 9.216,
+      "count": 41340
+    },
+    {
+      "le_ms": 9.728,
+      "count": 30120
+    },
+    {
+      "le_ms": 10.24,
+      "count": 13595
+    },
+    {
+      "le_ms": 10.752,
+      "count": 5828
+    },
+    {
+      "le_ms": 11.264,
+      "count": 2970
+    },
+    {
+      "le_ms": 11.776,
+      "count": 1767
+    },
+    {
+      "le_ms": 12.288,
+      "count": 844
+    },
+    {
+      "le_ms": 12.8,
+      "count": 343
+    },
+    {
+      "le_ms": 13.312,
+      "count": 165
+    },
+    {
+      "le_ms": 13.824,
+      "count": 98
+    },
+    {
+      "le_ms": 14.336,
+      "count": 60
+    },
+    {
+      "le_ms": 14.848,
+      "count": 43
+    },
+    {
+      "le_ms": 15.36,
+      "count": 37
+    },
+    {
+      "le_ms": 15.872,
+      "count": 57
+    },
+    {
+      "le_ms": 16.384,
+      "count": 40
+    },
+    {
+      "le_ms": 17.408,
+      "count": 82
+    },
+    {
+      "le_ms": 18.432,
+      "count": 76
+    },
+    {
+      "le_ms": 19.456,
+      "count": 74
+    },
+    {
+      "le_ms": 20.48,
+      "count": 43
+    },
+    {
+      "le_ms": 21.504,
+      "count": 36
+    },
+    {
+      "le_ms": 22.528,
+      "count": 173
+    },
+    {
+      "le_ms": 23.552,
+      "count": 1880
+    },
+    {
+      "le_ms": 24.576,
+      "count": 5348
+    },
+    {
+      "le_ms": 25.6,
+      "count": 6062
+    },
+    {
+      "le_ms": 26.624,
+      "count": 3627
+    },
+    {
+      "le_ms": 27.648,
+      "count": 1491
+    },
+    {
+      "le_ms": 28.672,
+      "count": 607
+    },
+    {
+      "le_ms": 29.696,
+      "count": 201
+    },
+    {
+      "le_ms": 30.72,
+      "count": 81
+    },
+    {
+      "le_ms": 31.744,
+      "count": 56
+    },
+    {
+      "le_ms": 32.768,
+      "count": 51
+    },
+    {
+      "le_ms": 34.816,
+      "count": 72
+    },
+    {
+      "le_ms": 36.864,
+      "count": 37
+    },
+    {
+      "le_ms": 38.912,
+      "count": 13
+    },
+    {
+      "le_ms": 40.96,
+      "count": 13
+    },
+    {
+      "le_ms": 43.008,
+      "count": 14
+    },
+    {
+      "le_ms": 45.056,
+      "count": 12
+    },
+    {
+      "le_ms": 47.104,
+      "count": 1
+    },
+    {
+      "le_ms": 49.152,
+      "count": 2
+    },
+    {
+      "le_ms": 51.2,
+      "count": 6
+    },
+    {
+      "le_ms": 53.248,
+      "count": 3
+    },
+    {
+      "le_ms": 55.296,
+      "count": 2
+    },
+    {
+      "le_ms": 57.344,
+      "count": 1
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "warm-up used benign discovery requests only, so warm-up did not consume the measured attack budgets; scenario notes describe any fixture preparation budget use",
+    "eight alternating workload-federation profiles: valid ES256, unknown kid, malformed JWKS, valid JWKS plus whitespace over 1 MiB, HTTP 503, redirect, ten-second fetch timeout, and a live denied IPv6 loopback destination",
+    "one operation is one public jwt-bearer token request; only the valid control may issue an access token, all other profiles must return 400 invalid_grant without tokens",
+    "preparation probes each profile once and introspects the valid control; those upstream contacts consume the unchanged per-URI fetch budgets; adversarial warm-up uses benign discovery only",
+    "receiver response counts and request times prove coalescing/cooldown, zero redirect-target/private-destination contacts; keys, assertions, client references and tokens are omitted",
+    "one server process: five-minute good-key cache and one-minute unknown-key/failed-fetch cooldown; endpoint timeout ten seconds; IPv4 loopback explicitly allowed, IPv6 denied; successful and refused operations share the aggregate latency histogram",
+    "assertions renew before their twenty-minute expiry; generic trust deliberately does not require jti; one fresh controlled receiver is required per run, fixture clients are decommissioned on cleanup"
+  ],
+  "observations": {
+    "after": {
+      "allowed_destination": "127.0.0.1/32",
+      "cumulative": {
+        "profiles": {
+          "http-failure": {
+            "requests": 2,
+            "response_bytes": 0,
+            "request_starts": [
+              "2026-10-12T21:28:40.104508Z",
+              "2026-10-12T21:29:40.107525Z"
+            ]
+          },
+          "malformed": {
+            "requests": 2,
+            "response_bytes": 16,
+            "request_starts": [
+              "2026-10-12T21:28:40.097161Z",
+              "2026-10-12T21:29:40.100526Z"
+            ]
+          },
+          "oversized": {
+            "requests": 2,
+            "response_bytes": 2097154,
+            "request_starts": [
+              "2026-10-12T21:28:40.099985Z",
+              "2026-10-12T21:29:40.10357Z"
+            ]
+          },
+          "private": {
+            "requests": 0,
+            "response_bytes": 0,
+            "request_starts": []
+          },
+          "redirect": {
+            "requests": 2,
+            "response_bytes": 0,
+            "request_starts": [
+              "2026-10-12T21:28:40.107376Z",
+              "2026-10-12T21:29:40.11022Z"
+            ]
+          },
+          "redirect-trap": {
+            "requests": 0,
+            "response_bytes": 0,
+            "request_starts": []
+          },
+          "timeout": {
+            "requests": 2,
+            "response_bytes": 0,
+            "request_starts": [
+              "2026-10-12T21:28:40.109957Z",
+              "2026-10-12T21:29:50.112634Z"
+            ]
+          },
+          "unknown-key": {
+            "requests": 2,
+            "response_bytes": 354,
+            "request_starts": [
+              "2026-10-12T21:28:40.094352Z",
+              "2026-10-12T21:29:40.097044Z"
+            ]
+          },
+          "valid": {
+            "requests": 1,
+            "response_bytes": 177,
+            "request_starts": [
+              "2026-10-12T21:28:40.081239Z"
+            ]
+          }
+        },
+        "inflight": 0
+      },
+      "denied_live_destination": "::1/128",
+      "fetch_timeout_s": 10,
+      "good_cache_ttl_s": 300,
+      "profiles": 8,
+      "receiver_valid": true,
+      "required_fetch_spacing_ms": 59900,
+      "retry_after_s": 60,
+      "scope": "one workload-federation server process; preparation counts included"
+    },
+    "before": {
+      "allowed_destination": "127.0.0.1/32",
+      "cumulative": {
+        "profiles": {
+          "http-failure": {
+            "requests": 1,
+            "response_bytes": 0,
+            "request_starts": [
+              "2026-10-12T21:28:40.104508Z"
+            ]
+          },
+          "malformed": {
+            "requests": 1,
+            "response_bytes": 8,
+            "request_starts": [
+              "2026-10-12T21:28:40.097161Z"
+            ]
+          },
+          "oversized": {
+            "requests": 1,
+            "response_bytes": 1048577,
+            "request_starts": [
+              "2026-10-12T21:28:40.099985Z"
+            ]
+          },
+          "private": {
+            "requests": 0,
+            "response_bytes": 0,
+            "request_starts": []
+          },
+          "redirect": {
+            "requests": 1,
+            "response_bytes": 0,
+            "request_starts": [
+              "2026-10-12T21:28:40.107376Z"
+            ]
+          },
+          "redirect-trap": {
+            "requests": 0,
+            "response_bytes": 0,
+            "request_starts": []
+          },
+          "timeout": {
+            "requests": 1,
+            "response_bytes": 0,
+            "request_starts": [
+              "2026-10-12T21:28:40.109957Z"
+            ]
+          },
+          "unknown-key": {
+            "requests": 1,
+            "response_bytes": 177,
+            "request_starts": [
+              "2026-10-12T21:28:40.094352Z"
+            ]
+          },
+          "valid": {
+            "requests": 1,
+            "response_bytes": 177,
+            "request_starts": [
+              "2026-10-12T21:28:40.081239Z"
+            ]
+          }
+        },
+        "inflight": 0
+      },
+      "denied_live_destination": "::1/128",
+      "fetch_timeout_s": 10,
+      "good_cache_ttl_s": 300,
+      "profiles": 8,
+      "receiver_valid": true,
+      "required_fetch_spacing_ms": 59900,
+      "retry_after_s": 60,
+      "scope": "one workload-federation server process; preparation counts included"
+    }
+  },
+  "complete": true
+}

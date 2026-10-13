@@ -1,0 +1,17 @@
+{
+  "pass": true,
+  "checks": [
+    {
+      "name": "staticcheck",
+      "exit_code": 0,
+      "wall_s": 4.825015541995526,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "govuln-source",
+      "exit_code": 0,
+      "wall_s": 1.2753672079998069,
+      "output_sha256": "3746825c37bf810adcf3edcdee89f6780f08ce5cf3adc2d2c91b96269daac0f5"
+    }
+  ]
+}

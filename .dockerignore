@@ -1,0 +1,52 @@
+.git
+/identity-server
+/identity-worker
+/identity-cli
+/identity-bench
+*.test
+
+# Files that hold secrets or private operational data must never reach the
+# build context (COPY . . in the Dockerfile would put them in the build stage
+# and its cache). The image needs only Go sources, go.mod/go.sum, the embedded
+# migrations/*.sql and internal/credential/data, LICENSE and NOTICE. The
+# patterns mirror .gitignore; "**/" makes them match in any directory, as
+# .gitignore patterns do.
+#   deploy/compose/init-secrets.sh output (root key, database password)
+deploy/compose/secrets
+deploy/release/secrets
+deploy/release/config.yaml
+deploy/release/.configure.lock
+#   identity-cli support-bundle (--out support-bundle.json)
+**/support-bundle.json
+#   identity-bench seed files (the benchmark clients' secrets) and results
+**/seed.json
+**/bench-seed.json
+**/bench-*.json
+#   identity-cli config-export / config-apply --secrets-out
+**/realm-config.json
+**/secrets-out
+**/secrets-out.json
+**/*.secrets.json
+**/client-secrets.json
+#   identity-cli revocation-log --out
+**/revocation-log*.jsonl
+**/revocation-log*.json
+#   private keys, certificates with keys, environment files and credentials
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/.env*
+**/credentials.json
+**/*.credentials.json
+**/.netrc
+**/.npmrc
+
+# Build output and local tooling state: not needed to build the image.
+dist
+bin
+sbom.cdx.json
+docker-deploy/images
+docker-deploy/secrets
+**/.DS_Store
+docs-site/.state/

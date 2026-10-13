@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/organization.suspended.v2.json",
+  "title": "organization.suspended (v2)",
+  "description": "An organization was suspended. Emitted when an administrator suspends an organization. Every grant, refresh family, opaque token and support grant bound to the organization is revoked in the same transaction (no per-session events are emitted for this). Emitted by every successful call, even when the organization was already in that state. org_id equals data.organization_id.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v2.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "organization.suspended"
+    },
+    "event_version": {
+      "const": 2
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "organization_id",
+        "state"
+      ],
+      "properties": {
+        "organization_id": {
+          "$ref": "envelope.v2.json#/$defs/organization_id",
+          "description": "The organization."
+        },
+        "state": {
+          "type": "string",
+          "const": "suspended",
+          "description": "The new organization state."
+        }
+      },
+      "additionalProperties": false
+    },
+    "organization_id": {
+      "description": "Always set for this event type."
+    }
+  },
+  "required": [
+    "organization_id"
+  ],
+  "x-event-type": "organization.suspended",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/organization/organization.go: (*Service).SetState"
+  ],
+  "x-org-scoped": "always",
+  "examples": [
+    {
+      "event_id": "obx_01jbs86s2qaz4nb70d0z1enap7",
+      "event_type": "organization.suspended",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+        "state": "suspended"
+      }
+    }
+  ]
+}

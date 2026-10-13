@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/support.impersonation.ended.v1.json",
+  "title": "support.impersonation.ended (v1)",
+  "description": "A support impersonation grant was revoked. Emitted when the support actor, the impersonated customer or an administrator with support.impersonation.revoke revokes an active grant; its tokens and pending hand-offs are invalidated. Not emitted when a grant expires, when the customer opts out of support access, or when grants are revoked as a side effect (membership suspension/removal, organization suspension or deletion, session revocation, restore). org_id is always set.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "support.impersonation.ended"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "grant_id",
+        "reason"
+      ],
+      "properties": {
+        "grant_id": {
+          "$ref": "envelope.v1.json#/$defs/impersonation_grant_id",
+          "description": "The ended impersonation grant."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "examples": [
+            "revoked"
+          ],
+          "description": "Why the grant ended. Currently always \"revoked\"; further values may be added."
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Always set for this event type."
+    }
+  },
+  "required": [
+    "org_id"
+  ],
+  "x-event-type": "support.impersonation.ended",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/impersonation/impersonation.go: (*Service).Revoke"
+  ],
+  "x-org-scoped": "always",
+  "examples": [
+    {
+      "event_id": "obx_01jbysqs7bjw3782aq79wn24wq",
+      "event_type": "support.impersonation.ended",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "org_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "grant_id": "imp_01jbhmgppek0xk2b1trf12kvsp",
+        "reason": "revoked"
+      }
+    }
+  ]
+}

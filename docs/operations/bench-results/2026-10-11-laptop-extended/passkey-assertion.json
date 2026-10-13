@@ -1,0 +1,96 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "passkey-assertion",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T12:16:16.108961Z",
+  "duration_s": 60.000297291,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 10570,
+  "outcomes": {
+    "ok": 10570
+  },
+  "throughput_per_s": 176.1657937915833,
+  "latency_ms": {
+    "mean": 181.3127224219489,
+    "p50": 180.224,
+    "p90": 196.608,
+    "p99": 221.184,
+    "p999": 237.568,
+    "max": 255.614
+  },
+  "histogram": [
+    {
+      "le_ms": 147.456,
+      "count": 9
+    },
+    {
+      "le_ms": 155.648,
+      "count": 112
+    },
+    {
+      "le_ms": 163.84,
+      "count": 373
+    },
+    {
+      "le_ms": 172.032,
+      "count": 1510
+    },
+    {
+      "le_ms": 180.224,
+      "count": 3330
+    },
+    {
+      "le_ms": 188.416,
+      "count": 2738
+    },
+    {
+      "le_ms": 196.608,
+      "count": 1484
+    },
+    {
+      "le_ms": 204.8,
+      "count": 646
+    },
+    {
+      "le_ms": 212.992,
+      "count": 225
+    },
+    {
+      "le_ms": 221.184,
+      "count": 85
+    },
+    {
+      "le_ms": 229.376,
+      "count": 41
+    },
+    {
+      "le_ms": 237.568,
+      "count": 11
+    },
+    {
+      "le_ms": 245.76,
+      "count": 2
+    },
+    {
+      "le_ms": 253.952,
+      "count": 3
+    },
+    {
+      "le_ms": 262.144,
+      "count": 1
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+    "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency"
+  ]
+}

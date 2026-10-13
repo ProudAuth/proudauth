@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/security.alert.v1.json",
+  "title": "security.alert (v1)",
+  "description": "An audit event carried an alertable security signal (AUD-012): refresh-token reuse, support-access activity or denial, cross-tenant denial, factor recovery, signing-key change, bootstrap, credential issuance or compromise, emergency action (every event in the emergency category), a sign-in by a protected account, a sign-in that a realm authentication_flow rule let proceed for review (authentication_review), an assignment of a privileged role (an owner role, a realm role, or a role carrying a permission the catalog marks privileged, directly or through a composed role; built-in member and admin organization roles are not privileged), or a security-relevant configuration change (realm.policy.updated, federation.provider.*, hook.created, hook.updated, webhook.created, audit.legal_hold.released). Published in the same transaction as the audit event it refers to, so it exists exactly when the evidence committed; audit events without a realm (operator CLI events) raise no alert. The alert carries identifiers only; read the audit event for details. The minimal payload form keeps every member: they are identifiers, types and the signal name, never personal data.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "security.alert"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data: identifiers, types and the signal. Both payload forms carry the same members.",
+      "required": [
+        "signal",
+        "audit_event_id",
+        "actor_id"
+      ],
+      "properties": {
+        "signal": {
+          "type": "string",
+          "enum": [
+            "refresh_reuse",
+            "impersonation_denied",
+            "impersonation_activity",
+            "cross_tenant_denial",
+            "factor_recovery",
+            "signing_key_change",
+            "bootstrap",
+            "credential_issued",
+            "credential_compromised",
+            "emergency_action",
+            "protected_account_signin",
+            "privileged_grant",
+            "authentication_review",
+            "configuration_change"
+          ],
+          "description": "The bounded signal name (also the label of proudauth_security_signals_total)."
+        },
+        "audit_event_id": {
+          "type": "string",
+          "description": "ID (evt_...) of the audit event that raised the alert; fetch it with GET /audit-events?id=<audit_event_id>."
+        },
+        "event_type": {
+          "type": "string",
+          "description": "The audit event type, for example role.assigned."
+        },
+        "actor_type": {
+          "type": "string",
+          "description": "Actor type of the audit event: user, service_principal, client or system."
+        },
+        "actor_id": {
+          "type": "string",
+          "description": "Actor ID of the audit event."
+        },
+        "subject_type": {
+          "type": "string",
+          "description": "Subject type of the audit event, when it has a subject."
+        },
+        "subject_id": {
+          "type": "string",
+          "description": "Subject ID of the audit event, when it has a subject."
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Set when the audit event belongs to an organization; organization-scoped subscriptions then receive the alert."
+    }
+  },
+  "x-event-type": "security.alert",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/runtime/deps.go: audit Recorder Alert hook (every audit event with a security signal)"
+  ],
+  "x-org-scoped": "optional",
+  "examples": [
+    {
+      "event_id": "obx_01jbm2v3f6q8t9w0y1z2a3b4c5",
+      "event_type": "security.alert",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "data": {
+        "signal": "privileged_grant",
+        "audit_event_id": "evt_01jbm2v3f5r7s8t9v0w1x2y3z4",
+        "event_type": "role.assigned",
+        "actor_type": "user",
+        "actor_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "subject_type": "user",
+        "subject_id": "usr_01jb4rsd73q99h2e30n9ak6n8e"
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+2091	451.0	0.216	184861	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+148	367.2	2.481	148	SELECT 1 FROM organizations WHERE id=$1 FOR UPDATE
+270	216.5	0.802	270	SELECT pg_advisory_xact_lock(hashtext($1))
+148	192.5	1.301	148	SELECT EXISTS (SELECT 1 FROM role_assignments ra JOIN roles r ON r.id=ra.role_id WHERE ra.membership_id=$1 AND r.is_owner_role AND (ra.expires_at IS NULL OR ra.expires_at > $2))
+115	180.2	1.567	115	SELECT id, verifier, state FROM credentials WHERE user_id=$1 AND type=$2 AND state IN ($3 /*, ... */) ORDER BY state LIMIT $4
+5700	171.8	0.030	5700	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+148	149.4	1.010	148	DELETE FROM role_assignments WHERE membership_id=$1
+148	127.4	0.861	148	INSERT INTO memberships (id, realm_id, organization_id, user_id, state, source, source_reference, joined_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)
+64	126.6	1.979	64	SELECT id, realm_id, state, coalesce(display_name,''), coalesce(given_name,''), coalesce(family_name,''), coalesce(locale,''), coalesce(zoneinfo,''), profile, admin_metadata, internal_metadata, protec
+1688	86.8	0.051	1688	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+172	83.2	0.484	172	SELECT ra.role_id, ra.conditions FROM role_assignments ra WHERE ra.realm_id=$1 AND ra.scope_type='organization' AND ra.scope_id=$2 AND ra.membership_id=$3 AND (ra.valid_from IS NULL OR ra.valid_from <
+5700	42.9	0.008	0	SELECT id, event_types, payload_form, event_version FROM webhook_subscriptions WHERE realm_id=$1 AND state='active' AND (organization_id IS NULL OR organization_id=$2)

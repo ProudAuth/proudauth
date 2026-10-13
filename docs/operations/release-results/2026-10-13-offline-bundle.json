@@ -1,0 +1,196 @@
+{
+  "format_version": "1",
+  "checked_at": "2026-10-12T21:58:39Z",
+  "local_date": "2026-10-13",
+  "requirements": [
+    "DEP-017",
+    "DEP-003",
+    "SEC-016",
+    "OSS-005",
+    "QA-008"
+  ],
+  "environment": {
+    "model": "Mac16,8",
+    "cpu": "Apple M4 Pro",
+    "logical_cpus": 12,
+    "memory_bytes": 25769803776,
+    "os": "macOS 27.0.1 (26A434), Darwin 27.0.0",
+    "go": "go1.27.1 darwin/arm64",
+    "offline_environment": {
+      "GOPROXY": "off",
+      "GOSUMDB": "off",
+      "GOTOOLCHAIN": "local",
+      "GOFLAGS": "-mod=readonly -buildvcs=false"
+    }
+  },
+  "checks": {
+    "bundle_fault_and_content_regressions": {
+      "pass": true,
+      "package_elapsed_s": 9.98,
+      "top_level_executions": 15,
+      "subtests": 36,
+      "command": "go test -json -race -count=3 ./tests/contract -run '^Test(OfflineBundle|DeployOfflineBundle)'",
+      "cases": [
+        "unsafe version rejected before build",
+        "build failure preserves previous archive/checksum",
+        "image inspection failure",
+        "partial image export failure",
+        "partial checksum generation failure",
+        "checksum publication rollback",
+        "all-file/internal and external checksum integrity including spaces",
+        "local development secrets excluded",
+        "interruption releases owned staging/lock",
+        "concurrent version writer refused"
+      ]
+    },
+    "complete_contract_package": {
+      "pass": true,
+      "package_elapsed_s": 33.652,
+      "top_level_executions": 40,
+      "subtests": 12,
+      "command": "go test -json -race -count=1 -timeout=3m ./tests/contract"
+    },
+    "base_toolchain_and_supply_chain_contracts": {
+      "pass": true,
+      "package_elapsed_s": 1.571,
+      "command": "go test -race -count=1 ./tests/contract -run '^Test(DeployImageHardening|ReleaseToolchainPinned|ReleaseSupplyChain)$'"
+    },
+    "traceability_preview": {
+      "pass": true,
+      "copied_files": 1063,
+      "contract_test_files": 19,
+      "package_elapsed_s": 8.582,
+      "changed_evidence_rows": [
+        "OSS-005",
+        "SEC-016",
+        "DEP-003",
+        "DEP-017",
+        "QA-008"
+      ],
+      "priorities_and_statuses_unchanged": true
+    },
+    "vet": {
+      "pass": true,
+      "packages": [
+        "./tests/contract"
+      ]
+    },
+    "shell_syntax": {
+      "pass": true
+    },
+    "formatting": {
+      "pass": true
+    },
+    "secret_scan": {
+      "pass": true
+    },
+    "license_check": {
+      "pass": true
+    }
+  },
+  "host_cross_build": {
+    "version": "dev-20261013",
+    "archive_sha256": "b8c8e9911279d1f501b82ae1b90ee1066cee81312bd9cc32f162b1973f736a59",
+    "archive_bytes": 50748410,
+    "regular_files": 573,
+    "checksummed_files": 572,
+    "extra_appledouble_members": 0,
+    "private_compose_secrets": 0,
+    "binaries": [
+      {
+        "path": "bin/linux-amd64/identity-server",
+        "sha256": "9c49d47c08c432894ac106a4074ad4038f9e085346197c493363067b3b241be3",
+        "bytes": 27107452,
+        "elf_machine": 62,
+        "no_dynamic_interpreter": true
+      },
+      {
+        "path": "bin/linux-amd64/identity-worker",
+        "sha256": "b835b27429028ef92aa550fbf8933d3dc0b26b21bb4e3ab9e241002487da6397",
+        "bytes": 24584316,
+        "elf_machine": 62,
+        "no_dynamic_interpreter": true
+      },
+      {
+        "path": "bin/linux-amd64/identity-cli",
+        "sha256": "1d6463a5967d44e189e5f4681129af4e0997062eeef1094d6cc8bb89879e1b1b",
+        "bytes": 16425084,
+        "elf_machine": 62,
+        "no_dynamic_interpreter": true
+      },
+      {
+        "path": "bin/linux-arm64/identity-server",
+        "sha256": "f02b31286150c9a903e9817468f7030973a267f031176e0f1edf67c8cc998823",
+        "bytes": 24772732,
+        "elf_machine": 183,
+        "no_dynamic_interpreter": true
+      },
+      {
+        "path": "bin/linux-arm64/identity-worker",
+        "sha256": "8717bb61445a7f003e7341e7c981ce9097d78cbfe6cf6534889db14e2a5b74ea",
+        "bytes": 22610044,
+        "elf_machine": 183,
+        "no_dynamic_interpreter": true
+      },
+      {
+        "path": "bin/linux-arm64/identity-cli",
+        "sha256": "87731ecde4449ccc6b40eed13805ac9889bff4934566bde9e17babbfa5a1d081",
+        "bytes": 15335548,
+        "elf_machine": 183,
+        "no_dynamic_interpreter": true
+      }
+    ],
+    "toolchain": "go version go1.27.1 darwin/arm64",
+    "image_included": false,
+    "sbom_or_release_attestation_claimed": false,
+    "pass": true,
+    "command": "BUNDLE_OUT=<private-directory> scripts/offline-bundle.sh dev-20261013",
+    "build_flags": "CGO_ENABLED=0 GOOS=linux GOARCH=amd64/arm64; -trimpath -mod=readonly -buildvcs=false; -ldflags=-s -w -buildid= -X main.version=dev-20261013",
+    "archive_retained": false
+  },
+  "cached_base_image_pins": [
+    {
+      "repo_digests": [
+        "golang@sha256:e58d6f83b3416618d8bcac2b3dde1b7f7e3c4a77d25e88637f8bbae81536c48d"
+      ],
+      "descriptor": {
+        "mediaType": "application/vnd.oci.image.index.v1+json",
+        "digest": "sha256:e58d6f83b3416618d8bcac2b3dde1b7f7e3c4a77d25e88637f8bbae81536c48d",
+        "size": 7770
+      },
+      "cached_architecture": "arm64",
+      "cached_os": "linux",
+      "builder_go_version": "1.27.2"
+    },
+    {
+      "repo_digests": [
+        "gcr.io/distroless/static-debian12@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab"
+      ],
+      "descriptor": {
+        "mediaType": "application/vnd.oci.image.index.v1+json",
+        "digest": "sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab",
+        "size": 1514
+      },
+      "cached_architecture": "arm64",
+      "cached_os": "linux",
+      "builder_go_version": null
+    }
+  ],
+  "source_file_sha256": {
+    "scripts/offline-bundle.sh": "90780dc0fde5574d29d9dd40f8caa6bbb6c88feccf8f1b6a9578d83b4df0e98a",
+    "Dockerfile": "1d127ff448fe2ac3a473f3784e221b0641f29f94a7a7fb9b97118dad6b87b17c",
+    "tests/contract/offline_bundle_test.go": "7112654892167ba82754feb9b5240c8822144701a7a31bc52c28a1dc9734a412",
+    "tests/contract/deployment_test.go": "44880506960cbe3a2231ca0515c36b05ccbab94b6be98b1bbcbbaee54ab3b4e9",
+    "tests/contract/toolchain_test.go": "5d554a5b5cfd4d9305a7ee733b244b65a1f5caa60abc008bead1da483623fd20",
+    "tests/contract/traceability_test.go": "a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6"
+  },
+  "protected_contract_sha256": "a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6",
+  "limits": [
+    "Host cross-build used cached Go 1.27.1; release builder remains pinned to Go 1.27.2.",
+    "Real Linux ELF headers, architecture, executable modes, lack of a dynamic interpreter and every archive checksum were inspected; Linux runtime installation was not executed.",
+    "Image export failure semantics were tested with a controlled Docker subprocess; the host cross-build included no container image.",
+    "OCI index digests and builder version were read from local cache; no registry query, image pull or image build was performed.",
+    "No official release, Git commit/tag, SBOM/provenance attestation, current vulnerability audit, independent builder or qualified external security review is claimed.",
+    "The temporary binary archive is removed after verification to preserve disk space; only this report and reproducible tooling are published."
+  ]
+}

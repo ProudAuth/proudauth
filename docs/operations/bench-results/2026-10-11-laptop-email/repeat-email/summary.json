@@ -1,0 +1,32 @@
+[
+  {
+    "scenario": "email-delivery",
+    "started": "2026-10-11T13:02:17Z",
+    "ended": "2026-10-11T13:03:22Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 918,
+    "throughput_per_s": 15.3,
+    "latency_ms": {
+      "mean": 2065.3,
+      "p50": 2031.62,
+      "p90": 3145.73,
+      "p99": 4456.45,
+      "p999": 4508.49,
+      "max": 4508.49
+    },
+    "outcomes": {
+      "ok": 918
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 65.01,
+      "identity_server": 33.03,
+      "identity_worker": 1.11,
+      "postgres_container": 27.92,
+      "docker_vm_and_proxy": 126.42,
+      "identity_bench": 21.40,
+      "smtp_sink": 0.25
+    }
+  }
+]

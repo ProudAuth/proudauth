@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+1092	262.5	0.240	96876	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+4500	144.6	0.032	4500	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+181	135.1	0.746	181	SELECT pg_advisory_xact_lock(hashtext($1))
+96	107.2	1.117	96	SELECT EXISTS (SELECT 1 FROM role_assignments ra JOIN roles r ON r.id=ra.role_id WHERE ra.membership_id=$1 AND r.is_owner_role AND (ra.expires_at IS NULL OR ra.expires_at > $2))
+96	82.2	0.856	96	DELETE FROM role_assignments WHERE membership_id=$1
+32	61.7	1.927	32	SELECT id, realm_id, state, coalesce(display_name,$5), coalesce(given_name,$6), coalesce(family_name,$7), coalesce(locale,$8), coalesce(zoneinfo,$9), profile, admin_metadata, internal_metadata, protec
+45	29.9	0.665	4500	SELECT seq, id, coalesce(realm_id,''), coalesce(organization_id,''), event_type, payload FROM outbox_events WHERE state='pending' ORDER BY seq LIMIT $1 FOR UPDATE SKIP LOCKED
+4500	29.9	0.007	0	SELECT id, event_types, payload_form, event_version FROM webhook_subscriptions WHERE realm_id=$1 AND state='active' AND (organization_id IS NULL OR organization_id=$2)
+418	22.9	0.055	418	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+1	16.3	16.307	0	SELECT DISTINCT e.batch_id FROM audit_events e LEFT JOIN unnest($1::text[], $2::timestamptz[]) AS rc(category, cutoff) ON rc.category = e.category LEFT JOIN unnest($7::text[], $8::timestamptz[]) AS rr
+96	14.1	0.147	96	INSERT INTO role_assignments (id, realm_id, role_id, subject_type, subject_id, membership_id, scope_type, scope_id, conditions, valid_from, expires_at, granted_by_type, granted_by_id, approved_by_id, 
+384	12.6	0.033	384	INSERT INTO outbox_events (id, realm_id, organization_id, event_type, event_version, aggregate_type, aggregate_id, payload, occurred_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)

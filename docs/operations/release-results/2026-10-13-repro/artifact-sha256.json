@@ -1,0 +1,12 @@
+{
+  "format_version": "1",
+  "hash_algorithm": "sha256",
+  "artifacts": {
+    "comparison.json": "b12586e5c9021578be9b468d01184d169560b5a7765db59fc23468212c73d276",
+    "host-toolchain.txt": "94e911f9fbf3c118f6a0573ab3a13fa546ad13e89ba40cf53df77e468509c92d",
+    "linux-toolchain-version.txt": "b8491590f9ef7072d890b6a47475283d420379df6b0b34df9ea58b45731b280d",
+    "source-snapshot.json": "12ef1c9b231734a93eb25630ffca95e502909c100958b6adb93e1114f30afaa5",
+    "verification.json": "86ec084132c9effaa66d776c69a8fcd40c2af409e24d43ff5cfa3a905c13f514"
+  },
+  "note": "Hashes and metadata only; no SDK, build cache, source contents, executable, credentials or container image is published."
+}

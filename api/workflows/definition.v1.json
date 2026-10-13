@@ -1,0 +1,620 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/workflows/definition.v1.json",
+  "title": "Lifecycle workflow definition (schema_version 1)",
+  "description": "A lifecycle workflow definition (EXT-015, EXT-016): 1..5 triggers and 1..20 steps from a bounded vocabulary that reuses existing services; no expressions and no code (EXT-013). The server validates it strictly (unknown members are refused, members must belong to their step type) and checks every reference and the publisher's authority when publishing.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "triggers",
+    "steps"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "triggers": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "$ref": "#/$defs/trigger"
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "$ref": "#/$defs/step"
+      }
+    },
+    "retry": {
+      "$ref": "#/$defs/retry"
+    }
+  },
+  "$defs": {
+    "retry": {
+      "type": "object",
+      "required": [
+        "max_attempts",
+        "backoff"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "backoff": {
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$",
+          "description": "Delay before the second attempt (1s..1h); attempt n+1 waits backoff·2^(n-1) plus up to 20% jitter, capped at 6h."
+        }
+      },
+      "description": "Bounded retry policy (EXT-016)."
+    },
+    "trigger": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "event_types"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "event"
+            },
+            "event_types": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "enum": [
+                  "user.created",
+                  "user.suspended",
+                  "user.reactivated",
+                  "user.locked",
+                  "organization.membership.added",
+                  "organization.membership.removed",
+                  "organization.membership.suspended",
+                  "organization.membership.reactivated"
+                ]
+              }
+            },
+            "organization_id": {
+              "type": "string",
+              "pattern": "^org_[0-9a-z]{26}$",
+              "description": "Only events of this organization."
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "every",
+            "select"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "schedule"
+            },
+            "every": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$",
+              "description": "1h..720h."
+            },
+            "select": {
+              "type": "object",
+              "required": [
+                "type"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "enum": [
+                    "role_holders",
+                    "organization_members"
+                  ]
+                },
+                "role_id": {
+                  "type": "string",
+                  "pattern": "^rol_[0-9a-z]{26}$",
+                  "description": "role_holders: the role."
+                },
+                "organization_id": {
+                  "type": "string",
+                  "pattern": "^org_[0-9a-z]{26}$",
+                  "description": "Restrict to this organization (required for organization_members)."
+                },
+                "granted_before": {
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$",
+                  "description": "Only assignments (memberships) at least this old."
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "manual"
+            }
+          }
+        }
+      ]
+    },
+    "step": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/wait"
+        },
+        {
+          "$ref": "#/$defs/approval"
+        },
+        {
+          "$ref": "#/$defs/assign_role"
+        },
+        {
+          "$ref": "#/$defs/add_to_group"
+        },
+        {
+          "$ref": "#/$defs/remove_access"
+        },
+        {
+          "$ref": "#/$defs/notify"
+        },
+        {
+          "$ref": "#/$defs/call_webhook"
+        },
+        {
+          "$ref": "#/$defs/suspend_user"
+        },
+        {
+          "$ref": "#/$defs/end"
+        }
+      ]
+    },
+    "wait": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "duration"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+        },
+        "type": {
+          "const": "wait"
+        },
+        "retry": {
+          "$ref": "#/$defs/retry"
+        },
+        "duration": {
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$",
+          "description": "1m..2160h (90 days)."
+        }
+      },
+      "description": "Pause the run. Compensation: none."
+    },
+    "approval": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "approvers",
+        "expires_in"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+        },
+        "type": {
+          "const": "approval"
+        },
+        "retry": {
+          "$ref": "#/$defs/retry"
+        },
+        "approvers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^usr_[0-9a-z]{26}$",
+            "description": "Named approver."
+          }
+        },
+        "expires_in": {
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$",
+          "description": "1h..720h (30 days)."
+        }
+      },
+      "description": "Wait for one named approver (never the subject) to approve through GET/POST /me/workflow-approvals. Rejection or expiry fails the run. Compensation: none."
+    },
+    "assign_role": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "role_id",
+        "scope"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+        },
+        "type": {
+          "const": "assign_role"
+        },
+        "retry": {
+          "$ref": "#/$defs/retry"
+        },
+        "role_id": {
+          "type": "string",
+          "pattern": "^rol_[0-9a-z]{26}$",
+          "description": "Role to assign."
+        },
+        "scope": {
+          "enum": [
+            "realm",
+            "organization"
+          ]
+        },
+        "organization_id": {
+          "type": "string",
+          "pattern": "^org_[0-9a-z]{26}$",
+          "description": "Pinned organization; empty uses the organization of the triggering event or selector."
+        },
+        "expires_in": {
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$",
+          "description": "Optional assignment lifetime, 1h..8760h."
+        },
+        "reason": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+          "description": "Reason code recorded in audit evidence."
+        }
+      },
+      "description": "Assign a role to the subject within the publisher's delegation ceiling. Compensation: undo (the run removes the assignment it created)."
+    },
+    "add_to_group": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "group_id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+        },
+        "type": {
+          "const": "add_to_group"
+        },
+        "retry": {
+          "$ref": "#/$defs/retry"
+        },
+        "group_id": {
+          "type": "string",
+          "pattern": "^grp_[0-9a-z]{26}$",
+          "description": "Group (its organization is the step's)."
+        },
+        "organization_id": {
+          "type": "string",
+          "pattern": "^org_[0-9a-z]{26}$",
+          "description": "Pinned organization; empty uses the organization of the triggering event or selector."
+        }
+      },
+      "description": "Add the subject's membership to a group. Compensation: undo."
+    },
+    "remove_access": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "access"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+        },
+        "type": {
+          "const": "remove_access"
+        },
+        "retry": {
+          "$ref": "#/$defs/retry"
+        },
+        "access": {
+          "enum": [
+            "membership",
+            "role",
+            "group"
+          ]
+        },
+        "role_id": {
+          "type": "string",
+          "pattern": "^rol_[0-9a-z]{26}$",
+          "description": "Role (access role)."
+        },
+        "scope": {
+          "enum": [
+            "realm",
+            "organization"
+          ]
+        },
+        "group_id": {
+          "type": "string",
+          "pattern": "^grp_[0-9a-z]{26}$",
+          "description": "Group (access group)."
+        },
+        "organization_id": {
+          "type": "string",
+          "pattern": "^org_[0-9a-z]{26}$",
+          "description": "Pinned organization; empty uses the organization of the triggering event or selector."
+        },
+        "reason": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+          "description": "Reason code recorded in audit evidence."
+        }
+      },
+      "description": "Remove the subject's organization membership, role assignments or group membership. Compensation: none (never re-granted automatically)."
+    },
+    "notify": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "notice"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+        },
+        "type": {
+          "const": "notify"
+        },
+        "retry": {
+          "$ref": "#/$defs/retry"
+        },
+        "template": {
+          "const": "workflow_notice"
+        },
+        "notice": {
+          "enum": [
+            "welcome",
+            "access_granted",
+            "access_expiring",
+            "access_removed",
+            "approval_requested",
+            "account_suspended",
+            "offboarding"
+          ]
+        },
+        "recipient": {
+          "enum": [
+            "subject",
+            "approvers"
+          ]
+        }
+      },
+      "description": "Queue the workflow_notice template with a server-defined notice to the subject's (or the latest approval's approvers') verified address. Compensation: impossible (recorded)."
+    },
+    "call_webhook": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "subscription_id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+        },
+        "type": {
+          "const": "call_webhook"
+        },
+        "retry": {
+          "$ref": "#/$defs/retry"
+        },
+        "subscription_id": {
+          "type": "string",
+          "pattern": "^whk_[0-9a-z]{26}$",
+          "description": "Realm-wide webhook subscription whose destination, secret and egress policy are used."
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 10000
+        },
+        "compensate": {
+          "type": "boolean",
+          "description": "Send a compensating call when the run fails later."
+        }
+      },
+      "description": "POST a signed step call (step-call.v1.json) with a stable Idempotency-Key. Compensation: notify_endpoint when compensate is true, otherwise impossible."
+    },
+    "suspend_user": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+        },
+        "type": {
+          "const": "suspend_user"
+        },
+        "retry": {
+          "$ref": "#/$defs/retry"
+        },
+        "reason": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+          "description": "Reason code recorded in audit evidence."
+        }
+      },
+      "description": "Suspend the subject (never the publisher); sessions are revoked and the account_suspended notice is queued. Compensation: none."
+    },
+    "end": {
+      "type": "object",
+      "required": [
+        "id",
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+        },
+        "type": {
+          "const": "end"
+        },
+        "retry": {
+          "$ref": "#/$defs/retry"
+        },
+        "outcome": {
+          "const": "succeeded"
+        }
+      },
+      "description": "End the run; must be the last step."
+    }
+  },
+  "x-contract": "workflow_definition",
+  "x-contract-version": 1,
+  "examples": [
+    {
+      "schema_version": 1,
+      "triggers": [
+        {
+          "type": "event",
+          "event_types": [
+            "organization.membership.added"
+          ],
+          "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1"
+        },
+        {
+          "type": "manual"
+        }
+      ],
+      "steps": [
+        {
+          "id": "approve",
+          "type": "approval",
+          "approvers": [
+            "usr_01jb4rsd73q99h2e30n9ak6n8d"
+          ],
+          "expires_in": "72h"
+        },
+        {
+          "id": "grant",
+          "type": "assign_role",
+          "role_id": "rol_01jbadj9t141gzfk8s7x1yyg4j",
+          "scope": "organization",
+          "expires_in": "720h"
+        },
+        {
+          "id": "tell",
+          "type": "notify",
+          "notice": "access_granted"
+        },
+        {
+          "id": "sync",
+          "type": "call_webhook",
+          "subscription_id": "whk_01jbh0ybgaravg3xcq0zdp2egd",
+          "compensate": true,
+          "retry": {
+            "max_attempts": 5,
+            "backoff": "30s"
+          }
+        },
+        {
+          "id": "done",
+          "type": "end"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "triggers": [
+        {
+          "type": "event",
+          "event_types": [
+            "user.suspended"
+          ]
+        }
+      ],
+      "steps": [
+        {
+          "id": "drop",
+          "type": "remove_access",
+          "access": "role",
+          "role_id": "rol_01jbadj9t141gzfk8s7x1yyg4j",
+          "scope": "realm",
+          "reason": "OFFBOARDING"
+        }
+      ]
+    },
+    {
+      "schema_version": 1,
+      "triggers": [
+        {
+          "type": "schedule",
+          "every": "720h",
+          "select": {
+            "type": "role_holders",
+            "role_id": "rol_01jbadj9t141gzfk8s7x1yyg4j",
+            "granted_before": "2160h"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "id": "review",
+          "type": "approval",
+          "approvers": [
+            "usr_01jb4rsd73q99h2e30n9ak6n8d"
+          ],
+          "expires_in": "168h"
+        }
+      ]
+    }
+  ]
+}

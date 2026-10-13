@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/hooks/authentication.risk.request.v1.json",
+  "title": "authentication.risk hook request (contract v1)",
+  "description": "Sent during sign-in to supply a risk level to authentication flow rules (AUT-014). A failure leaves the signal missing.",
+  "type": "object",
+  "required": [
+    "hook_kind",
+    "realm_id",
+    "authentication"
+  ],
+  "properties": {
+    "hook_kind": {
+      "const": "authentication.risk",
+      "description": "The hook kind."
+    },
+    "realm_id": {
+      "$ref": "common.v1.json#/$defs/realm_id"
+    },
+    "authentication": {
+      "type": "object",
+      "required": [
+        "user_id",
+        "client_id",
+        "method",
+        "known_device",
+        "failed_attempts"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "user_id": {
+          "$ref": "common.v1.json#/$defs/user_id"
+        },
+        "client_id": {
+          "type": "string"
+        },
+        "organization_id": {
+          "$ref": "common.v1.json#/$defs/organization_id"
+        },
+        "method": {
+          "type": "string"
+        },
+        "network": {
+          "type": "string",
+          "description": "Truncated network context."
+        },
+        "known_device": {
+          "type": "boolean"
+        },
+        "failed_attempts": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "x-hook-kind": "authentication.risk",
+  "x-contract-version": 1,
+  "examples": [
+    {
+      "hook_kind": "authentication.risk",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "authentication": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "client_id": "web-bff",
+        "method": "password",
+        "network": "203.0.113.0/24",
+        "known_device": false,
+        "failed_attempts": 0
+      }
+    }
+  ]
+}

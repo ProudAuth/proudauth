@@ -1,0 +1,270 @@
+{
+  "local_date": "2026-10-13",
+  "source_digest": "9e46df90789bcd6d",
+  "pass": true,
+  "checks": [
+    {
+      "name": "vet",
+      "command": [
+        "<private-work-directory>/sdk/bin/go",
+        "vet",
+        "-p=2",
+        "./..."
+      ],
+      "exit_code": 0,
+      "wall_s": 4.629,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "secrets",
+      "command": [
+        "sh",
+        "scripts/check-secrets.sh"
+      ],
+      "exit_code": 0,
+      "wall_s": 1.349,
+      "output_sha256": "082008bfb2d492b6dd88ffa9f3942e9a368bab2afcdbe91c758a2f989dd0278e"
+    },
+    {
+      "name": "licenses",
+      "command": [
+        "sh",
+        "scripts/check-licenses.sh"
+      ],
+      "exit_code": 0,
+      "wall_s": 0.515,
+      "output_sha256": "575f221b25a67d0b3b6b93168c76f67ae09ce79b958a5106b2669ed9b291f141"
+    },
+    {
+      "name": "kubernetes",
+      "command": [
+        "kubectl",
+        "kustomize",
+        "deploy/kubernetes/overlays/example"
+      ],
+      "exit_code": 0,
+      "wall_s": 0.037,
+      "output_sha256": "36c91fd02d6bbcb7921524d83d6c09a01519dd2f383ced6cf4dfd6d3b556651e"
+    },
+    {
+      "name": "gofmt",
+      "files": 593,
+      "pass": true,
+      "unformatted": []
+    },
+    {
+      "name": "FuzzMatchRedirect",
+      "command": [
+        "<private-work-directory>/sdk/bin/go",
+        "test",
+        "./internal/application",
+        "-run",
+        "^$",
+        "-fuzz",
+        "^FuzzMatchRedirect$",
+        "-fuzztime",
+        "30s",
+        "-parallel",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_s": 45.422,
+      "output_sha256": "50ea12c10ac321bcad1171e8e999b05db220785c8457eef18c2b09688d013a48"
+    },
+    {
+      "name": "FuzzValidateRedirectRegistration",
+      "command": [
+        "<private-work-directory>/sdk/bin/go",
+        "test",
+        "./internal/application",
+        "-run",
+        "^$",
+        "-fuzz",
+        "^FuzzValidateRedirectRegistration$",
+        "-fuzztime",
+        "30s",
+        "-parallel",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_s": 30.754,
+      "output_sha256": "06d7b47a7d34139aa328ab3dedb28aff69a0a2fc8d7a6a2e52d97f594d2f31b0"
+    },
+    {
+      "name": "FuzzEmail",
+      "command": [
+        "<private-work-directory>/sdk/bin/go",
+        "test",
+        "./internal/platform/canonical",
+        "-run",
+        "^$",
+        "-fuzz",
+        "^FuzzEmail$",
+        "-fuzztime",
+        "30s",
+        "-parallel",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_s": 31.726,
+      "output_sha256": "e51613a51448ad8aeab865f7ccac0a97596b45e3a7e2f353d98d9fb221b1a36c"
+    },
+    {
+      "name": "FuzzDomain",
+      "command": [
+        "<private-work-directory>/sdk/bin/go",
+        "test",
+        "./internal/platform/canonical",
+        "-run",
+        "^$",
+        "-fuzz",
+        "^FuzzDomain$",
+        "-fuzztime",
+        "30s",
+        "-parallel",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_s": 30.467,
+      "output_sha256": "4fd62dfa87a137273de65d3bba8b38bf250da22943a81b60bec8a0ea6bea5899"
+    },
+    {
+      "name": "FuzzRejectDuplicateKeys",
+      "command": [
+        "<private-work-directory>/sdk/bin/go",
+        "test",
+        "./internal/token",
+        "-run",
+        "^$",
+        "-fuzz",
+        "^FuzzRejectDuplicateKeys$",
+        "-fuzztime",
+        "30s",
+        "-parallel",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_s": 32.489,
+      "output_sha256": "d5f3e64ec75f3773c9cca12ab8395af015a0ede730e3567efce7f7bbf9bc04d4"
+    },
+    {
+      "name": "FuzzVerify",
+      "command": [
+        "<private-work-directory>/sdk/bin/go",
+        "test",
+        "./sdk/go/verifier",
+        "-run",
+        "^$",
+        "-fuzz",
+        "^FuzzVerify$",
+        "-fuzztime",
+        "30s",
+        "-parallel",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_s": 32.028,
+      "output_sha256": "72e8b1dcf52026ae63046aa57b736f499c4fb72fbe53fbc3d2ee33b1a989e3b8"
+    },
+    {
+      "name": "FuzzSenderURLNormalization",
+      "command": [
+        "<private-work-directory>/sdk/bin/go",
+        "test",
+        "./sdk/go/verifier",
+        "-run",
+        "^$",
+        "-fuzz",
+        "^FuzzSenderURLNormalization$",
+        "-fuzztime",
+        "30s",
+        "-parallel",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_s": 32.032,
+      "output_sha256": "a6694409b8646d088fa0b90e46e7b2c93dfd5cef5559787e70d14e8bacdb97f4"
+    },
+    {
+      "name": "FuzzPolicyDefinition",
+      "command": [
+        "<private-work-directory>/sdk/bin/go",
+        "test",
+        "./internal/authorization",
+        "-run",
+        "^$",
+        "-fuzz",
+        "^FuzzPolicyDefinition$",
+        "-fuzztime",
+        "30s",
+        "-parallel",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_s": 31.494,
+      "output_sha256": "02d71996dda82ea2a20892a059cafcf9b80659e62c93ce96ce6171c7791450ad"
+    },
+    {
+      "name": "FuzzParseTraceparent",
+      "command": [
+        "<private-work-directory>/sdk/bin/go",
+        "test",
+        "./internal/platform/reqctx",
+        "-run",
+        "^$",
+        "-fuzz",
+        "^FuzzParseTraceparent$",
+        "-fuzztime",
+        "15s",
+        "-parallel",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_s": 16.129,
+      "output_sha256": "7452c52543593c8c9860c6dbfcff9db4957764e24f38b8f205f0146268fde965"
+    },
+    {
+      "name": "FuzzAllowed",
+      "command": [
+        "<private-work-directory>/sdk/bin/go",
+        "test",
+        "./internal/egress",
+        "-run",
+        "^$",
+        "-fuzz",
+        "^FuzzAllowed$",
+        "-fuzztime",
+        "15s",
+        "-parallel",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_s": 15.734,
+      "output_sha256": "dc52977722ef113e0f6e64dc5bc13869a4999315a46c6b1162db1dbcd379ade3"
+    },
+    {
+      "name": "FuzzClaimMappings",
+      "command": [
+        "<private-work-directory>/sdk/bin/go",
+        "test",
+        "./internal/application",
+        "-run",
+        "^$",
+        "-fuzz",
+        "^FuzzClaimMappings$",
+        "-fuzztime",
+        "15s",
+        "-parallel",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_s": 15.716,
+      "output_sha256": "6e861a0868942babe4178945db1ae65746a8cc2422578972c3b9ad55a9d50c77"
+    }
+  ],
+  "environment": {
+    "go": "1.27.2",
+    "GOMAXPROCS": 2,
+    "downloads": false
+  }
+}

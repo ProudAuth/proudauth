@@ -1,0 +1,90 @@
+# Source-free single-machine installation. Run ./init.sh before Compose.
+name: ${COMPOSE_PROJECT_NAME:-proudauth}
+
+x-proudauth: &proudauth
+  image: ${PROUDAUTH_IMAGE:?Set PROUDAUTH_IMAGE in .env}
+  read_only: true
+  tmpfs: ["/tmp:size=64m,mode=1777"]
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  stop_grace_period: 35s
+  volumes: ["./config.yaml:/etc/proudauth/config.yaml:ro"]
+  secrets: [root_key, database_url, metrics_token, smtp_password]
+  environment:
+    PROUDAUTH_CONFIG: /etc/proudauth/config.yaml
+    XDG_CONFIG_HOME: /tmp/proudauth-cli
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:18.6}
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: proudauth
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password, owner_password, app_password]
+    command: ["postgres", "-c", "max_connections=${POSTGRES_MAX_CONNECTIONS:-100}", "-c", "shared_buffers=${POSTGRES_SHARED_BUFFERS:-128MB}"]
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./init-database.sh:/docker-entrypoint-initdb.d/10-proudauth.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d proudauth"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    # No PostgreSQL host port is published.
+
+  migrate:
+    <<: *proudauth
+    restart: "no"
+    entrypoint: ["/usr/local/bin/identity-cli", "migrate"]
+    # Only this one-shot service can read the schema owner's DSN.
+    secrets: [root_key, owner_database_url, metrics_token, smtp_password]
+    environment:
+      PROUDAUTH_CONFIG: /etc/proudauth/config.yaml
+      PROUDAUTH_DATABASE_URL: file:/run/secrets/owner_database_url
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  server:
+    <<: *proudauth
+    restart: unless-stopped
+    ports:
+      - "${PUBLIC_BIND:-127.0.0.1}:${PUBLIC_PORT:-8080}:8080"
+      - "127.0.0.1:${OPERATOR_PORT:-9090}:9090"
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/identity-cli", "doctor"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 10s
+
+  worker:
+    <<: *proudauth
+    restart: unless-stopped
+    entrypoint: ["/usr/local/bin/identity-worker"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      server: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/identity-cli", "doctor"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 10s
+
+secrets:
+  root_key: {file: ./secrets/root_key}
+  database_url: {file: ./secrets/database_url}
+  owner_database_url: {file: ./secrets/owner_database_url}
+  postgres_password: {file: ./secrets/postgres_password}
+  owner_password: {file: ./secrets/owner_password}
+  app_password: {file: ./secrets/app_password}
+  metrics_token: {file: ./secrets/metrics_token}
+  smtp_password: {file: ./secrets/smtp_password}
+volumes:
+  pgdata: {}

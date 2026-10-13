@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/user-import.schema.json",
+  "title": "ProudAuth user import request",
+  "description": "Request body of POST /api/v1/realms/{realm}/user-imports (permission realm.users.import). The handler decodes the body strictly (Content-Type application/json, no unknown top-level members, no duplicate member names, nesting depth <= 32, size <= limits.max_body_bytes, 256 KiB by default) and enqueues a \"user.import\" job; it responds 202 with {\"job_id\", \"dry_run\"}. An Idempotency-Key header (<= 255 characters) makes a retried request return the same job. The records are decoded strictly by the HTTP layer as well (identity.ImportRecord): an unknown record member or a wrong JSON type fails the request with 400 before a job is queued; member names match case-insensitively. format (default proudauth.user-import.v1, see GET /user-import-formats; any other value is refused with 422), verification_reason (at least 10 characters, required with trust_email_verification) and import_totp (requires realm.users.credentials.manage and an MFA session) are described below. Each record is processed in its own transaction, with a checkpoint every 50 records, and reported in the job result ({dry_run, counts, totals, results}) with status imported, already_imported (source_id already mapped for this source_system; the account is not updated), skipped_deleted (source record mapped to a since-deleted user, or email or username tombstoned by an earlier deletion, MIG-017), conflict (source_id, email or username repeats an earlier record of the batch, or the email or username belongs to an existing account; imports never merge accounts, MIG-004), valid (dry run, with a plan) or error. See docs/operations/exit-and-export.md#import-into-proudauth.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_system",
+    "users"
+  ],
+  "properties": {
+    "format": {
+      "description": "The records' format (MIG-002); GET /user-import-formats lists the supported formats. An unsupported format is refused with 422.",
+      "type": "string",
+      "default": "proudauth.user-import.v1",
+      "enum": [
+        "proudauth.user-import.v1"
+      ]
+    },
+    "source_system": {
+      "description": "Name of the source system. Required and non-empty. Together with each record's source_id it forms the source-qualified idempotency key stored in import_mappings (MIG-004), and \"import:<source_system>\" is recorded as the creation and email verification source. Lowercase letters, digits, '.', '_' or '-', starting with a letter or digit, at most 63 characters; other names are refused with 422. The same rule applies to POST /audit-imports, external IDs (which import mappings double as) and GET /user-imports/reconciliation.",
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "keycloak-prod"
+      ],
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,62}$"
+    },
+    "users": {
+      "description": "1 to 1000 user records per job.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/ImportRecord"
+      }
+    },
+    "dry_run": {
+      "description": "Validate without writing (MIG-003). A dry run checks source_id presence, repeats within the batch and identifiers owned by existing accounts (conflict), existing mappings and tombstones (already_imported, skipped_deleted), the TOTP seed, email syntax, the password hash prefix, organizations and role mappings, and reports status valid with a plan (mapping, email_verified, password_verifier, totp_factor, memberships with organization_id, roles and privileged); it does not check that an email or username is present, username syntax or display_name length, which are only checked when users are created.",
+      "type": "boolean",
+      "default": false
+    },
+    "trust_email_verification": {
+      "description": "Keep email_verified from the records (MIG-009). When false every imported email is unverified.",
+      "type": "boolean",
+      "default": false
+    },
+    "allow_owner_roles": {
+      "description": "Explicitly allow memberships that map to an owner role; without it such records fail with \"owner role requires explicit approval\".",
+      "type": "boolean",
+      "default": false
+    },
+    "verification_reason": {
+      "description": "Required with trust_email_verification (at least 10 characters); recorded with the override.",
+      "type": "string",
+      "minLength": 10
+    },
+    "import_totp": {
+      "description": "Authorizes importing totp_secret seeds (MIG-007); requires realm.users.credentials.manage and an MFA session.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "$defs": {
+    "ImportRecord": {
+      "description": "One user in an import batch (identity.ImportRecord). Unknown members, such as phone, fail the request with 400. A non-empty email or username is required; a record without either fails at creation with \"an email, username or phone is required\" (a dry run does not detect this). An imported account is created active unless state is suspended. identity-cli migrate-from produces these records from Keycloak, ZITADEL and SuperTokens exports (MIG-018).",
+      "type": "object",
+      "required": [
+        "source_id"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "email"
+          ],
+          "properties": {
+            "email": {
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "required": [
+            "username"
+          ],
+          "properties": {
+            "username": {
+              "minLength": 1
+            }
+          }
+        }
+      ],
+      "properties": {
+        "source_id": {
+          "description": "Stable identifier of the user in the source system. Required; a record without it fails with \"source_id required\". A source_id already imported for the same source_system is reported as already_imported and not changed; if that user has since been deleted the record is skipped_deleted and never recreated (MIG-017).",
+          "type": "string",
+          "minLength": 1
+        },
+        "email": {
+          "description": "Primary email address. Surrounding whitespace is trimmed; at most 254 bytes, exactly one @, local part at most 64 bytes without whitespace, <>()[],;:\\\" or leading, trailing or doubled dots, and a valid DNS domain (IDNA allowed) with at least one dot. An email removed by an earlier account deletion is skipped (skipped_deleted). An email already used by an account of the realm, or by an earlier record of the batch, is reported as conflict. An empty string means no email.",
+          "type": "string",
+          "maxLength": 254,
+          "pattern": "^$|^\\s*[^@\\s]+@[^@\\s]+\\.[^@\\s]+\\s*$",
+          "examples": [
+            "ada@example.com"
+          ]
+        },
+        "email_verified": {
+          "description": "Whether the source verified the email. Honored only when the request sets trust_email_verification.",
+          "type": "boolean",
+          "default": false
+        },
+        "username": {
+          "description": "Username identifier. After trimming, NFKC normalization and lower-casing it must be 3 to 64 characters of [a-z0-9._-] and must not be a reserved name (admin, administrator, root, system, support, security, postmaster, hostmaster, webmaster, abuse, noreply, no-reply, help, operator, proudauth, anonymous, guest, null, undefined, me). A username already used in the realm, or by an earlier record of the batch, is reported as conflict. A username removed by an earlier account deletion is skipped (skipped_deleted). The pattern is an ASCII approximation of the canonicalization rule. An empty string means no username.",
+          "type": "string",
+          "pattern": "^$|^\\s*[A-Za-z0-9._-]{3,64}\\s*$",
+          "examples": [
+            "ada.lovelace"
+          ]
+        },
+        "display_name": {
+          "description": "Display name; at most 200 bytes.",
+          "type": "string",
+          "maxLength": 200
+        },
+        "password_hash": {
+          "description": "Optional password verifier imported as an active password credential (algorithm \"imported\") so the user can sign in without a reset (MIG-006); it is rehashed to the deployment's Argon2id parameters after a successful sign-in when needed. The import parses the verifier: PHC Argon2id \"$argon2id$v=19$m=<KiB>,t=<iterations>,p=<threads>$<salt>$<hash>\" (unpadded standard base64) with parameters at most m=1048576 (1 GiB), t=16 and p=16 and no k= pepper parameter; \"$legacy-sha256$<salt>$<sha256(salt || NFKC(password))>\" (unpadded standard base64, salt 8 to 64 bytes, a 32-byte digest); bcrypt \"$2a$\", \"$2b$\" or \"$2y$\" with a cost of 10 to 15; or PBKDF2 \"$pbkdf2-sha1$\", \"$pbkdf2-sha256$\" or \"$pbkdf2-sha512$i=<iterations>$<salt>$<derived key>\" (unpadded standard base64, salt 8 to 64 bytes, key 16 to 64 bytes) with 10,000 to 2,000,000 iterations. Argon2id, bcrypt and PBKDF2 verifiers are checked against the password as typed (the form the source system hashed) and its NFKC form. bcrypt, PBKDF2 and salted SHA-256 verifiers are always rehashed at the next sign-in and stop verifying after security.password.legacy_hashes_until, after which imports refuse them. A malformed verifier, parameters outside the bounds or a pepper version fail the record; any other format fails it with \"unsupported password hash format; the user must recover or re-enroll\". An empty string means no password.",
+          "type": "string",
+          "pattern": "^(\\$argon2id\\$|\\$legacy-sha256\\$|\\$2[aby]\\$|\\$pbkdf2-sha(1|256|512)\\$|$)",
+          "examples": [
+            "$argon2id$v=19$m=65536,t=3,p=2$<base64 salt>$<base64 hash>",
+            "$legacy-sha256$<base64 salt>$<base64 sha256(salt || password)>",
+            "$2a$12$<22-character salt><31-character hash>",
+            "$pbkdf2-sha256$i=600000$<base64 salt>$<base64 derived key>"
+          ]
+        },
+        "given_name": {
+          "description": "Given name; at most 100 bytes.",
+          "type": "string",
+          "maxLength": 100
+        },
+        "family_name": {
+          "description": "Family name; at most 100 bytes.",
+          "type": "string",
+          "maxLength": 100
+        },
+        "locale": {
+          "description": "Preferred locale, a BCP 47 language tag such as en or pt-BR; anything else fails the record.",
+          "type": "string",
+          "pattern": "^$|^[a-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3}$"
+        },
+        "state": {
+          "description": "active (the default) or suspended, for an account the source had disabled; an import never creates a more permissive state. The dry-run plan reports state when suspended.",
+          "type": "string",
+          "enum": [
+            "",
+            "active",
+            "suspended"
+          ]
+        },
+        "required_actions": {
+          "description": "Required actions the account starts with (AUT-018), for example update_password when the source's verifier could not be imported. update_password and configure_totp need realm.users.credentials.manage, verify_email and verify_contact need realm.users.write (checked when the request is accepted and again by the job); an unknown or repeated action fails the record. The dry-run plan lists them.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "update_password",
+              "verify_email",
+              "configure_totp",
+              "accept_terms",
+              "complete_profile",
+              "verify_contact"
+            ]
+          }
+        },
+        "admin_metadata": {
+          "description": "Administrator-only metadata stored on the account (never user-editable), at most limits.metadata_bytes (16 KiB by default) as JSON; identity-cli migrate-from --keep-attributes stores source attributes here under migration.source_attributes.",
+          "type": "object"
+        },
+        "totp_secret": {
+          "description": "Optional base32 TOTP seed (RFC 4648, padding and spaces ignored, 80 to 512 bits) imported as an active TOTP factor (MIG-007). Accepted only when the request sets import_totp, which requires realm.users.credentials.manage and an MFA session; otherwise the record fails. The seed is re-encrypted under this deployment's data key, audited as mfa.totp.imported with source import, and assumes the source used SHA-1, 6 digits and a 30-second period.",
+          "type": "string",
+          "pattern": "^[A-Za-z2-7=\\s]*$"
+        },
+        "memberships": {
+          "description": "Organization memberships to create, each with an explicit role translation (MIG-005).",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ImportMembership"
+          }
+        }
+      }
+    },
+    "ImportMembership": {
+      "description": "One organization membership (worker.ImportMembership). The membership is created active with source \"import\" and source_reference set to source_system.",
+      "type": "object",
+      "required": [
+        "organization"
+      ],
+      "properties": {
+        "organization": {
+          "description": "Target organization: an organization ID (prefix \"org_\") or its slug. It must exist and not be deleted; otherwise the record fails with \"unknown organization\".",
+          "type": "string",
+          "minLength": 1,
+          "examples": [
+            "acme",
+            "org_01j9z6y8x4n2q7r3s5t6v8w0xy"
+          ]
+        },
+        "roles": {
+          "description": "Names (case-insensitive) of realm-wide organization roles (boundary_type organization, no organization_id or project_id) to assign in the organization. An unknown name fails the record with \"unmapped role\" and never becomes administrator access; an owner role also requires allow_owner_roles.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "examples": [
+            [
+              "member"
+            ]
+          ]
+        }
+      }
+    }
+  }
+}

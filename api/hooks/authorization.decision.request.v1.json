@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/hooks/authorization.decision.request.v1.json",
+  "title": "authorization.decision hook request (contract v1)",
+  "description": "Sent after RBAC and policies allowed a decision. Hooks can only deny or add obligations (EXT-011); failures deny.",
+  "type": "object",
+  "required": [
+    "hook_kind",
+    "realm_id",
+    "decision"
+  ],
+  "properties": {
+    "hook_kind": {
+      "const": "authorization.decision",
+      "description": "The hook kind."
+    },
+    "realm_id": {
+      "$ref": "common.v1.json#/$defs/realm_id"
+    },
+    "decision": {
+      "type": "object",
+      "required": [
+        "subject",
+        "action",
+        "resource"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "subject": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "action": {
+          "type": "string"
+        },
+        "resource": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "context": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "x-hook-kind": "authorization.decision",
+  "x-contract-version": 1,
+  "examples": [
+    {
+      "hook_kind": "authorization.decision",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "decision": {
+        "subject": {
+          "type": "user",
+          "id": "usr_01jb4rsd73q99h2e30n9ak6n8d"
+        },
+        "action": "orders.read",
+        "resource": {
+          "type": "order",
+          "org_id": "org_01jb8wmw5drxrge3rmw4nf61x1"
+        },
+        "context": {
+          "frozen": false
+        }
+      }
+    }
+  ]
+}

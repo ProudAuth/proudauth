@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/hooks/authorization.decision.response.v1.json",
+  "title": "authorization.decision hook response (contract v1)",
+  "description": "Answer with HTTP 200 and this body. More than five obligations deny.",
+  "x-hook-kind": "authorization.decision",
+  "x-contract-version": 1,
+  "examples": [
+    {
+      "allow": true
+    },
+    {
+      "allow": false,
+      "reason_code": "ACCOUNT_FROZEN"
+    }
+  ],
+  "type": "object",
+  "required": [
+    "allow"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "allow": {
+      "type": "boolean"
+    },
+    "reason_code": {
+      "$ref": "common.v1.json#/$defs/reason_code"
+    },
+    "obligations": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "maxItems": 5,
+      "items": {
+        "type": "object"
+      }
+    }
+  }
+}

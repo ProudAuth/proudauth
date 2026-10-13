@@ -1,0 +1,15 @@
+audit_events	139206	144629760
+outbox_events	74499	65232896
+jobs	1377	27369472
+auth_transactions	14340	22159360
+memberships	23218	18800640
+user_identifiers	18274	13123584
+role_assignments	15034	11624448
+sessions	14273	10682368
+authorization_grants	14271	10420224
+users	18282	9117696
+authorization_codes	14240	8601600
+refresh_tokens	16918	8306688
+webauthn_ceremonies	12926	7520256
+refresh_families	14269	6242304
+client_sessions	14277	4792320

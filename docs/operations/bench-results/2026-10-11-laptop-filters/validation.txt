@@ -1,0 +1,75 @@
+SCIM filter correction verification (NFR-004, NFR-006, NFR-008).
+Corrected full-cardinality measurement completed and PASSED.
+Source digest: 7c4ba2cf48b6c9d3, untagged dev, no Git commit.
+Measured 2026-10-11T17:24:03.118717Z for 60.001546834 seconds at
+concurrency 32: 133405 observations, 2223.359347202792 operations/s.
+p50 7.168 ms, p99 63.488 ms, p99.9 1114.112 ms.
+Outcomes: bounded_true 338; bounded_false 339; invalid_filter_nodes 351;
+invalid_filter_bytes 351; rate_limited 132026. No other outcome.
+The 677 valid searches prove exact totals, clamped pages and owned/state-
+correct identities. All overflow and budget refusals have strict SCIM
+errors; budget refusals require positive Retry-After. Complete is true,
+summary verdict is pass, runner exit 0 and make exit 0.
+Aggregate throughput/latency mostly describe connector-budget refusals,
+not successful-query capacity; no per-outcome histogram is available.
+The initial FAIL remains sealed under initial-attempt/ with source
+2a75087a131ed72d and unchanged raw JSON/summary/statement artifacts.
+
+Correction:
+- Scoped mapping, realm-qualified identity/identifier and organization-
+  qualified membership reads are batched. Only the requested page is kept
+  while every matching resource is counted. Read failures still abort;
+  disappeared/deleted candidates stay invisible and inactive members count.
+- TestSCIMListsBoundDatabaseRoundTrips failed before the fix: 33 queries
+  for eight users and 257 for 64. It now records five at both sizes and
+  compares exact list data/ETags with individual reads.
+- TestUserBatchReadsKeepRealmAndIdentifierOrder confirms realm isolation,
+  duplicate/missing IDs, identifier order, User field equivalence, empty
+  input and the 20000-user internal bound, including transaction reads.
+- Targeted real PostgreSQL/race run PASS: 66.470s, all 23 smoke scenarios
+  54.60s; SCIM/admin races, initially inactive creation, read-failure tests,
+  bounded round trips, realm/identifier equivalence and lifecycle all pass.
+
+Complete package verification, outside measurement:
+- Own PostgreSQL 18.6, cached dependencies only:
+  go test -race -count=1 -timeout=20m ./...
+  Every non-contract package passed, including tests/e2e 663.342s and its
+  pool checks. The command exited 1 solely because newly added evidence
+  had made requirements-traceability.md stale.
+- The unchanged generator was previewed outside the checkout; only six
+  changed matrix rows were applied. Then:
+  go test -race -count=1 ./tests/contract
+  PASS, 30.557s, complete contract package. All packages' checks are now
+  satisfied without rerunning unaffected packages for a documentation fix.
+- Vet (identity, provisioning, bench, CLI, E2E), shell syntax, gofmt,
+  secret and license checks PASS. Protected contract SHA-256 unchanged:
+  a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6.
+- Test containers/databases and external preview helpers were removed.
+- No Go tests ran during the corrected benchmark. It used a fresh own
+  container/volume, full seed-1 cardinalities and 10000 additional owned
+  Users, unchanged 1200/minute connector budget and 65ms fixture pacing,
+  concurrency 32, measurement 60s, benign warm-up 5s; no soak scheduled.
+- Offline environment: GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local,
+  GOFLAGS='-mod=readonly -buildvcs=false'. No download or Git commit.
+- The completed runner trap removed its processes, own PostgreSQL
+  container/volume and private temporary directory. No pa-bench resource
+  or benchmark/test process remained in the post-run check.
+
+Publication verification, after the completed measurement:
+- Raw outcome/histogram totals, throughput arithmetic, summary rounding,
+  strict allowed outcomes, fixture counts/bounds/budget and the reference
+  table agree. Current build-source digest matches 7c4ba2cf48b6c9d3.
+- Existing 203 artifact hashes pass, including 13 sealed initial-failure
+  companions; no historical measurement or manifest was rewritten.
+- All 27 publication companions pass the token/private-key/credential
+  scan; the runner also checked exact generated secrets before cleanup.
+  No seed file or managed identity IDs are published.
+- Repository secret/license checks, changed-file gofmt and POSIX shell
+  syntax pass. After documentation edits, the protected, unchanged
+  TestRequirementsTraceability passes with -race -count=1 (8.378s).
+- artifact-sha256.json covers all 27 companions, including this validation
+  and the sealed initial-attempt/ manifest; it excludes only itself.
+
+This measurement does not replace Group/audit filter capacity, scan
+overflow beyond 20000, upstream metadata abuse,
+multi-node stress, multi-hour soak or independent security review.

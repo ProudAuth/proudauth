@@ -1,0 +1,151 @@
+{
+  "cleanup": "own test database/container and private work removed after final verification",
+  "date": "2026-10-12",
+  "environment": {
+    "database": "dedicated cached postgres:18 (18.6), 128MB shared buffers, max_connections=120, tmpfs=2GiB, container memory=3GiB, random loopback port; E2E harness reduced crypto and controlled clock",
+    "go": "go version go1.27.1 darwin/arm64",
+    "machine": [
+      "Mac16,8",
+      "Apple M4 Pro",
+      "12",
+      "25769803776"
+    ],
+    "os": "27.0.1",
+    "tls_fixtures": "local HTTPS server with explicit test CA and 127.0.0.1/32 allowlist; fake DNS resolver opens no network connection"
+  },
+  "final_units": {
+    "exit_code": 0,
+    "failed_tests": [],
+    "package_elapsed_seconds": {
+      "github.com/proudauth/internal/egress": 1.687,
+      "github.com/proudauth/internal/federation": 5.608,
+      "github.com/proudauth/internal/ssf": 1.7069999999999999,
+      "github.com/proudauth/internal/workload": 1.776
+    },
+    "passed_subtests": 51,
+    "passed_top_tests": 39,
+    "skipped_tests": []
+  },
+  "kind": "bounded-metadata-jwks-fetches",
+  "limits": [
+    "Concurrency bursts and counts are correctness/resource-bound evidence, not sustained metadata capacity.",
+    "Retry budgets and caches are per process and cache identity; multiple processes can each fetch once.",
+    "Privileged provider updates/fresh diagnostics explicitly invalidate caches.",
+    "Full module and benchmark smoke have not been rerun on this source build; previous artifacts keep their measured builds."
+  ],
+  "observed_counts": {
+    "cold_discovery": {
+      "first_burst": 32,
+      "next_eligible_cumulative": 64,
+      "same_window_cumulative": 32
+    },
+    "invalid_discovery_and_JWKS": {
+      "first_burst": 32,
+      "next_eligible_cumulative": 96,
+      "same_window_cumulative": 64
+    },
+    "required_each_profile": {
+      "first_burst": 1,
+      "next_eligible_cumulative": 2,
+      "same_window_cumulative": 1
+    },
+    "unknown_JWKS": {
+      "first_burst": 32,
+      "next_eligible_cumulative": 64,
+      "same_window_cumulative": 32
+    }
+  },
+  "pre_fix": {
+    "exit_code": 1,
+    "failed_tests": [
+      "TestFederationFetchBudgets/discovery_cold",
+      "TestFederationFetchBudgets/discovery_invalid_JSON",
+      "TestFederationFetchBudgets/JWKS_unknown_key",
+      "TestFederationFetchBudgets/JWKS_invalid_JSON",
+      "TestFederationFetchBudgets"
+    ],
+    "package_elapsed_seconds": {
+      "github.com/proudauth/internal/federation": 3.088
+    },
+    "passed_subtests": 0,
+    "passed_top_tests": 0,
+    "skipped_tests": []
+  },
+  "protected_traceability_test_sha256": "a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6",
+  "scope": {
+    "burst_concurrency": 32,
+    "oidc_profiles": [
+      "cold/expired discovery",
+      "invalid discovery JSON",
+      "discovery issuer mismatch",
+      "discovery redirect",
+      "unknown JWKS key",
+      "invalid JWKS JSON",
+      "oversized JWKS",
+      "JWKS HTTP failure",
+      "JWKS timeout"
+    ],
+    "other_checks": [
+      "workload unknown-key, outage fallback, malformed-response failure and recovery",
+      "Shared Signals signature refresh, malformed response and recovery",
+      "caller cancellation without canceling shared fetch",
+      "independent cache identities",
+      "invalidated generation cannot reinstall old response",
+      "fetch timeout consumes retry budget",
+      "DNS inherits fetch deadline",
+      "traced client closes idle connections",
+      "public mandatory-SSO cooldown and recovery without local fallback"
+    ]
+  },
+  "source": {
+    "frozen_files_sha256": {
+      "internal/egress/egress.go": "c91d89b50a69a9fb22704b18e0ba1201e5994022f7cee3b718e795320e463705",
+      "internal/egress/fetch_cache.go": "6228e8dd89dba34c63bfaca4e06fe57373afa7627b0a74ec4d38a5f7090516a8",
+      "internal/egress/fetch_cache_test.go": "1fe29d0aee9fd4b2c5b8fdbd10cabcaf5b02cb8e822b7358a7d7d47a4afc2e42",
+      "internal/federation/fetch_budget_test.go": "77c2cd3f778139f02d0ce4c9d0b480af1407fcb03fb5f9c44d72395a8c234741",
+      "internal/federation/protocol.go": "b11f1130517d2a3bbe138ff14e3ed8e99655d7b0706b67b4368c1bfd47ee065d",
+      "internal/federation/provider.go": "b52833b7d43bf13516c47c3cc8feada3b6b2fd1cddbfcffd3acb565d6eb67264",
+      "internal/ssf/fetch_budget_test.go": "43fcd60bfef5659b5cfc9b4b48e4de690124efb5a67571c6a50db532a3493e74",
+      "internal/ssf/receiver.go": "f175de13b6f690c0d469820cdbbc35fbcd8baf9bc35315d93c55c5554a15d1dc",
+      "internal/ssf/ssf.go": "7c9f7c483dd189af2ad4b1b10ef777453b1151bd2ea1993cfca458e1db253ff0",
+      "internal/workload/fetch_budget_test.go": "4d7c80660384d76186e2bb02d07540060c171a72b38458b46127083edd7e8514",
+      "internal/workload/workload.go": "38136733a565b5152f04487dbb05c89b2e0710d9ee5fec7feb34ceaf0fae2066",
+      "tests/e2e/federation_test.go": "e98d8ff8b8d53837fa347d0794859ef017a0ec212de670062655f40204a42076"
+    },
+    "git_commit": "none",
+    "production_digest_sha256_16": "202b6eeb35806acd"
+  },
+  "verification": {
+    "contract": {
+      "command": "go test -json -race -count=1 -timeout=3m ./tests/contract",
+      "exit_code": 0,
+      "package_elapsed_seconds": 32.574,
+      "passed_top_tests": 36,
+      "failed_tests": [],
+      "skipped_tests": [],
+      "finished_at": "2026-10-12T23:59:25.862615+03:00"
+    },
+    "traceability_preview": "complete repository evidence; exact protected test run as one stdlib test file, pass in 8.640 seconds",
+    "traceability_rows_refreshed": [
+      "FED-017",
+      "MCH-011",
+      "ADV-004",
+      "ADV-007",
+      "NFR-006"
+    ],
+    "vet": "pass: egress, federation, workload, ssf, tests/e2e",
+    "formatting": "pass",
+    "secret_scan": "pass",
+    "license_check": "pass"
+  },
+  "targeted_e2e": {
+    "exit_code": 0,
+    "failed_tests": [],
+    "package_elapsed_seconds": {
+      "github.com/proudauth/tests/e2e": 36.488
+    },
+    "passed_subtests": 36,
+    "passed_top_tests": 18,
+    "skipped_tests": []
+  }
+}

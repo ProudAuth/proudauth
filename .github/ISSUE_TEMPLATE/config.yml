@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability (private)
+    url: https://github.com/proudauth/security/advisories/new
+    about: Do NOT open a public issue for vulnerabilities. Use private vulnerability reporting as described in SECURITY.md.
+  - name: Security policy
+    url: https://github.com/proudauth/blob/main/SECURITY.md
+    about: Reporting channels, response targets, coordinated disclosure and supported versions.

@@ -1,0 +1,19 @@
+{
+  "spec": {
+    "seed": 1,
+    "users": 10000,
+    "organizations": 500,
+    "large_organization_users": 5000,
+    "machine_clients": 20,
+    "role_depth": 3,
+    "large_group_members": 1000
+  },
+  "realm": "bench",
+  "prefix": "b1-",
+  "audience": "https://b1-api.bench.test",
+  "redirect_uri": "https://app.bench.test/callback",
+  "admin_audience": "http://127.0.0.1:18591/realms/bench/admin",
+  "created_at": "2026-10-11T12:46:29.1721Z",
+  "seeding_seconds": 165,
+  "note": "the seed file itself holds the benchmark clients' secrets and is not published"
+}

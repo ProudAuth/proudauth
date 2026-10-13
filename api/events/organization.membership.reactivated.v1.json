@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/organization.membership.reactivated.v1.json",
+  "title": "organization.membership.reactivated (v1)",
+  "description": "A suspended membership was set back to active. Emitted when an administrator sets a membership back to \"active\". Previously revoked grants are not restored.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "organization.membership.reactivated"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "user_id",
+        "membership_id",
+        "authorization_revision"
+      ],
+      "properties": {
+        "user_id": {
+          "$ref": "envelope.v1.json#/$defs/user_id",
+          "description": "The member."
+        },
+        "membership_id": {
+          "$ref": "envelope.v1.json#/$defs/membership_id",
+          "description": "The reactivated membership."
+        },
+        "authorization_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The membership's revision counter after this change (memberships.revision). Compare revisions to discard stale, out-of-order events for the same membership."
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Always set for this event type."
+    }
+  },
+  "required": [
+    "org_id"
+  ],
+  "x-event-type": "organization.membership.reactivated",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/organization/organization.go: (*Service).SetMembershipState"
+  ],
+  "x-org-scoped": "always",
+  "examples": [
+    {
+      "event_id": "obx_01jbtwqj5vtzp4y79ty2hq2sz3",
+      "event_type": "organization.membership.reactivated",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "org_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "membership_id": "mem_01jbadj9t141gzfk8s7x1yyg4j",
+        "authorization_revision": 8
+      }
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+Validation outside measurement:
+- GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local
+  GOFLAGS='-mod=readonly -buildvcs=false'
+  go test ./internal/bench ./cmd/identity-bench -race -count=1
+  PASS: 10.680s / 2.034s.
+- Separate disposable PostgreSQL 18.6, OS-allocated loopback port:
+  go test ./tests/e2e -race -count=1 -timeout=5m
+  -run '^(TestBenchSuiteSmoke|TestTokenIssuanceBeyondConnectionPool)$'
+  PASS: 29.241s after validating the complete SMTP configuration.
+- go vet ./internal/bench ./cmd/identity-bench ./tests/e2e: PASS.
+- go test ./tests/contract -run '^TestRequirementsTraceability$' -count=1:
+  PASS: 0.888s after updating only the requirement registry.
+- tests/contract/traceability_test.go remains unchanged, SHA-256:
+  a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6.
+- sh -n scripts/bench-local.sh and gofmt checks: PASS.
+- scripts/check-secrets.sh and scripts/check-licenses.sh: PASS.
+- Every measured scenario and the fresh independent email repeat: PASS.
+  SMTP receiver counts confirm completed email operations, with zero
+  rejected sessions. Notification flood resulted in three actual SMTP
+  acceptances and 7517 rate-limited responses.
+- The runner compared artifacts against private credentials before cleanup.
+  No seed file, password, access/refresh token, root key, connector token,
+  private key or message body is published. The SMTP sink stores counts only.
+- All four binary hashes match the initial setup failure, first measurement
+  and fresh email repeat. No Git commit or downloads were made.
+- Own temporary containers, volumes, host processes and credentials removed;
+  existing containers were not modified.
+
+These checks do not replace an independent security review, a current
+vulnerability audit, remote SMTP/inbox tests, webhook capacity measurements
+or multiple-node consistency evidence. No new soak was performed.

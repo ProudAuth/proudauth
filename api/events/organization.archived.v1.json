@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/organization.archived.v1.json",
+  "title": "organization.archived (v1)",
+  "description": "An organization was archived. Emitted when an administrator archives an organization. Grants bound to the organization are revoked as for suspension. Emitted by every successful call, even when the organization was already in that state. org_id equals data.organization_id.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "organization.archived"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "organization_id",
+        "state"
+      ],
+      "properties": {
+        "organization_id": {
+          "$ref": "envelope.v1.json#/$defs/organization_id",
+          "description": "The organization."
+        },
+        "state": {
+          "type": "string",
+          "const": "archived",
+          "description": "The new organization state."
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Always set for this event type."
+    }
+  },
+  "required": [
+    "org_id"
+  ],
+  "x-event-type": "organization.archived",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/organization/organization.go: (*Service).SetState"
+  ],
+  "x-org-scoped": "always",
+  "examples": [
+    {
+      "event_id": "obx_01jb813am2v8hqvwhkdpavvyej",
+      "event_type": "organization.archived",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "org_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+        "state": "archived"
+      }
+    }
+  ]
+}

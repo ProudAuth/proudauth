@@ -1,0 +1,94 @@
+# Public/protocol/admin listener (:8080) and private operator listener (:9090,
+# metrics and status). Liveness checks only the process; readiness removes the
+# pod from traffic when the database, schema, signing keys or clock are unsafe,
+# without restart loops that destroy diagnostic state (DEP-009).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proudauth-server
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxUnavailable: 0, maxSurge: 1}
+  selector:
+    matchLabels: {app.kubernetes.io/name: proudauth, app.kubernetes.io/component: server}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: proudauth, app.kubernetes.io/component: server}
+    spec:
+      serviceAccountName: proudauth
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile: {type: RuntimeDefault}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: {app.kubernetes.io/name: proudauth, app.kubernetes.io/component: server}
+      containers:
+        - name: server
+          image: proudauth
+          args: ["-config", "/etc/proudauth/config.yaml"]
+          ports:
+            - {name: http, containerPort: 8080}
+            - {name: internal, containerPort: 9090}
+          livenessProbe:
+            httpGet: {path: /health/live, port: http}
+            periodSeconds: 10
+            failureThreshold: 6
+          readinessProbe:
+            httpGet: {path: /health/ready, port: http}
+            periodSeconds: 5
+            failureThreshold: 2
+          startupProbe:
+            httpGet: {path: /health/live, port: http}
+            periodSeconds: 2
+            failureThreshold: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            # Password hashing dominates CPU; size requests from the NFR
+            # workload results for your Argon2id parameters (NFR-003).
+            requests: {cpu: 500m, memory: 256Mi}
+            limits: {memory: 1Gi}
+          volumeMounts:
+            - {name: config, mountPath: /etc/proudauth, readOnly: true}
+            - {name: secrets, mountPath: /run/secrets, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: config
+          configMap: {name: proudauth-config}
+        - name: secrets
+          secret: {secretName: proudauth-secrets, defaultMode: 0400}
+        - name: tmp
+          emptyDir: {sizeLimit: 64Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: proudauth
+spec:
+  selector: {app.kubernetes.io/name: proudauth, app.kubernetes.io/component: server}
+  ports:
+    - {name: http, port: 80, targetPort: http}
+---
+# Metrics and status are on a separate, cluster-internal service; expose them only
+# to the monitoring namespace (see networkpolicy.yaml).
+apiVersion: v1
+kind: Service
+metadata:
+  name: proudauth-internal
+spec:
+  selector: {app.kubernetes.io/name: proudauth, app.kubernetes.io/component: server}
+  ports:
+    - {name: internal, port: 9090, targetPort: internal}

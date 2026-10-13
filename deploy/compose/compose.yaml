@@ -1,0 +1,61 @@
+# Local development deployment (DEP-002). NOT for production: it uses the
+# development mail sink, plain HTTP and a generated local root key.
+#
+#   ./deploy/compose/init-secrets.sh        # one-time: creates local secret files
+#   docker compose -f deploy/compose/compose.yaml up --build
+#   ./scripts/smoke-test.sh                  # end-to-end smoke test
+name: proudauth-dev
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: proudauth
+      POSTGRES_DB: proudauth
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+    # PostgreSQL 18 uses /var/lib/postgresql/18/docker beneath this mount.
+    volumes: [pgdata:/var/lib/postgresql]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U proudauth"]
+      interval: 2s
+      retries: 30
+    ports: ["127.0.0.1:5433:5432"]
+  migrate:
+    build: {context: ../.., dockerfile: Dockerfile}
+    entrypoint: ["/usr/local/bin/identity-cli", "migrate", "-config", "/etc/proudauth/config.yaml"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["./config.dev.yaml:/etc/proudauth/config.yaml:ro"]
+    secrets: [root_key, database_url]
+    depends_on: {postgres: {condition: service_healthy}}
+  server:
+    build: {context: ../.., dockerfile: Dockerfile}
+    command: ["-config", "/etc/proudauth/config.yaml"]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["./config.dev.yaml:/etc/proudauth/config.yaml:ro"]
+    secrets: [root_key, database_url]
+    ports: ["127.0.0.1:8080:8080", "127.0.0.1:9090:9090"] # 9090: private operator listener (metrics, status, dev mail sink)
+    depends_on: {migrate: {condition: service_completed_successfully}}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/identity-cli", "doctor", "-config", "/etc/proudauth/config.yaml"]
+      interval: 10s
+  worker:
+    build: {context: ../.., dockerfile: Dockerfile}
+    entrypoint: ["/usr/local/bin/identity-worker", "-config", "/etc/proudauth/config.yaml"]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    volumes: ["./config.dev.yaml:/etc/proudauth/config.yaml:ro"]
+    secrets: [root_key, database_url]
+    depends_on: {migrate: {condition: service_completed_successfully}}
+secrets:
+  root_key: {file: ./secrets/root_key}
+  db_password: {file: ./secrets/db_password}
+  database_url: {file: ./secrets/database_url}
+volumes:
+  pgdata: {}

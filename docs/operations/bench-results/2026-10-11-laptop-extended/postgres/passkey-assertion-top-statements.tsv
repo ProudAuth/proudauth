@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+9972	14340.0	1.438	9969	UPDATE refresh_families SET state=$4, revoked_at=$2, revoke_reason=$3 WHERE state=$5 AND grant_id IN (SELECT id FROM authorization_grants WHERE session_id=$1 AND NOT offline)
+44749	2468.4	0.055	44749	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+69543	2347.6	0.034	69543	INSERT INTO rate_limit_counters (bucket, window_start, count, expires_at) VALUES ($1, $2, 1, $3) ON CONFLICT (bucket, window_start) DO UPDATE SET count = rate_limit_counters.count + 1 RETURNING count
+34750	1684.4	0.048	34750	UPDATE auth_transactions SET intent=$18, user_id=$2, identified_via=$3, completed_factors=$4, required_actions_done=$5, auth_time=$6, selected_org_id=$7, granted_scopes=$8, consent_decided=$9, remembe
+11576	1435.1	0.124	11576	SELECT count(*) FROM sessions WHERE user_id=$1 AND state='active' AND absolute_expires_at > $2
+127553	1259.5	0.010	127553	SELECT uri, purpose FROM client_redirect_uris WHERE client_ref=$1 ORDER BY created_at, uri
+127486	1251.8	0.010	127486	SELECT id, name, display_name, issuer, state, settings, policy_revision, bootstrapped_at, disabled_grant_types, version, created_at FROM realms WHERE id=$1
+104300	1204.7	0.012	104300	SELECT id, realm_id, client_id, coalesce(project_id,''), name, coalesce(description,''), client_type, token_endpoint_auth_method, grant_types, security_profile, state, first_party, consent_mode, allow
+11573	891.9	0.077	11573	INSERT INTO authorization_grants (id, realm_id, subject_type, subject_id, client_ref, organization_id, session_id, resource_ids, scopes, offline, consent_id, auth_time, amr, acr, created_at, expires_a
+11616	852.9	0.073	11616	INSERT INTO auth_transactions (id, realm_id, client_ref, mode, intent, continuation_digest, csrf_digest, redirect_uri, response_mode, requested_scopes, requested_resource_ids, state_param, nonce, code
+9973	826.2	0.083	9973	SELECT id FROM sessions WHERE user_id=$1 AND state=$3 ORDER BY last_activity_at ASC LIMIT $2
+11555	798.3	0.069	11555	INSERT INTO refresh_families (id, realm_id, grant_id, client_ref, idle_expires_at, absolute_expires_at, created_at, idle_window_seconds) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)

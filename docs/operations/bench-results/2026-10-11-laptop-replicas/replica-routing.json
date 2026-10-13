@@ -1,0 +1,258 @@
+[
+  {
+    "scenario": "refresh",
+    "before": {
+      "complete": false,
+      "started_at": "2026-10-11T19:41:29.644928Z",
+      "observed_at": "2026-10-11T19:44:29.443006Z",
+      "inflight_requests": 0,
+      "backends": [
+        {
+          "url": "http://127.0.0.1:57843",
+          "assigned_requests": 650,
+          "response_statuses": {
+            "200": 124,
+            "201": 170,
+            "202": 5,
+            "204": 351
+          },
+          "transport_errors": 0,
+          "response_aborts": 0,
+          "client_cancellations": 0
+        },
+        {
+          "url": "http://127.0.0.1:57844",
+          "assigned_requests": 650,
+          "response_statuses": {
+            "200": 120,
+            "201": 192,
+            "202": 2,
+            "204": 336
+          },
+          "transport_errors": 0,
+          "response_aborts": 0,
+          "client_cancellations": 0
+        },
+        {
+          "url": "http://127.0.0.1:57846",
+          "assigned_requests": 650,
+          "response_statuses": {
+            "200": 116,
+            "201": 190,
+            "202": 7,
+            "204": 337
+          },
+          "transport_errors": 0,
+          "response_aborts": 0,
+          "client_cancellations": 0
+        }
+      ]
+    },
+    "after": {
+      "complete": false,
+      "started_at": "2026-10-11T19:41:29.644928Z",
+      "observed_at": "2026-10-11T19:45:34.665895Z",
+      "inflight_requests": 0,
+      "backends": [
+        {
+          "url": "http://127.0.0.1:57843",
+          "assigned_requests": 20914,
+          "response_statuses": {
+            "200": 20346,
+            "201": 192,
+            "202": 5,
+            "204": 351,
+            "502": 20
+          },
+          "transport_errors": 0,
+          "response_aborts": 0,
+          "client_cancellations": 20
+        },
+        {
+          "url": "http://127.0.0.1:57844",
+          "assigned_requests": 20914,
+          "response_statuses": {
+            "200": 20339,
+            "201": 213,
+            "202": 2,
+            "204": 336,
+            "502": 24
+          },
+          "transport_errors": 0,
+          "response_aborts": 0,
+          "client_cancellations": 24
+        },
+        {
+          "url": "http://127.0.0.1:57846",
+          "assigned_requests": 20913,
+          "response_statuses": {
+            "200": 20338,
+            "201": 211,
+            "202": 7,
+            "204": 337,
+            "502": 20
+          },
+          "transport_errors": 0,
+          "response_aborts": 0,
+          "client_cancellations": 20
+        }
+      ]
+    },
+    "deltas": [
+      {
+        "node": 1,
+        "requests": 20264,
+        "transport_errors": 0,
+        "response_aborts": 0,
+        "client_cancellations": 20
+      },
+      {
+        "node": 2,
+        "requests": 20264,
+        "transport_errors": 0,
+        "response_aborts": 0,
+        "client_cancellations": 24
+      },
+      {
+        "node": 3,
+        "requests": 20263,
+        "transport_errors": 0,
+        "response_aborts": 0,
+        "client_cancellations": 20
+      }
+    ],
+    "note": "routing counts include scenario preparation/warm-up and measured HTTP requests; one benchmark operation can span several requests; no paths, headers or bodies are retained",
+    "pass": true
+  },
+  {
+    "scenario": "refresh-race",
+    "before": {
+      "complete": false,
+      "started_at": "2026-10-11T19:41:29.644928Z",
+      "observed_at": "2026-10-11T19:45:34.962239Z",
+      "inflight_requests": 0,
+      "backends": [
+        {
+          "url": "http://127.0.0.1:57843",
+          "assigned_requests": 20914,
+          "response_statuses": {
+            "200": 20346,
+            "201": 192,
+            "202": 5,
+            "204": 351,
+            "502": 20
+          },
+          "transport_errors": 0,
+          "response_aborts": 0,
+          "client_cancellations": 20
+        },
+        {
+          "url": "http://127.0.0.1:57844",
+          "assigned_requests": 20914,
+          "response_statuses": {
+            "200": 20339,
+            "201": 213,
+            "202": 2,
+            "204": 336,
+            "502": 24
+          },
+          "transport_errors": 0,
+          "response_aborts": 0,
+          "client_cancellations": 24
+        },
+        {
+          "url": "http://127.0.0.1:57846",
+          "assigned_requests": 20913,
+          "response_statuses": {
+            "200": 20338,
+            "201": 211,
+            "202": 7,
+            "204": 337,
+            "502": 20
+          },
+          "transport_errors": 0,
+          "response_aborts": 0,
+          "client_cancellations": 20
+        }
+      ]
+    },
+    "after": {
+      "complete": false,
+      "started_at": "2026-10-11T19:41:29.644928Z",
+      "observed_at": "2026-10-11T19:46:40.213981Z",
+      "inflight_requests": 0,
+      "backends": [
+        {
+          "url": "http://127.0.0.1:57843",
+          "assigned_requests": 62127,
+          "response_statuses": {
+            "200": 53943,
+            "201": 1130,
+            "202": 5,
+            "204": 351,
+            "400": 6651,
+            "502": 47
+          },
+          "transport_errors": 0,
+          "response_aborts": 0,
+          "client_cancellations": 47
+        },
+        {
+          "url": "http://127.0.0.1:57844",
+          "assigned_requests": 62127,
+          "response_statuses": {
+            "200": 54118,
+            "201": 1172,
+            "202": 2,
+            "204": 336,
+            "400": 6453,
+            "502": 46
+          },
+          "transport_errors": 0,
+          "response_aborts": 0,
+          "client_cancellations": 46
+        },
+        {
+          "url": "http://127.0.0.1:57846",
+          "assigned_requests": 62127,
+          "response_statuses": {
+            "200": 54152,
+            "201": 1138,
+            "202": 7,
+            "204": 337,
+            "400": 6448,
+            "502": 45
+          },
+          "transport_errors": 0,
+          "response_aborts": 0,
+          "client_cancellations": 45
+        }
+      ]
+    },
+    "deltas": [
+      {
+        "node": 1,
+        "requests": 41213,
+        "transport_errors": 0,
+        "response_aborts": 0,
+        "client_cancellations": 27
+      },
+      {
+        "node": 2,
+        "requests": 41213,
+        "transport_errors": 0,
+        "response_aborts": 0,
+        "client_cancellations": 22
+      },
+      {
+        "node": 3,
+        "requests": 41214,
+        "transport_errors": 0,
+        "response_aborts": 0,
+        "client_cancellations": 25
+      }
+    ],
+    "note": "routing counts include scenario preparation/warm-up and measured HTTP requests; one benchmark operation can span several requests; no paths, headers or bodies are retained",
+    "pass": true
+  }
+]

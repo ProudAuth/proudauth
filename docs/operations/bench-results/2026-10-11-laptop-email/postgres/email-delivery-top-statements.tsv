@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+20481	5961.5	0.291	2191467	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+19497	5634.6	0.289	3606182	SELECT id, channel, template, coalesce(recipient_hint,$7), state, attempts, coalesce(last_error,$8), coalesce(reference_type,$9), coalesce(reference_id,$10), created_at, updated_at FROM notification_j
+21464	228.4	0.011	21464	SELECT id, realm_id, state, coalesce(display_name,''), coalesce(given_name,''), coalesce(family_name,''), coalesce(locale,''), coalesce(zoneinfo,''), profile, admin_metadata, internal_metadata, protec
+21463	225.2	0.010	42926	SELECT id, type, original_value, canonical_value, verified_at, is_primary, source FROM user_identifiers WHERE user_id=$1 ORDER BY created_at, id
+20481	207.9	0.010	20481	SELECT ra.role_id, ra.conditions FROM role_assignments ra WHERE ra.realm_id=$1 AND ra.subject_type=$2 AND ra.subject_id=$3 AND ra.scope_type='realm' AND (ra.valid_from IS NULL OR ra.valid_from <= $4) 
+20488	207.5	0.010	20488	SELECT id, realm_id, coalesce(project_id,''), name, audience, coalesce(description,''), kind, token_format, verification_mode, access_token_ttl_seconds, requires_organization, impersonation_enabled, i
+20487	203.4	0.010	20487	SELECT id, realm_id, client_id, coalesce(project_id,''), name, coalesce(description,''), client_type, token_endpoint_auth_method, grant_types, security_profile, state, first_party, consent_mode, allow
+20484	192.7	0.009	20484	SELECT uri, purpose FROM client_redirect_uris WHERE client_ref=$1 ORDER BY created_at, uri
+20482	169.6	0.008	20482	SELECT id, realm_id, user_id, state, auth_time, mfa_time, amr, acr, factors, recovery_restricted, remember_me, transient, created_at, last_activity_at, idle_expires_at, absolute_expires_at, revoked_at
+20488	152.9	0.007	20488	SELECT id, coalesce(resource_id,''), name, coalesce(description,''), coalesce(consent_text,''), sensitivity, is_default, kind, required_permissions, coalesce(step_up_acr,''), coalesce(max_auth_age_sec
+20481	150.7	0.007	20481	SELECT state IN ('active','recovery_restricted') FROM users WHERE realm_id=$1 AND id=$2
+148	135.1	0.913	148	SELECT pg_advisory_xact_lock(hashtext($1))

@@ -1,0 +1,194 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "complex-filter",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T16:41:34.219742Z",
+  "duration_s": 60.000550709,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 94,
+  "outcomes": {
+    "invalid_filter_bytes": 31,
+    "invalid_filter_nodes": 31,
+    "transport_error": 32
+  },
+  "throughput_per_s": 1.5666522871747597,
+  "latency_ms": {
+    "mean": 10225.283372340426,
+    "p50": 25.6,
+    "p90": 30001.233,
+    "p99": 30001.233,
+    "p999": 30001.233,
+    "max": 30001.233
+  },
+  "histogram": [
+    {
+      "le_ms": 7.168,
+      "count": 1
+    },
+    {
+      "le_ms": 7.424,
+      "count": 1
+    },
+    {
+      "le_ms": 7.936,
+      "count": 3
+    },
+    {
+      "le_ms": 8.192,
+      "count": 1
+    },
+    {
+      "le_ms": 9.728,
+      "count": 2
+    },
+    {
+      "le_ms": 10.24,
+      "count": 2
+    },
+    {
+      "le_ms": 10.752,
+      "count": 1
+    },
+    {
+      "le_ms": 11.776,
+      "count": 3
+    },
+    {
+      "le_ms": 12.288,
+      "count": 3
+    },
+    {
+      "le_ms": 12.8,
+      "count": 2
+    },
+    {
+      "le_ms": 13.824,
+      "count": 1
+    },
+    {
+      "le_ms": 14.336,
+      "count": 1
+    },
+    {
+      "le_ms": 14.848,
+      "count": 1
+    },
+    {
+      "le_ms": 15.36,
+      "count": 5
+    },
+    {
+      "le_ms": 16.384,
+      "count": 3
+    },
+    {
+      "le_ms": 17.408,
+      "count": 2
+    },
+    {
+      "le_ms": 18.432,
+      "count": 3
+    },
+    {
+      "le_ms": 19.456,
+      "count": 1
+    },
+    {
+      "le_ms": 20.48,
+      "count": 2
+    },
+    {
+      "le_ms": 21.504,
+      "count": 3
+    },
+    {
+      "le_ms": 23.552,
+      "count": 2
+    },
+    {
+      "le_ms": 24.576,
+      "count": 3
+    },
+    {
+      "le_ms": 25.6,
+      "count": 1
+    },
+    {
+      "le_ms": 26.624,
+      "count": 2
+    },
+    {
+      "le_ms": 27.648,
+      "count": 4
+    },
+    {
+      "le_ms": 28.672,
+      "count": 1
+    },
+    {
+      "le_ms": 30.72,
+      "count": 2
+    },
+    {
+      "le_ms": 31.744,
+      "count": 1
+    },
+    {
+      "le_ms": 34.816,
+      "count": 4
+    },
+    {
+      "le_ms": 36.864,
+      "count": 1
+    },
+    {
+      "le_ms": 30408.704,
+      "count": 32
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "warm-up used benign discovery requests only, so warm-up did not consume the measured attack budgets; scenario notes describe any fixture preparation budget use",
+    "one additional isolated connector with 10000 additional managed users, matching seed.spec.users; public-API setup took 659.472s and is unmeasured",
+    "fixture writes start at least 65ms apart under the unchanged 1200/minute connector budget; preparation consumes that budget, and no counter is reset or raised before measurement",
+    "operations alternate 64-node full-scan true/false filters, a 65-node filter and a 1025-byte filter; valid results must prove exact counts, bounded pages and owned IDs; refusals must be SCIM errors with retry guidance",
+    "measurement is unpaced at the requested concurrency on one connector; aggregate latency includes budget refusals and is not successful query capacity; connector authority remains in memory and is cleared at close"
+  ],
+  "observations": {
+    "after": {
+      "connector_budget_per_minute": 1200,
+      "fixture_users_confirmed": 10000,
+      "managed_users": 10000,
+      "overflow_filter_bytes": 1025,
+      "overflow_filter_nodes": 65,
+      "prepared_seconds": 659.471916,
+      "requested_page_size": 1000,
+      "required_max_page_size": 200,
+      "scope": "one connector; additional owned Users; no connector tokens or fixture IDs published",
+      "subject_connectors": 1,
+      "valid_filter_nodes": 64
+    },
+    "before": {
+      "connector_budget_per_minute": 1200,
+      "fixture_users_confirmed": 10000,
+      "managed_users": 10000,
+      "overflow_filter_bytes": 1025,
+      "overflow_filter_nodes": 65,
+      "prepared_seconds": 659.471916,
+      "requested_page_size": 1000,
+      "required_max_page_size": 200,
+      "scope": "one connector; additional owned Users; no connector tokens or fixture IDs published",
+      "subject_connectors": 1,
+      "valid_filter_nodes": 64
+    }
+  },
+  "complete": true
+}

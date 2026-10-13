@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/support.impersonation.started.v2.json",
+  "title": "support.impersonation.started (v2)",
+  "description": "A support impersonation grant was issued. Emitted when an approved support access request is turned into an active impersonation grant and the support actor's impersonation access token is issued. org_id is always set (support grants are organization-scoped).",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v2.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "support.impersonation.started"
+    },
+    "event_version": {
+      "const": 2
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. Minimal payload form (the subscription default) omits: expires_at. Standard form contains every listed member.",
+      "required": [
+        "grant_id",
+        "actor_user_id",
+        "target_user_id"
+      ],
+      "properties": {
+        "grant_id": {
+          "$ref": "envelope.v2.json#/$defs/impersonation_grant_id",
+          "description": "The impersonation grant."
+        },
+        "actor_user_id": {
+          "$ref": "envelope.v2.json#/$defs/user_id",
+          "description": "The support user acting on the customer's behalf."
+        },
+        "target_user_id": {
+          "$ref": "envelope.v2.json#/$defs/user_id",
+          "description": "The customer user being impersonated."
+        },
+        "expires_at": {
+          "$ref": "envelope.v2.json#/$defs/timestamp",
+          "description": "When the grant expires. Standard payload form only: removed in the minimal form.",
+          "x-payload-form": "standard"
+        }
+      },
+      "additionalProperties": false
+    },
+    "organization_id": {
+      "description": "Always set for this event type."
+    }
+  },
+  "required": [
+    "organization_id"
+  ],
+  "x-event-type": "support.impersonation.started",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/impersonation/impersonation.go: (*Service).Issue"
+  ],
+  "x-org-scoped": "always",
+  "examples": [
+    {
+      "event_id": "obx_01jbchvvmczzvhz7xxgvxx18wv",
+      "event_type": "support.impersonation.started",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "grant_id": "imp_01jbhmgppek0xk2b1trf12kvsp",
+        "actor_user_id": "usr_01jb05hf4ax5p58ha225xrm178",
+        "target_user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "expires_at": "2026-10-10T12:40:00.123456789Z"
+      }
+    },
+    {
+      "event_id": "obx_01jbchvvmczzvhz7xxgvxx18wv",
+      "event_type": "support.impersonation.started",
+      "event_version": 2,
+      "payload_form": "minimal",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "grant_id": "imp_01jbhmgppek0xk2b1trf12kvsp",
+        "actor_user_id": "usr_01jb05hf4ax5p58ha225xrm178",
+        "target_user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d"
+      }
+    }
+  ]
+}

@@ -1,0 +1,717 @@
+{
+  "budgets": {
+    "harness_login_per_ip": 10000,
+    "harness_send_cooldown_seconds": 1,
+    "harness_send_per_identifier": 50,
+    "harness_send_per_ip": 10000,
+    "harness_token_per_client": 10000,
+    "login_per_client": 20000,
+    "login_per_identifier": 10,
+    "login_per_organization": 10000,
+    "login_per_realm": 50000,
+    "login_window_seconds": 900,
+    "otp_challenge_max_attempts": 5,
+    "otp_verify_per_account": 10,
+    "otp_verify_window_seconds": 900,
+    "proof_limits_raised": false,
+    "send_window_seconds": 3600,
+    "token_window_seconds": 60
+  },
+  "cleanup": {
+    "dedicated_postgresql_containers": "all owned containers removed by cleanup traps",
+    "private_logs": "not published; removed after final verification"
+  },
+  "correction": "Resolve only the realm/transaction-bound login challenge account for proof-budget selection. Keep unknown-account identifier budgets, do not grant transaction authority, and fail closed on lookup errors; known accounts use their common key during registration verification too.",
+  "date": "2026-10-12",
+  "environment": {
+    "application_topology": "three in-process HTTP runtimes with independent pools, transaction limits, keyrings and signing caches; shared database, equivalent copied roots and deterministic clock",
+    "cpu": "Apple M4 Pro",
+    "go": "go1.27.1 darwin/arm64",
+    "harness_configuration": {
+      "argon2_memory_kib": 8192,
+      "argon2_time": 1,
+      "email_adapter": "dev_sink",
+      "min_auth_response": "0s",
+      "mode": "development",
+      "rsa_bits": 2048,
+      "secrets": "not published",
+      "sms_adapter": "dev_sink",
+      "sms_allowed_countries": [
+        "+1"
+      ],
+      "trusted_proxies": [
+        "127.0.0.1/32",
+        "::1/128"
+      ]
+    },
+    "logical_cpus": 12,
+    "machine_model": "Mac16,8",
+    "memory_bytes": 25769803776,
+    "os": "macOS 27.0.1 (26A434)",
+    "pool_max_connections": [
+      20,
+      10,
+      10
+    ],
+    "postgresql": "18.6",
+    "postgresql_image_id": "sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722",
+    "postgresql_settings": {
+      "authentication": "trust, disposable loopback test database",
+      "fixture_port": 50379,
+      "full_port": 56309,
+      "listen_binding": "127.0.0.1",
+      "max_connections": 120,
+      "memory_limit_bytes": 3221225472,
+      "shared_buffers": "128MB",
+      "targeted_port": 54286,
+      "tmpfs_bytes": 2147483648
+    }
+  },
+  "final_fixture_verification": {
+    "case_elapsed_seconds": {
+      "TestReplicaOTPGuessBudgets": [
+        7.91,
+        8,
+        8.09
+      ],
+      "TestReplicaOTPGuessBudgets/email": [
+        1.63,
+        1.49,
+        1.52
+      ],
+      "TestReplicaOTPGuessBudgets/hotp": [
+        1.75,
+        1.83,
+        1.68
+      ],
+      "TestReplicaOTPGuessBudgets/mixed": [
+        1.62,
+        1.62,
+        1.72
+      ],
+      "TestReplicaOTPGuessBudgets/sms": [
+        1.51,
+        1.54,
+        1.59
+      ],
+      "TestReplicaOTPGuessBudgets/unknown": [
+        1.4,
+        1.53,
+        1.58
+      ]
+    },
+    "command": "go test -json -race -count=3 -failfast -timeout=2m ./tests/e2e -run '^TestReplicaOTPGuessBudgets$'",
+    "exit_code": 0,
+    "failed_tests": [],
+    "frozen_files_sha256": {
+      "internal/authentication/steps.go": "76f70dd87cdb15469e5c6403c3358e1b2646087f4b900a7480dfbacb31f99189",
+      "tests/contract/traceability_test.go": "a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6",
+      "tests/e2e/harness_test.go": "1a726d662cf5e4e03bc56f98e0788589eaf4bd5469d9db6c15a67d6f198a94a1",
+      "tests/e2e/multinode_test.go": "9292abf422221a14f2ffb0353b1dbdf48a18c6713b0ff0ce53ce63db2abb6085",
+      "tests/e2e/replica_consistency_test.go": "5682b5a037e667742c02a550b78aaf66a1fe76fe7e775beaa0d22b602ba683b3",
+      "tests/e2e/replica_otp_budgets_test.go": "1d560591f3e7c528bdb1227e69600d251837f132f55d6dcc9dae4ae403fd1fc9"
+    },
+    "note": "Final fixture-only refinement excludes accidental correct six-digit phantom codes using their private challenge verifier; production code and test assertions are unchanged. The full suite and earlier targeted run retain their original frozen test hashes.",
+    "package_elapsed_seconds": 25.725,
+    "passed_subtests": 15,
+    "passed_top_tests": 3,
+    "skipped_tests": 0
+  },
+  "full": {
+    "command": "go test -json -race -count=1 -p=2 -timeout=20m ./...",
+    "exit_code": 0,
+    "failed_tests": [],
+    "packages": {
+      "github.com/proudauth/cmd/identity-bench": {
+        "action": "pass",
+        "elapsed_seconds": 2.266
+      },
+      "github.com/proudauth/cmd/identity-cli": {
+        "action": "pass",
+        "elapsed_seconds": 9.598
+      },
+      "github.com/proudauth/cmd/identity-server": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/cmd/identity-worker": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/examples/backend-for-frontend": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/examples/backend-for-frontend/bff": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/examples/machine-client": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/examples/protected-billing-api": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/examples/protected-billing-api/billingapi": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/examples/protected-orders-api": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/examples/protected-orders-api/ordersapi": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/application": {
+        "action": "pass",
+        "elapsed_seconds": 1.306
+      },
+      "github.com/proudauth/internal/audit": {
+        "action": "pass",
+        "elapsed_seconds": 1.312
+      },
+      "github.com/proudauth/internal/authentication": {
+        "action": "pass",
+        "elapsed_seconds": 1.326
+      },
+      "github.com/proudauth/internal/authorization": {
+        "action": "pass",
+        "elapsed_seconds": 1.309
+      },
+      "github.com/proudauth/internal/bench": {
+        "action": "pass",
+        "elapsed_seconds": 11.505
+      },
+      "github.com/proudauth/internal/certauth": {
+        "action": "pass",
+        "elapsed_seconds": 1.322
+      },
+      "github.com/proudauth/internal/configuration": {
+        "action": "pass",
+        "elapsed_seconds": 2.616
+      },
+      "github.com/proudauth/internal/contracts": {
+        "action": "pass",
+        "elapsed_seconds": 1.512
+      },
+      "github.com/proudauth/internal/contracts/schemacheck": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/credential": {
+        "action": "pass",
+        "elapsed_seconds": 15.003
+      },
+      "github.com/proudauth/internal/directory": {
+        "action": "pass",
+        "elapsed_seconds": 2.425
+      },
+      "github.com/proudauth/internal/directory/ldaptest": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/egress": {
+        "action": "pass",
+        "elapsed_seconds": 1.297
+      },
+      "github.com/proudauth/internal/events": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/federation": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/hooks": {
+        "action": "pass",
+        "elapsed_seconds": 1.301
+      },
+      "github.com/proudauth/internal/httpapi": {
+        "action": "pass",
+        "elapsed_seconds": 1.631
+      },
+      "github.com/proudauth/internal/identity": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/impersonation": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/jobs": {
+        "action": "pass",
+        "elapsed_seconds": 2.8040000000000003
+      },
+      "github.com/proudauth/internal/keys": {
+        "action": "pass",
+        "elapsed_seconds": 1.259
+      },
+      "github.com/proudauth/internal/machine": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/maintenance": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/migrate": {
+        "action": "pass",
+        "elapsed_seconds": 16.774
+      },
+      "github.com/proudauth/internal/notification": {
+        "action": "pass",
+        "elapsed_seconds": 1.316
+      },
+      "github.com/proudauth/internal/oauth": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/observability": {
+        "action": "pass",
+        "elapsed_seconds": 1.2650000000000001
+      },
+      "github.com/proudauth/internal/organization": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/passkey": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/platform/canonical": {
+        "action": "pass",
+        "elapsed_seconds": 1.29
+      },
+      "github.com/proudauth/internal/platform/clock": {
+        "action": "pass",
+        "elapsed_seconds": 1.306
+      },
+      "github.com/proudauth/internal/platform/ids": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/platform/problem": {
+        "action": "pass",
+        "elapsed_seconds": 1.292
+      },
+      "github.com/proudauth/internal/platform/reqctx": {
+        "action": "pass",
+        "elapsed_seconds": 1.341
+      },
+      "github.com/proudauth/internal/platform/secret": {
+        "action": "pass",
+        "elapsed_seconds": 1.311
+      },
+      "github.com/proudauth/internal/platform/tracing": {
+        "action": "pass",
+        "elapsed_seconds": 1.482
+      },
+      "github.com/proudauth/internal/plugin": {
+        "action": "pass",
+        "elapsed_seconds": 1.322
+      },
+      "github.com/proudauth/internal/provision": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/provisioning": {
+        "action": "pass",
+        "elapsed_seconds": 1.31
+      },
+      "github.com/proudauth/internal/ratelimit": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/realm": {
+        "action": "pass",
+        "elapsed_seconds": 1.333
+      },
+      "github.com/proudauth/internal/registry": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/restore": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/runtime": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/saml": {
+        "action": "pass",
+        "elapsed_seconds": 1.521
+      },
+      "github.com/proudauth/internal/saml/idp": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/server": {
+        "action": "pass",
+        "elapsed_seconds": 1.373
+      },
+      "github.com/proudauth/internal/session": {
+        "action": "pass",
+        "elapsed_seconds": 1.325
+      },
+      "github.com/proudauth/internal/ssf": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/storage": {
+        "action": "pass",
+        "elapsed_seconds": 4.283
+      },
+      "github.com/proudauth/internal/testutil": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/token": {
+        "action": "pass",
+        "elapsed_seconds": 1.303
+      },
+      "github.com/proudauth/internal/webhooks": {
+        "action": "pass",
+        "elapsed_seconds": 1.315
+      },
+      "github.com/proudauth/internal/worker": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/internal/workflow": {
+        "action": "pass",
+        "elapsed_seconds": 1.454
+      },
+      "github.com/proudauth/internal/workload": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/migrations": {
+        "action": "skip",
+        "elapsed_seconds": 0
+      },
+      "github.com/proudauth/sdk/go/admin": {
+        "action": "pass",
+        "elapsed_seconds": 1.289
+      },
+      "github.com/proudauth/sdk/go/internal/httpclient": {
+        "action": "pass",
+        "elapsed_seconds": 1.453
+      },
+      "github.com/proudauth/sdk/go/oidcclient": {
+        "action": "pass",
+        "elapsed_seconds": 1.353
+      },
+      "github.com/proudauth/sdk/go/verifier": {
+        "action": "pass",
+        "elapsed_seconds": 1.534
+      },
+      "github.com/proudauth/tests/contract": {
+        "action": "pass",
+        "elapsed_seconds": 32.698
+      },
+      "github.com/proudauth/tests/e2e": {
+        "action": "pass",
+        "elapsed_seconds": 748.725
+      }
+    },
+    "packages_without_test_files": 32,
+    "passed_subtests": 462,
+    "passed_test_packages": 42,
+    "passed_top_tests": 689,
+    "selected_cases": {
+      "TestBenchOTPGuessesShareAccountBudget": {
+        "elapsed_seconds": 7.35,
+        "result": "pass"
+      },
+      "TestBenchSuiteSmoke": {
+        "elapsed_seconds": 55.91,
+        "result": "pass"
+      },
+      "TestHOTP": {
+        "elapsed_seconds": 2.51,
+        "result": "pass"
+      },
+      "TestPasswordlessAndAbuseBudgets": {
+        "elapsed_seconds": 1.9,
+        "result": "pass"
+      },
+      "TestReplicaOTPGuessBudgets": {
+        "elapsed_seconds": 7.87,
+        "result": "pass"
+      },
+      "TestReplicaRecoveryConsumptionStress": {
+        "elapsed_seconds": 3.85,
+        "result": "pass"
+      },
+      "TestRequirementsTraceability": {
+        "elapsed_seconds": 7.24,
+        "result": "pass"
+      },
+      "TestTokenIssuanceBeyondConnectionPool": {
+        "elapsed_seconds": 14.39,
+        "result": "pass"
+      },
+      "TestVerificationBudgetPerClient": {
+        "elapsed_seconds": 1.44,
+        "result": "pass"
+      },
+      "TestWorkerPoolBoundsAndTenantShares": {
+        "elapsed_seconds": 1.32,
+        "result": "pass"
+      }
+    },
+    "skipped_tests": 0,
+    "wall_seconds": 810.366
+  },
+  "kind": "shared-otp-budget-correctness",
+  "limits": [
+    "Correctness bursts on one laptop; no throughput/latency or production capacity claim.",
+    "Window rollover uses a deterministic clock, not a real elapsed-time soak.",
+    "Email/SMS terminate in local dev sinks; no remote provider delivery is measured.",
+    "Three in-process HTTP runtimes are independent but cohosted; no multi-machine or physical network/host failure evidence.",
+    "Historical capacity artifacts retain their measured source versions.",
+    "Older server instances still use identifier buckets; no migration of prior passwordless counters."
+  ],
+  "offline_environment": {
+    "GOFLAGS": "-mod=readonly -buildvcs=false",
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local"
+  },
+  "pre_fix": {
+    "cases": {
+      "email": {
+        "elapsed_seconds": 1.59,
+        "result": "pass"
+      },
+      "hotp": {
+        "elapsed_seconds": 1.71,
+        "result": "pass"
+      },
+      "mixed": {
+        "elapsed_seconds": 1.51,
+        "result": "fail"
+      },
+      "sms": {
+        "elapsed_seconds": 1.52,
+        "result": "pass"
+      }
+    },
+    "command": "go test -json -race -count=1 -timeout=3m ./tests/e2e -run '^TestReplicaOTPGuessBudgets$'",
+    "exit_code": 1,
+    "mixed_observed": {
+      "expected_invalid_proof": 10,
+      "expected_rate_limited": 22,
+      "invalid_proof": 28,
+      "rate_limited": 4
+    },
+    "observation_scope": "pre-fix mixed profile failed at exact HTTP outcomes before its post-burst database assertions",
+    "package_elapsed_seconds": 6.973,
+    "source_digest": "f66bc581a3dc5efb"
+  },
+  "profiles": {
+    "email": {
+      "challenge_attempts_match_evaluated_channel_guesses": true,
+      "concurrency": 32,
+      "durable_evidence_checked_on_all_three_pools": true,
+      "executions": 3,
+      "exhausted_budget_control": "429 before window rollover",
+      "invalid_proof_per_execution": 10,
+      "max_transaction_failures": 4,
+      "next_window_control": "fresh real proof completes once on every pool",
+      "pending_transactions_per_execution": 8,
+      "per_method_failure_audits_match": true,
+      "positive_retry_after": true,
+      "rate_limited_per_execution": 22,
+      "requests_per_execution": 32,
+      "result": "pass",
+      "source_ips_per_execution": 8,
+      "transaction_failures_per_execution": 10
+    },
+    "hotp": {
+      "challenge_attempts_match_evaluated_channel_guesses": true,
+      "concurrency": 32,
+      "durable_evidence_checked_on_all_three_pools": true,
+      "executions": 3,
+      "exhausted_budget_control": "429 before window rollover",
+      "invalid_proof_per_execution": 10,
+      "max_transaction_failures": 4,
+      "next_window_control": "fresh real proof completes once on every pool",
+      "pending_transactions_per_execution": 8,
+      "per_method_failure_audits_match": true,
+      "positive_retry_after": true,
+      "rate_limited_per_execution": 22,
+      "requests_per_execution": 32,
+      "result": "pass",
+      "source_ips_per_execution": 8,
+      "transaction_failures_per_execution": 10
+    },
+    "mixed": {
+      "challenge_attempts_match_evaluated_channel_guesses": true,
+      "concurrency": 32,
+      "durable_evidence_checked_on_all_three_pools": true,
+      "executions": 3,
+      "exhausted_budget_control": "429 before window rollover",
+      "invalid_proof_per_execution": 10,
+      "max_transaction_failures": 4,
+      "next_window_control": "fresh real proof completes once on every pool",
+      "pending_transactions_per_execution": 8,
+      "per_method_failure_audits_match": true,
+      "positive_retry_after": true,
+      "rate_limited_per_execution": 22,
+      "requests_per_execution": 32,
+      "result": "pass",
+      "source_ips_per_execution": 8,
+      "transaction_failures_per_execution": 10
+    },
+    "sms": {
+      "challenge_attempts_match_evaluated_channel_guesses": true,
+      "concurrency": 32,
+      "durable_evidence_checked_on_all_three_pools": true,
+      "executions": 3,
+      "exhausted_budget_control": "429 before window rollover",
+      "invalid_proof_per_execution": 10,
+      "max_transaction_failures": 4,
+      "next_window_control": "fresh real proof completes once on every pool",
+      "pending_transactions_per_execution": 8,
+      "per_method_failure_audits_match": true,
+      "positive_retry_after": true,
+      "rate_limited_per_execution": 22,
+      "requests_per_execution": 32,
+      "result": "pass",
+      "source_ips_per_execution": 8,
+      "transaction_failures_per_execution": 10
+    },
+    "unknown": {
+      "challenge_attempts_match_evaluated_channel_guesses": true,
+      "concurrency": 32,
+      "durable_evidence_checked_on_all_three_pools": true,
+      "executions": 3,
+      "exhausted_budget_control": "429 before window rollover",
+      "invalid_proof_per_execution": 10,
+      "max_transaction_failures": 4,
+      "next_window_control": "400 invalid_proof; transaction remains unauthenticated",
+      "pending_transactions_per_execution": 8,
+      "per_method_failure_audits_match": true,
+      "positive_retry_after": true,
+      "rate_limited_per_execution": 22,
+      "requests_per_execution": 32,
+      "result": "pass",
+      "source_ips_per_execution": 8,
+      "transaction_failures_per_execution": 10
+    }
+  },
+  "source": {
+    "frozen_files_sha256": {
+      "internal/authentication/steps.go": "76f70dd87cdb15469e5c6403c3358e1b2646087f4b900a7480dfbacb31f99189",
+      "tests/contract/traceability_test.go": "a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6",
+      "tests/e2e/harness_test.go": "1a726d662cf5e4e03bc56f98e0788589eaf4bd5469d9db6c15a67d6f198a94a1",
+      "tests/e2e/multinode_test.go": "9292abf422221a14f2ffb0353b1dbdf48a18c6713b0ff0ce53ce63db2abb6085",
+      "tests/e2e/replica_consistency_test.go": "5682b5a037e667742c02a550b78aaf66a1fe76fe7e775beaa0d22b602ba683b3",
+      "tests/e2e/replica_otp_budgets_test.go": "f446204211ea3b7eb2962bcab528f028162d3fade9f362a31886839282ceaed2"
+    },
+    "git_commit": null,
+    "production_digest": "d5f3fe38b61f4a4e"
+  },
+  "targeted": {
+    "case_elapsed_seconds": {
+      "TestBenchOTPGuessesShareAccountBudget": [
+        7.33,
+        7.35,
+        7.33
+      ],
+      "TestBenchOTPGuessesShareAccountBudget/concurrent_account_budget": [
+        3.65,
+        3.63,
+        3.62
+      ],
+      "TestBenchOTPGuessesShareAccountBudget/transaction_retirement": [
+        3.68,
+        3.71,
+        3.72
+      ],
+      "TestHOTP": [
+        2.52,
+        2.43,
+        2.47
+      ],
+      "TestPasswordlessAndAbuseBudgets": [
+        1.94,
+        1.87,
+        1.94
+      ],
+      "TestPasswordlessAndAbuseBudgets/SMS_one-time_code_sign-in": [
+        0.17,
+        0.17,
+        0.17
+      ],
+      "TestPasswordlessAndAbuseBudgets/magic_links_are_transaction-bound_and_scanner-safe": [
+        0.08,
+        0.1,
+        0.09
+      ],
+      "TestPasswordlessAndAbuseBudgets/per-organization_issuance_budget": [
+        0.05,
+        0.05,
+        0.05
+      ],
+      "TestPasswordlessAndAbuseBudgets/temporary_password_lock_is_bounded_and_not_a_permanent_lockout": [
+        0.48,
+        0.48,
+        0.48
+      ],
+      "TestReplicaOTPGuessBudgets": [
+        7.96,
+        8.32,
+        7.97
+      ],
+      "TestReplicaOTPGuessBudgets/email": [
+        1.5,
+        1.47,
+        1.6
+      ],
+      "TestReplicaOTPGuessBudgets/hotp": [
+        1.69,
+        2.02,
+        1.78
+      ],
+      "TestReplicaOTPGuessBudgets/mixed": [
+        1.59,
+        1.68,
+        1.64
+      ],
+      "TestReplicaOTPGuessBudgets/sms": [
+        1.56,
+        1.71,
+        1.48
+      ],
+      "TestReplicaOTPGuessBudgets/unknown": [
+        1.62,
+        1.45,
+        1.46
+      ],
+      "TestReplicaRecoveryConsumptionStress": [
+        3.7,
+        3.72,
+        3.75
+      ],
+      "TestVerificationBudgetPerClient": [
+        1.42,
+        1.39,
+        1.39
+      ]
+    },
+    "command": "go test -json -race -count=3 -failfast -timeout=5m ./tests/e2e -run '^(TestReplicaOTPGuessBudgets|TestBenchOTPGuessesShareAccountBudget|TestHOTP|TestPasswordlessAndAbuseBudgets|TestVerificationBudgetPerClient|TestReplicaRecoveryConsumptionStress)$'",
+    "exit_code": 0,
+    "failed_tests": [],
+    "package_elapsed_seconds": 76.485,
+    "passed_subtests": 33,
+    "passed_top_tests": 18,
+    "skipped_tests": 0
+  }
+}

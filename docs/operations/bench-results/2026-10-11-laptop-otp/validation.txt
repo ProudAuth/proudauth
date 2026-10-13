@@ -1,0 +1,75 @@
+TOTP guessing reference evidence (NFR-006, NFR-008), 2026-10-11.
+
+All builds/checks used GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local and
+GOFLAGS='-mod=readonly -buildvcs=false'. Nothing was downloaded or committed.
+
+Before measurement:
+- go test -race ./internal/bench ./cmd/identity-bench: PASS,
+  internal/bench 11.754s, cmd/identity-bench 2.243s.
+  RFC 4226 vectors verify the independent standard-HMAC generator. Guesses
+  exclude every valid code in the declared clock window. Outcome tests
+  reject accepted codes, missing retry guidance and unproven transaction
+  closure, and check result redaction and secret/authority cleanup.
+- Own disposable PostgreSQL 18.6, OS-allocated loopback port:
+  go test -race -count=1 -v ./tests/e2e
+  -run '^(TestBenchSuiteSmoke|TestBenchOTPGuessesShareAccountBudget|TestTokenIssuanceBeyondConnectionPool)$'
+  PASS, 68.035s: OTP regression 3.89s, all 22 smoke scenarios 45.97s,
+  connection-pool regression 16.09s. The smoke measures no capacity.
+- go vet ./internal/bench ./cmd/identity-bench: PASS.
+- sh -n scripts/bench-local.sh: PASS.
+- scripts/check-secrets.sh and scripts/check-licenses.sh: PASS.
+- Requirements traceability contract: PASS, 0.825s. Only the matrix's
+  two evidence rows were updated using the unchanged generator's preview.
+  tests/contract/traceability_test.go remains unchanged, SHA-256:
+  a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6.
+
+Measurement:
+- Fresh default-size seed 1, seeding 173s; one dedicated database, one host
+  server/worker and same-host load generator, source 856906a70f82cbc3, dev.
+- No Go tests ran during preparation/warm-up/measurement.
+- Complete 60.000296417s run, concurrency 32, benign warm-up 5s:
+  87848 operations, 1464.1261/s, p50 22.528ms, p99 27.648ms,
+  p99.9 40.960ms. Exactly 10 invalid_proof and 87838 rate_limited;
+  every rate-limit response had positive integer Retry-After.
+- Independent database/audit evidence agrees: one new account, eight
+  pending transactions, 10 evaluated failures, 10 failed-factor events,
+  maximum two failures on one transaction, no closed transaction. This
+  concurrent measurement did not reach the five-failure transaction bound.
+- OTP budget 10/15m, transaction bound five and identifier budget 10/15m
+  were unchanged. Only the four documented login/token source budgets
+  were raised. No soak, token expiry/rotation or maintenance event scheduled.
+- PASS, runner exit 0. No ProudAuth defect found in this profile.
+- Runner compared published files against private seed/client/admin
+  credentials, database password and root key before deleting them.
+  TOTP authority is held only in memory; notes/observations contain counts
+  and static scope only, with redaction/cleanup tests. No guesses, recovery
+  codes, seed file or continuation token are published.
+- Own container, volume, host processes and work directory removed. No
+  existing container was touched. Temporary test databases/containers and
+  preview helpers were also removed.
+
+After measurement:
+- The final OTP regression adds a separate sequential fixture:
+  go test -race -count=1 -v ./tests/e2e
+  -run '^TestBenchOTPGuessesShareAccountBudget$'
+  PASS, 9.422s. Concurrent case 3.80s, sequential case 3.90s. The sequential
+  case proves exactly two authenticated transaction_limit retirements,
+  two failed transactions at five failures each, six pending transactions
+  and the same ten evaluated/audited proofs before account refusals.
+- Final requirements traceability contract PASS, 1.065s; the protected
+  contract's SHA-256 is unchanged. Final vet (bench, CLI and E2E), shell
+  syntax, gofmt, secret and license checks PASS.
+- Publication verification PASS: six JSON companion files parse; operation,
+  histogram and outcome totals, throughput arithmetic, rounded table cells,
+  stored proof/audit counts and complete/pass flags match the raw evidence.
+  Recursive checks found no JWT/private key or secret-bearing result field,
+  seed or credential file. No own container, volume, process or work/helper
+  directory remains. Source digest still equals 856906a70f82cbc3.
+- All four earlier artifact manifests remain intact: 176 file hashes.
+
+Limits: one laptop, loopback, one realm/server; mostly already-budgeted
+refusals, not successful MFA capacity. SHA1/six-digit/30-second TOTP only;
+no email/SMS/HOTP, multi-node attacks, complex-filter/metadata-fetch abuse,
+independent security review or full NFR-006 completion claim. Transaction
+setup/measurement must stay within its TTL and declared clock assumptions.
+The artifact manifest covers all companion files except itself.

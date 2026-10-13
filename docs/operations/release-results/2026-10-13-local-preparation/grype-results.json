@@ -1,0 +1,617 @@
+{
+  "matches": [
+    {
+      "vulnerability": {
+        "id": "GO-2026-5932",
+        "dataSource": "https://go.dev/issue/44226",
+        "namespace": "govulndb:language:go",
+        "severity": "Unknown",
+        "urls": [],
+        "description": "The golang.org/x/crypto/openpgp package is unsafe by design, has numerous known security issues, is not maintained, and should not be used.\n\nIf you are required to interoperate with OpenPGP systems and need a maintained package, consider github.com/ProtonMail/go-crypto/openpgp which is a maintained fork that aims to be a drop-in replacement for this package.",
+        "cvss": [],
+        "fix": {
+          "versions": [],
+          "state": ""
+        },
+        "advisories": [],
+        "risk": 0
+      },
+      "relatedVulnerabilities": [],
+      "matchDetails": [
+        {
+          "type": "exact-direct-match",
+          "matcher": "go-module-matcher",
+          "searchedBy": {
+            "language": "go",
+            "namespace": "govulndb:language:go",
+            "package": {
+              "name": "golang.org/x/crypto",
+              "version": "v0.58.0"
+            }
+          },
+          "found": {
+            "vulnerabilityID": "GO-2026-5932",
+            "versionConstraint": "none (unknown)"
+          }
+        }
+      ],
+      "artifact": {
+        "id": "6a5681f81b2d1b38",
+        "name": "golang.org/x/crypto",
+        "version": "v0.58.0",
+        "type": "go-module",
+        "locations": [
+          {
+            "path": "/usr/local/bin/identity-cli",
+            "layerID": "sha256:ada42e9ae3d27c664082f740bf2979ee48100f50d939861c5d02dff3d969d78d",
+            "accessPath": "/usr/local/bin/identity-cli",
+            "annotations": {
+              "evidence": "primary"
+            }
+          }
+        ],
+        "language": "go",
+        "licenses": [],
+        "cpes": [
+          "cpe:2.3:a:golang:x\\/crypto:v0.58.0:*:*:*:*:*:*:*"
+        ],
+        "purl": "pkg:golang/golang.org/x/crypto@v0.58.0",
+        "upstreams": [],
+        "metadataType": "GolangBinMetadata",
+        "metadata": {
+          "goCompiledVersion": "go1.27.2",
+          "architecture": "arm64",
+          "h1Digest": "h1:COkYLr4k7nDI4r6QtMML2AfzeIswWHAJthLS6K/M/54=",
+          "mainModule": "github.com/proudauth"
+        }
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "GO-2026-5932",
+        "dataSource": "https://go.dev/issue/44226",
+        "namespace": "govulndb:language:go",
+        "severity": "Unknown",
+        "urls": [],
+        "description": "The golang.org/x/crypto/openpgp package is unsafe by design, has numerous known security issues, is not maintained, and should not be used.\n\nIf you are required to interoperate with OpenPGP systems and need a maintained package, consider github.com/ProtonMail/go-crypto/openpgp which is a maintained fork that aims to be a drop-in replacement for this package.",
+        "cvss": [],
+        "fix": {
+          "versions": [],
+          "state": ""
+        },
+        "advisories": [],
+        "risk": 0
+      },
+      "relatedVulnerabilities": [],
+      "matchDetails": [
+        {
+          "type": "exact-direct-match",
+          "matcher": "go-module-matcher",
+          "searchedBy": {
+            "language": "go",
+            "namespace": "govulndb:language:go",
+            "package": {
+              "name": "golang.org/x/crypto",
+              "version": "v0.58.0"
+            }
+          },
+          "found": {
+            "vulnerabilityID": "GO-2026-5932",
+            "versionConstraint": "none (unknown)"
+          }
+        }
+      ],
+      "artifact": {
+        "id": "443859cfbd026338",
+        "name": "golang.org/x/crypto",
+        "version": "v0.58.0",
+        "type": "go-module",
+        "locations": [
+          {
+            "path": "/usr/local/bin/identity-server",
+            "layerID": "sha256:ada42e9ae3d27c664082f740bf2979ee48100f50d939861c5d02dff3d969d78d",
+            "accessPath": "/usr/local/bin/identity-server",
+            "annotations": {
+              "evidence": "primary"
+            }
+          }
+        ],
+        "language": "go",
+        "licenses": [],
+        "cpes": [
+          "cpe:2.3:a:golang:x\\/crypto:v0.58.0:*:*:*:*:*:*:*"
+        ],
+        "purl": "pkg:golang/golang.org/x/crypto@v0.58.0",
+        "upstreams": [],
+        "metadataType": "GolangBinMetadata",
+        "metadata": {
+          "goCompiledVersion": "go1.27.2",
+          "architecture": "arm64",
+          "h1Digest": "h1:COkYLr4k7nDI4r6QtMML2AfzeIswWHAJthLS6K/M/54=",
+          "mainModule": "github.com/proudauth"
+        }
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "GO-2026-5932",
+        "dataSource": "https://go.dev/issue/44226",
+        "namespace": "govulndb:language:go",
+        "severity": "Unknown",
+        "urls": [],
+        "description": "The golang.org/x/crypto/openpgp package is unsafe by design, has numerous known security issues, is not maintained, and should not be used.\n\nIf you are required to interoperate with OpenPGP systems and need a maintained package, consider github.com/ProtonMail/go-crypto/openpgp which is a maintained fork that aims to be a drop-in replacement for this package.",
+        "cvss": [],
+        "fix": {
+          "versions": [],
+          "state": ""
+        },
+        "advisories": [],
+        "risk": 0
+      },
+      "relatedVulnerabilities": [],
+      "matchDetails": [
+        {
+          "type": "exact-direct-match",
+          "matcher": "go-module-matcher",
+          "searchedBy": {
+            "language": "go",
+            "namespace": "govulndb:language:go",
+            "package": {
+              "name": "golang.org/x/crypto",
+              "version": "v0.58.0"
+            }
+          },
+          "found": {
+            "vulnerabilityID": "GO-2026-5932",
+            "versionConstraint": "none (unknown)"
+          }
+        }
+      ],
+      "artifact": {
+        "id": "ba66cbbe2d9e8ef0",
+        "name": "golang.org/x/crypto",
+        "version": "v0.58.0",
+        "type": "go-module",
+        "locations": [
+          {
+            "path": "/usr/local/bin/identity-worker",
+            "layerID": "sha256:ada42e9ae3d27c664082f740bf2979ee48100f50d939861c5d02dff3d969d78d",
+            "accessPath": "/usr/local/bin/identity-worker",
+            "annotations": {
+              "evidence": "primary"
+            }
+          }
+        ],
+        "language": "go",
+        "licenses": [],
+        "cpes": [
+          "cpe:2.3:a:golang:x\\/crypto:v0.58.0:*:*:*:*:*:*:*"
+        ],
+        "purl": "pkg:golang/golang.org/x/crypto@v0.58.0",
+        "upstreams": [],
+        "metadataType": "GolangBinMetadata",
+        "metadata": {
+          "goCompiledVersion": "go1.27.2",
+          "architecture": "arm64",
+          "h1Digest": "h1:COkYLr4k7nDI4r6QtMML2AfzeIswWHAJthLS6K/M/54=",
+          "mainModule": "github.com/proudauth"
+        }
+      }
+    }
+  ],
+  "source": {
+    "type": "image",
+    "target": {
+      "userInput": "pa-bench-release-24958:dev-check-20261013-9e46df90789bcd6d",
+      "imageID": "sha256:3673e13b1cdcd692f5252b2d1c329e31e7f4e6547289d437c3972fcfa8a482ae",
+      "manifestDigest": "sha256:3f22d28aea151104ab5c3b5c52689686f963eae572ad321ba1bfc0b8d8c087ac",
+      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+      "tags": [
+        "pa-bench-release-24958:dev-check-20261013-9e46df90789bcd6d"
+      ],
+      "imageSize": 64840484,
+      "layers": [
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:6fc9269a8b4d61cdd276e80d170e4caa1566efc1b9f42442fdad4f69836b3c4f",
+          "size": 270748
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:8fa10c0194df9b7c054c90dbe482585f768a54428fc90a5b78a0066a123b1bba",
+          "size": 22888
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:35b5ba6e08cdd034b8d1920f9c7203e5d66f258e1915f164a01de0af14f34710",
+          "size": 1472041
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:114dde0fefebbca13165d0da9c500a66190e497a82a53dcaabc3172d630be1e9",
+          "size": 82129
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:4d049f83d9cf21d1f5cc0e11deaf36df02790d0e60c1a3829538fb4b61685368",
+          "size": 0
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:af5aa97ebe6ce1604747ec1e21af7136ded391bcabe4acef882e718a87c86bcc",
+          "size": 149
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:6f1cdceb6a3146f0ccb986521156bef8a422cdbb0863396f7f751f575ba308f4",
+          "size": 0
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:bd3cdfae1d3fdd83a2231d608969b38b82349777c2fff9a7c12d54f8ac5c9b38",
+          "size": 64
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:4cde6b0bb6f50a5f255eef7b2a42162c661cf776b803225dcac9a659e396bb6b",
+          "size": 0
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:ad51d0769d16ba578106a177987dfe3d2e02c1668c852b795b2f6b024068242a",
+          "size": 497
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:6e7fbcf090d09b73a4aa85f9dce690d0ace73877c150b7c56955487b6e7a822a",
+          "size": 346
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:5904c32f457c96a16c8c68f5ccdf518c8138cd9e5971de9ce6d564fc481af222",
+          "size": 260854
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:ada42e9ae3d27c664082f740bf2979ee48100f50d939861c5d02dff3d969d78d",
+          "size": 62718324
+        },
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:63a8368c7d1e07842b235db6a8500be54e19564cc9c7949149de6de6849ad0ef",
+          "size": 12444
+        }
+      ],
+      "manifest": "eyJzY2hlbWFWZXJzaW9uIjoyLCJtZWRpYVR5cGUiOiJhcHBsaWNhdGlvbi92bmQuZG9ja2VyLmRpc3RyaWJ1dGlvbi5tYW5pZmVzdC52Mitqc29uIiwiY29uZmlnIjp7Im1lZGlhVHlwZSI6ImFwcGxpY2F0aW9uL3ZuZC5kb2NrZXIuY29udGFpbmVyLmltYWdlLnYxK2pzb24iLCJzaXplIjozMjI3LCJkaWdlc3QiOiJzaGEyNTY6MzY3M2UxM2IxY2RjZDY5MmY1MjUyYjJkMWMzMjllMzFlN2Y0ZTY1NDcyODlkNDM3YzM5NzJmY2ZhOGE0ODJhZSJ9LCJsYXllcnMiOlt7Im1lZGlhVHlwZSI6ImFwcGxpY2F0aW9uL3ZuZC5kb2NrZXIuaW1hZ2Uucm9vdGZzLmRpZmYudGFyLmd6aXAiLCJzaXplIjo4MzkwMSwiZGlnZXN0Ijoic2hhMjU2OjZmYzkyNjlhOGI0ZDYxY2RkMjc2ZTgwZDE3MGU0Y2FhMTU2NmVmYzFiOWY0MjQ0MmZkYWQ0ZjY5ODM2YjNjNGYifSx7Im1lZGlhVHlwZSI6ImFwcGxpY2F0aW9uL3ZuZC5kb2NrZXIuaW1hZ2Uucm9vdGZzLmRpZmYudGFyLmd6aXAiLCJzaXplIjoxMjQ4MSwiZGlnZXN0Ijoic2hhMjU2OjhmYTEwYzAxOTRkZjliN2MwNTRjOTBkYmU0ODI1ODVmNzY4YTU0NDI4ZmM5MGE1Yjc4YTAwNjZhMTIzYjFiYmEifSx7Im1lZGlhVHlwZSI6ImFwcGxpY2F0aW9uL3ZuZC5kb2NrZXIuaW1hZ2Uucm9vdGZzLmRpZmYudGFyLmd6aXAiLCJzaXplIjo0NDU3MDksImRpZ2VzdCI6InNoYTI1NjozNWI1YmE2ZTA4Y2RkMDM0YjhkMTkyMGY5YzcyMDNlNWQ2NmYyNThlMTkxNWYxNjRhMDFkZTBhZjE0ZjM0NzEwIn0seyJtZWRpYVR5cGUiOiJhcHBsaWNhdGlvbi92bmQuZG9ja2VyLmltYWdlLnJvb3Rmcy5kaWZmLnRhci5nemlwIiwic2l6ZSI6MjkwMDUsImRpZ2VzdCI6InNoYTI1NjoxMTRkZGUwZmVmZWJiY2ExMzE2NWQwZGE5YzUwMGE2NjE5MGU0OTdhODJhNTNkY2FhYmMzMTcyZDYzMGJlMWU5In0seyJtZWRpYVR5cGUiOiJhcHBsaWNhdGlvbi92bmQuZG9ja2VyLmltYWdlLnJvb3Rmcy5kaWZmLnRhci5nemlwIiwic2l6ZSI6NjcsImRpZ2VzdCI6InNoYTI1Njo0ZDA0OWY4M2Q5Y2YyMWQxZjVjYzBlMTFkZWFmMzZkZjAyNzkwZDBlNjBjMWEzODI5NTM4ZmI0YjYxNjg1MzY4In0seyJtZWRpYVR5cGUiOiJhcHBsaWNhdGlvbi92bmQuZG9ja2VyLmltYWdlLnJvb3Rmcy5kaWZmLnRhci5nemlwIiwic2l6ZSI6MTg4LCJkaWdlc3QiOiJzaGEyNTY6YWY1YWE5N2ViZTZjZTE2MDQ3NDdlYzFlMjFhZjcxMzZkZWQzOTFiY2FiZTRhY2VmODgyZTcxOGE4N2M4NmJjYyJ9LHsibWVkaWFUeXBlIjoiYXBwbGljYXRpb24vdm5kLmRvY2tlci5pbWFnZS5yb290ZnMuZGlmZi50YXIuZ3ppcCIsInNpemUiOjEyMywiZGlnZXN0Ijoic2hhMjU2OjZmMWNkY2ViNmEzMTQ2ZjBjY2I5ODY1MjExNTZiZWY4YTQyMmNkYmIwODYzMzk2ZjdmNzUxZjU3NWJhMzA4ZjQifSx7Im1lZGlhVHlwZSI6ImFwcGxpY2F0aW9uL3ZuZC5kb2NrZXIuaW1hZ2Uucm9vdGZzLmRpZmYudGFyLmd6aXAiLCJzaXplIjoxNjIsImRpZ2VzdCI6InNoYTI1NjpiZDNjZGZhZTFkM2ZkZDgzYTIyMzFkNjA4OTY5YjM4YjgyMzQ5Nzc3YzJmZmY5YTdjMTJkNTRmOGFjNWM5YjM4In0seyJtZWRpYVR5cGUiOiJhcHBsaWNhdGlvbi92bmQuZG9ja2VyLmltYWdlLnJvb3Rmcy5kaWZmLnRhci5nemlwIiwic2l6ZSI6ODAsImRpZ2VzdCI6InNoYTI1Njo0Y2RlNmIwYmI2ZjUwYTVmMjU1ZWVmN2IyYTQyMTYyYzY2MWNmNzc2YjgwMzIyNWRjYWM5YTY1OWUzOTZiYjZiIn0seyJtZWRpYVR5cGUiOiJhcHBsaWNhdGlvbi92bmQuZG9ja2VyLmltYWdlLnJvb3Rmcy5kaWZmLnRhci5nemlwIiwic2l6ZSI6MzUxLCJkaWdlc3QiOiJzaGEyNTY6YWQ1MWQwNzY5ZDE2YmE1NzgxMDZhMTc3OTg3ZGZlM2QyZTAyYzE2NjhjODUyYjc5NWIyZjZiMDI0MDY4MjQyYSJ9LHsibWVkaWFUeXBlIjoiYXBwbGljYXRpb24vdm5kLmRvY2tlci5pbWFnZS5yb290ZnMuZGlmZi50YXIuZ3ppcCIsInNpemUiOjMxNCwiZGlnZXN0Ijoic2hhMjU2OjZlN2ZiY2YwOTBkMDliNzNhNGFhODVmOWRjZTY5MGQwYWNlNzM4NzdjMTUwYjdjNTY5NTU0ODdiNmU3YTgyMmEifSx7Im1lZGlhVHlwZSI6ImFwcGxpY2F0aW9uL3ZuZC5kb2NrZXIuaW1hZ2Uucm9vdGZzLmRpZmYudGFyLmd6aXAiLCJzaXplIjoxNDMzNDcsImRpZ2VzdCI6InNoYTI1Njo1OTA0YzMyZjQ1N2M5NmExNmM4YzY4ZjVjY2RmNTE4YzgxMzhjZDllNTk3MWRlOWNlNmQ1NjRmYzQ4MWFmMjIyIn0seyJtZWRpYVR5cGUiOiJhcHBsaWNhdGlvbi92bmQuZG9ja2VyLmltYWdlLnJvb3Rmcy5kaWZmLnRhci5nemlwIiwic2l6ZSI6MjQwMzA1NjcsImRpZ2VzdCI6InNoYTI1NjphZGE0MmU5YWUzZDI3YzY2NDA4MmY3NDBiZjI5NzllZTQ4MTAwZjUwZDkzOTg2MWM1ZDAyZGZmM2Q5NjlkNzhkIn0seyJtZWRpYVR5cGUiOiJhcHBsaWNhdGlvbi92bmQuZG9ja2VyLmltYWdlLnJvb3Rmcy5kaWZmLnRhci5nemlwIiwic2l6ZSI6NDYyMiwiZGlnZXN0Ijoic2hhMjU2OjYzYTgzNjhjN2QxZTA3ODQyYjIzNWRiNmE4NTAwYmU1NGUxOTU2NGNjOWM3OTQ5MTQ5ZGU2ZGU2ODQ5YWQwZWYifV19",
+      "config": "eyJhcmNoaXRlY3R1cmUiOiJhcm02NCIsImNvbmZpZyI6eyJVc2VyIjoiNjU1MzI6NjU1MzIiLCJFeHBvc2VkUG9ydHMiOnsiODA4MC90Y3AiOnt9LCI5MDkwL3RjcCI6e319LCJFbnYiOlsiUEFUSD0vdXNyL2xvY2FsL3NiaW46L3Vzci9sb2NhbC9iaW46L3Vzci9zYmluOi91c3IvYmluOi9zYmluOi9iaW4iLCJTU0xfQ0VSVF9GSUxFPS9ldGMvc3NsL2NlcnRzL2NhLWNlcnRpZmljYXRlcy5jcnQiXSwiRW50cnlwb2ludCI6WyIvdXNyL2xvY2FsL2Jpbi9pZGVudGl0eS1zZXJ2ZXIiXSwiV29ya2luZ0RpciI6Ii9ob21lL25vbnJvb3QifSwiY3JlYXRlZCI6IjIwMjYtMTAtMTNUMDU6Mjk6MTkuNTkyMTY5MzM4WiIsImhpc3RvcnkiOlt7ImNyZWF0ZWQiOiIxOTcwLTAxLTAxVDAwOjAwOjAwWiIsImNyZWF0ZWRfYnkiOiJiYXplbCBidWlsZCBAYm9va3dvcm0vL2Jhc2UtZmlsZXMvYXJtNjQ6ZGF0YV9zdGF0dXNkIn0seyJjcmVhdGVkIjoiMTk3MC0wMS0wMVQwMDowMDowMFoiLCJjcmVhdGVkX2J5IjoiYmF6ZWwgYnVpbGQgQGJvb2t3b3JtLy9uZXRiYXNlL2FybTY0OmRhdGFfc3RhdHVzZCJ9LHsiY3JlYXRlZCI6IjE5NzAtMDEtMDFUMDA6MDA6MDBaIiwiY3JlYXRlZF9ieSI6ImJhemVsIGJ1aWxkIEBib29rd29ybS8vdHpkYXRhL2FybTY0OmRhdGFfc3RhdHVzZCJ9LHsiY3JlYXRlZCI6IjE5NzAtMDEtMDFUMDA6MDA6MDBaIiwiY3JlYXRlZF9ieSI6ImJhemVsIGJ1aWxkIEBib29rd29ybS8vbWVkaWEtdHlwZXMvYXJtNjQ6ZGF0YV9zdGF0dXNkIn0seyJjcmVhdGVkIjoiMTk3MC0wMS0wMVQwMDowMDowMFoiLCJjcmVhdGVkX2J5IjoiYmF6ZWwgYnVpbGQgLy9jb21tb246cm9vdGZzIn0seyJjcmVhdGVkIjoiMTk3MC0wMS0wMVQwMDowMDowMFoiLCJjcmVhdGVkX2J5IjoiYmF6ZWwgYnVpbGQgLy9jb21tb246cGFzc3dkIn0seyJjcmVhdGVkIjoiMTk3MC0wMS0wMVQwMDowMDowMFoiLCJjcmVhdGVkX2J5IjoiYmF6ZWwgYnVpbGQgLy9jb21tb246aG9tZSJ9LHsiY3JlYXRlZCI6IjE5NzAtMDEtMDFUMDA6MDA6MDBaIiwiY3JlYXRlZF9ieSI6ImJhemVsIGJ1aWxkIC8vY29tbW9uOmdyb3VwIn0seyJjcmVhdGVkIjoiMTk3MC0wMS0wMVQwMDowMDowMFoiLCJjcmVhdGVkX2J5IjoiYmF6ZWwgYnVpbGQgLy9jb21tb246dG1wIn0seyJjcmVhdGVkIjoiMTk3MC0wMS0wMVQwMDowMDowMFoiLCJjcmVhdGVkX2J5IjoiYmF6ZWwgYnVpbGQgLy9zdGF0aWM6bnNzd2l0Y2gifSx7ImNyZWF0ZWQiOiIxOTcwLTAxLTAxVDAwOjAwOjAwWiIsImNyZWF0ZWRfYnkiOiJiYXplbCBidWlsZCAvL2NvbW1vbjpvc19yZWxlYXNlX2RlYmlhbjEyIn0seyJjcmVhdGVkIjoiMTk3MC0wMS0wMVQwMDowMDowMFoiLCJjcmVhdGVkX2J5IjoiYmF6ZWwgYnVpbGQgLy9jb21tb246Y2FjZXJ0c19kZWJpYW4xMl9hcm02NF90YXIifSx7ImNyZWF0ZWQiOiIyMDI2LTEwLTEzVDA1OjI5OjE5LjU3MTMwODU4OFoiLCJjcmVhdGVkX2J5IjoiQ09QWSAvb3V0LyAvdXNyL2xvY2FsL2Jpbi8gIyBidWlsZGtpdCIsImNvbW1lbnQiOiJidWlsZGtpdC5kb2NrZXJmaWxlLnYwIn0seyJjcmVhdGVkIjoiMjAyNi0xMC0xM1QwNToyOToxOS41OTIxNjkzMzhaIiwiY3JlYXRlZF9ieSI6IkNPUFkgTElDRU5TRSBOT1RJQ0UgL3Vzci9zaGFyZS9kb2MvcHJvdWRhdXRoLyAjIGJ1aWxka2l0IiwiY29tbWVudCI6ImJ1aWxka2l0LmRvY2tlcmZpbGUudjAifSx7ImNyZWF0ZWQiOiIyMDI2LTEwLTEzVDA1OjI5OjE5LjU5MjE2OTMzOFoiLCJjcmVhdGVkX2J5IjoiVVNFUiA2NTUzMjo2NTUzMiIsImNvbW1lbnQiOiJidWlsZGtpdC5kb2NrZXJmaWxlLnYwIiwiZW1wdHlfbGF5ZXIiOnRydWV9LHsiY3JlYXRlZCI6IjIwMjYtMTAtMTNUMDU6Mjk6MTkuNTkyMTY5MzM4WiIsImNyZWF0ZWRfYnkiOiJFWFBPU0UgWzgwODAvdGNwIDkwOTAvdGNwXSIsImNvbW1lbnQiOiJidWlsZGtpdC5kb2NrZXJmaWxlLnYwIiwiZW1wdHlfbGF5ZXIiOnRydWV9LHsiY3JlYXRlZCI6IjIwMjYtMTAtMTNUMDU6Mjk6MTkuNTkyMTY5MzM4WiIsImNyZWF0ZWRfYnkiOiJFTlRSWVBPSU5UIFtcIi91c3IvbG9jYWwvYmluL2lkZW50aXR5LXNlcnZlclwiXSIsImNvbW1lbnQiOiJidWlsZGtpdC5kb2NrZXJmaWxlLnYwIiwiZW1wdHlfbGF5ZXIiOnRydWV9XSwib3MiOiJsaW51eCIsInJvb3RmcyI6eyJ0eXBlIjoibGF5ZXJzIiwiZGlmZl9pZHMiOlsic2hhMjU2OjZmYzkyNjlhOGI0ZDYxY2RkMjc2ZTgwZDE3MGU0Y2FhMTU2NmVmYzFiOWY0MjQ0MmZkYWQ0ZjY5ODM2YjNjNGYiLCJzaGEyNTY6OGZhMTBjMDE5NGRmOWI3YzA1NGM5MGRiZTQ4MjU4NWY3NjhhNTQ0MjhmYzkwYTViNzhhMDA2NmExMjNiMWJiYSIsInNoYTI1NjozNWI1YmE2ZTA4Y2RkMDM0YjhkMTkyMGY5YzcyMDNlNWQ2NmYyNThlMTkxNWYxNjRhMDFkZTBhZjE0ZjM0NzEwIiwic2hhMjU2OjExNGRkZTBmZWZlYmJjYTEzMTY1ZDBkYTljNTAwYTY2MTkwZTQ5N2E4MmE1M2RjYWFiYzMxNzJkNjMwYmUxZTkiLCJzaGEyNTY6NGQwNDlmODNkOWNmMjFkMWY1Y2MwZTExZGVhZjM2ZGYwMjc5MGQwZTYwYzFhMzgyOTUzOGZiNGI2MTY4NTM2OCIsInNoYTI1NjphZjVhYTk3ZWJlNmNlMTYwNDc0N2VjMWUyMWFmNzEzNmRlZDM5MWJjYWJlNGFjZWY4ODJlNzE4YTg3Yzg2YmNjIiwic2hhMjU2OjZmMWNkY2ViNmEzMTQ2ZjBjY2I5ODY1MjExNTZiZWY4YTQyMmNkYmIwODYzMzk2ZjdmNzUxZjU3NWJhMzA4ZjQiLCJzaGEyNTY6YmQzY2RmYWUxZDNmZGQ4M2EyMjMxZDYwODk2OWIzOGI4MjM0OTc3N2MyZmZmOWE3YzEyZDU0ZjhhYzVjOWIzOCIsInNoYTI1Njo0Y2RlNmIwYmI2ZjUwYTVmMjU1ZWVmN2IyYTQyMTYyYzY2MWNmNzc2YjgwMzIyNWRjYWM5YTY1OWUzOTZiYjZiIiwic2hhMjU2OmFkNTFkMDc2OWQxNmJhNTc4MTA2YTE3Nzk4N2RmZTNkMmUwMmMxNjY4Yzg1MmI3OTViMmY2YjAyNDA2ODI0MmEiLCJzaGEyNTY6NmU3ZmJjZjA5MGQwOWI3M2E0YWE4NWY5ZGNlNjkwZDBhY2U3Mzg3N2MxNTBiN2M1Njk1NTQ4N2I2ZTdhODIyYSIsInNoYTI1Njo1OTA0YzMyZjQ1N2M5NmExNmM4YzY4ZjVjY2RmNTE4YzgxMzhjZDllNTk3MWRlOWNlNmQ1NjRmYzQ4MWFmMjIyIiwic2hhMjU2OmFkYTQyZTlhZTNkMjdjNjY0MDgyZjc0MGJmMjk3OWVlNDgxMDBmNTBkOTM5ODYxYzVkMDJkZmYzZDk2OWQ3OGQiLCJzaGEyNTY6NjNhODM2OGM3ZDFlMDc4NDJiMjM1ZGI2YTg1MDBiZTU0ZTE5NTY0Y2M5Yzc5NDkxNDlkZTZkZTY4NDlhZDBlZiJdfX0=",
+      "repoDigests": [
+        "pa-bench-release-24958@sha256:581270512f34515b5caa76b318d9dc20e901251d65147970cfc0c3092a427486"
+      ],
+      "architecture": "arm64",
+      "os": "linux"
+    }
+  },
+  "distro": {
+    "name": "debian",
+    "version": "12",
+    "idLike": []
+  },
+  "descriptor": {
+    "name": "grype",
+    "version": "0.120.1",
+    "configuration": {
+      "output": [
+        "json"
+      ],
+      "file": "",
+      "pretty": false,
+      "distro": "",
+      "add-cpes-if-none": false,
+      "output-template-file": "",
+      "check-for-app-update": false,
+      "only-fixed": false,
+      "only-notfixed": false,
+      "ignore-wontfix": "",
+      "platform": "",
+      "search": {
+        "scope": "squashed",
+        "unindexed-archives": false,
+        "indexed-archives": true
+      },
+      "ignore": [
+        {
+          "vulnerability": "",
+          "include-aliases": false,
+          "reason": "",
+          "namespace": "",
+          "fix-state": "",
+          "package": {
+            "name": "kernel-headers",
+            "version": "",
+            "language": "",
+            "type": "rpm",
+            "location": "",
+            "upstream-name": "kernel"
+          },
+          "vex-status": "",
+          "vex-justification": "",
+          "match-type": "exact-indirect-match"
+        },
+        {
+          "vulnerability": "",
+          "include-aliases": false,
+          "reason": "",
+          "namespace": "",
+          "fix-state": "",
+          "package": {
+            "name": "linux(-.*)?-headers-.*",
+            "version": "",
+            "language": "",
+            "type": "deb",
+            "location": "",
+            "upstream-name": "linux.*"
+          },
+          "vex-status": "",
+          "vex-justification": "",
+          "match-type": "exact-indirect-match"
+        },
+        {
+          "vulnerability": "",
+          "include-aliases": false,
+          "reason": "",
+          "namespace": "",
+          "fix-state": "",
+          "package": {
+            "name": "linux-libc-dev",
+            "version": "",
+            "language": "",
+            "type": "deb",
+            "location": "",
+            "upstream-name": "linux"
+          },
+          "vex-status": "",
+          "vex-justification": "",
+          "match-type": "exact-indirect-match"
+        },
+        {
+          "vulnerability": "",
+          "include-aliases": false,
+          "reason": "",
+          "namespace": "",
+          "fix-state": "",
+          "package": {
+            "name": "linux-kbuild-.*",
+            "version": "",
+            "language": "",
+            "type": "deb",
+            "location": "",
+            "upstream-name": "linux.*"
+          },
+          "vex-status": "",
+          "vex-justification": "",
+          "match-type": "exact-indirect-match"
+        }
+      ],
+      "exclude": [],
+      "externalSources": {
+        "enable": false,
+        "maven": {
+          "searchUpstreamBySha1": true,
+          "baseUrl": "https://search.maven.org/solrsearch/select",
+          "rateLimit": 300000000
+        }
+      },
+      "match": {
+        "java": {
+          "using-cpes": false
+        },
+        "jvm": {
+          "using-cpes": true
+        },
+        "dotnet": {
+          "using-cpes": false
+        },
+        "golang": {
+          "using-cpes": false,
+          "always-use-cpe-for-stdlib": false,
+          "allow-main-module-pseudo-version-comparison": false
+        },
+        "javascript": {
+          "using-cpes": false
+        },
+        "python": {
+          "using-cpes": false
+        },
+        "ruby": {
+          "using-cpes": false
+        },
+        "rust": {
+          "using-cpes": false
+        },
+        "hex": {
+          "using-cpes": false
+        },
+        "stock": {
+          "using-cpes": true
+        },
+        "dpkg": {
+          "using-cpes": false,
+          "missing-epoch-strategy": "zero",
+          "use-cpes-for-eol": false
+        },
+        "rpm": {
+          "using-cpes": false,
+          "missing-epoch-strategy": "auto",
+          "use-cpes-for-eol": false
+        }
+      },
+      "fail-on-severity": "",
+      "registry": {
+        "insecure-skip-tls-verify": false,
+        "insecure-use-http": false,
+        "ca-cert": ""
+      },
+      "show-suppressed": false,
+      "include-matcher-suppressions": false,
+      "by-cve": false,
+      "SortBy": {
+        "sort-by": "risk"
+      },
+      "name": "",
+      "default-image-pull-source": "",
+      "from": null,
+      "vex-documents": [],
+      "vex-add": [],
+      "match-upstream-kernel-headers": false,
+      "fix-channel": {
+        "redhat-eus": {
+          "apply": "auto",
+          "versions": ">= 8.0"
+        },
+        "ubuntu-esm": {
+          "apply": "auto",
+          "versions": ""
+        }
+      },
+      "timestamp": true,
+      "alerts": {
+        "enable-eol-distro-warnings": true
+      },
+      "db": {
+        "cache-dir": "<private-work-directory>/grype-db",
+        "update-url": "https://grype.anchore.io/databases",
+        "ca-cert": "",
+        "auto-update": true,
+        "validate-by-hash-on-start": true,
+        "validate-age": true,
+        "max-allowed-built-age": 432000000000000,
+        "require-update-check": false,
+        "update-available-timeout": 30000000000,
+        "update-download-timeout": 300000000000,
+        "max-update-check-frequency": 7200000000000
+      },
+      "exp": {},
+      "dev": {
+        "db": {
+          "debug": false
+        }
+      }
+    },
+    "db": {
+      "status": {
+        "schemaVersion": "v6.1.10",
+        "from": "https://grype.anchore.io/databases/v6/vulnerability-db_v6.1.10_2026-10-12T00:38:50Z_1791787522.tar.zst?checksum=sha256%3Af1d61e7be5caa87b18ab7519f71982399f4d43d8f407edd24717903acef3d83d",
+        "built": "2026-10-12T06:45:22Z",
+        "path": "<private-work-directory>/grype-db/6/vulnerability.db",
+        "valid": true
+      },
+      "providers": {
+        "alma": {
+          "captured": "2026-10-12T00:38:58Z",
+          "input": "xxh64:fa6021eeb96614ec"
+        },
+        "alpine": {
+          "captured": "2026-10-12T00:39:05Z",
+          "input": "xxh64:4b92ce5e8b9a1118"
+        },
+        "amazon": {
+          "captured": "2026-10-12T00:39:02Z",
+          "input": "xxh64:0314b4cdce09ce6c"
+        },
+        "arch": {
+          "captured": "2026-10-12T00:38:57Z",
+          "input": "xxh64:7271c817a19ab0cb"
+        },
+        "bitnami": {
+          "captured": "2026-10-12T00:38:59Z",
+          "input": "xxh64:ba2ee0c86d39fb08"
+        },
+        "chainguard": {
+          "captured": "2026-10-12T00:39:10Z",
+          "input": "xxh64:1dcd87751e5b8272"
+        },
+        "chainguard-libraries": {
+          "captured": "2026-10-12T00:38:56Z",
+          "input": "xxh64:4ed06633e415271c"
+        },
+        "debian": {
+          "captured": "2026-10-12T00:39:17Z",
+          "input": "xxh64:ee0628ed7da624da"
+        },
+        "echo": {
+          "captured": "2026-10-12T00:39:06Z",
+          "input": "xxh64:1ee8a4221d3a7dd7"
+        },
+        "eol": {
+          "captured": "2026-10-12T00:39:02Z",
+          "input": "xxh64:90ae2ac88ab821d7"
+        },
+        "epss": {
+          "captured": "2026-10-12T00:39:02Z",
+          "input": "xxh64:8ccc32b8dc236e01"
+        },
+        "fedora": {
+          "captured": "2026-10-12T00:39:11Z",
+          "input": "xxh64:8200cceecd6382e5"
+        },
+        "github": {
+          "captured": "2026-10-12T00:39:19Z",
+          "input": "xxh64:ce84e0206a7d22ea"
+        },
+        "govulndb": {
+          "captured": "2026-10-12T00:39:02Z",
+          "input": "xxh64:15c939abdde7b719"
+        },
+        "hummingbird": {
+          "captured": "2026-10-12T00:41:46Z",
+          "input": "xxh64:16384dab182e0aee"
+        },
+        "kev": {
+          "captured": "2026-10-12T00:38:52Z",
+          "input": "xxh64:b0d499c7f5ff1cee"
+        },
+        "mariner": {
+          "captured": "2026-10-12T00:38:58Z",
+          "input": "xxh64:c2da786401913ef8"
+        },
+        "minimos": {
+          "captured": "2026-10-12T00:39:23Z",
+          "input": "xxh64:1d67835c1f305d8b"
+        },
+        "nvd": {
+          "captured": "2026-10-12T00:39:55Z",
+          "input": "xxh64:dfb371294eb1b338"
+        },
+        "oracle": {
+          "captured": "2026-10-12T00:39:04Z",
+          "input": "xxh64:4cbf6a809d7cebdf"
+        },
+        "photon": {
+          "captured": "2026-10-12T00:39:08Z",
+          "input": "xxh64:9587f784f4436ea5"
+        },
+        "rhel": {
+          "captured": "2026-10-12T00:40:24Z",
+          "input": "xxh64:296f17b12e3b1096"
+        },
+        "secureos": {
+          "captured": "2026-10-12T00:38:50Z",
+          "input": "xxh64:c9b73fd4eaf333c9"
+        },
+        "sles": {
+          "captured": "2026-10-12T00:41:00Z",
+          "input": "xxh64:4a5a88f30af2896c"
+        },
+        "ubuntu": {
+          "captured": "2026-10-12T00:40:01Z",
+          "input": "xxh64:c1f202c5353152d7"
+        },
+        "wolfi": {
+          "captured": "2026-10-12T00:39:03Z",
+          "input": "xxh64:efe5c0206a15a181"
+        }
+      }
+    },
+    "timestamp": "2026-10-13T08:33:23.740582+03:00"
+  }
+}

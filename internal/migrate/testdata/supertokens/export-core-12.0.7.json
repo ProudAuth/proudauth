@@ -1,0 +1,311 @@
+{
+  "roles": [
+    {
+      "role": "admin",
+      "permissions": [
+        "billing:write",
+        "users:write"
+      ]
+    },
+    {
+      "role": "editor",
+      "permissions": [
+        "content:write"
+      ]
+    },
+    {
+      "role": "viewer",
+      "permissions": [
+        "content:read"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "userRoles": [
+        {
+          "role": "viewer",
+          "tenantIds": [
+            "public"
+          ]
+        }
+      ],
+      "loginMethods": [
+        {
+          "email": "chen@northwind.example",
+          "recipeId": "emailpassword",
+          "isPrimary": false,
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "passwordHash": "$argon2id$v=19$m=87795,t=1,p=2$ydXOkLO1GjJXLtvgdv8D9Q$lg7ShqfktVgk00ZZdRZ/dK5/7JE6u8XHYujn0tebTKE",
+          "hashingAlgorithm": "ARGON2",
+          "timeJoinedInMSSinceEpoch": 1767225600000
+        }
+      ],
+      "userMetadata": {
+        "last_name": "Wei",
+        "first_name": "Chen"
+      },
+      "externalUserId": "legacy-1042",
+      "supertokensUserId": "60aba1a1-1699-4dbb-af82-0885bfbf948d"
+    },
+    {
+      "userRoles": [
+        {
+          "role": "editor",
+          "tenantIds": [
+            "public"
+          ]
+        }
+      ],
+      "loginMethods": [
+        {
+          "email": "ines@northwind.example",
+          "recipeId": "thirdparty",
+          "isPrimary": false,
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "thirdPartyId": "github",
+          "thirdPartyUserId": "58123",
+          "timeJoinedInMSSinceEpoch": 1751328000000
+        },
+        {
+          "email": "ines@northwind.example",
+          "recipeId": "emailpassword",
+          "isPrimary": true,
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "passwordHash": "$2a$11$baWtBdyQ0Y6cdhq.KcXOC.DazWEn6IrjjRP9UHQIXRzU8eWkkE4VG",
+          "hashingAlgorithm": "BCRYPT",
+          "timeJoinedInMSSinceEpoch": 1751328000000
+        }
+      ],
+      "supertokensUserId": "794ec33c-2124-4507-b88f-b3f88ba5ca56"
+    },
+    {
+      "totpDevices": [
+        {
+          "skew": 1,
+          "period": 30,
+          "secretKey": "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+          "deviceName": "Jonas phone"
+        }
+      ],
+      "loginMethods": [
+        {
+          "email": "jonas@northwind.example",
+          "recipeId": "emailpassword",
+          "isPrimary": false,
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "passwordHash": "$2a$10$1.DFUmKbGGXF30xZxEurY.m/UPKxR8ZiDy66SGh6aF8QBSm48l.Am",
+          "hashingAlgorithm": "BCRYPT",
+          "timeJoinedInMSSinceEpoch": 1751328000000
+        }
+      ],
+      "supertokensUserId": "930ab6da-e620-4b29-883d-bdbf6772e608"
+    },
+    {
+      "loginMethods": [
+        {
+          "email": "hugo@northwind.example",
+          "recipeId": "emailpassword",
+          "isPrimary": false,
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "passwordHash": "$f_scrypt$9Jv7SX0zSbm5WMb9Q+pf5S9zqgbF8SE1tkLeV3t6eHaUtyY2gw7G2c+1hbjPEEbnfsuJ56cTFqUsUKoUv0fF+w==$jOH2+9XMmV4Fpwud3ESChw==$m=14$r=8$s=Bw==",
+          "hashingAlgorithm": "FIREBASE_SCRYPT",
+          "timeJoinedInMSSinceEpoch": 1751328000000
+        }
+      ],
+      "supertokensUserId": "95490144-582e-4cf5-8380-ae6d4b7c35fd"
+    },
+    {
+      "userRoles": [
+        {
+          "role": "viewer",
+          "tenantIds": [
+            "public"
+          ]
+        }
+      ],
+      "loginMethods": [
+        {
+          "email": "fatima@northwind.example",
+          "recipeId": "passwordless",
+          "isPrimary": false,
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "timeJoinedInMSSinceEpoch": 1751328000000
+        }
+      ],
+      "supertokensUserId": "b7cdd699-204b-4231-9e0d-efad65c41b50"
+    },
+    {
+      "userRoles": [
+        {
+          "role": "viewer",
+          "tenantIds": [
+            "public"
+          ]
+        }
+      ],
+      "loginMethods": [
+        {
+          "email": "bilal@northwind.example",
+          "recipeId": "emailpassword",
+          "isPrimary": false,
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": false,
+          "passwordHash": "$2a$11$l0elyQL/M8BG3lgwv4to/uPPcHJYxtP3fsKUVyrDz1tb4BtqY1sue",
+          "hashingAlgorithm": "BCRYPT",
+          "timeJoinedInMSSinceEpoch": 1791689153166
+        }
+      ],
+      "supertokensUserId": "b9f72350-4ca4-4f27-8e76-3b198ffd40e7"
+    },
+    {
+      "userRoles": [
+        {
+          "role": "admin",
+          "tenantIds": [
+            "public"
+          ]
+        },
+        {
+          "role": "editor",
+          "tenantIds": [
+            "public"
+          ]
+        }
+      ],
+      "totpDevices": [
+        {
+          "skew": 1,
+          "period": 60,
+          "secretKey": "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ",
+          "deviceName": "Amara old tablet"
+        },
+        {
+          "skew": 1,
+          "period": 30,
+          "secretKey": "KRUGS4ZANFZSAYJAORSXG5BAONSWG4TFOQQGW",
+          "deviceName": "Amara phone"
+        }
+      ],
+      "loginMethods": [
+        {
+          "email": "amara@northwind.example",
+          "recipeId": "emailpassword",
+          "isPrimary": false,
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "passwordHash": "$2a$11$GPVm5voO81nGvY7BBncTsO/Fm/bG8eojO0crsmKPXLGLVc79DV1Om",
+          "hashingAlgorithm": "BCRYPT",
+          "timeJoinedInMSSinceEpoch": 1791689142098
+        }
+      ],
+      "userMetadata": {
+        "plan": "enterprise",
+        "last_name": "Okafor",
+        "first_name": "Amara",
+        "preferences": {
+          "theme": "dark"
+        }
+      },
+      "supertokensUserId": "bbbf64cd-3d33-400c-b93a-bbf0b89729d2"
+    },
+    {
+      "loginMethods": [
+        {
+          "recipeId": "passwordless",
+          "isPrimary": false,
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": false,
+          "phoneNumber": "+14155550123",
+          "timeJoinedInMSSinceEpoch": 1751328000000
+        }
+      ],
+      "supertokensUserId": "c871d0b4-b6d9-46f0-a29b-8289b8eed6e9"
+    },
+    {
+      "loginMethods": [
+        {
+          "email": "dina@northwind.example",
+          "recipeId": "emailpassword",
+          "isPrimary": false,
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": false,
+          "passwordHash": "$2a$08$mRztiS4b0GE2luV3/yu1v./BA/c.FEDnwiD9XUigsKzIdt1Rp32hC",
+          "hashingAlgorithm": "BCRYPT",
+          "timeJoinedInMSSinceEpoch": 1735689600000
+        }
+      ],
+      "userMetadata": {
+        "first_name": "Dina"
+      },
+      "supertokensUserId": "cfd03d15-b189-491c-956c-8e11c1d22ded"
+    },
+    {
+      "userRoles": [
+        {
+          "role": "editor",
+          "tenantIds": [
+            "public"
+          ]
+        }
+      ],
+      "loginMethods": [
+        {
+          "email": "emeka@gmail.example",
+          "recipeId": "thirdparty",
+          "isPrimary": false,
+          "tenantIds": [
+            "public"
+          ],
+          "isVerified": true,
+          "thirdPartyId": "google",
+          "thirdPartyUserId": "108234567890123456789",
+          "timeJoinedInMSSinceEpoch": 1791689153183
+        }
+      ],
+      "userMetadata": {
+        "first_name": "Emeka",
+        "display_name": "Emeka N."
+      },
+      "supertokensUserId": "fd2ecb34-91d0-4a4e-8a81-c704e9ec880c"
+    }
+  ],
+  "format": "proudauth.supertokens-export.v1",
+  "tenants": [
+    {
+      "tenantId": "public"
+    }
+  ],
+  "supertokens": {
+    "app_id": "public",
+    "plugin": "postgresql",
+    "exported_at": "2026-10-11T03:29:15Z",
+    "core_version": "12.0.7"
+  }
+}

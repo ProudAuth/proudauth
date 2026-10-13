@@ -1,0 +1,7 @@
+{
+  "complete": true,
+  "server_count": 3,
+  "inflight_requests": 0,
+  "pass": true,
+  "note": "per-scenario routing must reach every server without proxy transport errors/response aborts; final proxy shutdown must drain all handlers"
+}

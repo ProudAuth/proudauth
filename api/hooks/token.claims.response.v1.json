@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/hooks/token.claims.response.v1.json",
+  "title": "token.claims hook response (contract v1)",
+  "description": "Answer with HTTP 200 and this body.",
+  "x-hook-kind": "token.claims",
+  "x-contract-version": 1,
+  "examples": [
+    {
+      "claims": {
+        "tenant_tier": "gold"
+      }
+    }
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "claims": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "maxProperties": 20,
+      "description": "At most 20 additional claims, 4 KiB serialized. Reserved claims (sub, aud, scope, iss, exp, ...), permissions and roles are refused (EXT-011)."
+    }
+  }
+}

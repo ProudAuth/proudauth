@@ -1,0 +1,76 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "webhook-delivery",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T14:01:55.379529Z",
+  "duration_s": 60.0011405,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 32,
+  "outcomes": {
+    "delivery_timeout": 32
+  },
+  "throughput_per_s": 0.5333231957482542,
+  "latency_ms": {
+    "mean": 30002.19890625,
+    "p50": 30002.57,
+    "p90": 30002.57,
+    "p99": 30002.57,
+    "p999": 30002.57,
+    "max": 30002.57
+  },
+  "histogram": [
+    {
+      "le_ms": 30408.704,
+      "count": 32
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53438; private signing keys only in memory",
+    "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim"
+  ],
+  "observations": {
+    "after": {
+      "active_cycles": 0,
+      "cumulative": {
+        "received": 0,
+        "accepted": 0,
+        "intentional_503": 0,
+        "recovered": 0,
+        "invalid": 0,
+        "ignored_abandoned_or_old_events": 0,
+        "first_retry_at": "0001-01-01T00:00:00Z",
+        "last_retry_at": "0001-01-01T00:00:00Z",
+        "last_recovery_at": "0001-01-01T00:00:00Z"
+      },
+      "receiver": "http://127.0.0.1:53438",
+      "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+      "subscriptions": 32
+    },
+    "before": {
+      "active_cycles": 0,
+      "cumulative": {
+        "received": 0,
+        "accepted": 0,
+        "intentional_503": 0,
+        "recovered": 0,
+        "invalid": 0,
+        "ignored_abandoned_or_old_events": 0,
+        "first_retry_at": "0001-01-01T00:00:00Z",
+        "last_retry_at": "0001-01-01T00:00:00Z",
+        "last_recovery_at": "0001-01-01T00:00:00Z"
+      },
+      "receiver": "http://127.0.0.1:53438",
+      "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+      "subscriptions": 32
+    }
+  }
+}

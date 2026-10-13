@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+223836	895404.2	4.000	223836	INSERT INTO rate_limit_counters (bucket, window_start, count, expires_at) VALUES ($1, $2, 1, $3) ON CONFLICT (bucket, window_start) DO UPDATE SET count = rate_limit_counters.count + 1 RETURNING count
+951	7313.7	7.691	1425549	SELECT gm.group_id, m.user_id, coalesce(u.display_name,$4) FROM group_memberships gm JOIN memberships m ON m.id=gm.membership_id JOIN users u ON u.id=m.user_id AND u.realm_id=$3 WHERE gm.group_id=ANY(
+223849	3556.0	0.016	223849	SELECT c.id, c.realm_id, c.organization_id, c.name, c.kind, c.state, c.allowed_resource_types, c.role_ceiling_ids, c.group_role_mappings, coalesce(c.default_role_id,$3), c.config, c.last_sync_at, coal
+951	1872.0	1.969	475500	SELECT x.local_id, x.external_id, x.resource_version, x.created_at, x.updated_at, g.name FROM connector_external_ids x JOIN groups g ON g.id=x.local_id AND g.organization_id=$3 JOIN organizations o ON
+950	1658.6	1.746	950	UPDATE provisioning_connectors SET last_error=$2, stats = jsonb_set(stats, ARRAY[$3], to_jsonb(coalesce((stats->>$4)::bigint, $5) + $6)) WHERE id=$1
+2451	1658.2	0.677	2451	UPDATE provisioning_connectors SET last_sync_at=$2, stats = jsonb_set(stats, ARRAY[$3], to_jsonb(coalesce((stats->>$3)::bigint, $4) + $5)) WHERE id=$1
+436	385.9	0.885	436	SELECT pg_advisory_xact_lock(hashtext($1))
+11000	324.7	0.030	11000	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+5000	181.0	0.036	5000	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+5	161.4	32.290	12312	UPDATE audit_events SET batch_id=$1 WHERE id = ANY($2)
+951	130.6	0.137	475500	SELECT local_id FROM connector_external_ids WHERE connector_id=$1 AND resource_type=$2 ORDER BY local_id LIMIT $3
+500	110.7	0.221	0	SELECT $3 FROM groups WHERE organization_id=$1 AND lower(name)=lower($2)

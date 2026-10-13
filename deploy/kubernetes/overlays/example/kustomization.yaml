@@ -1,0 +1,20 @@
+# Example overlay. Copy it, pin the image digest, and provide the secret
+# out-of-band (sealed secrets, external secrets operator, CSI driver, ...).
+# Never commit real secret values (DEP-006).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: proudauth
+resources:
+  - ../../base
+images:
+  - name: proudauth
+    newName: ghcr.io/proudauth/proudauth
+    newTag: v0.1.0      # replace with an immutable digest: @sha256:...
+configMapGenerator:
+  - name: proudauth-config
+    files:
+      - config.yaml
+# Expected secret keys (mounted at /run/secrets): database_url, root_key_v1,
+# metrics_token, smtp_password. Example (do not commit):
+#   kubectl -n proudauth create secret generic proudauth-secrets \
+#     --from-file=database_url=./database_url --from-file=root_key_v1=./root_key_v1 ...

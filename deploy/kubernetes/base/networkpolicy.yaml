@@ -1,0 +1,41 @@
+# Default-deny for ProudAuth pods, then allow only what is needed. Adjust the
+# selectors to your ingress controller, database and monitoring namespaces.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: proudauth-server
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: proudauth, app.kubernetes.io/component: server}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: ingress-nginx}
+      ports: [{port: 8080}]
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: monitoring}
+      ports: [{port: 9090}]
+  egress:
+    - ports: [{port: 5432}]          # PostgreSQL
+    - ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+    - ports: [{port: 443}]           # upstream identity providers (federation), checked again by the egress policy
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: proudauth-worker
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: proudauth, app.kubernetes.io/component: worker}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: monitoring}
+      ports: [{port: 9091}]          # worker /metrics and /status (workers.metrics_listen)
+  egress:
+    - ports: [{port: 5432}]
+    - ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
+    - ports: [{port: 443}, {port: 587}, {port: 465}]   # webhooks, back-channel logout, SMTP

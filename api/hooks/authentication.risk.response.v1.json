@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/hooks/authentication.risk.response.v1.json",
+  "title": "authentication.risk hook response (contract v1)",
+  "description": "Answer with HTTP 200 and this body.",
+  "x-hook-kind": "authentication.risk",
+  "x-contract-version": 1,
+  "examples": [
+    {
+      "level": "low"
+    },
+    {
+      "level": "high",
+      "reasons": [
+        "impossible_travel"
+      ]
+    }
+  ],
+  "type": "object",
+  "required": [
+    "level"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "reasons": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string",
+        "maxLength": 64
+      },
+      "description": "At most ten distinct reasons are kept."
+    }
+  }
+}

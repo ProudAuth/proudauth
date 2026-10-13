@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/service_principal.state_changed.v1.json",
+  "title": "service_principal.state_changed (v1)",
+  "description": "A service principal was disabled, re-enabled or deleted. Emitted when an administrator changes a service principal's state, when an emergency control disables or re-enables it, and when the owner-departure job disables it (realm policy machine.owner_departure=disable, reason owner_departed). Disabling or deleting revokes its automation credentials and opaque access tokens; deletion also removes its role assignments (without authorization.role.unassigned events) and is final. org_id is never set.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "service_principal.state_changed"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "service_principal_id",
+        "state"
+      ],
+      "properties": {
+        "service_principal_id": {
+          "$ref": "envelope.v1.json#/$defs/service_principal_id",
+          "description": "The service principal."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "active",
+            "disabled",
+            "deleted"
+          ],
+          "description": "The new state."
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Never set for this event type by the current server."
+    }
+  },
+  "x-event-type": "service_principal.state_changed",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/machine/machine.go: (*Service).SetState"
+  ],
+  "x-org-scoped": "never",
+  "examples": [
+    {
+      "event_id": "obx_01jb7z7j4p40cs379p1w63v9g1",
+      "event_type": "service_principal.state_changed",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "data": {
+        "service_principal_id": "svc_01jbmsv9trtkh0q6jsdscpreyx",
+        "state": "disabled"
+      }
+    }
+  ]
+}

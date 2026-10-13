@@ -1,0 +1,20 @@
+[
+  {"schema_version": 1, "triggers": [{"type": "event", "event_types": ["organization.membership.added"], "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1"}, {"type": "manual"}],
+   "steps": [{"id": "approve", "type": "approval", "approvers": ["usr_01jb4rsd73q99h2e30n9ak6n8d"], "expires_in": "72h"},
+             {"id": "grant", "type": "assign_role", "role_id": "rol_01jbadj9t141gzfk8s7x1yyg4j", "scope": "organization", "expires_in": "720h"},
+             {"id": "team", "type": "add_to_group", "group_id": "grp_01jbadj9t141gzfk8s7x1yyg4j"},
+             {"id": "tell", "type": "notify", "notice": "access_granted"},
+             {"id": "sync", "type": "call_webhook", "subscription_id": "whk_01jbh0ybgaravg3xcq0zdp2egd", "compensate": true, "timeout_ms": 5000, "retry": {"max_attempts": 5, "backoff": "30s"}},
+             {"id": "done", "type": "end", "outcome": "succeeded"}],
+   "retry": {"max_attempts": 3, "backoff": "10s"}},
+  {"schema_version": 1, "triggers": [{"type": "event", "event_types": ["user.suspended", "organization.membership.removed"]}],
+   "steps": [{"id": "drop", "type": "remove_access", "access": "membership", "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1", "reason": "OFFBOARDING"},
+             {"id": "role", "type": "remove_access", "access": "role", "role_id": "rol_01jbadj9t141gzfk8s7x1yyg4j", "scope": "realm"},
+             {"id": "group", "type": "remove_access", "access": "group", "group_id": "grp_01jbadj9t141gzfk8s7x1yyg4j"},
+             {"id": "lock", "type": "suspend_user", "reason": "OFFBOARDING"},
+             {"id": "pause", "type": "wait", "duration": "24h"}]},
+  {"schema_version": 1, "triggers": [{"type": "schedule", "every": "720h", "select": {"type": "role_holders", "role_id": "rol_01jbadj9t141gzfk8s7x1yyg4j", "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1", "granted_before": "2160h"}}],
+   "steps": [{"id": "warn", "type": "notify", "notice": "access_expiring", "recipient": "subject"},
+             {"id": "review", "type": "approval", "approvers": ["usr_01jb4rsd73q99h2e30n9ak6n8d"], "expires_in": "168h"},
+             {"id": "ack", "type": "notify", "notice": "approval_requested", "recipient": "approvers"}]}
+]

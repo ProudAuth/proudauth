@@ -1,0 +1,23 @@
+{
+  "format_version": "1",
+  "hash_algorithm": "sha256",
+  "source_digest_sha256_16": "a9d95f06c64af14e",
+  "artifacts": {
+    "binary-sha256.txt": "cd22497f08d012cb1f13366d17d7cdc74f453963461a17ec7c76c817d6e67a6d",
+    "build-info.txt": "581e580d6d2f5ffa9c01f134d3c5d73d80df5bdc6e673cf77edb147b2f9ea93e",
+    "effective-config-redacted.json": "ed3dac68c73ed975e2ca265285377e26171e906fdea94304a90975c277e357f9",
+    "environment.json": "e881c5edd40b8c6325f7c1bed54c7932ac0686e9c68c23c4bcccd36c6d7662a8",
+    "metadata-fetch.json": "4a2fbaecfdbf26cbb7ce6685bed1c2abf81f7ed13e1cf41d5bcbcda8b957bae4",
+    "metadata-receiver.json": "fddb3ce10fe0d18c85577710bce761903d92eb57f21fe7f1b9cf77b8078ae0a0",
+    "postgres/database-size-bytes.txt": "617ec61bdb58f8c682fd3a3f61123b4133a0231b73f5a3f14b131409920392b9",
+    "postgres/largest-tables.tsv": "9555cd268de0ea119624b7297e345e99b4663ebcf314bd17ab53b12d5f1b684d",
+    "postgres/metadata-fetch-top-statements.tsv": "c2990a376d1d6b1c8f39e1a2555ee8af60cfdf5c8c10fd0192f2655be55e8607",
+    "postgres/settings.tsv": "f181e2ac46f522c90ac3aaa6d589309eacac1f8e2d9ef25786cd9883ba35c73b",
+    "proudauth-config-node-1.yaml": "35f538f2e4b4b8c25aaef097b3d582adc782e651c54ddd0baa15fc585a52322a",
+    "proudauth-config.yaml": "35f538f2e4b4b8c25aaef097b3d582adc782e651c54ddd0baa15fc585a52322a",
+    "seed-spec.json": "dd2f67855b3ec6a643ca7e9dcf3f4852775bd128261d36ab3f400be8ddf335b6",
+    "summary.json": "e16e74c9e963890f3832d489f7f6d09fa2e3ffe422120af49db2e3e2b4491b01",
+    "verification.json": "3ea3c2a116930de6c9e5152ea76daa1771af10b9ec765b2af4e6ca8ab13532fa"
+  },
+  "note": "Counts-only published results and redacted configuration; private seed, administrator authority, assertion material and CA working file excluded; one cohosted laptop, not a sizing guarantee."
+}

@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/organization.membership.removed.v2.json",
+  "title": "organization.membership.removed (v2)",
+  "description": "A membership was removed. Emitted when a membership is removed by an administrator, by the member leaving, or by connector-scoped deprovisioning. The member's role assignments and group memberships in the organization are deleted (without authorization.role.unassigned events), organization-bound grants and support grants are revoked and owned automation credentials scoped to the organization stop working. Not emitted when a membership expires or when the user account is deleted.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v2.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "organization.membership.removed"
+    },
+    "event_version": {
+      "const": 2
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "user_id",
+        "membership_id",
+        "authorization_revision"
+      ],
+      "properties": {
+        "user_id": {
+          "$ref": "envelope.v2.json#/$defs/user_id",
+          "description": "The former member."
+        },
+        "membership_id": {
+          "$ref": "envelope.v2.json#/$defs/membership_id",
+          "description": "The removed membership."
+        },
+        "authorization_revision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The membership's revision counter after this change (memberships.revision). Compare revisions to discard stale, out-of-order events for the same membership."
+        }
+      },
+      "additionalProperties": false
+    },
+    "organization_id": {
+      "description": "Always set for this event type."
+    }
+  },
+  "required": [
+    "organization_id"
+  ],
+  "x-event-type": "organization.membership.removed",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/organization/organization.go: (*Service).RemoveMemberTx"
+  ],
+  "x-org-scoped": "always",
+  "examples": [
+    {
+      "event_id": "obx_01jbvb09568v86xmwfhp30t49j",
+      "event_type": "organization.membership.removed",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "membership_id": "mem_01jbadj9t141gzfk8s7x1yyg4j",
+        "authorization_revision": 44
+      }
+    }
+  ]
+}

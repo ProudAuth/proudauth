@@ -1,0 +1,239 @@
+{
+  "benchmark_live_fixture": {
+    "case_elapsed_seconds": {
+      "TestBenchComplexAuditFilterLiveFixtures": [
+        1.8
+      ]
+    },
+    "exit_code": 0,
+    "failed_tests": [],
+    "package_elapsed_seconds": 3.104,
+    "passed_subtests": 0,
+    "passed_top_tests": 1,
+    "skipped_tests": []
+  },
+  "benchmark_smoke": {
+    "case_elapsed_seconds": {
+      "TestBenchSuiteSmoke": [
+        47.53
+      ]
+    },
+    "exit_code": 0,
+    "failed_tests": [],
+    "package_elapsed_seconds": 49.248,
+    "passed_subtests": 0,
+    "passed_top_tests": 1,
+    "scenario_count": 25,
+    "skipped_tests": []
+  },
+  "cleanup": {
+    "correctness_containers": "each phase cleanup marker confirms removed",
+    "measurement": "runner trap completed; own container/volume/private credential directory independently checked after run",
+    "private_work": "removed after final verification"
+  },
+  "correction": [
+    "Escape LIKE percent, underscore and backslash before adding the prefix wildcard.",
+    "Bind audit cursor MAC to realm, authorized organization, route and canonical URL-encoded filter parameters; preserve limit changes."
+  ],
+  "date": "2026-10-12",
+  "environment": {
+    "correctness_database_settings": {
+      "container_memory_limit": "3GiB",
+      "max_connections": 120,
+      "network": "random loopback port per test phase",
+      "shared_buffers": "128MB",
+      "tmpfs": "2GiB"
+    },
+    "cpu": "Apple M4 Pro",
+    "cpus": 12,
+    "go": "go1.27.1 darwin/arm64",
+    "harness": "in-process public HTTP API, isolated migrated database, reduced Argon2/RSA costs, controlled clock and local sinks",
+    "machine_model": "Mac16,8",
+    "memory_bytes": 25769803776,
+    "os": "macOS 27.0.1 (26A434)",
+    "postgres": "18.6, cached postgres:18"
+  },
+  "full": {
+    "evidence": "2026-10-12-otp-budgets.json",
+    "latest_previous_production_digest_sha256_16": "d5f3fe38b61f4a4e",
+    "status": "not rerun on this source build"
+  },
+  "kind": "audit-prefix-compound-page-cursor-regressions",
+  "limits": [
+    "One laptop correctness evidence; no independent security review or multi-host claim.",
+    "Synthetic direct audit rows exercise search dimensions and foreign scope without asserting API report throughput.",
+    "New reports inserted between pagination calls verify sequence stability; they are not a multi-replica write-race capacity run.",
+    "Reporter benchmark writes use only public APIs; reference measurement is recorded separately."
+  ],
+  "measurement": {
+    "complete": true,
+    "compound_matches": 1250,
+    "concurrency": 32,
+    "duration_seconds": 60.000270084,
+    "evidence": "../bench-results/2026-10-12-laptop-audit-filter/complex-audit-filter.json",
+    "exit_code": 0,
+    "fixture_events": 10000,
+    "latency_ms": {
+      "max": 68.343,
+      "mean": 25.110099564381304,
+      "p50": 25.6,
+      "p90": 30.72,
+      "p99": 34.816,
+      "p999": 45.056
+    },
+    "operations": 76443,
+    "outcomes": {
+      "compound_empty": 10921,
+      "compound_match": 10920,
+      "cursor_page": 10919,
+      "cursor_scope_rejected": 10921,
+      "invalid_network": 10921,
+      "invalid_time": 10921,
+      "literal_prefix_empty": 10920
+    },
+    "prepared_seconds": 29.727098209,
+    "scenario": "complex-audit-filter",
+    "throughput_per_second": 1274.0442650171453,
+    "verdict": "pass"
+  },
+  "observed_defects": {
+    "cursor": "13 changed filter profiles and a realm-level versus organization-level audit route accepted the original cursor; the original organization hard boundary remained enforced.",
+    "literal_prefix": {
+      "backslash": {
+        "actual": 0,
+        "expected": 1
+      },
+      "percent": {
+        "actual": 6,
+        "expected": 1
+      },
+      "underscore": {
+        "actual": 6,
+        "expected": 2
+      }
+    }
+  },
+  "pre_fix": {
+    "case_elapsed_seconds": {
+      "TestAuditCompoundFiltersAndCursors": [
+        1.27
+      ],
+      "TestAuditTypePrefixIsLiteral": [
+        1.26
+      ]
+    },
+    "exit_code": 1,
+    "failed_tests": [
+      "TestAuditTypePrefixIsLiteral/app.audit_test.",
+      "TestAuditTypePrefixIsLiteral/app.audit%test.",
+      "TestAuditTypePrefixIsLiteral/app.audit\\test.",
+      "TestAuditTypePrefixIsLiteral",
+      "TestAuditCompoundFiltersAndCursors/changed_network",
+      "TestAuditCompoundFiltersAndCursors/changed_subject_id",
+      "TestAuditCompoundFiltersAndCursors/changed_session_id",
+      "TestAuditCompoundFiltersAndCursors/changed_category",
+      "TestAuditCompoundFiltersAndCursors/changed_to",
+      "TestAuditCompoundFiltersAndCursors/changed_type",
+      "TestAuditCompoundFiltersAndCursors/changed_target_id",
+      "TestAuditCompoundFiltersAndCursors/changed_client_id",
+      "TestAuditCompoundFiltersAndCursors/changed_grant_id",
+      "TestAuditCompoundFiltersAndCursors/changed_outcome",
+      "TestAuditCompoundFiltersAndCursors/changed_from",
+      "TestAuditCompoundFiltersAndCursors/changed_actor_id",
+      "TestAuditCompoundFiltersAndCursors/changed_request_id",
+      "TestAuditCompoundFiltersAndCursors"
+    ],
+    "package_elapsed_seconds": 3.2640000000000002,
+    "passed_subtests": 3,
+    "passed_top_tests": 0,
+    "skipped_tests": []
+  },
+  "protected_traceability_test_sha256": "a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6",
+  "source": {
+    "frozen_files_sha256": {
+      "api/openapi/proudauth.yaml": "5cdb831dc79b85e41196bccecd14ed6aeb35fad84070e56587a43edf2fb41f77",
+      "internal/audit/query.go": "c2893b1d815480ba6ee328b69acb43960595daef515452d3b4bd2ac19ded81bf",
+      "internal/bench/audit_filter.go": "219c89f519ba0ed01f899669395d693ac63463249ce76a43940d2731a48a2d12",
+      "internal/bench/audit_filter_test.go": "05cea4c1d86bf6be7d250691e8eab6bc5b59b5dfe61cc5cd59a819e4281b0c86",
+      "internal/bench/scenarios.go": "87a6e37521adb8229f5fe41a38b9e427aab22d7d77995639ac46e73acf151be7",
+      "internal/httpapi/admin.go": "978f720e7e6e3de30518fa69243f92e2d559b8c08b3686837277747893a2ff6c",
+      "scripts/bench-local.sh": "9be8f9fa51b9ddcfb66a5517d1376eaf9fe9c2b27f808e769a60ed1140122d7f",
+      "tests/e2e/audit_filter_test.go": "ebba7eab8517ad373a6afd8e4be5460843d206ebd23291a22e4692f67342f1c2",
+      "tests/e2e/bench_audit_filter_test.go": "b1d79bd19438215ea7cbafa7752265aa9a9f6bcf135cd280a7a68ca275bbbf00",
+      "tests/e2e/bench_test.go": "eee514a591861d93a5ad989e3a8d647b7a16ba3946202c631797df36d53b2f97"
+    },
+    "git_commit": "none",
+    "production_digest_sha256_16": "33f1e749e5cbf702"
+  },
+  "targeted": {
+    "case_elapsed_seconds": {
+      "TestAuditCompoundFiltersAndCursors": [
+        1.19,
+        1.27,
+        1.25
+      ],
+      "TestAuditCorrections": [
+        1.12,
+        1.25,
+        1.17
+      ],
+      "TestAuditExportRange": [
+        1.63,
+        1.57,
+        1.6
+      ],
+      "TestAuditSearchDimensions": [
+        1.2,
+        1.22,
+        1.26
+      ],
+      "TestAuditTypePrefixIsLiteral": [
+        1.21,
+        1.11,
+        1.19
+      ],
+      "TestReportedApplicationActivity": [
+        1.22,
+        1.28,
+        1.24
+      ]
+    },
+    "exit_code": 0,
+    "failed_tests": [],
+    "package_elapsed_seconds": 24.627,
+    "passed_subtests": 57,
+    "passed_top_tests": 18,
+    "skipped_tests": []
+  },
+  "verification": {
+    "contract": {
+      "command": "go test -json -race -count=1 -timeout=3m ./tests/contract",
+      "exit_code": 0,
+      "failed_tests": [],
+      "package_elapsed_seconds": 27.762,
+      "passed_tests": 36,
+      "skipped_tests": []
+    },
+    "formatting": "pass",
+    "license_check": "pass",
+    "secret_scan": "pass",
+    "shell_syntax": "pass",
+    "traceability_preview": "complete repository evidence with exact protected test, run as a single stdlib test file; pass in 7.855 seconds",
+    "traceability_rows_refreshed": [
+      "AUD-006",
+      "AUD-011",
+      "API-004",
+      "NFR-004",
+      "NFR-006",
+      "NFR-008"
+    ],
+    "vet": "pass: internal/audit, internal/bench, internal/httpapi, tests/e2e"
+  },
+  "unit_race": {
+    "exit_code": 0,
+    "package_elapsed_seconds": {
+      "internal/audit": 4.502,
+      "internal/bench": 13.422
+    }
+  }
+}

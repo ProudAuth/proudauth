@@ -1,0 +1,1736 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/config.schema.json",
+  "title": "ProudAuth server configuration",
+  "description": "Deployment configuration file read by identity-server, identity-worker and identity-cli (internal/configuration). Loading (configuration.Load): the process starts from Defaults(), then decodes the YAML file named by the -config flag or the PROUDAUTH_CONFIG variable (the file is optional) with gopkg.in/yaml.v3 and KnownFields(true), so unknown keys at any level are rejected (additionalProperties: false everywhere). Only the first YAML document is read and an empty file is an error. PROUDAUTH_* environment overrides are applied after the file (see x-env on the affected properties), then Validate() runs; this schema encodes the Validate() rules JSON Schema can express and documents the rest under x-constraint. Durations are Go duration strings parsed by time.ParseDuration (\"90s\", \"15m\", \"1h30m\", \"250ms\"); bare YAML numbers are rejected for durations. The YAML decoder also accepts yes/no/on/off/y/n for booleans and truncates fractional numbers into integer fields, which this schema does not allow. Secret-reference fields (x-secret: true) accept \"file:/path\" (file contents with surrounding whitespace trimmed), \"env:NAME\" (the variable must be set), \"cred:NAME\" (systemd credential), \"vault:<mount>/data/<path>#<field>\" (HashiCorp Vault KV v2), \"kms:<file>\" (a key file unwrapped by keys.kms.command), a scheme registered by an operator-built resolver, or a literal value; in production Validate() refuses literals for keys.root_keys, keys.pepper_keys, keys.signing_wrap_keys, storage.migration_database_url, delivery.email.smtp_password, server.metrics_token, delivery.email.events_secret, delivery.sms.webhook_secret and security.challenge_providers[].secret, and a password embedded in storage.database_url. Environment overrides: PROUDAUTH_MODE, PROUDAUTH_PUBLIC_ORIGIN, PROUDAUTH_PUBLIC_LISTEN, PROUDAUTH_INTERNAL_LISTEN, PROUDAUTH_DATABASE_URL, PROUDAUTH_ROOT_KEY (replaces keys.root_keys with [{version: 1, ref: <value>}] and sets keys.active_version to 1), PROUDAUTH_MIGRATE_ON_START, PROUDAUTH_EMAIL_ADAPTER, PROUDAUTH_SMTP_HOST, PROUDAUTH_SMTP_PORT, PROUDAUTH_SMTP_TLS, PROUDAUTH_EMAIL_FROM, PROUDAUTH_LOG_LEVEL, PROUDAUTH_IMPERSONATION_ENABLED, PROUDAUTH_TRUSTED_PROXIES (comma-separated), PROUDAUTH_COOKIE_INSECURE_DEV, PROUDAUTH_ARGON_MEMORY_KIB, PROUDAUTH_ARGON_TIME and PROUDAUTH_ALLOW_PRIVATE_EGRESS (sets both federation.allow_private_network and delivery.allow_private_webhooks). Overrides fail closed: a malformed boolean, or an integer outside its range in PROUDAUTH_SMTP_PORT, PROUDAUTH_ARGON_MEMORY_KIB or PROUDAUTH_ARGON_TIME, stops startup; empty variables are ignored. The required values below (server.public_origin, storage.database_url, keys.root_keys and, for the default smtp email adapter, delivery.email.smtp_host and delivery.email.from) describe the effective configuration; a file that relies on environment overrides for them will not validate on its own.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "server",
+    "storage",
+    "keys"
+  ],
+  "properties": {
+    "mode": {
+      "description": "Deployment mode. production enforces the production-only rules (https public origin, secret-reference root keys, no dev_sink adapters, no smtp_tls none, no cookie_insecure_dev, no federation.allow_private_network, argon_memory_kib >= 19456). The /dev/mailbox route is only registered in development.",
+      "type": "string",
+      "enum": [
+        "production",
+        "development"
+      ],
+      "default": "production",
+      "x-env": "PROUDAUTH_MODE"
+    },
+    "server": {
+      "$ref": "#/$defs/ServerConfig"
+    },
+    "identity": {
+      "$ref": "#/$defs/IdentityConfig"
+    },
+    "storage": {
+      "$ref": "#/$defs/StorageConfig"
+    },
+    "keys": {
+      "$ref": "#/$defs/KeysConfig"
+    },
+    "sessions": {
+      "$ref": "#/$defs/SessionsConfig"
+    },
+    "tokens": {
+      "$ref": "#/$defs/TokensConfig"
+    },
+    "security": {
+      "$ref": "#/$defs/SecurityConfig"
+    },
+    "impersonation": {
+      "$ref": "#/$defs/ImpersonationConfig"
+    },
+    "federation": {
+      "$ref": "#/$defs/FederationConfig"
+    },
+    "saml": {
+      "$ref": "#/$defs/SAMLConfig"
+    },
+    "directory": {
+      "$ref": "#/$defs/DirectoryConfig"
+    },
+    "delivery": {
+      "$ref": "#/$defs/DeliveryConfig"
+    },
+    "workers": {
+      "$ref": "#/$defs/WorkersConfig"
+    },
+    "observability": {
+      "$ref": "#/$defs/ObservabilityConfig"
+    },
+    "privacy": {
+      "$ref": "#/$defs/PrivacyConfig"
+    },
+    "limits": {
+      "$ref": "#/$defs/LimitsConfig"
+    },
+    "extensions": {
+      "$ref": "#/$defs/ExtensionsConfig"
+    },
+    "webauthn": {
+      "$ref": "#/$defs/WebAuthnConfig"
+    }
+  },
+  "allOf": [
+    {
+      "$comment": "Production-only rules from Validate(). mode defaults to production, so they also apply when mode is omitted.",
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "production"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "server": {
+            "properties": {
+              "public_origin": {
+                "description": "server.public_origin must use https in production (SEC-001).",
+                "pattern": "^[Hh][Tt][Tt][Pp][Ss]://"
+              }
+            }
+          },
+          "keys": {
+            "properties": {
+              "root_keys": {
+                "items": {
+                  "description": "keys.root_keys entries must be file: or env: references in production (DEP-006).",
+                  "required": [
+                    "ref"
+                  ],
+                  "properties": {
+                    "ref": {
+                      "pattern": "^(file|env):"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "delivery": {
+            "properties": {
+              "email": {
+                "properties": {
+                  "adapter": {
+                    "description": "dev_sink is not allowed in production (MSG-011, QA-007).",
+                    "not": {
+                      "const": "dev_sink"
+                    }
+                  },
+                  "smtp_tls": {
+                    "description": "smtp_tls none is not allowed in production.",
+                    "not": {
+                      "const": "none"
+                    }
+                  }
+                }
+              },
+              "sms": {
+                "properties": {
+                  "adapter": {
+                    "description": "dev_sink is not allowed in production (MSG-011, QA-007).",
+                    "not": {
+                      "const": "dev_sink"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "sessions": {
+            "properties": {
+              "cookie_insecure_dev": {
+                "description": "Not allowed in production (SES-010).",
+                "const": false
+              }
+            }
+          },
+          "federation": {
+            "properties": {
+              "allow_private_network": {
+                "description": "Not allowed in production (EXT-007).",
+                "const": false
+              }
+            }
+          },
+          "directory": {
+            "properties": {
+              "allow_private_network": {
+                "description": "Not allowed in production; list the directory networks in directory.egress_allowlist (EXT-007).",
+                "const": false
+              }
+            }
+          },
+          "security": {
+            "properties": {
+              "password": {
+                "properties": {
+                  "argon_memory_kib": {
+                    "description": "At least 19456 KiB in production (CRED-001).",
+                    "minimum": 19456
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$comment": "The smtp email adapter (the default) requires delivery.email.smtp_host and delivery.email.from.",
+      "if": {
+        "not": {
+          "required": [
+            "delivery"
+          ],
+          "properties": {
+            "delivery": {
+              "required": [
+                "email"
+              ],
+              "properties": {
+                "email": {
+                  "required": [
+                    "adapter"
+                  ],
+                  "properties": {
+                    "adapter": {
+                      "const": "dev_sink"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "delivery"
+        ],
+        "properties": {
+          "delivery": {
+            "required": [
+              "email"
+            ],
+            "properties": {
+              "email": {
+                "required": [
+                  "smtp_host",
+                  "from"
+                ],
+                "properties": {
+                  "smtp_host": {
+                    "minLength": 1
+                  },
+                  "from": {
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "duration": {
+      "description": "Go duration string accepted by time.ParseDuration: an optional sign followed by one or more decimal numbers with a unit (ns, us, µs, μs, ms, s, m, h), or the bare string \"0\". Examples: \"300ms\", \"1.5h\", \"2h45m\".",
+      "type": "string",
+      "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+      "examples": [
+        "30s",
+        "15m",
+        "12h",
+        "250ms"
+      ]
+    },
+    "positiveDuration": {
+      "description": "Go duration string that must be greater than zero.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/duration"
+        },
+        {
+          "pattern": "^[^-]*$"
+        },
+        {
+          "pattern": "[1-9]"
+        }
+      ]
+    },
+    "nonNegativeDuration": {
+      "description": "Go duration string that must not be negative.",
+      "allOf": [
+        {
+          "$ref": "#/$defs/duration"
+        },
+        {
+          "pattern": "^[^-]*$"
+        }
+      ]
+    },
+    "secretRef": {
+      "description": "Secret reference resolved by configuration.ResolveSecret: \"file:/path\" reads the file and trims surrounding whitespace, \"env:NAME\" reads an environment variable that must be set (an empty value is accepted), anything else is used literally. Redacted in support bundles unless it is a reference.",
+      "type": "string",
+      "x-secret": true,
+      "examples": [
+        "file:/run/secrets/database_url",
+        "env:PROUDAUTH_DB_DSN"
+      ]
+    },
+    "uint32": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "int32": {
+      "type": "integer",
+      "minimum": -2147483648,
+      "maximum": 2147483647
+    },
+    "KeyRef": {
+      "description": "A versioned key. The referenced secret must resolve to exactly 32 bytes encoded as hex (64 characters) or base64 (standard or URL alphabet, padded or not); otherwise startup fails when the keyring is built.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "description": "Key version number. Versions are recorded with ciphertexts and pepper-keyed verifiers, so retired versions must stay listed while data protected by them exists.",
+          "$ref": "#/$defs/uint32"
+        },
+        "ref": {
+          "$ref": "#/$defs/secretRef",
+          "description": "Secret reference to 32 random bytes (hex or base64): file:, env:, cred:, vault:, kms: (wrapped by a KMS, see keys.kms) or a registered scheme. Literals are refused in production for root, pepper and signing-wrap keys."
+        }
+      }
+    },
+    "ServerConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "public_origin"
+      ],
+      "properties": {
+        "public_listen": {
+          "description": "Listen address (host:port) for the public HTTP listener.",
+          "type": "string",
+          "default": ":8080",
+          "x-env": "PROUDAUTH_PUBLIC_LISTEN"
+        },
+        "internal_listen": {
+          "description": "Listen address for metrics, /health/live and operator /status. Bind to a private interface.",
+          "type": "string",
+          "default": "127.0.0.1:9090",
+          "x-env": "PROUDAUTH_INTERNAL_LISTEN"
+        },
+        "public_origin": {
+          "description": "Canonical external origin; realm issuers are <public_origin>/realms/<realm>. Required. Must be an absolute http(s) origin without path (a single trailing slash is allowed), query, fragment or userinfo, and https in production. Never derived from Host or forwarded headers.",
+          "type": "string",
+          "pattern": "^[Hh][Tt][Tt][Pp][Ss]?://[^/?#@\\s]+/?$",
+          "examples": [
+            "https://id.example.com"
+          ],
+          "x-env": "PROUDAUTH_PUBLIC_ORIGIN"
+        },
+        "trusted_proxies": {
+          "description": "Proxy addresses or CIDR ranges whose forwarded headers are trusted. Each entry must parse as an IP address or CIDR (surrounding spaces are trimmed).",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\s*[0-9A-Fa-f:.]+(/[0-9]{1,3})?\\s*$"
+          },
+          "default": [],
+          "x-env": "PROUDAUTH_TRUSTED_PROXIES"
+        },
+        "shutdown_deadline": {
+          "description": "Graceful shutdown deadline for draining the listeners.",
+          "$ref": "#/$defs/duration",
+          "default": "20s"
+        },
+        "tls_cert_file": {
+          "description": "PEM certificate file. When set, the public listener serves TLS using tls_cert_file and tls_key_file; otherwise it serves plain HTTP (TLS terminated upstream).",
+          "type": "string"
+        },
+        "tls_key_file": {
+          "description": "PEM private key file used together with tls_cert_file.",
+          "type": "string"
+        },
+        "read_timeout": {
+          "description": "http.Server ReadTimeout for the public listener.",
+          "$ref": "#/$defs/duration",
+          "default": "15s"
+        },
+        "write_timeout": {
+          "description": "http.Server WriteTimeout for the public listener.",
+          "$ref": "#/$defs/duration",
+          "default": "30s"
+        },
+        "metrics_token": {
+          "$ref": "#/$defs/secretRef",
+          "description": "Optional secret reference for a bearer token required on the internal GET /metrics and GET /status endpoints. If the reference cannot be resolved, both endpoints answer 401 (fail closed)."
+        },
+        "mtls_listen": {
+          "type": "string",
+          "description": "Optional second TLS listener (same certificate; needs tls_cert_file) that asks clients for a certificate, for mutual-TLS client authentication and certificate-bound tokens (TOK-019, MCH-014, RFC 8705). The public listener never asks, so browsers see no certificate prompt."
+        },
+        "mtls_origin": {
+          "type": "string",
+          "description": "Public https origin of the mutual-TLS listener, advertised as mtls_endpoint_aliases in discovery."
+        },
+        "client_cert_header": {
+          "type": "string",
+          "description": "Header in which a TLS-terminating proxy forwards the verified-or-not client certificate as URL-escaped PEM (for example nginx $ssl_client_escaped_cert). Honoured only from server.trusted_proxies (required); the proxy must strip it from client requests."
+        },
+        "drain_delay": {
+          "description": "How long /health/ready reports draining at shutdown before the listeners stop accepting connections, so load balancers deregister the node first (OPS-012).",
+          "$ref": "#/$defs/duration",
+          "default": "5s"
+        },
+        "host_policy": {
+          "description": "Host checking (DEP-014). strict: requests are served only on the public origin's host and on verified realm custom domains (POST /custom-domains), each custom domain only for its own realm's paths; other hosts get 421 misdirected_request (health paths excepted). any (default): Host is not checked. Custom domains never change the issuer or subjects.",
+          "type": "string",
+          "enum": [
+            "any",
+            "strict"
+          ],
+          "default": "any"
+        }
+      }
+    },
+    "IdentityConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default_realm": {
+          "description": "Realm the operator CLI (identity-cli realm-create, bootstrap) uses when -realm is not given.",
+          "type": "string",
+          "default": "main"
+        }
+      }
+    },
+    "StorageConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "database_url"
+      ],
+      "properties": {
+        "database_url": {
+          "$ref": "#/$defs/secretRef",
+          "description": "PostgreSQL connection string, or a secret reference to one. Required.",
+          "x-env": "PROUDAUTH_DATABASE_URL"
+        },
+        "max_conns": {
+          "description": "Maximum pool connections.",
+          "$ref": "#/$defs/int32",
+          "default": 20
+        },
+        "min_conns": {
+          "description": "Minimum pool connections.",
+          "$ref": "#/$defs/int32",
+          "default": 2
+        },
+        "migrate_on_start": {
+          "description": "Apply pending migrations at startup (equivalent to the -migrate flag).",
+          "type": "boolean",
+          "default": false,
+          "x-env": "PROUDAUTH_MIGRATE_ON_START"
+        },
+        "statement_timeout": {
+          "description": "PostgreSQL statement timeout for pooled connections.",
+          "$ref": "#/$defs/duration",
+          "default": "10s"
+        },
+        "migration_database_url": {
+          "description": "Connection used for migrations instead of database_url (OPS-013): a schema-owner role kept apart from the service's runtime role. A secret reference in production. Empty uses database_url.",
+          "type": "string",
+          "default": ""
+        },
+        "runtime_role": {
+          "description": "PostgreSQL role granted data privileges only (SELECT, INSERT, UPDATE, DELETE on tables; sequences) after each migration run, so the service's own credentials cannot change the schema or the audit guards (OPS-013). identity-cli doctor warns when the runtime connection is a superuser, owns the tables or can create roles.",
+          "type": "string",
+          "default": "",
+          "pattern": "^$|^[a-z_][a-z0-9_]{0,62}$"
+        }
+      }
+    },
+    "KeysConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "root_keys"
+      ],
+      "properties": {
+        "root_keys": {
+          "description": "Versioned root keys of the key hierarchy. Required (DEP-008: keys must be durable across restarts). In production every ref must be a secret reference, not a literal.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/KeyRef"
+          },
+          "x-env": "PROUDAUTH_ROOT_KEY"
+        },
+        "active_version": {
+          "description": "Root key version used for new encryption and derivation. Must match a version listed in root_keys (checked when the keyring is built, not by Validate()).",
+          "$ref": "#/$defs/uint32",
+          "default": 1,
+          "x-env": "PROUDAUTH_ROOT_KEY"
+        },
+        "pepper_keys": {
+          "description": "Optional dedicated password-pepper keys (CRED-009). When non-empty, new password verifiers are keyed with the pepper and record its version; losing a pepper makes those verifiers unusable.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/KeyRef"
+          }
+        },
+        "signing_wrap_keys": {
+          "description": "Optional dedicated keys that wrap stored token-signing private keys.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/KeyRef"
+          }
+        },
+        "signing_algorithm": {
+          "description": "JWS algorithm for realm signing keys. Validate() does not check that it is also listed in security.allowed_algorithms.",
+          "type": "string",
+          "enum": [
+            "RS256",
+            "ES256",
+            "PS256",
+            "EdDSA"
+          ],
+          "default": "RS256"
+        },
+        "rotation_interval": {
+          "description": "Age after which a signing key is due for rotation.",
+          "$ref": "#/$defs/duration",
+          "default": "2160h"
+        },
+        "prepublish_period": {
+          "description": "How long a new signing key is published in the JWKS before it becomes active.",
+          "$ref": "#/$defs/duration",
+          "default": "48h"
+        },
+        "retirement_period": {
+          "description": "How long a retired key stays published (added to tokens.max_access_token_ttl).",
+          "$ref": "#/$defs/duration",
+          "default": "168h"
+        },
+        "kms": {
+          "description": "Optional external key provider (DEP-016). Root, pepper and signing-wrap keys stored wrapped by a KMS or HSM are referenced as kms:<file with the wrapped key>; at startup command runs without a shell, receives the wrapped key on standard input (KMS_KEY_REF names the file) and prints the unwrapped key (hex or base64) on standard output. Any provider with a command-line client works and none is required. The unwrapped keys are held in process memory while the service runs: the KMS protects them at rest and controls who can start the service, not their use. Signing inside an HSM is not supported.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "command": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "description": "Program and arguments."
+            },
+            "timeout": {
+              "$ref": "#/$defs/duration",
+              "default": "10s",
+              "description": "Per key, at most 1m (0 means 10s)."
+            }
+          }
+        }
+      }
+    },
+    "SessionsConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "idle_timeout": {
+          "description": "IdP session idle timeout. Must be positive and <= absolute_timeout. Realm policy may only shorten it.",
+          "$ref": "#/$defs/positiveDuration",
+          "default": "30m",
+          "x-constraint": "0 < idle_timeout <= sessions.absolute_timeout"
+        },
+        "absolute_timeout": {
+          "description": "IdP session absolute lifetime. Must be >= idle_timeout.",
+          "$ref": "#/$defs/duration",
+          "default": "12h",
+          "x-constraint": "absolute_timeout >= sessions.idle_timeout"
+        },
+        "remember_me_idle": {
+          "description": "Remember-me grant idle lifetime.",
+          "$ref": "#/$defs/duration",
+          "default": "168h"
+        },
+        "remember_me_absolute": {
+          "description": "Remember-me grant absolute lifetime.",
+          "$ref": "#/$defs/duration",
+          "default": "720h"
+        },
+        "offline_idle": {
+          "description": "Offline grant idle lifetime.",
+          "$ref": "#/$defs/duration",
+          "default": "168h"
+        },
+        "offline_absolute": {
+          "description": "Offline grant absolute lifetime.",
+          "$ref": "#/$defs/duration",
+          "default": "720h"
+        },
+        "max_concurrent": {
+          "description": "Maximum concurrent sessions per user.",
+          "type": "integer",
+          "default": 50
+        },
+        "cookie_same_site": {
+          "description": "SameSite attribute for session and transaction cookies; compared case-insensitively.",
+          "type": "string",
+          "pattern": "^([Ll][Aa][Xx]|[Ss][Tt][Rr][Ii][Cc][Tt]|[Nn][Oo][Nn][Ee])$",
+          "examples": [
+            "lax",
+            "strict",
+            "none"
+          ],
+          "default": "lax"
+        },
+        "cookie_insecure_dev": {
+          "description": "Drop the Secure attribute from cookies for plain-http local development. Not allowed in production (SES-010).",
+          "type": "boolean",
+          "default": false,
+          "x-env": "PROUDAUTH_COOKIE_INSECURE_DEV"
+        }
+      }
+    },
+    "TokensConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "access_token_ttl": {
+          "description": "Default access token lifetime. Must be positive and <= max_access_token_ttl.",
+          "$ref": "#/$defs/positiveDuration",
+          "default": "5m",
+          "x-constraint": "0 < access_token_ttl <= tokens.max_access_token_ttl"
+        },
+        "max_access_token_ttl": {
+          "description": "Operator ceiling for access token lifetimes; also the upper bound for a resource's access_token_ttl_seconds and part of the key retirement window.",
+          "$ref": "#/$defs/duration",
+          "default": "60m"
+        },
+        "id_token_ttl": {
+          "description": "ID token lifetime.",
+          "$ref": "#/$defs/duration",
+          "default": "5m"
+        },
+        "authorization_code_ttl": {
+          "description": "Authorization code lifetime. Must be in (0, 10m].",
+          "$ref": "#/$defs/positiveDuration",
+          "default": "60s",
+          "x-constraint": "0 < authorization_code_ttl <= 10m"
+        },
+        "transaction_ttl": {
+          "description": "Authentication transaction lifetime.",
+          "$ref": "#/$defs/duration",
+          "default": "10m"
+        },
+        "challenge_ttl": {
+          "description": "Verification/reset challenge lifetime.",
+          "$ref": "#/$defs/duration",
+          "default": "10m"
+        },
+        "invitation_ttl": {
+          "description": "Organization invitation lifetime.",
+          "$ref": "#/$defs/duration",
+          "default": "72h"
+        },
+        "clock_skew": {
+          "description": "Clock tolerance applied when verifying tokens. Must be in [0, 60s] (§14.5).",
+          "$ref": "#/$defs/nonNegativeDuration",
+          "default": "60s",
+          "x-constraint": "0 <= clock_skew <= 60s"
+        },
+        "device_code_ttl": {
+          "description": "Device authorization code lifetime.",
+          "$ref": "#/$defs/duration",
+          "default": "10m"
+        },
+        "exchange_max_chain_depth": {
+          "description": "Maximum delegation chain depth for token exchange.",
+          "type": "integer",
+          "default": 2
+        }
+      }
+    },
+    "PasswordConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_length": {
+          "description": "Minimum password length. Must be >= 8 (safety floor); realm policy may raise it.",
+          "type": "integer",
+          "minimum": 8,
+          "default": 15
+        },
+        "max_length": {
+          "description": "Maximum password length. Must be >= 64 (CRED-002).",
+          "type": "integer",
+          "minimum": 64,
+          "default": 128
+        },
+        "max_bytes": {
+          "description": "Maximum password size in bytes before and after NFKC normalization. Must be >= max_length.",
+          "type": "integer",
+          "default": 1024,
+          "x-constraint": "max_bytes >= security.password.max_length"
+        },
+        "argon_time": {
+          "description": "Argon2id iterations for new verifiers. Not range-checked by Validate(); 0 makes hashing fail at runtime.",
+          "$ref": "#/$defs/uint32",
+          "default": 3,
+          "x-env": "PROUDAUTH_ARGON_TIME"
+        },
+        "argon_memory_kib": {
+          "description": "Argon2id memory in KiB for new verifiers. At least 19456 in production (CRED-001).",
+          "$ref": "#/$defs/uint32",
+          "default": 65536,
+          "x-env": "PROUDAUTH_ARGON_MEMORY_KIB"
+        },
+        "argon_threads": {
+          "description": "Argon2id parallelism for new verifiers. Not range-checked by Validate(); 0 makes hashing fail at runtime.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 2
+        },
+        "blocklist_file": {
+          "description": "Optional file of additional compromised passwords (one per line, # comments) added to the embedded blocklist.",
+          "type": "string"
+        },
+        "history_count": {
+          "description": "Deployment floor for password history: the larger of this and the realm policy's password.history_count applies (CRED-008, CRED-010).",
+          "type": "integer",
+          "default": 0
+        },
+        "legacy_hashes_until": {
+          "description": "End of the legacy-hash migration (CRED-004), a date YYYY-MM-DD (UTC, inclusive). Afterwards imported legacy verifiers (salted SHA-256, bcrypt and PBKDF2) neither verify nor import; affected accounts recover their password. Empty: legacy verifiers are accepted (and rehashed at sign-in).",
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        }
+      }
+    },
+    "RateLimitConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "login_per_identifier": {
+          "description": "Password attempts per identifier per login_window (identifier lookups allow 3x).",
+          "type": "integer",
+          "default": 10
+        },
+        "login_per_ip": {
+          "description": "Login attempts per client IP per login_window; also the hourly budget for setup links per IP.",
+          "type": "integer",
+          "default": 100
+        },
+        "login_window": {
+          "$ref": "#/$defs/duration",
+          "default": "15m"
+        },
+        "send_per_identifier": {
+          "description": "Messages (OTP, links) per identifier per send_window.",
+          "type": "integer",
+          "default": 5
+        },
+        "send_per_ip": {
+          "description": "Messages per client IP per send_window.",
+          "type": "integer",
+          "default": 50
+        },
+        "send_window": {
+          "$ref": "#/$defs/duration",
+          "default": "1h"
+        },
+        "send_cooldown": {
+          "description": "Minimum interval between two sends to one identifier.",
+          "$ref": "#/$defs/duration",
+          "default": "30s"
+        },
+        "otp_verify_per_account": {
+          "description": "OTP verification attempts per subject per otp_verify_window.",
+          "type": "integer",
+          "default": 10
+        },
+        "otp_verify_window": {
+          "$ref": "#/$defs/duration",
+          "default": "15m"
+        },
+        "signup_per_ip": {
+          "description": "Registrations per client IP per signup_window.",
+          "type": "integer",
+          "default": 20
+        },
+        "signup_window": {
+          "$ref": "#/$defs/duration",
+          "default": "1h"
+        },
+        "token_per_client": {
+          "description": "Token endpoint requests per client per token_window (password steps per client allow 10x per login_window).",
+          "type": "integer",
+          "default": 600
+        },
+        "token_window": {
+          "$ref": "#/$defs/duration",
+          "default": "1m"
+        },
+        "organization_per_window": {
+          "description": "Access tokens issued in one organization's context per token window, for every grant type (TEN-018, SEC-006). Fails closed when the limiter is unavailable.",
+          "type": "integer",
+          "default": 2000
+        },
+        "temporary_lock": {
+          "description": "How long password sign-in stays locked for an account (or identifier) after failures_before_lock failures; the lock answers 429 with Retry-After. Both must be positive to enable it.",
+          "$ref": "#/$defs/duration",
+          "default": "15m"
+        },
+        "failures_before_lock": {
+          "description": "Failed password attempts within temporary_lock before the temporary lock applies.",
+          "type": "integer",
+          "default": 10
+        },
+        "login_per_organization": {
+          "description": "Password sign-in attempts per organization per login window (TEN-018); 0 disables.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 10000
+        },
+        "signup_per_client": {
+          "description": "Self-registrations per client per signup window (SEC-006, REG-012).",
+          "type": "integer",
+          "minimum": 0,
+          "default": 500
+        },
+        "signup_per_realm": {
+          "description": "Self-registrations per realm per signup window.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 2000
+        },
+        "send_per_client": {
+          "description": "Verification and sign-in messages per client per send window.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 1000
+        },
+        "send_per_organization": {
+          "description": "Messages per organization per send window.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 500
+        },
+        "send_per_realm": {
+          "description": "Messages per realm per send window.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 5000
+        },
+        "login_per_realm": {
+          "description": "Password sign-in attempts per realm per login window; also bounds factor and code verification attempts realm-wide.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 50000
+        },
+        "login_per_client": {
+          "description": "Password sign-in attempts made through one client per login window; also bounds factor and code verification attempts through that client (a separate count of the same size) (REG-012). 0 disables the per-client budget.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 20000
+        },
+        "invitations_per_organization": {
+          "description": "Invitations per organization per invitation window (INV-009); revoking and re-creating never resets it.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 500
+        },
+        "invitations_per_recipient": {
+          "description": "Invitations per recipient address per invitation window (INV-009).",
+          "type": "integer",
+          "minimum": 0,
+          "default": 10
+        },
+        "invitation_window": {
+          "description": "Window for the invitation budgets.",
+          "$ref": "#/$defs/duration"
+        }
+      }
+    },
+    "SecurityConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "password": {
+          "$ref": "#/$defs/PasswordConfig"
+        },
+        "otp_length": {
+          "description": "Digits in email/SMS one-time codes.",
+          "type": "integer",
+          "default": 6
+        },
+        "otp_max_attempts": {
+          "description": "Verification attempts per one-time code.",
+          "type": "integer",
+          "default": 5
+        },
+        "mfa_floor": {
+          "description": "Operator MFA safety floor (MFA-005): realm policies may be stricter but never lower it; it also applies at sign-in to policies saved earlier.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "require": {
+              "description": "none (default) or all: every account needs MFA.",
+              "type": "string",
+              "enum": [
+                "none",
+                "all"
+              ]
+            },
+            "admin_phishing_resistant": {
+              "description": "Privileged and protected accounts need phishing-resistant MFA in every realm.",
+              "type": "boolean",
+              "default": false
+            },
+            "forbid_org_admin_waiver": {
+              "description": "Realms cannot waive MFA for organization administration (mfa.org_admin_mfa_optional).",
+              "type": "boolean",
+              "default": false
+            }
+          }
+        },
+        "totp_skew_steps": {
+          "description": "TOTP time steps accepted on either side of now.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2,
+          "default": 1
+        },
+        "recovery_code_count": {
+          "description": "Recovery codes issued per set.",
+          "type": "integer",
+          "minimum": 5,
+          "maximum": 20,
+          "default": 10
+        },
+        "recent_auth_window": {
+          "description": "How recent an authentication must be for sensitive self-service operations.",
+          "$ref": "#/$defs/duration",
+          "default": "10m"
+        },
+        "admin_mfa_max_age": {
+          "description": "Maximum age of administrator MFA evidence. Must be in (0, 5m] (§14.5).",
+          "$ref": "#/$defs/positiveDuration",
+          "default": "5m",
+          "x-constraint": "0 < admin_mfa_max_age <= 5m"
+        },
+        "allowed_algorithms": {
+          "description": "JWS algorithms accepted when verifying tokens. Entries are not validated.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "examples": [
+              "RS256",
+              "ES256",
+              "PS256",
+              "EdDSA"
+            ]
+          },
+          "default": [
+            "RS256",
+            "ES256",
+            "PS256",
+            "EdDSA"
+          ]
+        },
+        "rate_limits": {
+          "$ref": "#/$defs/RateLimitConfig"
+        },
+        "min_auth_response": {
+          "description": "Minimum response time for credential checks and recovery starts, to blunt account enumeration by timing.",
+          "$ref": "#/$defs/duration",
+          "default": "250ms"
+        },
+        "challenge_providers": {
+          "description": "Optional bot and abuse challenge services (SEC-014) that a realm's authentication_flow.challenge_provider can name. Nothing is contacted unless a provider is configured here and named by a realm. Verification posts secret and response (and remoteip only with send_remote_ip) as a form to verify_url and expects JSON {\"success\": true}, the siteverify interface of common providers.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "verify_url",
+              "secret"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]{0,39}$",
+                "description": "Name realms refer to."
+              },
+              "verify_url": {
+                "type": "string",
+                "description": "Absolute https verification endpoint; checked against the delivery egress policy at use."
+              },
+              "site_key": {
+                "type": "string",
+                "description": "Public site key passed to the login interface in the challenge action."
+              },
+              "secret": {
+                "type": "string",
+                "description": "Verification secret; a secret reference (file:, env:, ...) in production."
+              },
+              "send_remote_ip": {
+                "type": "boolean",
+                "default": false,
+                "description": "Also send the client address; off by default for privacy."
+              },
+              "timeout": {
+                "$ref": "#/$defs/duration",
+                "default": "3s",
+                "description": "Verification timeout, at most 10s."
+              }
+            }
+          }
+        },
+        "policy_engines": {
+          "description": "External policy decision points (AZ-026) a realm's policy_engine can name. The server posts {\"input\": {...}} (realm, organization, subject, actor, client, audience, token kind, assurance, action, resource, context, the local decision) with the token as a bearer credential and accepts {\"allowed\": bool, \"reason_code\", \"obligations\", \"policy_version\"} or an OPA-style {\"result\": bool|object}. Nothing is contacted unless an engine is configured here and named by a realm.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "url",
+              "token"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]{0,39}$",
+                "description": "Name realms refer to."
+              },
+              "url": {
+                "type": "string",
+                "description": "Absolute https endpoint (http allowed outside production)."
+              },
+              "token": {
+                "type": "string",
+                "description": "Bearer credential; a secret reference (file:, env:, ...) in production."
+              },
+              "timeout": {
+                "$ref": "#/$defs/duration",
+                "default": "1s",
+                "description": "Call timeout, at most 5s."
+              }
+            }
+          }
+        },
+        "dynamic_group_max_staleness": {
+          "description": "How old a dynamic group's last recomputation may be before its rule-derived memberships stop granting roles (AZ-010); 0 means the default (1h), otherwise between 10m and 168h. Every 5 minutes the worker recomputes the 100 least recently computed groups, then continues in batches of up to 200 while groups are older than half this bound (at most 4900 groups per run).",
+          "$ref": "#/$defs/duration",
+          "default": "1h"
+        },
+        "decision_cache_ttl": {
+          "description": "How long callers may cache a pure RBAC authorization decision under its cache_key (AZ-019), at most 10m; decisions involving ABAC policies, hooks, step-up, support access, privileged actions, conditional, scheduled or soon-expiring grants, or rule-derived group memberships are never cacheable. The key includes the token evidence (kind, audience, assurance) and a fingerprint of the applicable assignments, role versions, membership and organization state. 0 disables caching.",
+          "$ref": "#/$defs/duration",
+          "default": "30s"
+        }
+      }
+    },
+    "ImpersonationConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Operator switch for support impersonation (IMP-001). Realm policies cannot enable impersonation unless this is true.",
+          "type": "boolean",
+          "default": false,
+          "x-env": "PROUDAUTH_IMPERSONATION_ENABLED"
+        },
+        "max_ttl": {
+          "description": "Maximum impersonation grant/token lifetime. Must be in (0, 5m] (IMP-009).",
+          "$ref": "#/$defs/positiveDuration",
+          "default": "5m",
+          "x-constraint": "0 < max_ttl <= 5m"
+        },
+        "require_ticket": {
+          "description": "Require a support ticket reference for every impersonation request.",
+          "type": "boolean",
+          "default": false
+        },
+        "handoff_ttl": {
+          "description": "Lifetime of the one-time impersonation handoff. Must be in (0, 30s] (§16.3).",
+          "$ref": "#/$defs/positiveDuration",
+          "default": "30s",
+          "x-constraint": "0 < handoff_ttl <= 30s"
+        },
+        "min_reason_length": {
+          "description": "Minimum length of the stated reason.",
+          "type": "integer",
+          "default": 10
+        }
+      }
+    },
+    "FederationConfig": {
+      "description": "Upstream identity provider federation (discovery, JWKS and token requests go through an egress policy that requires https).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable the federation service (external identity providers and account linking).",
+          "type": "boolean",
+          "default": true
+        },
+        "allow_private_network": {
+          "description": "Allow federation egress to private, loopback and link-local addresses. Not allowed in production (EXT-007); unlike webhooks there is no allowlist for federation egress.",
+          "type": "boolean",
+          "default": false,
+          "x-env": "PROUDAUTH_ALLOW_PRIVATE_EGRESS"
+        },
+        "ca_file": {
+          "description": "Optional PEM bundle of additional trusted root certificates for upstream providers that use a private CA (added to the system roots). Read when federation is enabled; startup fails if the file cannot be read or contains no certificates.",
+          "type": "string"
+        },
+        "fetch_timeout": {
+          "description": "HTTP timeout for requests to upstream providers.",
+          "$ref": "#/$defs/duration",
+          "default": "10s"
+        },
+        "max_response_bytes": {
+          "description": "Maximum response size accepted from upstream providers.",
+          "type": "integer",
+          "default": 1048576
+        },
+        "egress_allowlist": {
+          "description": "CIDR ranges upstream identity providers may use even when private networks are otherwise refused.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "DirectoryConfig": {
+      "description": "LDAP/Active Directory federation and synchronization, and outbound SCIM provisioning (PROV-010..PROV-014, PROV-017, PROV-018). Connectors are realm or organization data managed at /directory-connectors; these keys bound them deployment-wide. Outbound SCIM destinations use the delivery egress policy (delivery.allow_private_webhooks, delivery.egress_allowlist).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable directory connectors: LDAP sign-in, synchronization and outbound provisioning, and the /directory-connectors APIs. When false the APIs answer feature_disabled and no run or delivery happens, while accounts a directory sourced keep failing closed: their password sign-in answers upstream_unavailable (never a local password) and their managed attributes stay read-only.",
+          "type": "boolean",
+          "default": true
+        },
+        "allow_private_network": {
+          "description": "Allow directory connections to private, loopback and link-local addresses. Development only; production lists the directory networks in egress_allowlist (EXT-007).",
+          "type": "boolean",
+          "default": false
+        },
+        "egress_allowlist": {
+          "description": "CIDR ranges directory endpoints may use even though private networks are otherwise refused. The policy is checked against every resolved address when connecting.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ca_file": {
+          "description": "Optional PEM bundle of additional trusted roots for LDAPS and StartTLS (added to the system roots); connectors may add their own roots. Startup fails if the file cannot be read or contains no certificates.",
+          "type": "string"
+        },
+        "connect_timeout": {
+          "description": "Default connection and TLS handshake timeout per directory endpoint (at most 1m); connectors may set their own.",
+          "$ref": "#/$defs/duration",
+          "default": "5s"
+        },
+        "operation_timeout": {
+          "description": "Default timeout of one directory operation (bind, search page, modify; at most 2m); connectors may set their own.",
+          "$ref": "#/$defs/duration",
+          "default": "10s"
+        },
+        "max_entries_per_run": {
+          "description": "Maximum entries (or candidate accounts) one synchronization or reconciliation run processes; a larger result fails the run without deprovisioning anything.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000,
+          "default": 100000
+        }
+      }
+    },
+    "SAMLConfig": {
+      "description": "SAML 2.0 identity provider (SAML applications, APP-018) and broker (SAML connections, FED-014) profiles. Both are off unless enabled; the broker also requires federation.enabled. Metadata is never fetched from URLs: administrators upload it.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Enable the SAML endpoints (/realms/{realm}/saml/...) and the SAML administration APIs.",
+          "type": "boolean",
+          "default": false
+        },
+        "max_message_bytes": {
+          "description": "Maximum size of a decoded (and, for HTTP-Redirect, inflated) SAML message and of uploaded metadata (SAML-004).",
+          "type": "integer",
+          "minimum": 16384,
+          "maximum": 4194304,
+          "default": 262144
+        },
+        "max_clock_skew": {
+          "description": "Largest clock skew a SAML application or connection may configure (SAML-003). At most 30m.",
+          "$ref": "#/$defs/duration",
+          "default": "5m"
+        },
+        "key_prepublish": {
+          "description": "How long the next SAML signing key must be published in metadata before it can be activated without force (SAML-002).",
+          "$ref": "#/$defs/duration",
+          "default": "48h"
+        },
+        "retired_key_publication": {
+          "description": "How long a replaced SAML signing key stays published in metadata after its successor is activated.",
+          "$ref": "#/$defs/duration",
+          "default": "168h"
+        }
+      }
+    },
+    "EmailConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "adapter": {
+          "description": "Email transport. smtp requires smtp_host and from; dev_sink stores messages for the development mailbox and is not allowed in production.",
+          "type": "string",
+          "enum": [
+            "smtp",
+            "dev_sink"
+          ],
+          "default": "smtp",
+          "x-env": "PROUDAUTH_EMAIL_ADAPTER"
+        },
+        "smtp_host": {
+          "description": "SMTP server host. Required for the smtp adapter.",
+          "type": "string",
+          "x-env": "PROUDAUTH_SMTP_HOST"
+        },
+        "smtp_port": {
+          "description": "SMTP server port.",
+          "type": "integer",
+          "default": 587,
+          "x-env": "PROUDAUTH_SMTP_PORT"
+        },
+        "smtp_username": {
+          "description": "SMTP AUTH PLAIN username; authentication is skipped when empty.",
+          "type": "string"
+        },
+        "smtp_password": {
+          "$ref": "#/$defs/secretRef",
+          "description": "SMTP password or a secret reference to it."
+        },
+        "smtp_tls": {
+          "description": "SMTP transport security. Recognized values: starttls (STARTTLS required), implicit (TLS from connect), none (plain text). The value is not validated: any other value also results in an unencrypted connection. none is rejected in production.",
+          "type": "string",
+          "examples": [
+            "starttls",
+            "implicit",
+            "none"
+          ],
+          "default": "starttls",
+          "x-recognized-values": [
+            "starttls",
+            "implicit",
+            "none"
+          ],
+          "x-env": "PROUDAUTH_SMTP_TLS"
+        },
+        "from": {
+          "description": "Envelope and header sender address. Required for the smtp adapter.",
+          "type": "string",
+          "x-env": "PROUDAUTH_EMAIL_FROM"
+        },
+        "from_name": {
+          "description": "Display name in the From header.",
+          "type": "string",
+          "default": "ProudAuth"
+        },
+        "events_secret": {
+          "$ref": "#/$defs/secretRef",
+          "description": "Secret reference authenticating provider bounce/complaint callbacks (POST /delivery-events, MSG-007). Must be a secret reference in production; redacted from support bundles."
+        },
+        "allowed_sender_domains": {
+          "description": "Domains realm-level sender addresses may use besides the domain of from (MSG-005); compared case-insensitively.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "SMSConfig": {
+      "description": "SMS transport settings. None of these options is currently read by any code path; adapter dev_sink is still rejected in production by Validate().",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "adapter": {
+          "description": "Documented values: none, dev_sink, webhook. Not validated except that dev_sink is rejected in production.",
+          "type": "string",
+          "examples": [
+            "none",
+            "dev_sink",
+            "webhook"
+          ],
+          "default": "none",
+          "x-recognized-values": [
+            "none",
+            "dev_sink",
+            "webhook"
+          ]
+        },
+        "allowed_countries": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "webhook_url": {
+          "type": "string"
+        },
+        "daily_budget": {
+          "type": "integer",
+          "default": 1000
+        },
+        "webhook_secret": {
+          "$ref": "#/$defs/secretRef",
+          "description": "Secret reference signing requests to the SMS gateway. Must be a secret reference in production; redacted from support bundles."
+        }
+      }
+    },
+    "DeliveryConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "email": {
+          "$ref": "#/$defs/EmailConfig"
+        },
+        "sms": {
+          "$ref": "#/$defs/SMSConfig"
+        },
+        "payload_retention": {
+          "description": "Retention of encrypted notification payloads.",
+          "$ref": "#/$defs/duration",
+          "default": "24h"
+        },
+        "webhook_timeout": {
+          "description": "HTTP timeout for webhook deliveries.",
+          "$ref": "#/$defs/duration",
+          "default": "10s"
+        },
+        "webhook_max_attempts": {
+          "description": "Delivery attempts per webhook event.",
+          "type": "integer",
+          "default": 12
+        },
+        "allow_private_webhooks": {
+          "description": "Allow webhook egress to private, loopback and link-local addresses.",
+          "type": "boolean",
+          "default": false,
+          "x-env": "PROUDAUTH_ALLOW_PRIVATE_EGRESS"
+        },
+        "egress_allowlist": {
+          "description": "CIDR prefixes (netip.ParsePrefix syntax, e.g. 10.1.2.0/24 or 10.1.2.3/32) that webhook egress may reach even though they are private. Entries that do not parse as a prefix, including bare IP addresses, are silently ignored.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "WorkersConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "concurrency": {
+          "description": "Parallel job runners per worker process (minimum 1).",
+          "type": "integer",
+          "default": 4
+        },
+        "lease_duration": {
+          "description": "Lease length for claimed asynchronous jobs and notification delivery batches.",
+          "$ref": "#/$defs/duration",
+          "default": "60s"
+        },
+        "poll_interval": {
+          "description": "Worker loop tick interval. Not checked by Validate(); a zero or negative value panics when the worker loop starts (time.NewTicker).",
+          "$ref": "#/$defs/duration",
+          "default": "1s"
+        },
+        "max_attempts": {
+          "description": "Default maximum attempts for background jobs before they are dead-lettered.",
+          "type": "integer",
+          "default": 8
+        },
+        "batch_size": {
+          "description": "Items claimed per notification and webhook delivery batch.",
+          "type": "integer",
+          "default": 100
+        },
+        "audit_seal_every": {
+          "description": "Interval of the audit chain sealing task.",
+          "$ref": "#/$defs/duration",
+          "default": "30s"
+        },
+        "drain_timeout": {
+          "description": "How long in-flight worker tasks may continue after a shutdown signal before they are cancelled; held leases are then released (OPS-012).",
+          "$ref": "#/$defs/duration",
+          "default": "20s"
+        },
+        "tenant_batch_share": {
+          "description": "Most notifications of one tenant (organization, or realm without one) and most deliveries of one webhook subscription a worker claims per batch (TEN-018). 0 disables the cap.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 25
+        },
+        "max_jobs_per_organization": {
+          "description": "Most jobs of one organization running at once (TEN-018). 0 disables the cap.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 2
+        },
+        "metrics_listen": {
+          "description": "Private address for the worker's /metrics, /status and /health/live (empty: disabled).",
+          "type": "string",
+          "default": ""
+        }
+      }
+    },
+    "ObservabilityConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "log_level": {
+          "description": "Log level, compared case-insensitively. Recognized: debug, info, warn, error. Not validated: any other value silently means info. In production, debug is refused; use a time-limited window (identity-cli debug-window, SEC-015).",
+          "type": "string",
+          "examples": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "default": "info",
+          "x-recognized-values": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "x-env": "PROUDAUTH_LOG_LEVEL"
+        },
+        "log_format": {
+          "description": "Log format. text selects the slog text handler; any other value (including typos) selects JSON.",
+          "type": "string",
+          "examples": [
+            "json",
+            "text"
+          ],
+          "default": "json",
+          "x-recognized-values": [
+            "json",
+            "text"
+          ]
+        },
+        "metrics_enabled": {
+          "description": "Serve GET /metrics on the internal listener; when false it answers 404.",
+          "type": "boolean",
+          "default": true
+        },
+        "trace_sampling": {
+          "description": "Probability (0..1) that a request, or a worker task run, is sampled. A sampled request logs a span line and, with otlp_endpoint, exports its spans; worker task runs are traced only when otlp_endpoint is set. An incoming W3C traceparent is continued (same trace ID), but its sampled flag is honoured only from server.trusted_proxies; any other caller is sampled at this probability, so clients cannot force span export. 0 disables sampling.",
+          "type": "number",
+          "default": 0
+        },
+        "max_clock_skew": {
+          "description": "Readiness reports degraded (503, reason clock_skew) when this node's clock differs from the database by more than this; 0 disables the check.",
+          "$ref": "#/$defs/duration",
+          "default": "2s"
+        },
+        "otlp_endpoint": {
+          "description": "OTLP/HTTP endpoint receiving sampled spans as JSON, for example http://otel-collector:4318/v1/traces (OPS-003). identity-server exports server spans (method and route label, status) of sampled requests and identity-worker exports spans of sampled task runs; both export client spans of their outbound calls (method, host, status). No headers, bodies, query strings or credentials are exported (ID-shaped path segments are replaced in route labels). Must be an absolute http(s) URL without credentials; production requires https unless the host is a loopback address. The exporter does not use the egress policy (no proxy, no redirects). Checked against privacy.residency.allowed_destinations at startup. Spans are batched and dropped, not delayed, when the collector is slow. Empty disables export; sampled requests still log span lines.",
+          "type": "string",
+          "default": ""
+        }
+      }
+    },
+    "PrivacyConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "telemetry_opt_in": {
+          "description": "No third-party telemetry sink exists; Validate() rejects true (OSS-006).",
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "audit_retention": {
+          "description": "Audit event retention.",
+          "$ref": "#/$defs/duration",
+          "default": "9600h"
+        },
+        "session_retention": {
+          "description": "Retention of ended session records, and of ended authorization grants with their refresh tokens, before cleanup.",
+          "$ref": "#/$defs/duration",
+          "default": "720h"
+        },
+        "history_retention": {
+          "description": "Retention of operational history: revoked consents, ended invitations and finished notification, webhook and back-channel logout deliveries (PRV-004). At least 168h.",
+          "$ref": "#/$defs/duration",
+          "default": "4320h"
+        },
+        "export_retention": {
+          "description": "Retention of export job artifacts.",
+          "$ref": "#/$defs/duration",
+          "default": "24h"
+        },
+        "deletion_grace_period": {
+          "description": "Grace period before a requested account deletion is finalized.",
+          "$ref": "#/$defs/duration",
+          "default": "336h"
+        },
+        "store_full_ip": {
+          "description": "Store full client IP addresses instead of truncated ones.",
+          "type": "boolean",
+          "default": false
+        },
+        "audit_retention_by_category": {
+          "description": "Per audit category retention overriding audit_retention (AUD-009), each at least 24h; emergency events are never pruned and events under an active legal hold are kept. An unknown category stops startup. The imported category applies to historical records imported with POST /audit-imports and counts from the import. When audit_archive_dir is set, only batches the archive already holds are pruned.",
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "account",
+              "application",
+              "audit",
+              "authorization",
+              "configuration",
+              "data_access",
+              "imported",
+              "operations",
+              "privacy",
+              "security",
+              "support",
+              "token"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/duration"
+          }
+        },
+        "backup_retention": {
+          "description": "How long the operator keeps database backups (PRV-005). Informational: GET /users/{user}/deletion-status dates when a deleted account leaves the last backup. ProudAuth does not manage backups. 0 (default) reports the backup stage as unknown.",
+          "$ref": "#/$defs/duration",
+          "default": "0s"
+        },
+        "residency": {
+          "description": "Data residency policy (PRV-003). allowed_destinations keeps every outbound connector (webhooks, pre-action hooks, federation providers, challenge providers, organization mail servers) on listed hosts: a name matches that host, a .suffix matches every host under the domain; checked at registration and on every connection. region labels the deployment in /status. Where the database, backups and logs are stored is decided by the deployment.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "region": {
+              "type": "string",
+              "default": ""
+            },
+            "allowed_destinations": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": []
+            }
+          }
+        },
+        "audit_archive_dir": {
+          "description": "Directory receiving every sealed audit batch as a write-once NDJSON file (AUD-008); verify it with identity-cli verify-audit-archive. Mount storage the operator controls independently, ideally with retention locks. Empty disables archiving.",
+          "type": "string",
+          "default": ""
+        }
+      }
+    },
+    "WebAuthnConfig": {
+      "description": "Passkey trust (PASS-009, PASS-010).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "metadata_file": {
+          "description": "FIDO Metadata Service (MDS3) BLOB downloaded and refreshed by the operator, verified against metadata_root_file (the FIDO Alliance production root when empty) and loaded at startup. Its entries are trusted metadata for realms with webauthn.require_trusted_attestation. The server never fetches metadata.",
+          "type": "string"
+        },
+        "metadata_root_file": {
+          "description": "PEM root certificate of a private metadata service.",
+          "type": "string"
+        },
+        "related_origins": {
+          "description": "Allow realms to declare WebAuthn Level 3 related origins (published at /.well-known/webauthn). Off by default.",
+          "type": "boolean"
+        }
+      }
+    },
+    "ExtensionsConfig": {
+      "description": "Extension trust (EXT-014). Plugin packages must carry an Ed25519 signature by one of these publisher keys; there is no unsigned mode. Nothing a plugin configures runs in process (EXT-013).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "plugin_publishers": {
+          "description": "Trusted plugin publisher keys. Removing a key does not uninstall plugins already installed; it stops new uploads and installations signed by it.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PluginPublisherKey"
+          },
+          "default": []
+        }
+      }
+    },
+    "PluginPublisherKey": {
+      "description": "One trusted plugin publisher key.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key_id",
+        "publisher",
+        "public_key"
+      ],
+      "properties": {
+        "key_id": {
+          "description": "Identifier packages name in signature.key_id (lower-case, unique).",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{0,62}$"
+        },
+        "publisher": {
+          "description": "Publisher name the manifest must declare for this key.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{0,62}$"
+        },
+        "public_key": {
+          "description": "Raw 32-byte Ed25519 public key, base64 (standard alphabet). Not a secret.",
+          "type": "string"
+        },
+        "not_after": {
+          "description": "Optional end of validity (RFC 3339). Packages are refused at upload and installation after it.",
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "LimitsConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_body_bytes": {
+          "description": "Maximum request body size for every route, in bytes (262144..67108864).",
+          "type": "integer",
+          "default": 262144,
+          "minimum": 262144,
+          "maximum": 67108864
+        },
+        "max_header_bytes": {
+          "description": "Public listener header limit (http.Server MaxHeaderBytes), in bytes (8192..1048576).",
+          "type": "integer",
+          "default": 16384,
+          "minimum": 8192,
+          "maximum": 1048576
+        },
+        "max_token_bytes": {
+          "description": "Maximum size of a token accepted for verification and introspection, in bytes (4096..65536).",
+          "type": "integer",
+          "default": 8192,
+          "minimum": 4096,
+          "maximum": 65536
+        },
+        "max_json_depth": {
+          "description": "Maximum nesting depth of JSON request bodies (SEC-004), 32..256.",
+          "type": "integer",
+          "default": 32,
+          "minimum": 32,
+          "maximum": 256
+        },
+        "max_page_size": {
+          "description": "Maximum page size for list endpoints, 1..1000.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 200,
+          "maximum": 1000
+        },
+        "default_page_size": {
+          "description": "Default page size. Must be in (0, max_page_size].",
+          "type": "integer",
+          "minimum": 1,
+          "default": 50,
+          "x-constraint": "0 < default_page_size <= limits.max_page_size"
+        },
+        "max_batch_size": {
+          "description": "Maximum items per batch API request (bulk invitations, authorization check batches and policy simulations); larger batches are refused with 422.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "default": 100
+        },
+        "max_group_depth": {
+          "description": "Maximum nested group depth, 1..32.",
+          "type": "integer",
+          "default": 8,
+          "minimum": 1,
+          "maximum": 32
+        },
+        "max_role_expansion": {
+          "description": "Maximum roles reached through composite expansion, 8..1024.",
+          "type": "integer",
+          "default": 64,
+          "minimum": 8,
+          "maximum": 1024
+        },
+        "max_inflight_requests": {
+          "description": "Concurrent request ceiling per process, 1..100000; 0 means 2000 (a quarter plus one is reserved for health and administrative routes).",
+          "type": "integer",
+          "default": 2000,
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "invitation_resends": {
+          "description": "How many times one invitation can be sent again (OSS-007).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20,
+          "default": 5
+        },
+        "shared_invitation_max_uses": {
+          "description": "Upper bound for a shared invitation link's max_uses.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000,
+          "default": 100
+        },
+        "shared_invitation_max_ttl": {
+          "description": "Upper bound for a shared invitation link's lifetime (1h..720h).",
+          "$ref": "#/$defs/duration",
+          "default": "72h"
+        },
+        "client_secrets_max": {
+          "description": "Overlapping active secrets per client during rotation.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 3
+        },
+        "metadata_bytes": {
+          "description": "Size limit of organization metadata and user profile / admin metadata documents, in bytes.",
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 262144,
+          "default": 16384
+        }
+      }
+    }
+  }
+}

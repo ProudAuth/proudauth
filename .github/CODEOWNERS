@@ -1,0 +1,96 @@
+# Code owners (GOV-004). The last matching pattern wins, so the default rule comes
+# first and security-sensitive paths follow.
+#
+# GitHub accepts an approval from ANY listed owner of a path. Security-sensitive
+# paths therefore list only the designated security owner, so a code-owner approval
+# there always comes from a security reviewer. Branch protection on main must
+# enable "Require review from Code Owners". A second security reviewer must be
+# appointed before the two-review release policy can be fulfilled (see CONTRIBUTING.md).
+
+# Default: maintainers review everything.
+*                               @proudbase/maintainers
+
+# Security-sensitive areas: authentication, tokens, authorization and sessions.
+/internal/authentication/       @proudbase/security-reviewers
+/internal/authorization/        @proudbase/security-reviewers
+/internal/token/                @proudbase/security-reviewers
+/internal/oauth/                @proudbase/security-reviewers
+/internal/session/              @proudbase/security-reviewers
+/internal/credential/           @proudbase/security-reviewers
+/internal/passkey/              @proudbase/security-reviewers
+/internal/federation/           @proudbase/security-reviewers
+/internal/impersonation/        @proudbase/security-reviewers
+/internal/machine/              @proudbase/security-reviewers
+/internal/certauth/             @proudbase/security-reviewers
+/internal/saml/                 @proudbase/security-reviewers
+/internal/workload/             @proudbase/security-reviewers
+/internal/directory/            @proudbase/security-reviewers
+/internal/registry/             @proudbase/security-reviewers
+/internal/realm/                @proudbase/security-reviewers
+# Client authentication (secrets, assertions, certificates) and redirect URI
+# validation; API bearer authentication and client certificate extraction.
+/internal/application/          @proudbase/security-reviewers
+/internal/httpapi/auth.go       @proudbase/security-reviewers
+/internal/httpapi/clientcert.go @proudbase/security-reviewers
+
+# Keys and cryptographic material.
+/internal/keys/                 @proudbase/security-reviewers
+/internal/platform/secret/      @proudbase/security-reviewers
+
+# Trust boundaries: provisioning, audit evidence, outbound requests,
+# configuration (including declarative import), restore reconciliation.
+/internal/provisioning/         @proudbase/security-reviewers
+/internal/provision/            @proudbase/security-reviewers
+/internal/audit/                @proudbase/security-reviewers
+/internal/egress/               @proudbase/security-reviewers
+/internal/configuration/        @proudbase/security-reviewers
+/internal/restore/              @proudbase/security-reviewers
+/internal/ssf/                  @proudbase/security-reviewers
+/internal/identity/             @proudbase/security-reviewers
+
+# Extensions run beside the signer's trust boundary: hook and webhook signing,
+# plugin signature and permission checks (ARC-007, EXT-*).
+/internal/hooks/                @proudbase/security-reviewers
+/internal/webhooks/             @proudbase/security-reviewers
+/internal/plugin/               @proudbase/security-reviewers
+/internal/contracts/            @proudbase/security-reviewers
+
+# Migration adapters import password verifiers and MFA seeds (MIG-*).
+/internal/migrate/              @proudbase/security-reviewers
+
+# Schema, public contract and client libraries (the SDKs verify tokens and
+# enforce the support contract in resource servers; fixtures pin that behavior).
+/migrations/                    @proudbase/security-reviewers
+/api/                           @proudbase/security-reviewers
+/tests/fixtures/sdk-contracts/   @proudbase/security-reviewers
+
+# Supply chain: CI, release, build and dependency manifests, secret scanning.
+# The release workflow runs `make bundle` (Makefile, scripts/offline-bundle.sh)
+# and builds the image from the context .dockerignore selects.
+/.github/                       @proudbase/security-reviewers
+/Dockerfile                     @proudbase/security-reviewers
+/.dockerignore                  @proudbase/security-reviewers
+/Makefile                       @proudbase/security-reviewers
+/go.mod                         @proudbase/security-reviewers
+/go.sum                         @proudbase/security-reviewers
+/scripts/check-secrets.sh       @proudbase/security-reviewers
+/scripts/check-licenses.sh      @proudbase/security-reviewers
+/scripts/offline-bundle.sh      @proudbase/security-reviewers
+
+# Security documentation: disclosure policy, threat models, key, token and
+# incident procedures.
+/SECURITY.md                    @proudbase/security-reviewers
+/docs/threat-models/            @proudbase/security-reviewers
+/docs/protocols/tokens.md       @proudbase/security-reviewers
+/docs/protocols/oauth-oidc-profile.md @proudbase/security-reviewers
+/docs/operations/keys.md        @proudbase/security-reviewers
+/docs/operations/incidents.md   @proudbase/security-reviewers
+/docs/operations/revocation-exposure.md @proudbase/security-reviewers
+/docs/operations/account-recovery.md @proudbase/security-reviewers
+/docs/architecture-decisions/0010-opaque-support-tokens.md @proudbase/security-reviewers
+/docs/architecture-decisions/0014-support-impersonation.md @proudbase/security-reviewers
+/docs/architecture-decisions/0015-key-hierarchy.md @proudbase/security-reviewers
+
+# The review rules themselves (covered by /.github/ above; listed explicitly so
+# a later edit of that rule cannot drop them).
+/.github/CODEOWNERS             @proudbase/security-reviewers

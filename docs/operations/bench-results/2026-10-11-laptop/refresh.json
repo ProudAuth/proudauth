@@ -1,0 +1,136 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "refresh",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T09:35:51.832667Z",
+  "duration_s": 60.000333042,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 48911,
+  "outcomes": {
+    "ok": 48911
+  },
+  "throughput_per_s": 815.1788085203209,
+  "latency_ms": {
+    "mean": 39.241319314673596,
+    "p50": 38.912,
+    "p90": 49.152,
+    "p99": 55.296,
+    "p999": 73.728,
+    "max": 1024.217
+  },
+  "histogram": [
+    {
+      "le_ms": 31.744,
+      "count": 16
+    },
+    {
+      "le_ms": 32.768,
+      "count": 132
+    },
+    {
+      "le_ms": 34.816,
+      "count": 5297
+    },
+    {
+      "le_ms": 36.864,
+      "count": 17873
+    },
+    {
+      "le_ms": 38.912,
+      "count": 12693
+    },
+    {
+      "le_ms": 40.96,
+      "count": 4122
+    },
+    {
+      "le_ms": 43.008,
+      "count": 1227
+    },
+    {
+      "le_ms": 45.056,
+      "count": 538
+    },
+    {
+      "le_ms": 47.104,
+      "count": 909
+    },
+    {
+      "le_ms": 49.152,
+      "count": 2106
+    },
+    {
+      "le_ms": 51.2,
+      "count": 2010
+    },
+    {
+      "le_ms": 53.248,
+      "count": 1100
+    },
+    {
+      "le_ms": 55.296,
+      "count": 437
+    },
+    {
+      "le_ms": 57.344,
+      "count": 168
+    },
+    {
+      "le_ms": 59.392,
+      "count": 117
+    },
+    {
+      "le_ms": 61.44,
+      "count": 48
+    },
+    {
+      "le_ms": 63.488,
+      "count": 21
+    },
+    {
+      "le_ms": 65.536,
+      "count": 26
+    },
+    {
+      "le_ms": 69.632,
+      "count": 20
+    },
+    {
+      "le_ms": 73.728,
+      "count": 9
+    },
+    {
+      "le_ms": 77.824,
+      "count": 6
+    },
+    {
+      "le_ms": 81.92,
+      "count": 4
+    },
+    {
+      "le_ms": 720.896,
+      "count": 1
+    },
+    {
+      "le_ms": 753.664,
+      "count": 24
+    },
+    {
+      "le_ms": 786.432,
+      "count": 5
+    },
+    {
+      "le_ms": 1048.576,
+      "count": 2
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  }
+}

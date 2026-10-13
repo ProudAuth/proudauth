@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+2903	58198.8	20.048	2903	SELECT pg_advisory_xact_lock(hashtext($1))
+2902	43435.9	14.968	1293	UPDATE jobs SET state='running', lease_owner=$1, lease_expires_at=$2, attempts=attempts+1, updated_at=$3 WHERE id = (SELECT id FROM jobs j WHERE type = ANY($4) AND ((state='queued' AND run_after <= $3
+52648	9354.7	0.178	4609826	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+16124	7335.9	0.455	3227532	SELECT id, channel, template, coalesce(recipient_hint,''), state, attempts, coalesce(last_error,''), coalesce(reference_type,''), coalesce(reference_id,''), created_at, updated_at FROM notification_jo
+3810	4720.8	1.239	3810	SELECT EXISTS (SELECT 1 FROM role_assignments ra JOIN roles r ON r.id=ra.role_id WHERE ra.membership_id=$1 AND r.is_owner_role AND (ra.expires_at IS NULL OR ra.expires_at > $2))
+3810	4607.5	1.209	3810	SELECT 1 FROM organizations WHERE id=$1 FOR UPDATE
+3810	3544.0	0.930	3810	DELETE FROM role_assignments WHERE membership_id=$1
+4940	2964.9	0.600	4940	SELECT ra.role_id, ra.conditions FROM role_assignments ra WHERE ra.realm_id=$1 AND ra.scope_type='organization' AND ra.scope_id=$2 AND ra.membership_id=$3 AND (ra.valid_from IS NULL OR ra.valid_from <
+3812	2793.4	0.733	3812	INSERT INTO memberships (id, realm_id, organization_id, user_id, state, source, source_reference, joined_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)
+1357	2130.4	1.570	1357	SELECT id, verifier, state FROM credentials WHERE user_id=$1 AND type='password' AND state IN ('active','compromised') ORDER BY state LIMIT 1
+32808	1934.6	0.059	32808	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+1	1215.7	1215.680	0	VACUUM (ANALYZE)

@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+6885	346190.2	50.282	6885	SELECT $2 FROM organizations WHERE id=$1 FOR UPDATE
+6883	6548.9	0.951	6883	SELECT EXISTS (SELECT $3 FROM role_assignments ra JOIN roles r ON r.id=ra.role_id WHERE ra.membership_id=$1 AND r.is_owner_role AND (ra.expires_at IS NULL OR ra.expires_at > $2))
+6883	5061.6	0.735	6883	DELETE FROM role_assignments WHERE membership_id=$1
+41446	2015.0	0.049	41446	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+6912	1365.0	0.197	6912	INSERT INTO memberships (id, realm_id, organization_id, user_id, state, source, source_reference, joined_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)
+34531	1164.5	0.034	34531	SELECT c.id, c.realm_id, c.organization_id, c.name, c.kind, c.state, c.allowed_resource_types, c.role_ceiling_ids, c.group_role_mappings, coalesce(c.default_role_id,$3), c.config, c.last_sync_at, coal
+6912	762.6	0.110	6912	INSERT INTO role_assignments (id, realm_id, role_id, subject_type, subject_id, membership_id, scope_type, scope_id, conditions, valid_from, expires_at, granted_by_type, granted_by_id, approved_by_id, 
+27619	697.6	0.025	27619	UPDATE provisioning_connectors SET last_sync_at=$2, stats = jsonb_set(stats, ARRAY[$3], to_jsonb(coalesce((stats->>$3)::bigint, $4) + $5)) WHERE id=$1
+20707	686.4	0.033	20707	INSERT INTO outbox_events (id, realm_id, organization_id, event_type, event_version, aggregate_type, aggregate_id, payload, occurred_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+20736	611.7	0.029	20736	SELECT EXISTS (SELECT $2 FROM role_permissions rp JOIN permissions p ON p.id=rp.permission_id WHERE rp.role_id=$1 AND rp.effect<>$3 AND p.sensitivity=$4)
+20768	563.2	0.027	20768	SELECT p.name, rp.effect FROM role_permissions rp JOIN permissions p ON p.id=rp.permission_id WHERE rp.role_id=$1 ORDER BY p.name
+6912	544.5	0.079	6912	INSERT INTO user_identifiers (id, realm_id, user_id, type, original_value, canonical_value, verified_at, verification_source, is_primary, source, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11

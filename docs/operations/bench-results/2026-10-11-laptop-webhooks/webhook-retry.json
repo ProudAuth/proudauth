@@ -1,0 +1,96 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "webhook-retry",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T14:27:40.318478Z",
+  "duration_s": 60.000507375,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 128,
+  "outcomes": {
+    "ok": 128
+  },
+  "throughput_per_s": 2.133315293485883,
+  "latency_ms": {
+    "mean": 14017.0607578125,
+    "p50": 14155.776,
+    "p90": 15204.352,
+    "p99": 16079.916,
+    "p999": 16079.916,
+    "max": 16079.916
+  },
+  "histogram": [
+    {
+      "le_ms": 12058.624,
+      "count": 13
+    },
+    {
+      "le_ms": 13107.2,
+      "count": 27
+    },
+    {
+      "le_ms": 14155.776,
+      "count": 40
+    },
+    {
+      "le_ms": 15204.352,
+      "count": 41
+    },
+    {
+      "le_ms": 16252.928,
+      "count": 7
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:55944; private signing keys only in memory",
+    "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+    "unmeasured public-API readiness cycle took 12.365 s (15 min preparation deadline) to cross any seed outbox backlog before warm-up; measured operations retain their 30 s timeout",
+    "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+  ],
+  "observations": {
+    "after": {
+      "active_cycles": 0,
+      "cumulative": {
+        "received": 708,
+        "accepted": 258,
+        "intentional_503": 386,
+        "recovered": 258,
+        "invalid": 0,
+        "ignored_abandoned_or_old_events": 64,
+        "first_retry_at": "2026-10-11T14:27:23.328086Z",
+        "last_retry_at": "2026-10-11T14:28:40.301362Z",
+        "last_recovery_at": "2026-10-11T14:28:39.250437Z"
+      },
+      "readiness_cycle_s": 12.3653955,
+      "receiver": "http://127.0.0.1:55944",
+      "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+      "subscriptions": 32
+    },
+    "before": {
+      "active_cycles": 0,
+      "cumulative": {
+        "received": 68,
+        "accepted": 2,
+        "intentional_503": 66,
+        "recovered": 2,
+        "invalid": 0,
+        "ignored_abandoned_or_old_events": 0,
+        "first_retry_at": "2026-10-11T14:27:23.328086Z",
+        "last_retry_at": "2026-10-11T14:27:37.38251Z",
+        "last_recovery_at": "2026-10-11T14:27:35.244702Z"
+      },
+      "readiness_cycle_s": 12.3653955,
+      "receiver": "http://127.0.0.1:55944",
+      "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+      "subscriptions": 32
+    }
+  }
+}

@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/envelope.v2.json",
+  "title": "ProudAuth webhook event envelope (v2)",
+  "description": "JSON body of a webhook delivery for subscriptions with event_version 2 (EXT-008, EXT-018). Version 2 differs from version 1 in the envelope only; every event type's data members are identical in both versions: (1) the organization member is named organization_id (v1: org_id), the name every data member, the session change stream and the REST API use; (2) payload_form (minimal or standard) states which payload form data is in, so a consumer can tell a member that does not apply from one the minimal form removed; (3) event_version is 2. Delivery, retries, signature headers and the signature scheme are unchanged: the signature scheme is versioned separately (the \"v1,\" prefix of Webhook-Signature) and applies to every event schema version; see envelope.v1.json x-signature for the algorithm and a test vector. Each subscription chooses its event_version (default 1); deliveries are rendered from the stored event by contracts.RenderEvent.",
+  "type": "object",
+  "required": [
+    "event_id",
+    "event_type",
+    "event_version",
+    "payload_form",
+    "occurred_at",
+    "realm_id",
+    "data"
+  ],
+  "properties": {
+    "event_id": {
+      "$ref": "#/$defs/event_id",
+      "description": "Stable, unique event identifier; equal to the Webhook-Id header. Use it to deduplicate."
+    },
+    "event_type": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+      "description": "Dotted event type, e.g. \"organization.membership.removed\". Each type has its own <event_type>.v2.json schema."
+    },
+    "event_version": {
+      "type": "integer",
+      "const": 2,
+      "description": "Event schema version chosen by the subscription. Always 2 for events described by the v2 schemas."
+    },
+    "payload_form": {
+      "type": "string",
+      "enum": [
+        "minimal",
+        "standard"
+      ],
+      "description": "Payload form of data: minimal (identifiers and classifications only) or standard (every member). Equal to the subscription's payload_form."
+    },
+    "occurred_at": {
+      "$ref": "#/$defs/timestamp",
+      "description": "When the event was recorded, inside the database transaction that made the state change (UTC). Deliveries can arrive out of order; use this and per-resource revisions, not arrival order."
+    },
+    "realm_id": {
+      "$ref": "#/$defs/realm_id",
+      "description": "Realm in which the event occurred. Always present in webhook deliveries (events without a realm are never fanned out)."
+    },
+    "organization_id": {
+      "$ref": "#/$defs/organization_id",
+      "description": "Organization the event is scoped to (v1: org_id). Omitted for realm-level events. Organization-scoped subscriptions only receive events whose organization equals their organization_id; realm-wide subscriptions receive all events of the realm."
+    },
+    "correlation_id": {
+      "type": "string",
+      "description": "Request ID of the API request that caused the event (the request_id of the matching audit events and the X-Request-Id response header); absent for events caused by background work, except events a lifecycle workflow run causes, which carry the run ID (wrn_...) (API-012)."
+    },
+    "data": {
+      "type": "object",
+      "description": "Event-type-specific payload; see the per-type schemas. Carries identifiers, states, reasons and timestamps only: never secrets, e-mail addresses or personal names."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^obx_[0-9a-z]{26}$",
+      "description": "Outbox event identifier (ids.Outbox prefix \"obx\" + lower-case ULID)."
+    },
+    "realm_id": {
+      "type": "string",
+      "pattern": "^rlm_[0-9a-z]{26}$",
+      "description": "Realm identifier."
+    },
+    "organization_id": {
+      "type": "string",
+      "pattern": "^org_[0-9a-z]{26}$",
+      "description": "Organization identifier."
+    },
+    "user_id": {
+      "type": "string",
+      "pattern": "^usr_[0-9a-z]{26}$",
+      "description": "User identifier."
+    },
+    "session_id": {
+      "type": "string",
+      "pattern": "^ses_[0-9a-z]{26}$",
+      "description": "Browser (SSO) session identifier."
+    },
+    "membership_id": {
+      "type": "string",
+      "pattern": "^mem_[0-9a-z]{26}$",
+      "description": "Organization membership identifier."
+    },
+    "invitation_id": {
+      "type": "string",
+      "pattern": "^inv_[0-9a-z]{26}$",
+      "description": "Invitation identifier."
+    },
+    "join_request_id": {
+      "type": "string",
+      "pattern": "^jrq_[0-9a-z]{26}$",
+      "description": "Organization join request identifier."
+    },
+    "role_id": {
+      "type": "string",
+      "pattern": "^rol_[0-9a-z]{26}$",
+      "description": "Role identifier."
+    },
+    "role_assignment_id": {
+      "type": "string",
+      "pattern": "^ras_[0-9a-z]{26}$",
+      "description": "Role assignment identifier."
+    },
+    "client_ref": {
+      "type": "string",
+      "pattern": "^cli_[0-9a-z]{26}$",
+      "description": "Internal client reference (clients.id), distinct from the OAuth client_id."
+    },
+    "service_principal_id": {
+      "type": "string",
+      "pattern": "^svc_[0-9a-z]{26}$",
+      "description": "Service principal identifier."
+    },
+    "impersonation_grant_id": {
+      "type": "string",
+      "pattern": "^imp_[0-9a-z]{26}$",
+      "description": "Support impersonation grant identifier."
+    },
+    "refresh_family_id": {
+      "type": "string",
+      "pattern": "^rff_[0-9a-z]{26}$",
+      "description": "Refresh token family identifier."
+    },
+    "role_subject_id": {
+      "type": "string",
+      "pattern": "^(usr|svc|grp)_[0-9a-z]{26}$",
+      "description": "Subject of a role assignment: a user (usr_), service principal (svc_) or group (grp_). The prefix identifies the subject type."
+    },
+    "grant_subject_id": {
+      "type": "string",
+      "pattern": "^(usr|svc)_[0-9a-z]{26}$",
+      "description": "Subject of an authorization grant: a user (usr_) or service principal (svc_)."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 timestamp as produced by Go's time.Time JSON encoding (fractional seconds when non-zero)."
+    }
+  },
+  "x-headers": {
+    "Content-Type": {
+      "value": "application/json"
+    },
+    "User-Agent": {
+      "value": "ProudAuth-Webhooks/1"
+    },
+    "Webhook-Id": {
+      "description": "The envelope's event_id. Identical for every retry and manual replay of the event and for every subscription that receives it.",
+      "example": "obx_01jbh0ybgaravg3xcq0zdp2egd"
+    },
+    "Webhook-Timestamp": {
+      "description": "Unix time in seconds (decimal integer) at which this delivery attempt was signed. Regenerated on every attempt.",
+      "example": "1791634200"
+    },
+    "Webhook-Signature": {
+      "description": "Space-separated list of signatures, each \"v1,\" + base64(HMAC-SHA256). The first is computed with the current secret; during the 24 hours after a secret rotation a second one computed with the previous secret follows. Accept the request if any value matches.",
+      "example": "v1,ASDtwkTifq0FaSm8BE4GznwV77UL2zkJ40idI04PMrg= v1,zItisJJkVxbfnWI0JJt8SFFx4VqL9SbzPnGYELuRXcQ="
+    }
+  },
+  "x-signature": {
+    "scheme": "v1",
+    "algorithm": "HMAC-SHA256",
+    "signed_content": "<Webhook-Id>.<Webhook-Timestamp>.<raw request body bytes>",
+    "secret_format": "\"whsec_\" + base64 (standard alphabet, padded; secrets issued before v0.2 are unpadded) of 32 random bytes; shown once at subscription creation and at each rotation",
+    "key": "the 32 bytes obtained by base64-decoding the secret after the \"whsec_\" prefix",
+    "signature_encoding": "base64, standard alphabet, with padding, prefixed with \"v1,\"",
+    "rotation": "POST .../webhooks/{id}/rotate-secret issues a new secret; the previous secret keeps signing (second Webhook-Signature value) for 24 hours",
+    "recommended_tolerance_seconds": 300,
+    "reference_implementation": "internal/webhooks/webhooks.go: Sign, VerifySignature",
+    "test_vector": {
+      "description": "The signature scheme does not depend on the event schema version; use the test vector in envelope.v1.json x-signature."
+    }
+  },
+  "examples": [
+    {
+      "event_id": "obx_01jbh0ybgaravg3xcq0zdp2egd",
+      "event_type": "organization.membership.removed",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "membership_id": "mem_01jbadj9t141gzfk8s7x1yyg4j",
+        "authorization_revision": 44
+      }
+    }
+  ]
+}

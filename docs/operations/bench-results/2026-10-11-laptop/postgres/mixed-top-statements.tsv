@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+5363	7308.6	1.363	5363	SELECT ra.role_id, ra.conditions FROM role_assignments ra WHERE ra.realm_id=$1 AND ra.scope_type=$5 AND ra.scope_id=$2 AND ra.membership_id=$3 AND (ra.valid_from IS NULL OR ra.valid_from <= $4) AND (r
+435	5145.5	11.829	21750	SELECT seq, id, schema_version, type, occurred_at, coalesce(realm_id,$4), coalesce(organization_id,$5), actor_type, actor_id, coalesce(actor_session_id,$6), coalesce(subject_type,$7), coalesce(subject
+1809	3463.6	1.915	1809	SELECT id, verifier, state FROM credentials WHERE user_id=$1 AND type=$2 AND state IN ($3 /*, ... */) ORDER BY state LIMIT $4
+21335	1692.9	0.079	21335	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+28666	1513.6	0.053	28666	UPDATE client_credentials SET last_used_at=$2 WHERE id=$1
+28669	1298.7	0.045	28669	SELECT id FROM client_credentials WHERE client_ref=$1 AND kind=$4 AND state=$5 AND secret_digest=$2 AND (expires_at IS NULL OR expires_at > $3)
+12458	1120.6	0.090	233288	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+30446	964.1	0.032	30446	INSERT INTO rate_limit_counters (bucket, window_start, count, expires_at) VALUES ($1, $2, $4, $3) ON CONFLICT (bucket, window_start) DO UPDATE SET count = rate_limit_counters.count + $5 RETURNING coun
+68318	804.6	0.012	30500	SELECT uri, purpose FROM client_redirect_uris WHERE client_ref=$1 ORDER BY created_at, uri
+5363	665.4	0.124	5363	WITH RECURSIVE mygroups(id, depth) AS ( SELECT gm.group_id, $5 FROM group_memberships gm JOIN memberships m ON m.id=gm.membership_id WHERE m.user_id=$3 AND m.state=$6 UNION SELECT g.parent_id, d.depth
+52068	637.2	0.012	52068	SELECT id, realm_id, client_id, coalesce(project_id,$3), name, coalesce(description,$4), client_type, token_endpoint_auth_method, grant_types, security_profile, state, first_party, consent_mode, allow
+64344	594.6	0.009	121586	SELECT id, coalesce(resource_id,$3), name, coalesce(description,$4), coalesce(consent_text,$5), sensitivity, is_default, kind, required_permissions, coalesce(step_up_acr,$6), coalesce(max_auth_age_sec

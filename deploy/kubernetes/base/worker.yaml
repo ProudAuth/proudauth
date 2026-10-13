@@ -1,0 +1,59 @@
+# Durable background work (outbox, notifications, webhooks, jobs, key lifecycle,
+# audit sealing, retention). Workers coordinate through database leases, so more
+# than one replica is safe (DEP-010, DEP-011); they are separated from the server
+# so exports and delivery bursts cannot starve interactive sign-in (DEP-015).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proudauth-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app.kubernetes.io/name: proudauth, app.kubernetes.io/component: worker}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: proudauth, app.kubernetes.io/component: worker}
+    spec:
+      serviceAccountName: proudauth
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: worker
+          image: proudauth
+          command: ["/usr/local/bin/identity-worker", "-config", "/etc/proudauth/config.yaml"]
+          # The probes need workers.metrics_listen: ":9091" in the configuration
+          # (set in overlays/example/config.yaml); /health/live answers once the
+          # worker runs and stops answering when the process hangs or exits.
+          ports:
+            - {name: internal, containerPort: 9091}
+          livenessProbe:
+            httpGet: {path: /health/live, port: internal}
+            periodSeconds: 10
+            failureThreshold: 6
+          startupProbe:
+            httpGet: {path: /health/live, port: internal}
+            periodSeconds: 2
+            failureThreshold: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {memory: 512Mi}
+          volumeMounts:
+            - {name: config, mountPath: /etc/proudauth, readOnly: true}
+            - {name: secrets, mountPath: /run/secrets, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: config
+          configMap: {name: proudauth-config}
+        - name: secrets
+          secret: {secretName: proudauth-secrets, defaultMode: 0400}
+        - name: tmp
+          emptyDir: {sizeLimit: 256Mi}

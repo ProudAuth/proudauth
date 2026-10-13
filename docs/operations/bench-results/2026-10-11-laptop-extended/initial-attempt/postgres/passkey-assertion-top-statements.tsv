@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+5	3.9	0.787	5	SELECT pg_advisory_xact_lock(hashtext($1))
+100	3.4	0.034	100	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+1	1.9	1.941	1	SELECT id, verifier, state FROM credentials WHERE user_id=$1 AND type=$2 AND state IN ($3 /*, ... */) ORDER BY state LIMIT $4
+5	1.1	0.214	535	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+32	1.0	0.030	32	INSERT INTO user_identifiers (id, realm_id, user_id, type, original_value, canonical_value, verified_at, verification_source, is_primary, source, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11
+35	1.0	0.027	35	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+1	0.9	0.894	100	SELECT seq, id, coalesce(realm_id,''), coalesce(organization_id,''), event_type, payload FROM outbox_events WHERE state='pending' ORDER BY seq LIMIT $1 FOR UPDATE SKIP LOCKED
+32	0.8	0.025	32	INSERT INTO users (id, realm_id, state, display_name, given_name, family_name, locale, zoneinfo, profile, admin_metadata, protected, is_guest, required_actions, created_via, created_at, updated_at) VA
+32	0.8	0.023	32	INSERT INTO credentials (id, realm_id, user_id, type, state, verifier, algorithm) VALUES ($1,$2,$3,'password','active',$4,'imported')
+33	0.6	0.020	33	INSERT INTO outbox_events (id, realm_id, organization_id, event_type, event_version, aggregate_type, aggregate_id, payload, occurred_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+32	0.6	0.020	32	UPDATE users SET updated_at=greatest(updated_at, $2) WHERE id=$1
+42	0.4	0.008	42	SELECT id, realm_id, state, coalesce(display_name,''), coalesce(given_name,''), coalesce(family_name,''), coalesce(locale,''), coalesce(zoneinfo,''), profile, admin_metadata, internal_metadata, protec

@@ -1,0 +1,256 @@
+{
+  "Mode": "development",
+  "Server": {
+    "PublicListen": "127.0.0.1:57843",
+    "InternalListen": "127.0.0.1:57836",
+    "PublicOrigin": "http://127.0.0.1:57835",
+    "HostPolicy": "",
+    "TrustedProxies": null,
+    "ShutdownDeadline": 20000000000,
+    "DrainDelay": 5000000000,
+    "TLSCertFile": "",
+    "TLSKeyFile": "",
+    "ReadTimeout": 15000000000,
+    "WriteTimeout": 30000000000,
+    "MetricsToken": "",
+    "MTLSListen": "",
+    "MTLSOrigin": "",
+    "ClientCertHeader": ""
+  },
+  "Identity": {
+    "DefaultRealm": "main"
+  },
+  "Storage": {
+    "DatabaseURL": "file:$WORK",
+    "MigrationDatabaseURL": "",
+    "RuntimeRole": "",
+    "MaxConns": 20,
+    "MinConns": 2,
+    "MigrateOnStart": false,
+    "StatementTimeout": 10000000000
+  },
+  "Keys": {
+    "RootKeys": [
+      {
+        "Version": 1,
+        "Ref": "file:$WORK"
+      }
+    ],
+    "ActiveVersion": 1,
+    "PepperKeys": [],
+    "SigningWrapKeys": [],
+    "SigningAlgorithm": "RS256",
+    "RotationInterval": 7776000000000000,
+    "PrepublishPeriod": 120000000000,
+    "RetirementPeriod": 604800000000000,
+    "KMS": {
+      "Command": null,
+      "Timeout": 0
+    }
+  },
+  "Sessions": {
+    "IdleTimeout": 1800000000000,
+    "AbsoluteTimeout": 43200000000000,
+    "RememberMeIdle": 604800000000000,
+    "RememberMeAbsolute": 2592000000000000,
+    "OfflineIdle": 604800000000000,
+    "OfflineAbsolute": 2592000000000000,
+    "MaxConcurrent": 50,
+    "CookieSameSite": "lax",
+    "CookieInsecureDev": true
+  },
+  "Tokens": {
+    "AccessTokenTTL": 300000000000,
+    "MaxAccessTokenTTL": 3600000000000,
+    "IDTokenTTL": 300000000000,
+    "AuthorizationCodeTTL": 60000000000,
+    "TransactionTTL": 600000000000,
+    "ChallengeTTL": 600000000000,
+    "InvitationTTL": 259200000000000,
+    "ClockSkew": 60000000000,
+    "DeviceCodeTTL": 600000000000,
+    "ExchangeMaxChainDepth": 2
+  },
+  "Security": {
+    "MFAFloor": {
+      "Require": "",
+      "AdminPhishingResistant": false,
+      "ForbidOrgAdminWaiver": false
+    },
+    "Password": {
+      "MinLength": 15,
+      "MaxLength": 128,
+      "MaxBytes": 1024,
+      "ArgonTime": 3,
+      "ArgonMemoryKiB": 65536,
+      "ArgonThreads": 2,
+      "BlocklistFile": "",
+      "HistoryCount": 0,
+      "LegacyHashesUntil": ""
+    },
+    "OTPLength": 6,
+    "OTPMaxAttempts": 5,
+    "TOTPSkewSteps": 1,
+    "RecoveryCodeCount": 10,
+    "RecentAuthWindow": 600000000000,
+    "DynamicGroupMaxStaleness": 0,
+    "DecisionCacheTTL": 30000000000,
+    "AdminMFAMaxAge": 300000000000,
+    "AllowedAlgorithms": [
+      "RS256",
+      "ES256",
+      "PS256",
+      "EdDSA"
+    ],
+    "RateLimits": {
+      "LoginPerIdentifier": 10,
+      "LoginPerIP": 1000000,
+      "LoginWindow": 900000000000,
+      "SendPerIdentifier": 5,
+      "SendPerIP": 50,
+      "SendWindow": 3600000000000,
+      "SendCooldown": 30000000000,
+      "OTPVerifyPerAccount": 10,
+      "OTPVerifyWindow": 900000000000,
+      "SignupPerIP": 20,
+      "SignupWindow": 3600000000000,
+      "TokenPerClient": 1000000,
+      "TokenWindow": 60000000000,
+      "OrganizationPerWindow": 2000,
+      "TemporaryLock": 900000000000,
+      "FailuresBeforeLock": 10,
+      "SignupPerClient": 500,
+      "SignupPerRealm": 2000,
+      "SendPerClient": 1000,
+      "SendPerOrganization": 500,
+      "SendPerRealm": 5000,
+      "LoginPerRealm": 1000000,
+      "LoginPerClient": 1000000,
+      "LoginPerOrganization": 10000,
+      "InvitationsPerOrganization": 500,
+      "InvitationsPerRecipient": 10,
+      "InvitationWindow": 86400000000000
+    },
+    "MinAuthResponse": 250000000,
+    "ChallengeProviders": null,
+    "PolicyEngines": null
+  },
+  "Impersonation": {
+    "Enabled": false,
+    "MaxTTL": 300000000000,
+    "RequireTicket": false,
+    "HandoffTTL": 30000000000,
+    "MinReasonLength": 10
+  },
+  "Federation": {
+    "Enabled": true,
+    "AllowPrivateNetwork": false,
+    "CAFile": "",
+    "EgressAllowlist": null,
+    "FetchTimeout": 10000000000,
+    "MaxResponseBytes": 1048576
+  },
+  "SAML": {
+    "Enabled": false,
+    "MaxMessageBytes": 262144,
+    "MaxClockSkew": 300000000000,
+    "KeyPrepublish": 172800000000000,
+    "RetiredKeyPublication": 604800000000000
+  },
+  "Directory": {
+    "Enabled": true,
+    "AllowPrivateNetwork": false,
+    "EgressAllowlist": null,
+    "CAFile": "",
+    "ConnectTimeout": 5000000000,
+    "OperationTimeout": 10000000000,
+    "MaxEntriesPerRun": 100000
+  },
+  "Delivery": {
+    "Email": {
+      "Adapter": "dev_sink",
+      "SMTPHost": "",
+      "SMTPPort": 587,
+      "SMTPUsername": "",
+      "SMTPPassword": "",
+      "SMTPTLS": "starttls",
+      "From": "",
+      "FromName": "ProudAuth",
+      "EventsSecret": "",
+      "AllowedSenderDomains": null
+    },
+    "SMS": {
+      "Adapter": "none",
+      "AllowedCountries": null,
+      "WebhookURL": "",
+      "WebhookSecret": "",
+      "DailyBudget": 1000
+    },
+    "PayloadRetention": 86400000000000,
+    "WebhookTimeout": 10000000000,
+    "WebhookMaxAttempts": 12,
+    "AllowPrivateWebhooks": false,
+    "EgressAllowlist": null
+  },
+  "Workers": {
+    "Concurrency": 4,
+    "LeaseDuration": 60000000000,
+    "PollInterval": 1000000000,
+    "MaxAttempts": 8,
+    "BatchSize": 100,
+    "AuditSealEvery": 30000000000,
+    "TenantBatchShare": 25,
+    "MaxJobsPerOrganization": 2,
+    "DrainTimeout": 20000000000,
+    "MetricsListen": "127.0.0.1:57837"
+  },
+  "Observability": {
+    "LogLevel": "info",
+    "LogFormat": "json",
+    "MetricsEnabled": true,
+    "TraceSampling": 0,
+    "MaxClockSkew": 2000000000,
+    "OTLPEndpoint": ""
+  },
+  "Privacy": {
+    "TelemetryOptIn": false,
+    "AuditRetention": 34560000000000000,
+    "AuditRetentionByCategory": null,
+    "SessionRetention": 2592000000000000,
+    "HistoryRetention": 15552000000000000,
+    "AuditArchiveDir": "",
+    "ExportRetention": 86400000000000,
+    "DeletionGracePeriod": 1209600000000000,
+    "StoreFullIP": false,
+    "BackupRetention": 0,
+    "Residency": {
+      "Region": "",
+      "AllowedDestinations": null
+    }
+  },
+  "Limits": {
+    "MaxBodyBytes": 262144,
+    "MaxHeaderBytes": 16384,
+    "MaxTokenBytes": 8192,
+    "MaxJSONDepth": 32,
+    "MaxPageSize": 200,
+    "DefaultPageSize": 50,
+    "MaxBatchSize": 100,
+    "MaxGroupDepth": 8,
+    "MaxRoleExpansion": 64,
+    "MaxInflightRequests": 2000,
+    "InvitationResends": 5,
+    "SharedInvitationMaxUses": 100,
+    "SharedInvitationMaxTTL": 259200000000000,
+    "ClientSecretsMax": 3,
+    "MetadataBytes": 16384
+  },
+  "Extensions": {
+    "PluginPublishers": null
+  },
+  "WebAuthn": {
+    "MetadataFile": "",
+    "MetadataRootFile": "",
+    "RelatedOrigins": false
+  }
+}

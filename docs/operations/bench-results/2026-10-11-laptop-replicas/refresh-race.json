@@ -1,0 +1,113 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "refresh-race",
+  "target": "http://127.0.0.1:57835",
+  "started_at": "2026-10-11T19:45:39.974086Z",
+  "duration_s": 60.000596375,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 2793,
+  "outcomes": {
+    "ok": 2793
+  },
+  "throughput_per_s": 46.54953731699471,
+  "latency_ms": {
+    "mean": 683.0022445399213,
+    "p50": 688.128,
+    "p90": 786.432,
+    "p99": 884.736,
+    "p999": 1015.808,
+    "max": 1039.501
+  },
+  "histogram": [
+    {
+      "le_ms": 491.52,
+      "count": 1
+    },
+    {
+      "le_ms": 507.904,
+      "count": 3
+    },
+    {
+      "le_ms": 524.288,
+      "count": 12
+    },
+    {
+      "le_ms": 557.056,
+      "count": 46
+    },
+    {
+      "le_ms": 589.824,
+      "count": 147
+    },
+    {
+      "le_ms": 622.592,
+      "count": 312
+    },
+    {
+      "le_ms": 655.36,
+      "count": 506
+    },
+    {
+      "le_ms": 688.128,
+      "count": 565
+    },
+    {
+      "le_ms": 720.896,
+      "count": 459
+    },
+    {
+      "le_ms": 753.664,
+      "count": 301
+    },
+    {
+      "le_ms": 786.432,
+      "count": 218
+    },
+    {
+      "le_ms": 819.2,
+      "count": 120
+    },
+    {
+      "le_ms": 851.968,
+      "count": 52
+    },
+    {
+      "le_ms": 884.736,
+      "count": 28
+    },
+    {
+      "le_ms": 917.504,
+      "count": 11
+    },
+    {
+      "le_ms": 950.272,
+      "count": 5
+    },
+    {
+      "le_ms": 983.04,
+      "count": 4
+    },
+    {
+      "le_ms": 1015.808,
+      "count": 2
+    },
+    {
+      "le_ms": 1048.576,
+      "count": 1
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop-replicas",
+    "os": "darwin"
+  },
+  "notes": [
+    "warm-up used benign discovery requests only, so warm-up did not consume the measured attack budgets; scenario notes describe any fixture preparation budget use",
+    "invariant_violation_N_successes: N != 1 attempts succeeded although every attempt reached the token endpoint; inconclusive_rate_limited / inconclusive_http_5xx / inconclusive_transport_error: no attempt succeeded and some were rate limited, failed on the server or in transport, so the race did not test the invariant; one_success_with_http_5xx / one_success_with_transport_error: one attempt succeeded and others failed on the server or in transport"
+  ],
+  "complete": true
+}

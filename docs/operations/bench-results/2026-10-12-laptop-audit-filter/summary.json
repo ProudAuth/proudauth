@@ -1,0 +1,37 @@
+[
+  {
+    "scenario": "complex-audit-filter",
+    "started": "2026-10-12T20:21:09Z",
+    "ended": "2026-10-12T20:22:43Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 76443,
+    "throughput_per_s": 1274,
+    "latency_ms": {
+      "mean": 25.11,
+      "p50": 25.6,
+      "p90": 30.72,
+      "p99": 34.82,
+      "p999": 45.06,
+      "max": 68.34
+    },
+    "outcomes": {
+      "compound_empty": 10921,
+      "compound_match": 10920,
+      "cursor_page": 10919,
+      "cursor_scope_rejected": 10921,
+      "invalid_network": 10921,
+      "invalid_time": 10921,
+      "literal_prefix_empty": 10920
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 94.73,
+      "identity_server": 153.2,
+      "identity_worker": 1.3,
+      "postgres_container": 193.16,
+      "docker_vm_and_proxy": 480.05,
+      "identity_bench": 84.88
+    }
+  }
+]

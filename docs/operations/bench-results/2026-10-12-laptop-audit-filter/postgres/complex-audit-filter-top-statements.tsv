@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+32765	75574.6	2.307	2184401	SELECT seq, id, schema_version, type, occurred_at, coalesce(realm_id,$14), coalesce(organization_id,$15), actor_type, actor_id, coalesce(actor_session_id,$16), coalesce(subject_type,$17), coalesce(sub
+10920	33632.1	3.080	2184000	SELECT seq, id, schema_version, type, occurred_at, coalesce(realm_id,$15), coalesce(organization_id,$16), actor_type, actor_id, coalesce(actor_session_id,$17), coalesce(subject_type,$18), coalesce(sub
+86460	24820.7	0.287	8191114	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+76467	1133.5	0.015	152934	SELECT id, type, original_value, canonical_value, verified_at, is_primary, source FROM user_identifiers WHERE user_id=$1 ORDER BY created_at, id
+86461	1092.9	0.013	86461	SELECT ra.role_id, ra.conditions FROM role_assignments ra WHERE ra.realm_id=$1 AND ra.subject_type=$2 AND ra.subject_id=$3 AND ra.scope_type='realm' AND (ra.valid_from IS NULL OR ra.valid_from <= $4) 
+76469	1073.3	0.014	76469	SELECT id, realm_id, state, coalesce(display_name,''), coalesce(given_name,''), coalesce(family_name,''), coalesce(locale,''), coalesce(zoneinfo,''), profile, admin_metadata, internal_metadata, protec
+86479	1022.6	0.012	76477	SELECT uri, purpose FROM client_redirect_uris WHERE client_ref=$1 ORDER BY created_at, uri
+86480	1018.7	0.012	86480	SELECT id, realm_id, client_id, coalesce(project_id,''), name, coalesce(description,''), client_type, token_endpoint_auth_method, grant_types, security_profile, state, first_party, consent_mode, allow
+96483	988.2	0.010	96483	SELECT id, realm_id, coalesce(project_id,''), name, audience, coalesce(description,''), kind, token_format, verification_mode, access_token_ttl_seconds, requires_organization, impersonation_enabled, i
+76472	831.0	0.011	76472	SELECT id, realm_id, user_id, state, auth_time, mfa_time, amr, acr, factors, recovery_restricted, remember_me, transient, created_at, last_activity_at, idle_expires_at, absolute_expires_at, revoked_at
+96489	770.4	0.008	96494	SELECT id, coalesce(resource_id,''), name, coalesce(description,''), coalesce(consent_text,''), sensitivity, is_default, kind, required_permissions, coalesce(step_up_acr,''), coalesce(max_auth_age_sec
+76465	761.2	0.010	76465	SELECT state IN ('active','recovery_restricted') FROM users WHERE realm_id=$1 AND id=$2

@@ -1,0 +1,19 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "binary-sha256.txt": "c33c6ba7c73e7950434f6918d5bf2e94315450c74b923e2fb748dce9f082c2b0",
+    "build-info.txt": "581e580d6d2f5ffa9c01f134d3c5d73d80df5bdc6e673cf77edb147b2f9ea93e",
+    "effective-config-redacted.json": "fc7e4db74fc8d0e247aaabb7accf9fe8a49b6d24b5e6cb5d12aa27cacb7e740e",
+    "environment.json": "ca8d655241f48110c39eb1686191f1eb7b3e6488c0fb5d974ed3930d036fc816",
+    "otp-budget-evidence.json": "030fc7a7c2ae53d60922275f1fc53eefe7496f6b8d125db9cb0348c584984940",
+    "otp-guess.json": "eb7289d157b9e02e26d9a292a1c97fbc35aaf10012000d1138657062a5e42c0c",
+    "postgres/database-size-bytes.txt": "ba577e52acb731872665788bf02458dce831d53f1af89bd2b7ea412c213ff07f",
+    "postgres/largest-tables.tsv": "0080af48949bdbf3df92d83b2b8cc2613a5c9409b62b31bc5d196aae87e7b7b9",
+    "postgres/otp-guess-top-statements.tsv": "6bd51aa91d991b4c7657fe640c302e28e860fb9391555d47a84348bfe50ea7eb",
+    "postgres/settings.tsv": "f181e2ac46f522c90ac3aaa6d589309eacac1f8e2d9ef25786cd9883ba35c73b",
+    "proudauth-config.yaml": "b64dc196c69ce723fa12afabc2069ae99733dab2b9969c1a630b96cbde9c8dc3",
+    "seed-spec.json": "34585e6f97fceaf0a76b4d8de286f80e2c1d496375d300711d721362f5740476",
+    "summary.json": "0acb659d117083e38984134359f864ce13442f1db5763df3f21a7f9aa180b6cb",
+    "validation.txt": "6c6db4b29a782e5d05bebd8e167acde0a7d0c104d3186fac9897dd6e70fb8d9d"
+  }
+}

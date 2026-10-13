@@ -1,0 +1,32 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "binary-sha256.txt": "b61f24933bb9ef88e9d4da451bd97212b2ef2129a193c096d33e25886bb91524",
+    "build-info.txt": "581e580d6d2f5ffa9c01f134d3c5d73d80df5bdc6e673cf77edb147b2f9ea93e",
+    "complex-filter.json": "a189aeb14ed52c8a9e39e4c3f80753603413a801dc3cd758f1ecfc6ffdd78135",
+    "effective-config-redacted.json": "fc7e4db74fc8d0e247aaabb7accf9fe8a49b6d24b5e6cb5d12aa27cacb7e740e",
+    "environment.json": "cc8c5326b2437531bce7c4d28f6cb28e385f7c86ad68dc04c7c6513f5c0d5b07",
+    "initial-attempt/artifact-sha256.json": "75468ab5a03d15f50d2acbb8e5dd12b34d0c390c47eb5055d5b96c9a9cbcb22c",
+    "initial-attempt/binary-sha256.txt": "b6be0c3fe129f21735e43db8553dd1523922a2c4832de7f01047f84c9a3c2f7b",
+    "initial-attempt/build-info.txt": "581e580d6d2f5ffa9c01f134d3c5d73d80df5bdc6e673cf77edb147b2f9ea93e",
+    "initial-attempt/complex-filter.json": "dc6a0eccb17e887fdcc7a272a0fb23d09ddb7b3eb3239e59a111fa6cf7ea773d",
+    "initial-attempt/effective-config-redacted.json": "fc7e4db74fc8d0e247aaabb7accf9fe8a49b6d24b5e6cb5d12aa27cacb7e740e",
+    "initial-attempt/environment.json": "ac0180889f2f03e72325c356ff6c5fb6447748f95679a0eb079e76da5a31d017",
+    "initial-attempt/postgres/complex-filter-top-statements.tsv": "0255f6236e879fafb25c5cd3434b1e9b94cc5e4b9866d7522cf43e20147b9356",
+    "initial-attempt/postgres/database-size-bytes.txt": "9a4a0cd9486599f6c1853706006ce8158d9a90a49c0bc7a5c8927cde4479b535",
+    "initial-attempt/postgres/largest-tables.tsv": "5af08cf509e5ccbf7460cb3fc20b3bf3bb38a7d50e1147e72dbb07b70879404c",
+    "initial-attempt/postgres/settings.tsv": "f181e2ac46f522c90ac3aaa6d589309eacac1f8e2d9ef25786cd9883ba35c73b",
+    "initial-attempt/proudauth-config.yaml": "b64dc196c69ce723fa12afabc2069ae99733dab2b9969c1a630b96cbde9c8dc3",
+    "initial-attempt/seed-spec.json": "bf83a837ad7f9bb95d2f8767de2bfdaee2859ea89472307fd75227d04f511f04",
+    "initial-attempt/summary.json": "4141e1fe77a263b36ac4a8bf54df86ca8fba8b7fcaab5e642517bc237ee6ed11",
+    "initial-attempt/validation.txt": "b23226ae245242bf61645287b58a77adca5aba37bc9e3d5942ba8112e2aaa1c5",
+    "postgres/complex-filter-top-statements.tsv": "299d357f5e4281bde6483e1c0e1afe57df70ce324b4f7bdcfe2d64a6ad2dba23",
+    "postgres/database-size-bytes.txt": "3fcdce121863a5668dbe1c7d1c40fb583434146f4d221a4e582e5ae7fd885a2c",
+    "postgres/largest-tables.tsv": "c6acd4aee51db054725ca97e4084cf6336a158c71371103cc101f617e7e10ff6",
+    "postgres/settings.tsv": "f181e2ac46f522c90ac3aaa6d589309eacac1f8e2d9ef25786cd9883ba35c73b",
+    "proudauth-config.yaml": "b64dc196c69ce723fa12afabc2069ae99733dab2b9969c1a630b96cbde9c8dc3",
+    "seed-spec.json": "0b941f7df29c46d30f84491d8c111cccea6756bacb6559c95a32b3e07264d1cb",
+    "summary.json": "6f4b4d74c154a4198da3247c672cf1317fe612bc183c9523a3008d6eaeb5c16a",
+    "validation.txt": "8bd51630748f221455310d79af984ed36ec5f822a3785d2650202a4e0820b7df"
+  }
+}

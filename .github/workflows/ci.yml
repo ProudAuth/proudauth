@@ -1,0 +1,162 @@
+# Continuous integration (QA-001, QA-002, SEC-016, DEP-003, GOV-004).
+# Every job runs from pinned tool versions; no job needs a project-operated service
+# or a secret. The release workflow calls this workflow (workflow_call) and
+# publishes only when every job here passes.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:18.6
+        env:
+          POSTGRES_USER: proudauth
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: proudauth
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U proudauth"
+          --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      PROUDAUTH_TEST_DATABASE_URL: postgres://proudauth:ci-only-password@127.0.0.1:5432/proudauth?sslmode=disable
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          # Match the exact release and Docker build toolchain.
+          go-version: "1.27.2"
+      - name: Build
+        run: go build ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Format
+        run: test -z "$(gofmt -l . | tee /dev/stderr)"
+      - name: Tests (unit + end-to-end acceptance)
+        # The full E2E package exceeded 20 minutes on a hosted runner while
+        # test 378/403 had been running for only 2 seconds. Allow throughput
+        # variation while retaining package/job deadlines and every assertion.
+        run: go test ./... -v -count=1 -race -timeout 30m
+      - name: Provisioning and federation attack suites (M4 exit gate)
+        # docs/threat-models/attack-suites.md; a separate step so a failure
+        # names the suite.
+        run: make attack-suites
+      - name: Fuzz smoke
+        run: |
+          go test ./internal/application -run '^$' -fuzz '^FuzzMatchRedirect$' -fuzztime 30s
+          go test ./internal/application -run '^$' -fuzz '^FuzzValidateRedirectRegistration$' -fuzztime 30s
+          go test ./internal/platform/canonical -run '^$' -fuzz '^FuzzEmail$' -fuzztime 30s
+          go test ./internal/platform/canonical -run '^$' -fuzz '^FuzzDomain$' -fuzztime 30s
+          go test ./internal/token -run '^$' -fuzz '^FuzzRejectDuplicateKeys$' -fuzztime 30s
+          go test ./internal/authorization -run '^$' -fuzz '^FuzzPolicyDefinition$' -fuzztime 30s
+          go test ./internal/platform/reqctx -run '^$' -fuzz '^FuzzParseTraceparent$' -fuzztime 15s
+          go test ./internal/egress -run '^$' -fuzz '^FuzzAllowed$' -fuzztime 15s
+          go test ./internal/application -run '^$' -fuzz '^FuzzClaimMappings$' -fuzztime 15s
+
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          # Match the exact release and Docker build toolchain.
+          go-version: "1.27.2"
+      - name: Secret scan
+        run: ./scripts/check-secrets.sh
+      - name: License policy
+        run: go mod download && ./scripts/check-licenses.sh
+      - name: Vulnerability review
+        # v1.1.4 crashes analyzing Go 1.27 sources; keep this pin in step with
+        # the binary scans below and in release.yml and the Makefile.
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+      - name: Static analysis
+        # 2025.1.1 cannot decode Go 1.27's export-data version 5.
+        run: go run honnef.co/go/tools/cmd/staticcheck@2026.2.2 ./...
+      - name: Kubernetes manifests render (DEP-013)
+        # kubectl is preinstalled on GitHub's Ubuntu runners.
+        run: make k8s-validate
+
+  # Language SDK CI and verifier fuzzing live in their standalone repositories;
+  # service SDK interoperability and pinned ecosystem evidence stay in this CI.
+
+  dco:
+    # Developer Certificate of Origin (CONTRIBUTING.md): every commit of a pull
+    # request carries a Signed-off-by trailer. Plain git, no third-party action.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Check Signed-off-by on every commit
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          missing=0
+          count=0
+          for c in $(git rev-list --no-merges "${BASE_SHA}..${HEAD_SHA}"); do
+            count=$((count + 1))
+            if ! git log -1 --format=%B "$c" | grep -Eq '^Signed-off-by: .+ <[^<>[:space:]]+@[^<>[:space:]]+>[[:space:]]*$'; then
+              # Only the hash is printed: commit messages are contributor-controlled.
+              echo "::error::commit ${c} has no Signed-off-by line"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "${missing} of ${count} commits lack a sign-off. Sign them with 'git commit -s' (or 'git rebase --signoff ${BASE_SHA}') and push again."
+            exit 1
+          fi
+          echo "all ${count} commits are signed off"
+
+  image:
+    runs-on: ubuntu-24.04
+    needs: [test, checks]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          # Match the exact release and Docker build toolchain.
+          go-version: "1.27.2"
+      - name: Build container image
+        run: docker build -t proudauth:ci .
+      - name: Vulnerability scan of the image binaries
+        # govulncheck needs symbol tables, which the shipped binaries lack
+        # (-s -w): on stripped binaries it reports advisories for packages that
+        # are not even linked. So the same commands are rebuilt, unstripped,
+        # inside the image's own build stage (same toolchain, flags and module
+        # versions as the image) and those binaries are scanned.
+        run: |
+          set -euo pipefail
+          docker build --target build -t proudauth:ci-build .
+          dir="${RUNNER_TEMP}/image-bin"
+          mkdir -p "$dir"
+          docker run --rm -v "$dir:/scan" proudauth:ci-build \
+            sh -c 'for c in identity-server identity-worker identity-cli; do go build -ldflags=-buildid= -o "/scan/$c" "./cmd/$c"; done'
+          for b in "$dir"/identity-*; do
+            echo "govulncheck $b"
+            go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 -mode=binary "$b"
+          done
+      - name: Start the development stack
+        run: |
+          deploy/compose/init-secrets.sh
+          docker compose -f deploy/compose/compose.yaml up -d --build --wait --wait-timeout 180
+      - name: Compose smoke test
+        run: make smoke
+      - name: Stack logs
+        if: failure()
+        run: docker compose -f deploy/compose/compose.yaml logs --no-color
+      - name: Stop the stack
+        if: always()
+        run: docker compose -f deploy/compose/compose.yaml down -v

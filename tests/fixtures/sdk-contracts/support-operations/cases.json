@@ -1,0 +1,311 @@
+{
+  "description": "Support-access (impersonation) operation classification shared by the Go and Node SDK SupportGuard (IMP-011, IMP-012, IMP-013). See README.md.",
+  "write_operations": [
+    "orders.annotate",
+    "Tickets.Reply"
+  ],
+  "classification_only": [
+    {
+      "operation": "",
+      "protected": true,
+      "write": false,
+      "why": "an empty operation is protected (deny by default)"
+    },
+    {
+      "operation": "  ",
+      "protected": true,
+      "write": false,
+      "why": "whitespace only is empty"
+    },
+    {
+      "operation": "orders..list",
+      "protected": false,
+      "write": false,
+      "why": "empty segments are ignored"
+    },
+    {
+      "operation": "secret.read",
+      "protected": true,
+      "write": false,
+      "why": "legacy entry still matches"
+    },
+    {
+      "operation": "orders/purge",
+      "protected": true,
+      "write": true,
+      "why": "'/' separates segments too"
+    }
+  ],
+  "cases": [
+    {
+      "operation": "orders.list",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": false,
+      "write": false,
+      "expect": "allow",
+      "why": "plain read"
+    },
+    {
+      "operation": "Orders.List",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": false,
+      "write": false,
+      "expect": "allow",
+      "why": "case-insensitive"
+    },
+    {
+      "operation": "orders.read",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": false,
+      "write": false,
+      "expect": "allow",
+      "why": "read verb on an ordinary resource"
+    },
+    {
+      "operation": "settings.get",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": false,
+      "write": false,
+      "expect": "allow",
+      "why": "'settings' is not the write verb 'set': segments match exactly"
+    },
+    {
+      "operation": "secretary.list",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": false,
+      "write": false,
+      "expect": "allow",
+      "why": "'secretary' is not the protected segment 'secret': no substring matching"
+    },
+    {
+      "operation": "prepayment.read",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": false,
+      "write": false,
+      "expect": "allow",
+      "why": "'prepayment' is not the protected segment 'payment'"
+    },
+    {
+      "operation": "payments.create",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": true,
+      "write": true,
+      "expect": "protected_operation",
+      "why": "protected segment (plural of 'payment')"
+    },
+    {
+      "operation": "refunds.issue",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": true,
+      "write": true,
+      "expect": "protected_operation",
+      "why": "protected segment (plural of 'refund')"
+    },
+    {
+      "operation": "secrets.read",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": true,
+      "write": false,
+      "expect": "protected_operation",
+      "why": "protected segment (plural of 'secret')"
+    },
+    {
+      "operation": "orders.purge",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": true,
+      "write": true,
+      "expect": "protected_operation",
+      "why": "protected segment 'purge'"
+    },
+    {
+      "operation": "read.payments",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": true,
+      "write": false,
+      "expect": "protected_operation",
+      "why": "a read-like verb first does not hide a protected segment"
+    },
+    {
+      "operation": "get.secrets",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": true,
+      "write": false,
+      "expect": "protected_operation",
+      "why": "a read-like verb first does not hide a protected segment"
+    },
+    {
+      "operation": "list.refunds",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": true,
+      "write": false,
+      "expect": "protected_operation",
+      "why": "a read-like verb first does not hide a protected segment"
+    },
+    {
+      "operation": "orders.refund.read",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": true,
+      "write": true,
+      "expect": "protected_operation",
+      "why": "protected segment in the middle of the name"
+    },
+    {
+      "operation": "users.password.change",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": true,
+      "write": true,
+      "expect": "protected_operation",
+      "why": "multi-segment protected entry inside a longer name"
+    },
+    {
+      "operation": "Account.Delete",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": true,
+      "write": true,
+      "expect": "protected_operation",
+      "why": "case-insensitive protected segment"
+    },
+    {
+      "operation": "payment",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": true,
+      "write": false,
+      "expect": "protected_operation",
+      "why": "exact protected entry"
+    },
+    {
+      "operation": "client.secret.rotate",
+      "read": true,
+      "support_mode": "allowlisted_write",
+      "protected": true,
+      "write": true,
+      "expect": "protected_operation",
+      "why": "protected segment, even in allowlisted_write mode"
+    },
+    {
+      "operation": "billing:payments:list",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": true,
+      "write": false,
+      "expect": "protected_operation",
+      "why": "':' separates segments too"
+    },
+    {
+      "operation": "api-key.create",
+      "read": false,
+      "support_mode": "allowlisted_write",
+      "protected": true,
+      "write": true,
+      "expect": "protected_operation",
+      "why": "'-' reads as '_' (api_key.create)"
+    },
+    {
+      "operation": "orders.annotate.delete",
+      "read": false,
+      "support_mode": "allowlisted_write",
+      "protected": true,
+      "write": true,
+      "expect": "protected_operation",
+      "why": "protected even when a prefix is allowlisted"
+    },
+    {
+      "operation": "orders.update",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": false,
+      "write": true,
+      "expect": "write_not_allowlisted",
+      "why": "write verb: declared read is treated as a write"
+    },
+    {
+      "operation": "orders.read.update",
+      "read": true,
+      "support_mode": "read_only",
+      "protected": false,
+      "write": true,
+      "expect": "write_not_allowlisted",
+      "why": "write verb anywhere in the name"
+    },
+    {
+      "operation": "view.orders.cancel",
+      "read": true,
+      "support_mode": "allowlisted_write",
+      "protected": false,
+      "write": true,
+      "expect": "write_not_allowlisted",
+      "why": "write verb after a read-like verb; not allowlisted"
+    },
+    {
+      "operation": "orders.annotate",
+      "read": false,
+      "support_mode": "read_only",
+      "protected": false,
+      "write": false,
+      "expect": "write_not_allowlisted",
+      "why": "declared write in read_only mode"
+    },
+    {
+      "operation": "orders.annotate",
+      "read": false,
+      "support_mode": "allowlisted_write",
+      "protected": false,
+      "write": false,
+      "expect": "allow",
+      "why": "allowlisted write in allowlisted_write mode"
+    },
+    {
+      "operation": "ORDERS.ANNOTATE",
+      "read": false,
+      "support_mode": "allowlisted_write",
+      "protected": false,
+      "write": false,
+      "expect": "allow",
+      "why": "write allowlist matches case-insensitively"
+    },
+    {
+      "operation": "tickets.reply",
+      "read": false,
+      "support_mode": "allowlisted_write",
+      "protected": false,
+      "write": false,
+      "expect": "allow",
+      "why": "allowlist entry 'Tickets.Reply' matches case-insensitively"
+    },
+    {
+      "operation": "orders.cancel",
+      "read": false,
+      "support_mode": "allowlisted_write",
+      "protected": false,
+      "write": true,
+      "expect": "write_not_allowlisted",
+      "why": "write not on the allowlist"
+    },
+    {
+      "operation": "orders.annotate.extra",
+      "read": false,
+      "support_mode": "allowlisted_write",
+      "protected": false,
+      "write": false,
+      "expect": "write_not_allowlisted",
+      "why": "an allowlist entry matches the whole name, not a prefix"
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "format_version": "1",
+  "scope": "Final reproduction runner on frozen development source; two separate OS build environments on one physical host; earlier benchmark/full-module evidence retains its own build.",
+  "checks": {
+    "real_binary_reproduction": {
+      "pass": true,
+      "invocations": 2,
+      "targets_per_invocation": 12,
+      "compiled_binary_sets_per_invocation": 2,
+      "all_bytes_and_repeated_target_hashes_identical": true,
+      "comparison": "comparison.json"
+    },
+    "executable_orchestration_race": {
+      "pass": true,
+      "package_elapsed_s": 6.527,
+      "top_level_executions": 3,
+      "subtests": 12,
+      "command": "go test -json -race -count=3 ./tests/contract -run '^TestLocalReproductionRefusesMismatches$'",
+      "controlled_compilers": true
+    },
+    "complete_contract_package": {
+      "pass": true,
+      "package_elapsed_s": 33.584,
+      "top_level_executions": 41,
+      "subtests": 16,
+      "command": "go test -json -race -count=1 -timeout=3m ./tests/contract"
+    },
+    "traceability_preview": {
+      "pass": true,
+      "copied_files": 1065,
+      "contract_test_files": 20,
+      "package_elapsed_s": 8.164,
+      "changed_evidence_rows": [
+        "SEC-016",
+        "DEP-003"
+      ],
+      "priorities_and_statuses_unchanged": true
+    },
+    "vet": {
+      "pass": true,
+      "packages": [
+        "./tests/contract"
+      ]
+    },
+    "formatting": {
+      "pass": true
+    },
+    "shell_syntax": {
+      "pass": true
+    },
+    "make_recipe": {
+      "pass": true,
+      "command": "make -n repro-local",
+      "recipe": "./scripts/repro-local.sh"
+    },
+    "secret_scan": {
+      "pass": true
+    },
+    "license_check": {
+      "pass": true
+    }
+  },
+  "source_file_sha256": {
+    "scripts/repro-local.sh": "4395a3dadbb1584808e7888c35a55c359647981edfc35b17a77688f6309994ae",
+    "Makefile": "a502736d0cf93a21a1daa2b8391757366aa3cc91ce516451b693253d06a75634",
+    "Dockerfile": "1d127ff448fe2ac3a473f3784e221b0641f29f94a7a7fb9b97118dad6b87b17c",
+    "tests/contract/repro_local_test.go": "c71133e3f113518b37d514c781029dc453cb417407e317c3600cd7c7c4c81fe8",
+    "tests/contract/traceability_test.go": "a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6"
+  },
+  "protected_contract_sha256": "a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6",
+  "environment": {
+    "machine_model": "Mac16,8",
+    "cpu": "Apple M4 Pro",
+    "logical_cpus": 12,
+    "memory_bytes": 25769803776,
+    "os": "macOS 27.0.1 (26A434), Darwin 27.0.0",
+    "installed_host_go": "go1.27.1",
+    "both_build_compilers": "go1.27.2",
+    "temporary_host_sdk": "bootstrapped from pinned cached Go image source; not installed globally",
+    "linux_network": "none",
+    "module_proxy": "off",
+    "sumdb": "off",
+    "automatic_toolchain": "local",
+    "caller_workspace": "off",
+    "caller_go_flags_and_experiments": "cleared",
+    "separate_writable_caches": true
+  },
+  "limits": [
+    "No official release source tag, registry/image build or provenance attestation.",
+    "One physical host, not independent organization/machine verification.",
+    "Offline archive/image and off-host release reproduction remain unverified.",
+    "Current vulnerability audit and qualified external security review remain open."
+  ]
+}

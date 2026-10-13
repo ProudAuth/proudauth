@@ -1,0 +1,24 @@
+# Local HTTP setup. Image contains the server, worker, CLI and all migrations.
+mode: development
+server:
+  public_listen: ":8080"
+  internal_listen: ":9090"
+  public_origin: "http://localhost:8080" # overridden by .env through Compose
+identity:
+  default_realm: main
+storage:
+  database_url: "file:/run/secrets/database_url"
+keys:
+  root_keys:
+    - version: 1
+      ref: "file:/run/secrets/root_key"
+  active_version: 1
+sessions:
+  cookie_insecure_dev: true
+delivery:
+  email:
+    adapter: dev_sink
+impersonation:
+  enabled: false
+observability:
+  log_format: json

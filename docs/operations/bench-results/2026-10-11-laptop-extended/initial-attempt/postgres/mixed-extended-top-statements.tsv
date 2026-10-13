@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+1	75.3	75.283	5000	UPDATE audit_events SET batch_id=$1 WHERE id = ANY($2)
+9	13.8	1.535	9	SELECT id, verifier, state FROM credentials WHERE user_id=$1 AND type=$2 AND state IN ($3 /*, ... */) ORDER BY state LIMIT $4
+300	9.1	0.030	300	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+13	7.8	0.596	13	SELECT pg_advisory_xact_lock(hashtext($1))
+1	3.2	3.233	5000	SELECT seq, id, content_hash FROM audit_events WHERE batch_id IS NULL AND recorded_at < now() - interval $2 ORDER BY seq LIMIT $1
+27	2.8	0.105	27	UPDATE auth_transactions SET intent=$18, user_id=$2, identified_via=$3, completed_factors=$4, required_actions_done=$5, auth_time=$6, selected_org_id=$7, granted_scopes=$8, consent_decided=$9, remembe
+72	2.6	0.036	72	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+1	2.0	1.973	0	SELECT id, realm_id, organization_id, user_id FROM memberships WHERE state=$2 AND expires_at IS NOT NULL AND expires_at <= $1 LIMIT $3
+126	1.6	0.013	105	SELECT uri, purpose FROM client_redirect_uris WHERE client_ref=$1 ORDER BY created_at, uri
+3	1.5	0.511	300	SELECT seq, id, coalesce(realm_id,''), coalesce(organization_id,''), event_type, payload FROM outbox_events WHERE state='pending' ORDER BY seq LIMIT $1 FOR UPDATE SKIP LOCKED
+81	1.3	0.016	81	SELECT id, realm_id, client_id, coalesce(project_id,$3), name, coalesce(description,$4), client_type, token_endpoint_auth_method, grant_types, security_profile, state, first_party, consent_mode, allow
+5	1.2	0.242	535	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name

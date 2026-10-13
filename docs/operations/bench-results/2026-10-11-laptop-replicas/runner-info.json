@@ -1,0 +1,11 @@
+{
+  "algorithm": "sha256",
+  "source_files": {
+    "scripts/bench-local.sh": "6bc99e898b1398d7ee95614faf8431aadfccdeff8cc4602204b74629c8b43532",
+    "Makefile": "2f3d11d2d3344f1363045f2573b25c4add2daa37e39f75ba3e41ae16a6956925",
+    "cmd/identity-bench/main.go": "3a72f2b4903a254879b6371a1e5a26b0bb61dc39dd4ce0a86aa816061613554e",
+    "cmd/identity-bench/replica_proxy.go": "b5e92c9de92e288cc051e16e66ae114d57c8f5f9d29232cc9b0866b3513d334b",
+    "internal/bench/replica_proxy.go": "ce259befad97d37d42b0311e84825e7243051b74bfdc72d1cca536509ff8ec00"
+  },
+  "note": "Runner and proxy source hashes for the measured native-process profiles; Go/SQL aggregate digest and binary hashes are recorded separately. Documentation-only changes follow the measurement."
+}

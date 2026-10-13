@@ -1,0 +1,21 @@
+{
+  "policy_revision": 2,
+  "version": 2,
+  "login": {
+    "identifiers": [
+      "email",
+      "username"
+    ],
+    "password": true,
+    "email_otp": false,
+    "magic_link": false,
+    "passkeys": true,
+    "sms_otp": false,
+    "remember_devices": false
+  },
+  "webauthn": {
+    "allow_synced": true,
+    "user_verification": "preferred"
+  },
+  "note": "Only login.passkeys is changed; empty RP/origins resolve to the benchmark public origin"
+}

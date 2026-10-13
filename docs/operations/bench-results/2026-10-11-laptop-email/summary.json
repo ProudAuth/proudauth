@@ -1,0 +1,105 @@
+[
+  {
+    "scenario": "email-delivery",
+    "started": "2026-10-11T12:49:15Z",
+    "ended": "2026-10-11T12:50:20Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 843,
+    "throughput_per_s": 14,
+    "latency_ms": {
+      "mean": 2210.5,
+      "p50": 2031.62,
+      "p90": 3932.16,
+      "p99": 5701.59,
+      "p999": 5701.59,
+      "max": 5701.59
+    },
+    "outcomes": {
+      "ok": 843
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 65.01,
+      "identity_server": 32.53,
+      "identity_worker": 1.02,
+      "postgres_container": 27.01,
+      "docker_vm_and_proxy": 125.72,
+      "identity_bench": 20.81,
+      "smtp_sink": 0.23
+    }
+  },
+  {
+    "scenario": "mixed-email",
+    "started": "2026-10-11T12:50:23Z",
+    "ended": "2026-10-11T12:51:42Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 10224,
+    "throughput_per_s": 170.4,
+    "latency_ms": {
+      "mean": 185.64,
+      "p50": 19.46,
+      "p90": 360.45,
+      "p99": 2359.3,
+      "p999": 3145.73,
+      "max": 3581.06
+    },
+    "outcomes": {
+      "audit-query:ok": 502,
+      "client-credentials:ok": 2538,
+      "email-delivery:ok": 994,
+      "import:ok": 504,
+      "introspection:ok": 1544,
+      "passkey-assertion:ok": 519,
+      "password-login:ok": 492,
+      "policy:ok": 1537,
+      "refresh:ok": 1082,
+      "scim:ok": 512
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 79.68,
+      "identity_server": 121.14,
+      "identity_worker": 16.17,
+      "postgres_container": 68.92,
+      "docker_vm_and_proxy": 310.31,
+      "identity_bench": 19.94,
+      "smtp_sink": 0.29
+    }
+  },
+  {
+    "scenario": "notification-flood",
+    "started": "2026-10-11T12:51:46Z",
+    "ended": "2026-10-11T12:52:51Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 7520,
+    "throughput_per_s": 125.3,
+    "latency_ms": {
+      "mean": 255.29,
+      "p50": 262.14,
+      "p90": 262.14,
+      "p99": 277.84,
+      "p999": 277.84,
+      "max": 277.84
+    },
+    "outcomes": {
+      "http_429": 7517,
+      "ok": 3
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 65,
+      "identity_server": 19.06,
+      "identity_worker": 0.92,
+      "postgres_container": 9.13,
+      "docker_vm_and_proxy": 25.46,
+      "identity_bench": 25.19,
+      "smtp_sink": 0.14
+    },
+    "notes": [
+      "messages delivered to the attacked address (loopback SMTP sink): 3"
+    ]
+  }
+]

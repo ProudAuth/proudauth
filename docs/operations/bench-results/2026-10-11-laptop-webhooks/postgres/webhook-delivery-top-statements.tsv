@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+15567	3659.6	0.235	1372597	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+1409	1517.5	1.077	1409	SELECT EXISTS (SELECT $3 FROM role_assignments ra JOIN roles r ON r.id=ra.role_id WHERE ra.membership_id=$1 AND r.is_owner_role AND (ra.expires_at IS NULL OR ra.expires_at > $2))
+1409	1188.0	0.843	1409	DELETE FROM role_assignments WHERE membership_id=$1
+1093	871.6	0.797	1093	SELECT pg_advisory_xact_lock(hashtext($1))
+26986	802.1	0.030	26986	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+4357	263.7	0.061	4357	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+272	219.2	0.806	26986	SELECT seq, id, coalesce(realm_id,''), coalesce(organization_id,''), event_type, payload FROM outbox_events WHERE state='pending' ORDER BY seq LIMIT $1 FOR UPDATE SKIP LOCKED
+1409	189.0	0.134	1409	INSERT INTO role_assignments (id, realm_id, role_id, subject_type, subject_id, membership_id, scope_type, scope_id, conditions, valid_from, expires_at, granted_by_type, granted_by_id, approved_by_id, 
+4	173.0	43.245	11346	UPDATE audit_events SET batch_id=$1 WHERE id = ANY($2)
+4323	168.2	0.039	4323	INSERT INTO outbox_events (id, realm_id, organization_id, event_type, event_version, aggregate_type, aggregate_id, payload, occurred_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+26986	166.9	0.006	4291	SELECT id, event_types, payload_form, event_version FROM webhook_subscriptions WHERE realm_id=$1 AND state='active' AND (organization_id IS NULL OR organization_id=$2)
+14158	147.2	0.010	12749	SELECT ra.role_id, ra.conditions FROM role_assignments ra WHERE ra.realm_id=$1 AND ra.subject_type=$2 AND ra.subject_id=$3 AND ra.scope_type='realm' AND (ra.valid_from IS NULL OR ra.valid_from <= $4) 

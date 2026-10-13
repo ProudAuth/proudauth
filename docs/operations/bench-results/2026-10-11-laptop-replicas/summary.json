@@ -1,0 +1,96 @@
+[
+  {
+    "scenario": "refresh",
+    "started": "2026-10-11T19:44:29Z",
+    "ended": "2026-10-11T19:45:34Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 56465,
+    "throughput_per_s": 941.1,
+    "latency_ms": {
+      "mean": 33.99,
+      "p50": 34.82,
+      "p90": 38.91,
+      "p99": 51.2,
+      "p999": 139.26,
+      "max": 773.48
+    },
+    "outcomes": {
+      "ok": 56465
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 65,
+      "identity_server": 233.27,
+      "identity_worker": 0.98,
+      "postgres_container": 132.98,
+      "docker_vm_and_proxy": 408.72,
+      "identity_bench": 6.62,
+      "replica_proxy": 12.7,
+      "server_nodes": [
+        {
+          "node": 1,
+          "pid": 32260,
+          "cpu_seconds": 77.19
+        },
+        {
+          "node": 2,
+          "pid": 32263,
+          "cpu_seconds": 78.29
+        },
+        {
+          "node": 3,
+          "pid": 32266,
+          "cpu_seconds": 77.79
+        }
+      ]
+    }
+  },
+  {
+    "scenario": "refresh-race",
+    "started": "2026-10-11T19:45:34Z",
+    "ended": "2026-10-11T19:46:39Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 2793,
+    "throughput_per_s": 46.5,
+    "latency_ms": {
+      "mean": 683,
+      "p50": 688.13,
+      "p90": 786.43,
+      "p99": 884.74,
+      "p999": 1015.81,
+      "max": 1039.5
+    },
+    "outcomes": {
+      "ok": 2793
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 65,
+      "identity_server": 486.06,
+      "identity_worker": 0.84,
+      "postgres_container": 84.38,
+      "docker_vm_and_proxy": 195.27,
+      "identity_bench": 20.29,
+      "replica_proxy": 22.71,
+      "server_nodes": [
+        {
+          "node": 1,
+          "pid": 32260,
+          "cpu_seconds": 163.31
+        },
+        {
+          "node": 2,
+          "pid": 32263,
+          "cpu_seconds": 162.53
+        },
+        {
+          "node": 3,
+          "pid": 32266,
+          "cpu_seconds": 160.72
+        }
+      ]
+    }
+  }
+]

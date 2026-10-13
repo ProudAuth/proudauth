@@ -1,0 +1,94 @@
+Complex SCIM filter profile (NFR-006, NFR-008), 2026-10-11.
+Initial measurement completed and FAILED its outcome criteria. This evidence
+is retained unchanged while the bounded-read correction is measured separately.
+
+Offline constraints:
+- GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local,
+  GOFLAGS='-mod=readonly -buildvcs=false'. No downloads or Git commits.
+- Only dedicated pa-bench- containers, OS-allocated loopback test ports and
+  disposable databases were used for regressions. Their traps removed all
+  test resources and helper files before this benchmark began.
+
+ProudAuth defects proved and fixed before measurement:
+- SCIM candidate read failures returned successful empty/partial lists;
+  nested user/identifier failures also returned false 404s.
+  TestSCIMReadFailuresDoNotBecomePartialLists failed before the fix:
+  locked users, user_identifiers, memberships, groups and group_memberships
+  with a 100ms PostgreSQL statement timeout produced 200/totalResults:0
+  instead of a SCIM error, and user/identifier reads returned 404.
+  Lists now propagate read errors, and genuine deletion remains invisible.
+- Initial active:false creation with a default role returned 400:
+  "organization roles require an active membership (AZ-003)".
+  TestSCIMInitiallyInactiveUserWithDefaultRole failed before the fix.
+  Membership creation, approved default assignment and suspension now
+  commit atomically, with no externally visible active membership.
+  The regression checks the suspended membership/default grant and later
+  ETag-bound reactivation without duplication. General assignment still
+  enforces the active-membership requirement.
+
+Correctness checks outside measurement:
+- go test -race ./internal/bench ./internal/provisioning ./cmd/identity-bench
+  PASS: benchmark 11.746s; provisioning 1.525s and CLI 2.203s before the
+  fixture correction, then final checks PASS (cached). The independent
+  boundary test proves accepted expressions have exactly 64 nodes, a
+  65-node expression is rejected and byte overflow is exactly 1025 bytes.
+  Tool regressions reject partial totals/pages, foreign identities,
+  unexpected acceptance/error types and missing budget retry guidance;
+  both first and empty second-page contracts are checked. Private fixture
+  authority is excluded from notes/observations and cleared on close.
+- Own PostgreSQL 18.6:
+  go test -race -count=1 -v ./tests/e2e
+  -run '^(TestSCIM.*|TestBenchSuiteSmoke)$'
+  Final PASS: 54.625s. All 23 benchmark smoke scenarios: 46.42s;
+  admin/SCIM races 1.38s, initially inactive regression 1.15s,
+  read-failure regression 2.34s, SCIM lifecycle 1.52s.
+  The smoke uses small fixtures and does not measure capacity.
+- go vet ./internal/bench ./internal/provisioning ./cmd/identity-bench
+  ./tests/e2e, shell syntax, secret and license checks: PASS.
+- Requirements matrix preview was applied in seven small rows using the
+  unchanged generator. The contract PASS: 0.916s. Protected file
+  tests/contract/traceability_test.go SHA-256 remains:
+  a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6.
+- All five earlier result manifests are intact: 190 file hashes.
+- A complete Go suite rerun after the SCIM expansion is still required;
+  targeted tests above do not claim a complete new release verification.
+
+Current measurement setup:
+- Source digest 2a75087a131ed72d, version dev, no Git commit.
+- Default full seed 1: 10000 users, 500 small organizations, a 5000-member
+  large organization, 20 machine clients, 1000 group members, depth three.
+  Public-API seeding took 176s.
+- The scenario prepares one additional connector and 10000 additional
+  owned users, half active/half suspended. Fixture requests start at least
+  65ms apart, retaining the connector's 1200/minute budget. Preparation
+  consumes that budget; no counter is reset or raised. Setup is unmeasured.
+- The requested measurement is 60s, concurrency 32, 5s benign discovery
+  warm-up; no soak scheduled. No Go tests run while this runner is active.
+- Same-host laptop/server/worker/PostgreSQL topology, exact image/settings,
+  redacted configuration and binary hashes are recorded separately.
+- Only the four documented login/token source budgets are raised.
+
+Limits: Users only, one connector/realm/server, aggregate latency includes
+budget refusals. This is not successful-query capacity, Group/audit filter
+coverage, scan overflow beyond 20000 resources, metadata-fetch abuse,
+multi-node stress, multi-hour soak, independent review or NFR-006 completion.
+
+Initial measured outcome:
+- Source 2a75087a131ed72d. Fixture preparation completed in 659.471916s,
+  proving 10000 owned users before timing; five-second benign warm-up.
+- 60.000550709s at concurrency 32: 94 completed observations, 1.5666523/s;
+  invalid_filter_nodes 31, invalid_filter_bytes 31, transport_error 32.
+  No bounded_true or bounded_false completed. p50 25.600ms,
+  p99/p99.9 30001.233ms. Complete lifecycle does not imply passing outcomes.
+- Runner verdict FAIL and exit 1; make exited 2. Server diagnostics report
+  30-second list deadlines/cancellation and HTTP 500. The client observed
+  32 request timeouts; final interrupted operations are not counted.
+- Recorded statements include 504776 user loads, 504763 identifier loads,
+  504748 membership reads and 494792 mapping reads; counts also include
+  fixture preparation. The per-candidate read path required four round
+  trips, so 32 concurrent 10000-user scans did not complete in the deadline.
+- The controlled regression independently failed before the batching fix:
+  eight users caused 33 queries; 64 caused 257. This structural check uses
+  real pgx tracing rather than a hardware-dependent latency assertion.
+- Secret comparison and dedicated container/volume/process/work cleanup
+  ran on the failed attempt; no private seed or credentials are published.

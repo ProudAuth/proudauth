@@ -1,0 +1,31 @@
+[
+  {
+    "scenario": "oversized-input",
+    "started": "2026-10-11T10:08:56Z",
+    "ended": "2026-10-11T10:10:01Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 1370040,
+    "throughput_per_s": 22833.8,
+    "latency_ms": {
+      "mean": 1.4,
+      "p50": 1.28,
+      "p90": 2.18,
+      "p99": 3.33,
+      "p999": 69.63,
+      "max": 143.27
+    },
+    "outcomes": {
+      "http_413": 1370040
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 65,
+      "identity_server": 178.39,
+      "identity_worker": 0.94,
+      "postgres_container": 1.73,
+      "docker_vm_and_proxy": 10.15,
+      "identity_bench": 304.53
+    }
+  }
+]

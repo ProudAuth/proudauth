@@ -1,0 +1,138 @@
+{
+  "format_version": 1,
+  "export_policy": "Allowlisted snapshot; no private history or installation state. Numeric results and binary/source hashes preserved. Local temp/worktree paths in measurement copies replaced by $WORK/$CHECKOUT. Artifact manifests recalculated for exported files.",
+  "path_redactions": [
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop/effective-config-redacted.json",
+      "original_sha256": "37ef9c0d707a4acadd53aa30ab3e2c0cdef155a27372d75a5f98aca17a4b7354",
+      "export_sha256": "fc7e4db74fc8d0e247aaabb7accf9fe8a49b6d24b5e6cb5d12aa27cacb7e740e"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop/oversized-rerun/effective-config-redacted.json",
+      "original_sha256": "2741addd3ef09487a4ecdc14520306bc39b51d55bbc788f4fab9d98ee21c65ca",
+      "export_sha256": "fc7e4db74fc8d0e247aaabb7accf9fe8a49b6d24b5e6cb5d12aa27cacb7e740e"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-email/effective-config-redacted.json",
+      "original_sha256": "559b7348e5c53d1922250b1d2c237ba7c4eced22668c1cf489d45a7abcc1d52d",
+      "export_sha256": "e11b78a6c4b80c6380c7f9e7f5e38246e4d793f592d8fe34494f59754fa8ae41"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-email/repeat-email/effective-config-redacted.json",
+      "original_sha256": "5ad4e29932f1f687b1f0462573c7d7a9c480d9cc76ad86740926bdccd5b2a8bb",
+      "export_sha256": "4de06edf8a7f3faedcc6bec040acff7dcb25269b44673ac00dca5afd10120cf1"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-email/run-command.txt",
+      "original_sha256": "20c698d941ac9ce67b1d642fbcefd3d6fe8d2571b5b078fffa8d562a83ee4d10",
+      "export_sha256": "55e9d7ea71a3926feb18ba789fa339f26dc68042b8336174c7b3a2aba2c5f2c2"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-extended/effective-config-redacted.json",
+      "original_sha256": "68e47a39cb17ca32f06a55ef71473e7d168d8f38164643aa57e5c689e2ebfb7c",
+      "export_sha256": "fc7e4db74fc8d0e247aaabb7accf9fe8a49b6d24b5e6cb5d12aa27cacb7e740e"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-extended/initial-attempt/effective-config-redacted.json",
+      "original_sha256": "fd5c3fb937ac86df806767486e5d8c1b46c05c31f1b7564edf3b2b8fd2c02975",
+      "export_sha256": "fc7e4db74fc8d0e247aaabb7accf9fe8a49b6d24b5e6cb5d12aa27cacb7e740e"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-filters/effective-config-redacted.json",
+      "original_sha256": "3efa88fe35e7d5a80b4f81a29c580ccbe2e07aa34642564967b684676a4b40df",
+      "export_sha256": "fc7e4db74fc8d0e247aaabb7accf9fe8a49b6d24b5e6cb5d12aa27cacb7e740e"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-filters/initial-attempt/effective-config-redacted.json",
+      "original_sha256": "51e140d9d807f8bea703d359e4c8fb95212a5e003ec42b209925e28cc352a6e3",
+      "export_sha256": "fc7e4db74fc8d0e247aaabb7accf9fe8a49b6d24b5e6cb5d12aa27cacb7e740e"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-otp/effective-config-redacted.json",
+      "original_sha256": "40712e85ed230f1fa1ac8c2be98ce911df0b646d02e8cfb5e4d12dd82cb4a2ad",
+      "export_sha256": "fc7e4db74fc8d0e247aaabb7accf9fe8a49b6d24b5e6cb5d12aa27cacb7e740e"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-replicas/effective-config-redacted.json",
+      "original_sha256": "c3d907e2f44aaf6c449f04c2630f37f003a26028d7a60d4debdeaf046141a006",
+      "export_sha256": "e651879c4f969fc8347f13f0e75c00ce9d6653ae78544eaacdc4b40dfb9e95f5"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-webhooks/effective-config-redacted.json",
+      "original_sha256": "e67540f85bad81c6e9b47ab156bf563f7ed5706ca53f6af0e894e3469571fc99",
+      "export_sha256": "4457139d1de6349261bc14483ae923421544953d6a9ce1ca52da3c7bacb38564"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-webhooks/initial-attempt/effective-config-redacted.json",
+      "original_sha256": "3595b4d2bf42a845a4e818569ecb3ebb013486034ea26465c15eef41546fbfa3",
+      "export_sha256": "4f0c3317f9d231b1070662868e5f0aa124fef7a657524ddd90cdcbb0fe257448"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-12-laptop-audit-filter/effective-config-redacted.json",
+      "original_sha256": "4e6a703014ceb511e5bcaaeff3635152c0b70757d11dd7bfac45bcd0cc740994",
+      "export_sha256": "42b39598c2807260fae2c66a3281ffc597f5b13df84c3eeebbb207ce3595df5f"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-12-laptop-groups/effective-config-redacted.json",
+      "original_sha256": "db7e0063e543bf016741704639177c11bcb8b42a1f9be3ac67a1dee44aea3974",
+      "export_sha256": "f9d56255d6fc7d552582c2ca689cc44a6722e5328aeaae5d86361deeb959d84b"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-13-laptop-metadata/effective-config-redacted.json",
+      "original_sha256": "ed3dac68c73ed975e2ca265285377e26171e906fdea94304a90975c277e357f9",
+      "export_sha256": "f6be5753ab22885872161689ecd047f06bf6877d97e92134e2658c606613ebe4"
+    }
+  ],
+  "artifact_manifest_updates": [
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-email/artifact-sha256.json",
+      "original_sha256": "487b215bea430489d1ea9bd1f708f57e9ec1b3fd9f46a7a9b353c2cd6b80b207",
+      "export_sha256": "9da9f495c19c0e39cc60d1188d936dc7df4364f3f1c637a08dec18885189dd15"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-extended/artifact-sha256.txt",
+      "original_sha256": "ec9bb1e816c16d6a11d180651152d4284b773a77d229c8c842a2bc6a85c98476",
+      "export_sha256": "57be26cfa0568bd013977f74613bc3c50fb45f3f779aaa7cb32a94a08b38bcfe"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-filters/artifact-sha256.json",
+      "original_sha256": "9e1e3c79fb25baced045ab8889f572695383160a7919d36531cfbaca90f26697",
+      "export_sha256": "b072c6fc491ea87e5559282683afbcd9e6f7871237d36478e3a5f5500a4d39ee"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-filters/initial-attempt/artifact-sha256.json",
+      "original_sha256": "c9f84b2fd4e6dcf4c704bb292d67b57f6efff9c3ec1d56fac27e5a9202cbb24e",
+      "export_sha256": "75468ab5a03d15f50d2acbb8e5dd12b34d0c390c47eb5055d5b96c9a9cbcb22c"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-otp/artifact-sha256.json",
+      "original_sha256": "d406047495b3e57fe3aa86e5ef3d278560600585ea14c327238dd17a41c687d7",
+      "export_sha256": "58cbfbf1b26e933c8f9a7fe7bd2356a213cb06dfd3d11f99a2e0972f8ff0ee59"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-replicas/artifact-sha256.json",
+      "original_sha256": "6b3638a313608a0a15e11161ab42a445d846c95e441d4d072b8305eaf957ea93",
+      "export_sha256": "d5500048ad588c1f1d540ba6d9629c59b50392d65537206810a51436cad2c5b9"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop-webhooks/artifact-sha256.json",
+      "original_sha256": "550c446393aa5e8b85e5bb82b54ea9f531e1b1c3aa734ae5d6107f2be95ad648",
+      "export_sha256": "e8c893767b7cd488430aa76f16f4a3df14cc4a949bc984ed652072ee9a10b33c"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-11-laptop/artifact-sha256.txt",
+      "original_sha256": "7ddbb97ccdb5344bf0224760a58feb934848e43fa12d2d87b4b0d976c1ee79b0",
+      "export_sha256": "823ea3ea223f344b621119cafa22b2441e376107bf7d7ed3543264aadb6dbcbf"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-12-laptop-audit-filter/artifact-sha256.json",
+      "original_sha256": "ebb14e7e7a2113d01d6b2e8a6e79cbad6a4efb2b2527486b10542285be3b96b4",
+      "export_sha256": "c35a575f01ffff853937e5145aad56e8c3b29f2333eb34dfd553f2c6e839863c"
+    },
+    {
+      "path": "docs/operations/bench-results/2026-10-12-laptop-groups/artifact-sha256.json",
+      "original_sha256": "e6ffb652902c5ae815989a1bcce833abd3672c2bfa25044d65903f6e4886e672",
+      "export_sha256": "bc6d8fac82d05b25700dd21c25906b3b8ae475fe1c0bcf3d06a49c824783d97e"
+    }
+  ]
+}

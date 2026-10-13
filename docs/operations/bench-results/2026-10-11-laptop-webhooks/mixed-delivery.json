@@ -1,0 +1,754 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "mixed-delivery",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T14:29:19.291207Z",
+  "duration_s": 60.000348792,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 2455,
+  "outcomes": {
+    "audit-query:ok": 117,
+    "client-credentials:ok": 630,
+    "email-delivery:ok": 117,
+    "import:ok": 126,
+    "introspection:ok": 379,
+    "passkey-assertion:ok": 116,
+    "password-login:ok": 123,
+    "policy:ok": 248,
+    "refresh:ok": 257,
+    "scim:ok": 138,
+    "webhook-delivery:ok": 110,
+    "webhook-retry:ok": 94
+  },
+  "throughput_per_s": 40.9164288112827,
+  "latency_ms": {
+    "mean": 697.2984904276985,
+    "p50": 12.288,
+    "p90": 983.04,
+    "p99": 15204.352,
+    "p999": 15728.64,
+    "max": 16033.726
+  },
+  "histogram": [
+    {
+      "le_ms": 2.176,
+      "count": 7
+    },
+    {
+      "le_ms": 2.304,
+      "count": 16
+    },
+    {
+      "le_ms": 2.432,
+      "count": 3
+    },
+    {
+      "le_ms": 2.56,
+      "count": 6
+    },
+    {
+      "le_ms": 2.688,
+      "count": 11
+    },
+    {
+      "le_ms": 2.816,
+      "count": 8
+    },
+    {
+      "le_ms": 2.944,
+      "count": 10
+    },
+    {
+      "le_ms": 3.072,
+      "count": 14
+    },
+    {
+      "le_ms": 3.2,
+      "count": 13
+    },
+    {
+      "le_ms": 3.328,
+      "count": 19
+    },
+    {
+      "le_ms": 3.456,
+      "count": 12
+    },
+    {
+      "le_ms": 3.584,
+      "count": 13
+    },
+    {
+      "le_ms": 3.712,
+      "count": 17
+    },
+    {
+      "le_ms": 3.84,
+      "count": 12
+    },
+    {
+      "le_ms": 3.968,
+      "count": 14
+    },
+    {
+      "le_ms": 4.096,
+      "count": 19
+    },
+    {
+      "le_ms": 4.352,
+      "count": 41
+    },
+    {
+      "le_ms": 4.608,
+      "count": 25
+    },
+    {
+      "le_ms": 4.864,
+      "count": 29
+    },
+    {
+      "le_ms": 5.12,
+      "count": 29
+    },
+    {
+      "le_ms": 5.376,
+      "count": 14
+    },
+    {
+      "le_ms": 5.632,
+      "count": 30
+    },
+    {
+      "le_ms": 5.888,
+      "count": 28
+    },
+    {
+      "le_ms": 6.144,
+      "count": 30
+    },
+    {
+      "le_ms": 6.4,
+      "count": 31
+    },
+    {
+      "le_ms": 6.656,
+      "count": 49
+    },
+    {
+      "le_ms": 6.912,
+      "count": 40
+    },
+    {
+      "le_ms": 7.168,
+      "count": 39
+    },
+    {
+      "le_ms": 7.424,
+      "count": 44
+    },
+    {
+      "le_ms": 7.68,
+      "count": 55
+    },
+    {
+      "le_ms": 7.936,
+      "count": 35
+    },
+    {
+      "le_ms": 8.192,
+      "count": 49
+    },
+    {
+      "le_ms": 8.704,
+      "count": 73
+    },
+    {
+      "le_ms": 9.216,
+      "count": 73
+    },
+    {
+      "le_ms": 9.728,
+      "count": 69
+    },
+    {
+      "le_ms": 10.24,
+      "count": 70
+    },
+    {
+      "le_ms": 10.752,
+      "count": 63
+    },
+    {
+      "le_ms": 11.264,
+      "count": 46
+    },
+    {
+      "le_ms": 11.776,
+      "count": 63
+    },
+    {
+      "le_ms": 12.288,
+      "count": 47
+    },
+    {
+      "le_ms": 12.8,
+      "count": 42
+    },
+    {
+      "le_ms": 13.312,
+      "count": 38
+    },
+    {
+      "le_ms": 13.824,
+      "count": 43
+    },
+    {
+      "le_ms": 14.336,
+      "count": 34
+    },
+    {
+      "le_ms": 14.848,
+      "count": 31
+    },
+    {
+      "le_ms": 15.36,
+      "count": 28
+    },
+    {
+      "le_ms": 15.872,
+      "count": 28
+    },
+    {
+      "le_ms": 16.384,
+      "count": 31
+    },
+    {
+      "le_ms": 17.408,
+      "count": 27
+    },
+    {
+      "le_ms": 18.432,
+      "count": 30
+    },
+    {
+      "le_ms": 19.456,
+      "count": 18
+    },
+    {
+      "le_ms": 20.48,
+      "count": 30
+    },
+    {
+      "le_ms": 21.504,
+      "count": 20
+    },
+    {
+      "le_ms": 22.528,
+      "count": 8
+    },
+    {
+      "le_ms": 23.552,
+      "count": 8
+    },
+    {
+      "le_ms": 24.576,
+      "count": 16
+    },
+    {
+      "le_ms": 25.6,
+      "count": 7
+    },
+    {
+      "le_ms": 26.624,
+      "count": 10
+    },
+    {
+      "le_ms": 27.648,
+      "count": 8
+    },
+    {
+      "le_ms": 28.672,
+      "count": 5
+    },
+    {
+      "le_ms": 29.696,
+      "count": 8
+    },
+    {
+      "le_ms": 30.72,
+      "count": 12
+    },
+    {
+      "le_ms": 31.744,
+      "count": 8
+    },
+    {
+      "le_ms": 32.768,
+      "count": 8
+    },
+    {
+      "le_ms": 34.816,
+      "count": 19
+    },
+    {
+      "le_ms": 36.864,
+      "count": 15
+    },
+    {
+      "le_ms": 38.912,
+      "count": 10
+    },
+    {
+      "le_ms": 40.96,
+      "count": 13
+    },
+    {
+      "le_ms": 43.008,
+      "count": 9
+    },
+    {
+      "le_ms": 45.056,
+      "count": 9
+    },
+    {
+      "le_ms": 47.104,
+      "count": 8
+    },
+    {
+      "le_ms": 49.152,
+      "count": 9
+    },
+    {
+      "le_ms": 51.2,
+      "count": 7
+    },
+    {
+      "le_ms": 53.248,
+      "count": 8
+    },
+    {
+      "le_ms": 55.296,
+      "count": 6
+    },
+    {
+      "le_ms": 57.344,
+      "count": 6
+    },
+    {
+      "le_ms": 59.392,
+      "count": 7
+    },
+    {
+      "le_ms": 61.44,
+      "count": 5
+    },
+    {
+      "le_ms": 63.488,
+      "count": 6
+    },
+    {
+      "le_ms": 65.536,
+      "count": 5
+    },
+    {
+      "le_ms": 69.632,
+      "count": 9
+    },
+    {
+      "le_ms": 73.728,
+      "count": 8
+    },
+    {
+      "le_ms": 77.824,
+      "count": 9
+    },
+    {
+      "le_ms": 81.92,
+      "count": 7
+    },
+    {
+      "le_ms": 86.016,
+      "count": 6
+    },
+    {
+      "le_ms": 90.112,
+      "count": 3
+    },
+    {
+      "le_ms": 94.208,
+      "count": 3
+    },
+    {
+      "le_ms": 98.304,
+      "count": 3
+    },
+    {
+      "le_ms": 106.496,
+      "count": 1
+    },
+    {
+      "le_ms": 114.688,
+      "count": 1
+    },
+    {
+      "le_ms": 131.072,
+      "count": 1
+    },
+    {
+      "le_ms": 139.264,
+      "count": 2
+    },
+    {
+      "le_ms": 188.416,
+      "count": 3
+    },
+    {
+      "le_ms": 196.608,
+      "count": 1
+    },
+    {
+      "le_ms": 204.8,
+      "count": 3
+    },
+    {
+      "le_ms": 212.992,
+      "count": 2
+    },
+    {
+      "le_ms": 221.184,
+      "count": 1
+    },
+    {
+      "le_ms": 229.376,
+      "count": 3
+    },
+    {
+      "le_ms": 237.568,
+      "count": 3
+    },
+    {
+      "le_ms": 245.76,
+      "count": 1
+    },
+    {
+      "le_ms": 262.144,
+      "count": 3
+    },
+    {
+      "le_ms": 278.528,
+      "count": 11
+    },
+    {
+      "le_ms": 294.912,
+      "count": 66
+    },
+    {
+      "le_ms": 311.296,
+      "count": 54
+    },
+    {
+      "le_ms": 327.68,
+      "count": 14
+    },
+    {
+      "le_ms": 344.064,
+      "count": 5
+    },
+    {
+      "le_ms": 360.448,
+      "count": 3
+    },
+    {
+      "le_ms": 376.832,
+      "count": 1
+    },
+    {
+      "le_ms": 393.216,
+      "count": 3
+    },
+    {
+      "le_ms": 425.984,
+      "count": 1
+    },
+    {
+      "le_ms": 442.368,
+      "count": 2
+    },
+    {
+      "le_ms": 458.752,
+      "count": 1
+    },
+    {
+      "le_ms": 557.056,
+      "count": 7
+    },
+    {
+      "le_ms": 589.824,
+      "count": 2
+    },
+    {
+      "le_ms": 655.36,
+      "count": 3
+    },
+    {
+      "le_ms": 688.128,
+      "count": 6
+    },
+    {
+      "le_ms": 753.664,
+      "count": 3
+    },
+    {
+      "le_ms": 786.432,
+      "count": 3
+    },
+    {
+      "le_ms": 851.968,
+      "count": 8
+    },
+    {
+      "le_ms": 884.736,
+      "count": 12
+    },
+    {
+      "le_ms": 917.504,
+      "count": 2
+    },
+    {
+      "le_ms": 950.272,
+      "count": 1
+    },
+    {
+      "le_ms": 983.04,
+      "count": 28
+    },
+    {
+      "le_ms": 1015.808,
+      "count": 5
+    },
+    {
+      "le_ms": 1048.576,
+      "count": 1
+    },
+    {
+      "le_ms": 1114.112,
+      "count": 13
+    },
+    {
+      "le_ms": 1179.648,
+      "count": 2
+    },
+    {
+      "le_ms": 1245.184,
+      "count": 1
+    },
+    {
+      "le_ms": 1310.72,
+      "count": 4
+    },
+    {
+      "le_ms": 1376.256,
+      "count": 2
+    },
+    {
+      "le_ms": 1441.792,
+      "count": 2
+    },
+    {
+      "le_ms": 1507.328,
+      "count": 4
+    },
+    {
+      "le_ms": 1572.864,
+      "count": 9
+    },
+    {
+      "le_ms": 1638.4,
+      "count": 6
+    },
+    {
+      "le_ms": 1703.936,
+      "count": 8
+    },
+    {
+      "le_ms": 1769.472,
+      "count": 4
+    },
+    {
+      "le_ms": 1835.008,
+      "count": 5
+    },
+    {
+      "le_ms": 1900.544,
+      "count": 28
+    },
+    {
+      "le_ms": 1966.08,
+      "count": 22
+    },
+    {
+      "le_ms": 2031.616,
+      "count": 15
+    },
+    {
+      "le_ms": 2097.152,
+      "count": 6
+    },
+    {
+      "le_ms": 2228.224,
+      "count": 6
+    },
+    {
+      "le_ms": 3014.656,
+      "count": 1
+    },
+    {
+      "le_ms": 3276.8,
+      "count": 1
+    },
+    {
+      "le_ms": 3407.872,
+      "count": 1
+    },
+    {
+      "le_ms": 12058.624,
+      "count": 1
+    },
+    {
+      "le_ms": 12582.912,
+      "count": 4
+    },
+    {
+      "le_ms": 13107.2,
+      "count": 14
+    },
+    {
+      "le_ms": 13631.488,
+      "count": 9
+    },
+    {
+      "le_ms": 14155.776,
+      "count": 33
+    },
+    {
+      "le_ms": 14680.064,
+      "count": 8
+    },
+    {
+      "le_ms": 15204.352,
+      "count": 21
+    },
+    {
+      "le_ms": 15728.64,
+      "count": 2
+    },
+    {
+      "le_ms": 16252.928,
+      "count": 2
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "weights: client-credentials 25, introspection 15, policy 10, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 5, webhook-delivery 5, webhook-retry 5",
+    "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+    "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+    "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+    "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+    "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+    "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+    "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged",
+    "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:56052; private signing keys only in memory",
+    "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+    "unmeasured public-API readiness cycle took 1.152 s (15 min preparation deadline) to cross any seed outbox backlog before warm-up; measured operations retain their 30 s timeout",
+    "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:56052; private signing keys only in memory",
+    "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+    "unmeasured public-API readiness cycle took 12.369 s (15 min preparation deadline) to cross any seed outbox backlog before warm-up; measured operations retain their 30 s timeout",
+    "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+  ],
+  "observations": {
+    "after": {
+      "webhook-delivery": {
+        "active_cycles": 0,
+        "cumulative": {
+          "received": 274,
+          "accepted": 258,
+          "intentional_503": 0,
+          "recovered": 0,
+          "invalid": 0,
+          "ignored_abandoned_or_old_events": 16,
+          "first_retry_at": "0001-01-01T00:00:00Z",
+          "last_retry_at": "0001-01-01T00:00:00Z",
+          "last_recovery_at": "0001-01-01T00:00:00Z"
+        },
+        "readiness_cycle_s": 1.152451792,
+        "receiver": "http://127.0.0.1:56052",
+        "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+        "subscriptions": 32
+      },
+      "webhook-retry": {
+        "active_cycles": 0,
+        "cumulative": {
+          "received": 498,
+          "accepted": 190,
+          "intentional_503": 268,
+          "recovered": 190,
+          "invalid": 0,
+          "ignored_abandoned_or_old_events": 40,
+          "first_retry_at": "2026-10-11T14:29:02.321137Z",
+          "last_retry_at": "2026-10-11T14:30:18.293975Z",
+          "last_recovery_at": "2026-10-11T14:30:18.293299Z"
+        },
+        "readiness_cycle_s": 12.368586583999999,
+        "receiver": "http://127.0.0.1:56052",
+        "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+        "subscriptions": 32
+      }
+    },
+    "before": {
+      "webhook-delivery": {
+        "active_cycles": 0,
+        "cumulative": {
+          "received": 38,
+          "accepted": 38,
+          "intentional_503": 0,
+          "recovered": 0,
+          "invalid": 0,
+          "ignored_abandoned_or_old_events": 0,
+          "first_retry_at": "0001-01-01T00:00:00Z",
+          "last_retry_at": "0001-01-01T00:00:00Z",
+          "last_recovery_at": "0001-01-01T00:00:00Z"
+        },
+        "readiness_cycle_s": 1.152451792,
+        "receiver": "http://127.0.0.1:56052",
+        "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+        "subscriptions": 32
+      },
+      "webhook-retry": {
+        "active_cycles": 0,
+        "cumulative": {
+          "received": 32,
+          "accepted": 2,
+          "intentional_503": 30,
+          "recovered": 2,
+          "invalid": 0,
+          "ignored_abandoned_or_old_events": 0,
+          "first_retry_at": "2026-10-11T14:29:02.321137Z",
+          "last_retry_at": "2026-10-11T14:29:17.416321Z",
+          "last_recovery_at": "2026-10-11T14:29:14.25003Z"
+        },
+        "readiness_cycle_s": 12.368586583999999,
+        "receiver": "http://127.0.0.1:56052",
+        "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+        "subscriptions": 32
+      }
+    }
+  }
+}

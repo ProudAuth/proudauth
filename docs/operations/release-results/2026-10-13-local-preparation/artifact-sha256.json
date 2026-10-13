@@ -1,0 +1,12 @@
+{
+  "assets.json": "0d13805e5775c0c8b313f1649a4502056dd975948e3337a8720b259f06fb1f3b",
+  "buildkit-metadata.json": "aabff614b1730dc0edbda6d3a39002eef3d86418bd50d733718cae524e898639",
+  "catalog-equivalence.json": "9591589837d277c96fe0f63006d34af6af0e81869fb48a2d9e7a2ddd89052651",
+  "final-tree-checks.json": "16a7fdf1dcf12d5f5d187e36ca1dc07f0d2f6aa0a33d616fc17381756c86129d",
+  "grype-results.json": "6a98ce4a84fe9eff1febad0c4aa972ff824c70043a042f2bd2e40f0df8344746",
+  "image-catalog.syft.json": "d6750558e84113b0ad28a428d174ac74f6166e77ec267fab419eb762a9f3c3b4",
+  "image-check.json": "f74c82278a10f997603ac3bf494a162e0852d305df0872352506b0d88781ab36",
+  "image-sbom.spdx.json": "be8f0974cd3766316d445df67c085df2b833c61084e3db3a359c8bfcc56a725e",
+  "source-sbom.spdx.json": "ed3fef0bfd1014a32016eeb6fd07496ec5af48292238a249a0ff26fdff9d5ffa",
+  "verification.json": "bf896442964d95d3f5272f9661f337d208823a88ef6ee76b255241d955bfae9d"
+}

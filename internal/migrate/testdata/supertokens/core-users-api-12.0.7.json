@@ -1,0 +1,294 @@
+{
+  "status": "OK",
+  "users": [
+    {
+      "id": "cfd03d15-b189-491c-956c-8e11c1d22ded",
+      "isPrimaryUser": false,
+      "tenantIds": [
+        "public"
+      ],
+      "timeJoined": 1735689600000,
+      "emails": [
+        "dina@northwind.example"
+      ],
+      "phoneNumbers": [],
+      "thirdParty": [],
+      "webauthn": {
+        "credentialIds": []
+      },
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "recipeUserId": "cfd03d15-b189-491c-956c-8e11c1d22ded",
+          "verified": false,
+          "timeJoined": 1735689600000,
+          "recipeId": "emailpassword",
+          "email": "dina@northwind.example"
+        }
+      ]
+    },
+    {
+      "id": "c871d0b4-b6d9-46f0-a29b-8289b8eed6e9",
+      "isPrimaryUser": false,
+      "tenantIds": [
+        "public"
+      ],
+      "timeJoined": 1751328000000,
+      "emails": [],
+      "phoneNumbers": [
+        "+14155550123"
+      ],
+      "thirdParty": [],
+      "webauthn": {
+        "credentialIds": []
+      },
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "recipeUserId": "c871d0b4-b6d9-46f0-a29b-8289b8eed6e9",
+          "verified": true,
+          "timeJoined": 1751328000000,
+          "recipeId": "passwordless",
+          "phoneNumber": "+14155550123"
+        }
+      ]
+    },
+    {
+      "id": "b7cdd699-204b-4231-9e0d-efad65c41b50",
+      "isPrimaryUser": false,
+      "tenantIds": [
+        "public"
+      ],
+      "timeJoined": 1751328000000,
+      "emails": [
+        "fatima@northwind.example"
+      ],
+      "phoneNumbers": [],
+      "thirdParty": [],
+      "webauthn": {
+        "credentialIds": []
+      },
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "recipeUserId": "b7cdd699-204b-4231-9e0d-efad65c41b50",
+          "verified": true,
+          "timeJoined": 1751328000000,
+          "recipeId": "passwordless",
+          "email": "fatima@northwind.example"
+        }
+      ]
+    },
+    {
+      "id": "95490144-582e-4cf5-8380-ae6d4b7c35fd",
+      "isPrimaryUser": false,
+      "tenantIds": [
+        "public"
+      ],
+      "timeJoined": 1751328000000,
+      "emails": [
+        "hugo@northwind.example"
+      ],
+      "phoneNumbers": [],
+      "thirdParty": [],
+      "webauthn": {
+        "credentialIds": []
+      },
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "recipeUserId": "95490144-582e-4cf5-8380-ae6d4b7c35fd",
+          "verified": true,
+          "timeJoined": 1751328000000,
+          "recipeId": "emailpassword",
+          "email": "hugo@northwind.example"
+        }
+      ]
+    },
+    {
+      "id": "930ab6da-e620-4b29-883d-bdbf6772e608",
+      "isPrimaryUser": false,
+      "tenantIds": [
+        "public"
+      ],
+      "timeJoined": 1751328000000,
+      "emails": [
+        "jonas@northwind.example"
+      ],
+      "phoneNumbers": [],
+      "thirdParty": [],
+      "webauthn": {
+        "credentialIds": []
+      },
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "recipeUserId": "930ab6da-e620-4b29-883d-bdbf6772e608",
+          "verified": true,
+          "timeJoined": 1751328000000,
+          "recipeId": "emailpassword",
+          "email": "jonas@northwind.example"
+        }
+      ]
+    },
+    {
+      "id": "794ec33c-2124-4507-b88f-b3f88ba5ca56",
+      "isPrimaryUser": false,
+      "tenantIds": [
+        "public"
+      ],
+      "timeJoined": 1751328000000,
+      "emails": [
+        "ines@northwind.example"
+      ],
+      "phoneNumbers": [],
+      "thirdParty": [],
+      "webauthn": {
+        "credentialIds": []
+      },
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "recipeUserId": "794ec33c-2124-4507-b88f-b3f88ba5ca56",
+          "verified": true,
+          "timeJoined": 1751328000000,
+          "recipeId": "emailpassword",
+          "email": "ines@northwind.example"
+        }
+      ]
+    },
+    {
+      "id": "legacy-1042",
+      "isPrimaryUser": false,
+      "tenantIds": [
+        "public"
+      ],
+      "timeJoined": 1767225600000,
+      "emails": [
+        "chen@northwind.example"
+      ],
+      "phoneNumbers": [],
+      "thirdParty": [],
+      "webauthn": {
+        "credentialIds": []
+      },
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "recipeUserId": "legacy-1042",
+          "verified": true,
+          "timeJoined": 1767225600000,
+          "recipeId": "emailpassword",
+          "email": "chen@northwind.example"
+        }
+      ]
+    },
+    {
+      "id": "bbbf64cd-3d33-400c-b93a-bbf0b89729d2",
+      "isPrimaryUser": false,
+      "tenantIds": [
+        "public"
+      ],
+      "timeJoined": 1791689142098,
+      "emails": [
+        "amara@northwind.example"
+      ],
+      "phoneNumbers": [],
+      "thirdParty": [],
+      "webauthn": {
+        "credentialIds": []
+      },
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "recipeUserId": "bbbf64cd-3d33-400c-b93a-bbf0b89729d2",
+          "verified": true,
+          "timeJoined": 1791689142098,
+          "recipeId": "emailpassword",
+          "email": "amara@northwind.example"
+        }
+      ]
+    },
+    {
+      "id": "b9f72350-4ca4-4f27-8e76-3b198ffd40e7",
+      "isPrimaryUser": false,
+      "tenantIds": [
+        "public"
+      ],
+      "timeJoined": 1791689153166,
+      "emails": [
+        "bilal@northwind.example"
+      ],
+      "phoneNumbers": [],
+      "thirdParty": [],
+      "webauthn": {
+        "credentialIds": []
+      },
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "recipeUserId": "b9f72350-4ca4-4f27-8e76-3b198ffd40e7",
+          "verified": false,
+          "timeJoined": 1791689153166,
+          "recipeId": "emailpassword",
+          "email": "bilal@northwind.example"
+        }
+      ]
+    },
+    {
+      "id": "fd2ecb34-91d0-4a4e-8a81-c704e9ec880c",
+      "isPrimaryUser": false,
+      "tenantIds": [
+        "public"
+      ],
+      "timeJoined": 1791689153183,
+      "emails": [
+        "emeka@gmail.example"
+      ],
+      "phoneNumbers": [],
+      "thirdParty": [
+        {
+          "id": "google",
+          "userId": "108234567890123456789"
+        }
+      ],
+      "webauthn": {
+        "credentialIds": []
+      },
+      "loginMethods": [
+        {
+          "tenantIds": [
+            "public"
+          ],
+          "recipeUserId": "fd2ecb34-91d0-4a4e-8a81-c704e9ec880c",
+          "verified": true,
+          "timeJoined": 1791689153183,
+          "recipeId": "thirdparty",
+          "email": "emeka@gmail.example",
+          "thirdParty": {
+            "id": "google",
+            "userId": "108234567890123456789"
+          }
+        }
+      ]
+    }
+  ]
+}

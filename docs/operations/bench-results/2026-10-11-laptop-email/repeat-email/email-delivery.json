@@ -1,0 +1,112 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "email-delivery",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T13:02:22.844539Z",
+  "duration_s": 60.000479584,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 918,
+  "outcomes": {
+    "ok": 918
+  },
+  "throughput_per_s": 15.299877707057496,
+  "latency_ms": {
+    "mean": 2065.2965751633988,
+    "p50": 2031.616,
+    "p90": 3145.728,
+    "p99": 4456.448,
+    "p999": 4508.494,
+    "max": 4508.494
+  },
+  "histogram": [
+    {
+      "le_ms": 1015.808,
+      "count": 57
+    },
+    {
+      "le_ms": 1048.576,
+      "count": 142
+    },
+    {
+      "le_ms": 1114.112,
+      "count": 32
+    },
+    {
+      "le_ms": 1179.648,
+      "count": 39
+    },
+    {
+      "le_ms": 1900.544,
+      "count": 13
+    },
+    {
+      "le_ms": 1966.08,
+      "count": 139
+    },
+    {
+      "le_ms": 2031.616,
+      "count": 161
+    },
+    {
+      "le_ms": 2097.152,
+      "count": 71
+    },
+    {
+      "le_ms": 2228.224,
+      "count": 8
+    },
+    {
+      "le_ms": 2490.368,
+      "count": 2
+    },
+    {
+      "le_ms": 2621.44,
+      "count": 16
+    },
+    {
+      "le_ms": 2883.584,
+      "count": 1
+    },
+    {
+      "le_ms": 3014.656,
+      "count": 125
+    },
+    {
+      "le_ms": 3145.728,
+      "count": 35
+    },
+    {
+      "le_ms": 3932.16,
+      "count": 32
+    },
+    {
+      "le_ms": 4063.232,
+      "count": 28
+    },
+    {
+      "le_ms": 4194.304,
+      "count": 3
+    },
+    {
+      "le_ms": 4456.448,
+      "count": 5
+    },
+    {
+      "le_ms": 4718.592,
+      "count": 9
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+    "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged"
+  ]
+}

@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+4400	206.0	0.047	4400	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+176	188.4	1.071	176	SELECT pg_advisory_xact_lock(hashtext($1))
+1	40.0	39.966	2356	UPDATE audit_events SET batch_id=$1 WHERE id = ANY($2)
+44	25.9	0.588	4400	SELECT seq, id, coalesce(realm_id,''), coalesce(organization_id,''), event_type, payload FROM outbox_events WHERE state='pending' ORDER BY seq LIMIT $1 FOR UPDATE SKIP LOCKED
+4400	13.4	0.003	0	SELECT id, event_types, payload_form, event_version FROM webhook_subscriptions WHERE realm_id=$1 AND state='active' AND (organization_id IS NULL OR organization_id=$2)
+2	6.2	3.095	2356	SELECT seq, id, content_hash FROM audit_events WHERE batch_id IS NULL AND recorded_at < now() - interval $2 ORDER BY seq LIMIT $1
+1466	5.9	0.004	0	SELECT w.id, w.name, w.published_by_id, r.number, r.definition_hash, r.definition FROM workflows w JOIN workflow_revisions r ON r.workflow_id=w.id AND r.number=w.active_revision WHERE w.state='active'
+1466	5.4	0.004	0	SELECT id, realm_id, coalesce(organization_id,''), name, kind, state, config, role_ceiling_ids, group_role_mappings, coalesce(default_role_id,''), secret_ciphertext, secret_set_at, last_sync_at, last_
+2	3.8	1.899	0	SELECT id, realm_id, organization_id, user_id FROM memberships WHERE state=$2 AND expires_at IS NOT NULL AND expires_at <= $1 LIMIT $3
+2	3.3	1.643	0	SELECT id, realm_id FROM role_assignments WHERE expires_at IS NOT NULL AND expires_at <= $1 LIMIT $2
+176	3.2	0.018	0	UPDATE jobs SET state='running', lease_owner=$1, lease_expires_at=$2, attempts=attempts+1, updated_at=$3 WHERE id = (SELECT id FROM jobs j WHERE type = ANY($4) AND ((state='queued' AND run_after <= $3
+32	2.4	0.075	32	SELECT kid, algorithm, public_jwk, private_ciphertext, state, publish_until FROM signing_keys WHERE realm_id=$1 AND purpose=$2 AND state <> $3

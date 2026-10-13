@@ -1,0 +1,14 @@
+# Dependency pins are updated through reviewed pull requests (DEP-003, SEC-016):
+# Go modules, GitHub Actions and container base images. Language SDKs
+# own their dependency update rules in their standalone repositories.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule: {interval: weekly}
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: {interval: weekly}
+  - package-ecosystem: docker
+    directory: /
+    schedule: {interval: weekly}

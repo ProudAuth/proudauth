@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/user.merged.v2.json",
+  "title": "user.merged (v2)",
+  "description": "Two accounts were merged after both owners confirmed and an administrator executed the reviewed plan (USR-011). merged_user_id no longer exists; applications should remap data keyed by it to user_id. GET /subject-aliases/{id} resolves the alias later.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v2.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "user.merged"
+    },
+    "event_version": {
+      "const": 2
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data (identifiers only).",
+      "required": [
+        "user_id",
+        "merged_user_id"
+      ],
+      "properties": {
+        "user_id": {
+          "$ref": "envelope.v2.json#/$defs/user_id",
+          "description": "The surviving account."
+        },
+        "merged_user_id": {
+          "$ref": "envelope.v2.json#/$defs/user_id",
+          "description": "The account merged away (now an alias)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "organization_id": {
+      "description": "Never set for this event type."
+    }
+  },
+  "x-event-type": "user.merged",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/authentication/merge.go: (*Service).ExecuteMerge"
+  ],
+  "x-org-scoped": "never",
+  "examples": [
+    {
+      "event_id": "obx_01jbjxmbk5858jc2errhktdwwg",
+      "event_type": "user.merged",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "merged_user_id": "usr_01jb4rsd73q99h2e30n9ak6n8e"
+      }
+    }
+  ]
+}

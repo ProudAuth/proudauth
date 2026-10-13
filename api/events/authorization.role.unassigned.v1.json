@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/authorization.role.unassigned.v1.json",
+  "title": "authorization.role.unassigned (v1)",
+  "description": "A role assignment was removed. Emitted when a role assignment is removed through the administration API, when ownership transfer releases the previous owner's role, or when the worker removes an expired time-bound assignment. Not emitted for assignments deleted as a side effect of membership removal, service principal deletion or user deletion. org_id is set for organization-scoped assignments. The assignment identifier is not included.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "authorization.role.unassigned"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "subject_id",
+        "role_id"
+      ],
+      "properties": {
+        "subject_id": {
+          "$ref": "envelope.v1.json#/$defs/role_subject_id"
+        },
+        "role_id": {
+          "$ref": "envelope.v1.json#/$defs/role_id",
+          "description": "The role that was removed."
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Set only when the event is bound to an organization (see description)."
+    }
+  },
+  "x-event-type": "authorization.role.unassigned",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/authorization/rbac.go: (*Service).UnassignTx"
+  ],
+  "x-org-scoped": "optional",
+  "examples": [
+    {
+      "event_id": "obx_01jb0tt1ktrrddf2qj6ngfegyd",
+      "event_type": "authorization.role.unassigned",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "org_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "subject_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "role_id": "rol_01jb2k96nwbdvh1dq1hy8d8mzw"
+      }
+    }
+  ]
+}

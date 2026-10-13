@@ -1,0 +1,15 @@
+# ProudAuth Kubernetes base (DEP-013). Kubernetes is optional: the same binaries
+# run under Compose or systemd. Apply an overlay, not the base directly.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: proudauth
+    includeSelectors: false
+resources:
+  - serviceaccount.yaml
+  - migrate-job.yaml
+  - server.yaml
+  - worker.yaml
+  - pdb.yaml
+  - networkpolicy.yaml

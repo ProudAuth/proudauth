@@ -1,0 +1,81 @@
+{
+  "buildx.build.provenance": {
+    "builder": {
+      "id": ""
+    },
+    "buildType": "https://mobyproject.org/buildkit@v1",
+    "materials": [
+      {
+        "uri": "pkg:docker/docker/dockerfile@1?digest=sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e\u0026platform=linux%2Farm64",
+        "digest": {
+          "sha256": "4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e"
+        }
+      },
+      {
+        "uri": "pkg:docker/docker/dockerfile@1?digest=sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e",
+        "digest": {
+          "sha256": "4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e"
+        }
+      },
+      {
+        "uri": "pkg:docker/golang@1.27.2-trixie?digest=sha256:e58d6f83b3416618d8bcac2b3dde1b7f7e3c4a77d25e88637f8bbae81536c48d\u0026platform=linux%2Farm64",
+        "digest": {
+          "sha256": "e58d6f83b3416618d8bcac2b3dde1b7f7e3c4a77d25e88637f8bbae81536c48d"
+        }
+      },
+      {
+        "uri": "pkg:docker/gcr.io/distroless/static-debian12@nonroot?digest=sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab\u0026platform=linux%2Farm64",
+        "digest": {
+          "sha256": "afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab"
+        }
+      }
+    ],
+    "invocation": {
+      "configSource": {
+        "entryPoint": "Dockerfile"
+      },
+      "parameters": {
+        "frontend": "gateway.v0",
+        "args": {
+          "build-arg:VERSION": "dev-check-20261013-9e46df90789bcd6d",
+          "cmdline": "docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e",
+          "source": "docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e"
+        },
+        "locals": [
+          {
+            "name": "context"
+          },
+          {
+            "name": "dockerfile"
+          }
+        ],
+        "root": {
+          "configSource": {
+            "path": "Dockerfile"
+          },
+          "request": {
+            "args": {
+              "build-arg:VERSION": "dev-check-20261013-9e46df90789bcd6d",
+              "vcs:localdir:context": ".",
+              "vcs:localdir:dockerfile": ".",
+              "vcs:revision": "f2c4ef68b08af7669b50aae24a1c7b4e7c4b8fad",
+              "vcs:source": "https://github.com/mohamadalghanem474/ProudAuth.git"
+            }
+          }
+        },
+        "compatibilityVersion": 30
+      },
+      "environment": {
+        "platform": "linux/arm64"
+      }
+    }
+  },
+  "buildx.build.ref": "desktop-linux/desktop-linux/vrd20qsc04zsrhcxd42hf8yq2",
+  "containerimage.descriptor": {
+    "mediaType": "application/vnd.oci.image.index.v1+json",
+    "digest": "sha256:c8054fe9146af0db77b4523b2dd9c81a1f09b8ce051b76851f4152cc4c34f8ce",
+    "size": 856
+  },
+  "containerimage.digest": "sha256:c8054fe9146af0db77b4523b2dd9c81a1f09b8ce051b76851f4152cc4c34f8ce",
+  "image.name": "docker.io/library/pa-bench-release-26562:dev-check-20261013-9e46df90789bcd6d"
+}

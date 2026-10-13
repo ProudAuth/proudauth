@@ -1,0 +1,287 @@
+{
+  "benchmark_tool": {
+    "complete_scenario_count": 24,
+    "complete_smoke_after": {
+      "case_elapsed_seconds": {
+        "TestBenchSuiteSmoke": [
+          43.83
+        ]
+      },
+      "exit_code": 0,
+      "failed_tests": [],
+      "package_elapsed_seconds": 48.164,
+      "passed_subtests": 0,
+      "passed_top_tests": 1
+    },
+    "correction": "Read nested meta.version/location from the JSON meta object, not the top-level string accessor; live fixture and unit tests cover it.",
+    "initial_smoke": {
+      "case_elapsed_seconds": {},
+      "exit_code": 1,
+      "failed_tests": [
+        "TestBenchSuiteSmoke"
+      ],
+      "package_elapsed_seconds": 22.098,
+      "passed_subtests": 0,
+      "passed_top_tests": 0
+    },
+    "live_fixture_after": {
+      "case_elapsed_seconds": {
+        "TestBenchComplexGroupFilterLiveFixtures": [
+          3.03
+        ]
+      },
+      "exit_code": 0,
+      "failed_tests": [],
+      "package_elapsed_seconds": 4.713,
+      "passed_subtests": 0,
+      "passed_top_tests": 1
+    },
+    "nested_metadata_regression_before": {
+      "case_elapsed_seconds": {},
+      "exit_code": 1,
+      "failed_tests": [
+        "TestBenchComplexGroupFilterLiveFixtures"
+      ],
+      "package_elapsed_seconds": 3.037,
+      "passed_subtests": 0,
+      "passed_top_tests": 0
+    }
+  },
+  "cleanup": {
+    "dedicated_correctness_containers": "removed by traps",
+    "private_logs": "not published; removed after final verification"
+  },
+  "correction": "Batch connector/org/realm-qualified metadata; stream database-ordered members; retain one raw member collection and only the requested page; reject read failures without partial results. Single-resource reads retain the same scoped membership data and content-derived ETags.",
+  "date": "2026-10-12",
+  "environment": {
+    "cpu": "Apple M4 Pro",
+    "go": "go1.27.1 darwin/arm64",
+    "harness": "development; Argon2 8 MiB/one pass, RSA-2048, no auth timing floor; local sinks; copied configuration; private credentials not published",
+    "listen_binding": "127.0.0.1",
+    "logical_cpus": 12,
+    "machine_model": "Mac16,8",
+    "max_connections": 120,
+    "memory_bytes": 25769803776,
+    "memory_limit_bytes": 3221225472,
+    "os": "macOS 27.0.1 (26A434)",
+    "postgresql": "18.6",
+    "shared_buffers": "128MB",
+    "targeted_port": 52203,
+    "tmpfs_bytes": 2147483648
+  },
+  "full": {
+    "status": "not yet rerun on this source build"
+  },
+  "kind": "scim-group-query-work-and-scan-boundary",
+  "limits": [
+    "Correctness/query-work checks; not throughput or production capacity.",
+    "One laptop, independent isolated PostgreSQL databases; no multi-machine failures.",
+    "The targeted backend command ran before the benchmark-only nested metadata correction; backend source files are unchanged, and the final smoke uses the corrected tool.",
+    "Capacity artifacts retain their measured source/build hashes."
+  ],
+  "pre_fix": {
+    "case_elapsed_seconds": {},
+    "exit_code": 1,
+    "failed_tests": [
+      "TestSCIMGroupListsBoundDatabaseRoundTrips"
+    ],
+    "package_elapsed_seconds": 2.583,
+    "passed_subtests": 0,
+    "passed_top_tests": 0
+  },
+  "round_trips_after": {
+    "64_groups": 3,
+    "8_groups": 3,
+    "executions_per_mode": 3,
+    "member_projection_modes": [
+      true,
+      false
+    ]
+  },
+  "round_trips_before": {
+    "64_groups": 129,
+    "8_groups": 17,
+    "member_projection_modes": [
+      true,
+      false
+    ]
+  },
+  "scan_boundary": {
+    "broad_and_compound_outcome": "400 tooMany; no resources or partial total",
+    "concurrent_indexed_successes_per_execution": 16,
+    "concurrent_refusals_per_execution": 16,
+    "exact_scan_cardinality": 20000,
+    "exact_total": 20000,
+    "executions_per_type": 3,
+    "fixture_setup": "direct SQL in isolated databases; not API setup throughput; no rate counter reset",
+    "indexed_attributes": {
+      "Group": [
+        "id",
+        "externalId",
+        "displayName"
+      ],
+      "User": [
+        "id",
+        "externalId",
+        "userName"
+      ]
+    },
+    "page_request": 1000,
+    "page_returned": 200,
+    "per_type_concurrency": 32,
+    "refusal_cardinality": 20001,
+    "types": [
+      "User",
+      "Group"
+    ]
+  },
+  "source": {
+    "frozen_files_sha256": {
+      "internal/bench/filter.go": "090e0273f60dcf277f4d9375ea5faf5d0ce84ff3f7f29376a22177a0f0e19e5b",
+      "internal/bench/group_filter_test.go": "b85347bf7f12c3e8c9c875fb614c789edb7e9c29bc8f7a46300a0a9da916220a",
+      "internal/bench/scenarios.go": "88b90b7405f9efb728579c152dc2545f8785db43588345c5266024bbd2c57b8c",
+      "internal/provisioning/group_scan.go": "4e90b43a7d900dbe35765aed26525a9b55a584a3eb73d917cd6048d039b09d9d",
+      "internal/provisioning/groups.go": "c2893c0c109722d1e76f6372a30205d2207a8fd5987edc898c0fedcaa836aa42",
+      "scripts/bench-local.sh": "9e1592e7710f8aa80568e4b6ad8a0861a64cc2adb1ec0d5c5b2fa38827d7c079",
+      "tests/contract/traceability_test.go": "a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6",
+      "tests/e2e/bench_group_filter_test.go": "e2e78cdafb980968dfb560108cba6a92dac357ef657378944971985a741b4576",
+      "tests/e2e/bench_test.go": "44afb7554941cd1fde876efd52d88afd8ec613e3f9610dde5a4ee6c6bbda84a1",
+      "tests/e2e/scim_group_list_work_test.go": "4fa69647dc1eeb88aaeb0463ef387353f17650d89a3d7a0d860d846f1899137b",
+      "tests/e2e/scim_scan_boundary_test.go": "ef837be71b60429f8633afc2f777f729193060636cd278c91f0d071bcda693b6"
+    },
+    "git_commit": null,
+    "production_digest": "cb89a7606b47c21d"
+  },
+  "verification": {
+    "contract": {
+      "command": "go test -json -race -count=1 -timeout=3m ./tests/contract",
+      "exit_code": 0,
+      "failed_tests": [],
+      "package_elapsed_seconds": 28.439,
+      "passed_tests": 36,
+      "skipped_tests": 0
+    },
+    "formatting": "pass",
+    "license_check": "pass",
+    "measurement_wrapper": "reserved zsh status variable failed only in external completion bookkeeping; all measurement JSON complete, passing summary preserved and own cleanup independently verified; no automatic rerun",
+    "protected_traceability_test_sha256": "a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6",
+    "secret_scan": "pass",
+    "traceability_rows_refreshed": [
+      "PROV-002",
+      "PROV-004",
+      "PROV-008",
+      "NFR-004",
+      "NFR-006",
+      "NFR-008"
+    ],
+    "unit_race": {
+      "command": "go test -race -count=1 ./internal/bench ./internal/provisioning",
+      "exit_code": 0,
+      "package_elapsed_seconds": {
+        "internal/bench": 14.466,
+        "internal/provisioning": 4.115
+      }
+    },
+    "vet": "pass"
+  },
+  "targeted_backend": {
+    "case_elapsed_seconds": {
+      "TestGroupDeletionReleasesConnectorExternalID": [
+        1.24,
+        1.17,
+        1.16
+      ],
+      "TestReplicaSCIMGroupConditionalStress": [
+        1.82,
+        1.79,
+        1.75
+      ],
+      "TestReplicaSCIMGroupMembershipStress": [
+        5.66,
+        5.84,
+        5.63
+      ],
+      "TestReplicaSCIMGroupMembershipStress/admin-first": [
+        1.89,
+        1.99,
+        1.9
+      ],
+      "TestReplicaSCIMGroupMembershipStress/concurrent": [
+        1.87,
+        1.84,
+        1.81
+      ],
+      "TestReplicaSCIMGroupMembershipStress/scim-first": [
+        1.9,
+        2.01,
+        1.92
+      ],
+      "TestSCIMGroupListsBoundDatabaseRoundTrips": [
+        1.63,
+        1.64,
+        1.62
+      ],
+      "TestSCIMListsBoundDatabaseRoundTrips": [
+        1.94,
+        2.04,
+        1.99
+      ],
+      "TestSCIMProvisioning": [
+        1.49,
+        1.39,
+        1.44
+      ],
+      "TestSCIMReadFailuresDoNotBecomePartialLists": [
+        2.34,
+        2.29,
+        2.25
+      ],
+      "TestSCIMReadFailuresDoNotBecomePartialLists/group_memberships": [
+        0.23,
+        0.24,
+        0.23
+      ],
+      "TestSCIMReadFailuresDoNotBecomePartialLists/groups": [
+        0.23,
+        0.22,
+        0.22
+      ],
+      "TestSCIMReadFailuresDoNotBecomePartialLists/memberships": [
+        0.24,
+        0.22,
+        0.23
+      ],
+      "TestSCIMReadFailuresDoNotBecomePartialLists/user_identifiers": [
+        0.23,
+        0.22,
+        0.23
+      ],
+      "TestSCIMReadFailuresDoNotBecomePartialLists/users": [
+        0.22,
+        0.22,
+        0.22
+      ],
+      "TestSCIMScanBoundaryPreservesExactAndIndexedResults": [
+        6.16,
+        6.23,
+        6.25
+      ],
+      "TestSCIMScanBoundaryPreservesExactAndIndexedResults/Group": [
+        2.48,
+        2.51,
+        2.53
+      ],
+      "TestSCIMScanBoundaryPreservesExactAndIndexedResults/User": [
+        3.68,
+        3.72,
+        3.71
+      ]
+    },
+    "command": "go test -json -race -count=3 -failfast -timeout=5m ./tests/e2e -run '^(TestSCIMGroupListsBoundDatabaseRoundTrips|TestSCIMListsBoundDatabaseRoundTrips|TestSCIMReadFailuresDoNotBecomePartialLists|TestSCIMProvisioning|TestReplicaSCIMGroupConditionalStress|TestReplicaSCIMGroupMembershipStress|TestSCIMScanBoundaryPreservesExactAndIndexedResults|TestGroupDeletionReleasesConnectorExternalID)$'",
+    "exit_code": 0,
+    "failed_tests": [],
+    "package_elapsed_seconds": 71.106,
+    "passed_subtests": 30,
+    "passed_top_tests": 24
+  }
+}

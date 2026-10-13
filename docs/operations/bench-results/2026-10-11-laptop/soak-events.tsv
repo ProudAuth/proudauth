@@ -1,0 +1,10 @@
+utc	event
+2026-10-11T09:46:48Z	soak run of mixed started (preparation and warm-up first; prepared tokens expire after 300 s unless renewed)
+2026-10-11T09:48:49Z	planned signing-key rotation requested: HTTP 201 (new key published now, activated by the worker after keys.prepublish_period 2m)
+2026-10-11T09:52:29Z	VACUUM (ANALYZE) started
+2026-10-11T09:52:32Z	VACUUM (ANALYZE) finished
+2026-10-11T09:53:32Z	pg_dump (custom format, to /dev/null) started
+2026-10-11T09:54:37Z	pg_dump finished
+2026-10-11T09:56:56Z	soak run ended
+2026-10-11T09:29:33Z	signing key rs256-20261011-37cbcb373287498f (RS256) created; state retiring, activated 2026-10-11T09:29:33Z
+2026-10-11T09:48:49Z	signing key rs256-20261011-cc88745a6011c107 (RS256) created; state active, activated 2026-10-11T09:51:07Z

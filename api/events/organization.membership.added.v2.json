@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/organization.membership.added.v2.json",
+  "title": "organization.membership.added (v2)",
+  "description": "A user became an active member of an organization. Emitted when an administrator adds an existing user to an organization, or when a user accepts an invitation (also when an existing active member accepts a further invitation; membership_id is then the existing membership). Not emitted for the creator's membership at organization creation, for approved join requests, or for memberships created by import jobs.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v2.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "organization.membership.added"
+    },
+    "event_version": {
+      "const": 2
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. Minimal payload form (the subscription default) omits: source. Standard form contains every listed member that applies.",
+      "required": [
+        "user_id",
+        "membership_id"
+      ],
+      "properties": {
+        "user_id": {
+          "$ref": "envelope.v2.json#/$defs/user_id",
+          "description": "The member."
+        },
+        "membership_id": {
+          "$ref": "envelope.v2.json#/$defs/membership_id",
+          "description": "The membership."
+        },
+        "source": {
+          "type": "string",
+          "const": "invitation",
+          "description": "Present (value \"invitation\") only when the membership resulted from accepting an invitation; absent for administrator additions. Standard payload form only: removed in the minimal form.",
+          "x-payload-form": "standard"
+        }
+      },
+      "additionalProperties": false
+    },
+    "organization_id": {
+      "description": "Always set for this event type."
+    }
+  },
+  "required": [
+    "organization_id"
+  ],
+  "x-event-type": "organization.membership.added",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/organization/organization.go: (*Service).AddMember",
+    "internal/organization/invitations.go: (*Service).AcceptTx"
+  ],
+  "x-org-scoped": "always",
+  "examples": [
+    {
+      "event_id": "obx_01jbxd7zp17z3kcswc3jj4m6np",
+      "event_type": "organization.membership.added",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "membership_id": "mem_01jbadj9t141gzfk8s7x1yyg4j",
+        "source": "invitation"
+      }
+    },
+    {
+      "event_id": "obx_01jbxd7zp17z3kcswc3jj4m6np",
+      "event_type": "organization.membership.added",
+      "event_version": 2,
+      "payload_form": "minimal",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "membership_id": "mem_01jbadj9t141gzfk8s7x1yyg4j"
+      }
+    }
+  ]
+}

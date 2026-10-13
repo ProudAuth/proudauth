@@ -1,0 +1,63 @@
+# Production configuration template. Every secret is a reference; nothing secret
+# belongs in this file or in the image (DEP-006). Validate with:
+#   identity-cli doctor -config /etc/proudauth/config.yaml
+mode: production
+server:
+  public_listen: ":8080"
+  internal_listen: "10.0.0.5:9090"        # private interface only
+  public_origin: "https://id.example.com" # canonical issuer base; never taken from Host headers
+  trusted_proxies: ["10.0.0.0/24"]        # forwarded headers trusted only from these (SEC-001)
+  shutdown_deadline: 20s
+  metrics_token: "file:/run/secrets/metrics_token"
+identity:
+  default_realm: main
+storage:
+  database_url: "file:/run/secrets/database_url"
+  max_conns: 40
+  statement_timeout: 10s
+keys:
+  root_keys:
+    - version: 2
+      ref: "file:/run/secrets/root_key_v2"
+    - version: 1
+      ref: "file:/run/secrets/root_key_v1"   # kept for decrypting older ciphertext during rotation
+  active_version: 2
+  pepper_keys:                               # optional, separately custodied (CRED-009)
+    - version: 1
+      ref: "file:/run/secrets/password_pepper"
+  signing_algorithm: RS256
+  rotation_interval: 2160h
+  prepublish_period: 48h
+  retirement_period: 168h
+sessions:
+  idle_timeout: 30m
+  absolute_timeout: 12h
+  cookie_same_site: lax
+tokens:
+  access_token_ttl: 5m
+  authorization_code_ttl: 60s
+  clock_skew: 30s
+security:
+  password:
+    min_length: 15
+    argon_memory_kib: 65536
+    argon_time: 3
+    argon_threads: 2
+    blocklist_file: /etc/proudauth/breached-passwords.txt
+  admin_mfa_max_age: 5m
+impersonation:
+  enabled: false        # enable only after a resource implements the support contract (IMP-001)
+  max_ttl: 5m
+  require_ticket: true
+delivery:
+  email:
+    adapter: smtp
+    smtp_host: smtp.example.com
+    smtp_port: 587
+    smtp_tls: starttls
+    smtp_username: proudauth
+    smtp_password: "file:/run/secrets/smtp_password"
+    from: "no-reply@example.com"
+privacy:
+  telemetry_opt_in: false   # no third-party telemetry exists (OSS-006)
+  audit_retention: 9600h

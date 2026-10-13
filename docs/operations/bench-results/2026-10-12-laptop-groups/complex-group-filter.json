@@ -1,0 +1,402 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "complex-group-filter",
+  "target": "http://127.0.0.1:56512",
+  "started_at": "2026-10-12T19:48:39.203887Z",
+  "duration_s": 60.000239625,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 222321,
+  "outcomes": {
+    "bounded_false": 476,
+    "bounded_true": 475,
+    "invalid_filter_bytes": 475,
+    "invalid_filter_nodes": 475,
+    "rate_limited": 220420
+  },
+  "throughput_per_s": 3705.335201817538,
+  "latency_ms": {
+    "mean": 8.634747590196158,
+    "p50": 6.912,
+    "p90": 15.36,
+    "p99": 29.696,
+    "p999": 69.632,
+    "max": 103.812
+  },
+  "histogram": [
+    {
+      "le_ms": 3.2,
+      "count": 7
+    },
+    {
+      "le_ms": 3.328,
+      "count": 28
+    },
+    {
+      "le_ms": 3.456,
+      "count": 95
+    },
+    {
+      "le_ms": 3.584,
+      "count": 339
+    },
+    {
+      "le_ms": 3.712,
+      "count": 1023
+    },
+    {
+      "le_ms": 3.84,
+      "count": 2242
+    },
+    {
+      "le_ms": 3.968,
+      "count": 4018
+    },
+    {
+      "le_ms": 4.096,
+      "count": 6097
+    },
+    {
+      "le_ms": 4.352,
+      "count": 15126
+    },
+    {
+      "le_ms": 4.608,
+      "count": 13456
+    },
+    {
+      "le_ms": 4.864,
+      "count": 10839
+    },
+    {
+      "le_ms": 5.12,
+      "count": 9277
+    },
+    {
+      "le_ms": 5.376,
+      "count": 8465
+    },
+    {
+      "le_ms": 5.632,
+      "count": 7998
+    },
+    {
+      "le_ms": 5.888,
+      "count": 7507
+    },
+    {
+      "le_ms": 6.144,
+      "count": 7158
+    },
+    {
+      "le_ms": 6.4,
+      "count": 6677
+    },
+    {
+      "le_ms": 6.656,
+      "count": 6363
+    },
+    {
+      "le_ms": 6.912,
+      "count": 5923
+    },
+    {
+      "le_ms": 7.168,
+      "count": 5605
+    },
+    {
+      "le_ms": 7.424,
+      "count": 5356
+    },
+    {
+      "le_ms": 7.68,
+      "count": 5104
+    },
+    {
+      "le_ms": 7.936,
+      "count": 4727
+    },
+    {
+      "le_ms": 8.192,
+      "count": 4493
+    },
+    {
+      "le_ms": 8.704,
+      "count": 8463
+    },
+    {
+      "le_ms": 9.216,
+      "count": 7568
+    },
+    {
+      "le_ms": 9.728,
+      "count": 6641
+    },
+    {
+      "le_ms": 10.24,
+      "count": 6073
+    },
+    {
+      "le_ms": 10.752,
+      "count": 5415
+    },
+    {
+      "le_ms": 11.264,
+      "count": 4882
+    },
+    {
+      "le_ms": 11.776,
+      "count": 4405
+    },
+    {
+      "le_ms": 12.288,
+      "count": 3983
+    },
+    {
+      "le_ms": 12.8,
+      "count": 3543
+    },
+    {
+      "le_ms": 13.312,
+      "count": 3165
+    },
+    {
+      "le_ms": 13.824,
+      "count": 2824
+    },
+    {
+      "le_ms": 14.336,
+      "count": 2593
+    },
+    {
+      "le_ms": 14.848,
+      "count": 2330
+    },
+    {
+      "le_ms": 15.36,
+      "count": 2057
+    },
+    {
+      "le_ms": 15.872,
+      "count": 1851
+    },
+    {
+      "le_ms": 16.384,
+      "count": 1708
+    },
+    {
+      "le_ms": 17.408,
+      "count": 2861
+    },
+    {
+      "le_ms": 18.432,
+      "count": 2334
+    },
+    {
+      "le_ms": 19.456,
+      "count": 1948
+    },
+    {
+      "le_ms": 20.48,
+      "count": 1616
+    },
+    {
+      "le_ms": 21.504,
+      "count": 1305
+    },
+    {
+      "le_ms": 22.528,
+      "count": 1106
+    },
+    {
+      "le_ms": 23.552,
+      "count": 931
+    },
+    {
+      "le_ms": 24.576,
+      "count": 726
+    },
+    {
+      "le_ms": 25.6,
+      "count": 607
+    },
+    {
+      "le_ms": 26.624,
+      "count": 456
+    },
+    {
+      "le_ms": 27.648,
+      "count": 392
+    },
+    {
+      "le_ms": 28.672,
+      "count": 317
+    },
+    {
+      "le_ms": 29.696,
+      "count": 287
+    },
+    {
+      "le_ms": 30.72,
+      "count": 221
+    },
+    {
+      "le_ms": 31.744,
+      "count": 182
+    },
+    {
+      "le_ms": 32.768,
+      "count": 123
+    },
+    {
+      "le_ms": 34.816,
+      "count": 194
+    },
+    {
+      "le_ms": 36.864,
+      "count": 126
+    },
+    {
+      "le_ms": 38.912,
+      "count": 89
+    },
+    {
+      "le_ms": 40.96,
+      "count": 39
+    },
+    {
+      "le_ms": 43.008,
+      "count": 31
+    },
+    {
+      "le_ms": 45.056,
+      "count": 16
+    },
+    {
+      "le_ms": 47.104,
+      "count": 19
+    },
+    {
+      "le_ms": 49.152,
+      "count": 19
+    },
+    {
+      "le_ms": 51.2,
+      "count": 17
+    },
+    {
+      "le_ms": 53.248,
+      "count": 11
+    },
+    {
+      "le_ms": 55.296,
+      "count": 47
+    },
+    {
+      "le_ms": 57.344,
+      "count": 76
+    },
+    {
+      "le_ms": 59.392,
+      "count": 108
+    },
+    {
+      "le_ms": 61.44,
+      "count": 113
+    },
+    {
+      "le_ms": 63.488,
+      "count": 139
+    },
+    {
+      "le_ms": 65.536,
+      "count": 112
+    },
+    {
+      "le_ms": 69.632,
+      "count": 157
+    },
+    {
+      "le_ms": 73.728,
+      "count": 101
+    },
+    {
+      "le_ms": 77.824,
+      "count": 40
+    },
+    {
+      "le_ms": 81.92,
+      "count": 16
+    },
+    {
+      "le_ms": 86.016,
+      "count": 3
+    },
+    {
+      "le_ms": 90.112,
+      "count": 5
+    },
+    {
+      "le_ms": 94.208,
+      "count": 3
+    },
+    {
+      "le_ms": 98.304,
+      "count": 3
+    },
+    {
+      "le_ms": 106.496,
+      "count": 1
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "warm-up used benign discovery requests only, so warm-up did not consume the measured attack budgets; scenario notes describe any fixture preparation budget use",
+    "one additional isolated connector with 500 owned Groups, matching seed.spec.organizations, and 1000 owned Users matching seed.spec.large_group_members; one Group has every owned member and each other Group has one; public-API setup took 101.496s and is unmeasured",
+    "fixture writes start at least 65ms apart under the unchanged 1200/minute connector budget; preparation consumes that budget without a reset or raised limit",
+    "64-node filters require member presence and the exact hit/miss display-name prefix; alternate 65-node and 1025-byte refusals; pages must retain exact totals, owned data, ETags and members, including when members are excluded",
+    "unpaced cohosted measurement includes budget refusals and is not successful-query capacity; connector and fixture authority stay private and are cleared on close"
+  ],
+  "observations": {
+    "after": {
+      "connector_budget_per_minute": 1200,
+      "fixture_groups_confirmed": 500,
+      "large_group_members": 1000,
+      "managed_groups": 500,
+      "managed_member_users": 1000,
+      "overflow_filter_bytes": 1025,
+      "overflow_filter_nodes": 65,
+      "prepared_seconds": 101.495977541,
+      "requested_page_size": 1000,
+      "required_max_page_size": 200,
+      "scope": "one connector; additional owned Groups and Users; no connector authority or fixture IDs published",
+      "subject_connectors": 1,
+      "total_group_member_links": 1499,
+      "valid_filter_nodes": 64
+    },
+    "before": {
+      "connector_budget_per_minute": 1200,
+      "fixture_groups_confirmed": 500,
+      "large_group_members": 1000,
+      "managed_groups": 500,
+      "managed_member_users": 1000,
+      "overflow_filter_bytes": 1025,
+      "overflow_filter_nodes": 65,
+      "prepared_seconds": 101.495977541,
+      "requested_page_size": 1000,
+      "required_max_page_size": 200,
+      "scope": "one connector; additional owned Groups and Users; no connector authority or fixture IDs published",
+      "subject_connectors": 1,
+      "total_group_member_links": 1499,
+      "valid_filter_nodes": 64
+    }
+  },
+  "complete": true
+}

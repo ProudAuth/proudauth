@@ -1,0 +1,61 @@
+[
+  {
+    "scenario": "passkey-assertion",
+    "started": "2026-10-11T12:02:18Z",
+    "ended": "2026-10-11T12:02:19Z",
+    "verdict": "FAIL",
+    "error": "identity-bench: passkey registration options: status 404: {\"code\":\"feature_disabled\",\"detail\":\"the passkey relying party configuration is invalid\",\"request_id\":\"req_01m4ndfapr9ta1j5r3c1yz3g6n\",\"status\":404,\"title\":\"This capability is not enabled.\",\"type\":\"https://auth.proudbase.com/problems/feature_disabled\"}",
+    "cpu_seconds": {
+      "wall_s": 0.86,
+      "identity_server": 0.19,
+      "identity_worker": 0.05,
+      "postgres_container": 0.06,
+      "docker_vm_and_proxy": 0.5,
+      "identity_bench": 0.00
+    }
+  },
+  {
+    "scenario": "scim",
+    "started": "2026-10-11T12:02:19Z",
+    "ended": "2026-10-11T12:03:25Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 6352,
+    "throughput_per_s": 105.9,
+    "latency_ms": {
+      "mean": 301.41,
+      "p50": 311.3,
+      "p90": 393.22,
+      "p99": 442.37,
+      "p999": 458.75,
+      "max": 473.54
+    },
+    "outcomes": {
+      "ok": 6352
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 65.24,
+      "identity_server": 35.25,
+      "identity_worker": 0.64,
+      "postgres_container": 56.04,
+      "docker_vm_and_proxy": 223.73,
+      "identity_bench": 3.63
+    }
+  },
+  {
+    "scenario": "mixed-extended",
+    "started": "2026-10-11T12:03:25Z",
+    "ended": "2026-10-11T12:03:29Z",
+    "verdict": "FAIL",
+    "error": "identity-bench: passkey-assertion: passkey registration options: status 404: {\"code\":\"feature_disabled\",\"detail\":\"the passkey relying party configuration is invalid\",\"request_id\":\"req_01m4ndhezvre1ykxf4cwwa20wr\",\"status\":404,\"title\":\"This capability is not enabled.\",\"type\":\"https://auth.proudbase.com/problems/feature_disabled\"}",
+    "cpu_seconds": {
+      "wall_s": 3.99,
+      "identity_server": 1.35,
+      "identity_worker": 0.08,
+      "postgres_container": 0.27,
+      "docker_vm_and_proxy": 1.71,
+      "identity_bench": 0.00
+    }
+  }
+]

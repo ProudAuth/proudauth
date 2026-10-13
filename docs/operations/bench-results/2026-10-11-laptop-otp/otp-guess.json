@@ -1,0 +1,173 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "otp-guess",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T15:57:25.253651Z",
+  "duration_s": 60.000296417,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 87848,
+  "outcomes": {
+    "invalid_proof": 10,
+    "rate_limited": 87838
+  },
+  "throughput_per_s": 1464.1261001355629,
+  "latency_ms": {
+    "mean": 21.851329352973316,
+    "p50": 22.528,
+    "p90": 24.576,
+    "p99": 27.648,
+    "p999": 40.96,
+    "max": 57.535
+  },
+  "histogram": [
+    {
+      "le_ms": 16.384,
+      "count": 3
+    },
+    {
+      "le_ms": 17.408,
+      "count": 29
+    },
+    {
+      "le_ms": 18.432,
+      "count": 23
+    },
+    {
+      "le_ms": 19.456,
+      "count": 765
+    },
+    {
+      "le_ms": 20.48,
+      "count": 10826
+    },
+    {
+      "le_ms": 21.504,
+      "count": 30727
+    },
+    {
+      "le_ms": 22.528,
+      "count": 23800
+    },
+    {
+      "le_ms": 23.552,
+      "count": 12450
+    },
+    {
+      "le_ms": 24.576,
+      "count": 5394
+    },
+    {
+      "le_ms": 25.6,
+      "count": 1969
+    },
+    {
+      "le_ms": 26.624,
+      "count": 830
+    },
+    {
+      "le_ms": 27.648,
+      "count": 435
+    },
+    {
+      "le_ms": 28.672,
+      "count": 178
+    },
+    {
+      "le_ms": 29.696,
+      "count": 96
+    },
+    {
+      "le_ms": 30.72,
+      "count": 50
+    },
+    {
+      "le_ms": 31.744,
+      "count": 31
+    },
+    {
+      "le_ms": 32.768,
+      "count": 30
+    },
+    {
+      "le_ms": 34.816,
+      "count": 47
+    },
+    {
+      "le_ms": 36.864,
+      "count": 37
+    },
+    {
+      "le_ms": 38.912,
+      "count": 28
+    },
+    {
+      "le_ms": 40.96,
+      "count": 32
+    },
+    {
+      "le_ms": 43.008,
+      "count": 24
+    },
+    {
+      "le_ms": 45.056,
+      "count": 28
+    },
+    {
+      "le_ms": 47.104,
+      "count": 7
+    },
+    {
+      "le_ms": 49.152,
+      "count": 4
+    },
+    {
+      "le_ms": 51.2,
+      "count": 1
+    },
+    {
+      "le_ms": 53.248,
+      "count": 1
+    },
+    {
+      "le_ms": 55.296,
+      "count": 2
+    },
+    {
+      "le_ms": 59.392,
+      "count": 1
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "warm-up used benign discovery requests only, so the measured budgets started intact",
+    "one additional isolated account with a self-enrolled SHA1/6-digit/30s TOTP factor; 8 prepared MFA transactions share its unchanged proof budget; setup is unmeasured",
+    "each operation submits a well-formed wrong TOTP; codes accepted in the five neighboring steps on each side of the load host's clock are excluded (server clock within 60s, request deadline 30s, supported skew <=2 steps)",
+    "failed transactions are retired only after their authenticated state proves too_many_failures; no new password sign-in is performed while measuring; run before the prepared transactions' expiry",
+    "warm-up uses benign discovery only; secret and continuation authority stay in memory and are cleared at close; covers TOTP guessing, not email/SMS challenge codes or HOTP"
+  ],
+  "observations": {
+    "after": {
+      "excluded_steps_each_side": 5,
+      "prepared_transactions": 8,
+      "retired_transactions": 0,
+      "scope": "TOTP SHA1/6 digits/30 seconds; subject and transaction budgets unchanged; no secrets or guesses retained",
+      "subject_accounts": 1
+    },
+    "before": {
+      "excluded_steps_each_side": 5,
+      "prepared_transactions": 8,
+      "retired_transactions": 0,
+      "scope": "TOTP SHA1/6 digits/30 seconds; subject and transaction budgets unchanged; no secrets or guesses retained",
+      "subject_accounts": 1
+    }
+  },
+  "complete": true
+}

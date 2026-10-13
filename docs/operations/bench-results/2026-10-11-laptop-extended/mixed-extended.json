@@ -1,0 +1,432 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "mixed-extended",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T12:18:41.228877Z",
+  "duration_s": 60.000303834,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 24562,
+  "outcomes": {
+    "audit-query:ok": 1214,
+    "client-credentials:ok": 7237,
+    "import:ok": 1254,
+    "introspection:ok": 4951,
+    "passkey-assertion:ok": 1206,
+    "password-login:ok": 1235,
+    "policy:ok": 3780,
+    "refresh:ok": 2468,
+    "scim:ok": 1217
+  },
+  "throughput_per_s": 409.3645936853007,
+  "latency_ms": {
+    "mean": 78.01754661672503,
+    "p50": 45.056,
+    "p90": 172.032,
+    "p99": 442.368,
+    "p999": 475.136,
+    "max": 509.653
+  },
+  "histogram": [
+    {
+      "le_ms": 8.704,
+      "count": 1
+    },
+    {
+      "le_ms": 9.216,
+      "count": 3
+    },
+    {
+      "le_ms": 9.728,
+      "count": 6
+    },
+    {
+      "le_ms": 10.24,
+      "count": 3
+    },
+    {
+      "le_ms": 10.752,
+      "count": 6
+    },
+    {
+      "le_ms": 11.264,
+      "count": 2
+    },
+    {
+      "le_ms": 11.776,
+      "count": 3
+    },
+    {
+      "le_ms": 12.288,
+      "count": 9
+    },
+    {
+      "le_ms": 12.8,
+      "count": 8
+    },
+    {
+      "le_ms": 13.312,
+      "count": 7
+    },
+    {
+      "le_ms": 13.824,
+      "count": 6
+    },
+    {
+      "le_ms": 14.336,
+      "count": 7
+    },
+    {
+      "le_ms": 14.848,
+      "count": 9
+    },
+    {
+      "le_ms": 15.36,
+      "count": 4
+    },
+    {
+      "le_ms": 15.872,
+      "count": 9
+    },
+    {
+      "le_ms": 16.384,
+      "count": 7
+    },
+    {
+      "le_ms": 17.408,
+      "count": 19
+    },
+    {
+      "le_ms": 18.432,
+      "count": 27
+    },
+    {
+      "le_ms": 19.456,
+      "count": 53
+    },
+    {
+      "le_ms": 20.48,
+      "count": 83
+    },
+    {
+      "le_ms": 21.504,
+      "count": 112
+    },
+    {
+      "le_ms": 22.528,
+      "count": 188
+    },
+    {
+      "le_ms": 23.552,
+      "count": 273
+    },
+    {
+      "le_ms": 24.576,
+      "count": 349
+    },
+    {
+      "le_ms": 25.6,
+      "count": 442
+    },
+    {
+      "le_ms": 26.624,
+      "count": 477
+    },
+    {
+      "le_ms": 27.648,
+      "count": 529
+    },
+    {
+      "le_ms": 28.672,
+      "count": 594
+    },
+    {
+      "le_ms": 29.696,
+      "count": 606
+    },
+    {
+      "le_ms": 30.72,
+      "count": 646
+    },
+    {
+      "le_ms": 31.744,
+      "count": 623
+    },
+    {
+      "le_ms": 32.768,
+      "count": 670
+    },
+    {
+      "le_ms": 34.816,
+      "count": 1358
+    },
+    {
+      "le_ms": 36.864,
+      "count": 1387
+    },
+    {
+      "le_ms": 38.912,
+      "count": 1380
+    },
+    {
+      "le_ms": 40.96,
+      "count": 1284
+    },
+    {
+      "le_ms": 43.008,
+      "count": 1089
+    },
+    {
+      "le_ms": 45.056,
+      "count": 883
+    },
+    {
+      "le_ms": 47.104,
+      "count": 791
+    },
+    {
+      "le_ms": 49.152,
+      "count": 657
+    },
+    {
+      "le_ms": 51.2,
+      "count": 555
+    },
+    {
+      "le_ms": 53.248,
+      "count": 413
+    },
+    {
+      "le_ms": 55.296,
+      "count": 366
+    },
+    {
+      "le_ms": 57.344,
+      "count": 269
+    },
+    {
+      "le_ms": 59.392,
+      "count": 208
+    },
+    {
+      "le_ms": 61.44,
+      "count": 204
+    },
+    {
+      "le_ms": 63.488,
+      "count": 176
+    },
+    {
+      "le_ms": 65.536,
+      "count": 202
+    },
+    {
+      "le_ms": 69.632,
+      "count": 398
+    },
+    {
+      "le_ms": 73.728,
+      "count": 440
+    },
+    {
+      "le_ms": 77.824,
+      "count": 440
+    },
+    {
+      "le_ms": 81.92,
+      "count": 475
+    },
+    {
+      "le_ms": 86.016,
+      "count": 469
+    },
+    {
+      "le_ms": 90.112,
+      "count": 442
+    },
+    {
+      "le_ms": 94.208,
+      "count": 331
+    },
+    {
+      "le_ms": 98.304,
+      "count": 256
+    },
+    {
+      "le_ms": 102.4,
+      "count": 196
+    },
+    {
+      "le_ms": 106.496,
+      "count": 118
+    },
+    {
+      "le_ms": 110.592,
+      "count": 121
+    },
+    {
+      "le_ms": 114.688,
+      "count": 80
+    },
+    {
+      "le_ms": 118.784,
+      "count": 65
+    },
+    {
+      "le_ms": 122.88,
+      "count": 40
+    },
+    {
+      "le_ms": 126.976,
+      "count": 46
+    },
+    {
+      "le_ms": 131.072,
+      "count": 64
+    },
+    {
+      "le_ms": 139.264,
+      "count": 197
+    },
+    {
+      "le_ms": 147.456,
+      "count": 261
+    },
+    {
+      "le_ms": 155.648,
+      "count": 288
+    },
+    {
+      "le_ms": 163.84,
+      "count": 311
+    },
+    {
+      "le_ms": 172.032,
+      "count": 260
+    },
+    {
+      "le_ms": 180.224,
+      "count": 250
+    },
+    {
+      "le_ms": 188.416,
+      "count": 208
+    },
+    {
+      "le_ms": 196.608,
+      "count": 124
+    },
+    {
+      "le_ms": 204.8,
+      "count": 109
+    },
+    {
+      "le_ms": 212.992,
+      "count": 62
+    },
+    {
+      "le_ms": 221.184,
+      "count": 47
+    },
+    {
+      "le_ms": 229.376,
+      "count": 40
+    },
+    {
+      "le_ms": 237.568,
+      "count": 29
+    },
+    {
+      "le_ms": 245.76,
+      "count": 22
+    },
+    {
+      "le_ms": 253.952,
+      "count": 12
+    },
+    {
+      "le_ms": 262.144,
+      "count": 17
+    },
+    {
+      "le_ms": 278.528,
+      "count": 27
+    },
+    {
+      "le_ms": 294.912,
+      "count": 24
+    },
+    {
+      "le_ms": 311.296,
+      "count": 19
+    },
+    {
+      "le_ms": 327.68,
+      "count": 13
+    },
+    {
+      "le_ms": 344.064,
+      "count": 9
+    },
+    {
+      "le_ms": 360.448,
+      "count": 4
+    },
+    {
+      "le_ms": 376.832,
+      "count": 10
+    },
+    {
+      "le_ms": 393.216,
+      "count": 144
+    },
+    {
+      "le_ms": 409.6,
+      "count": 339
+    },
+    {
+      "le_ms": 425.984,
+      "count": 377
+    },
+    {
+      "le_ms": 442.368,
+      "count": 188
+    },
+    {
+      "le_ms": 458.752,
+      "count": 115
+    },
+    {
+      "le_ms": 475.136,
+      "count": 55
+    },
+    {
+      "le_ms": 491.52,
+      "count": 11
+    },
+    {
+      "le_ms": 507.904,
+      "count": 5
+    },
+    {
+      "le_ms": 524.288,
+      "count": 1
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "weights: client-credentials 30, introspection 20, policy 15, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5",
+    "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+    "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+    "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+    "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+    "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput"
+  ]
+}

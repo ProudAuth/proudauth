@@ -1,0 +1,142 @@
+[
+  {
+    "scenario": "webhook-delivery",
+    "started": "2026-10-11T14:20:29Z",
+    "ended": "2026-10-11T14:27:20Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 1248,
+    "throughput_per_s": 20.8,
+    "latency_ms": {
+      "mean": 1514.69,
+      "p50": 1835.01,
+      "p90": 2031.62,
+      "p99": 2097.15,
+      "p999": 2106.2,
+      "max": 2106.2
+    },
+    "outcomes": {
+      "ok": 1248
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 411,
+      "identity_server": 12.51,
+      "identity_worker": 6.71,
+      "postgres_container": 26.22,
+      "docker_vm_and_proxy": 124.2,
+      "identity_bench": 2.54,
+      "smtp_sink": 0.99
+    }
+  },
+  {
+    "scenario": "webhook-retry",
+    "started": "2026-10-11T14:27:21Z",
+    "ended": "2026-10-11T14:28:40Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 128,
+    "throughput_per_s": 2.1,
+    "latency_ms": {
+      "mean": 14017.06,
+      "p50": 14155.78,
+      "p90": 15204.35,
+      "p99": 16079.92,
+      "p999": 16079.92,
+      "max": 16079.92
+    },
+    "outcomes": {
+      "ok": 128
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 78.48,
+      "identity_server": 1.8,
+      "identity_worker": 0.63,
+      "postgres_container": 3.46,
+      "docker_vm_and_proxy": 17.01,
+      "identity_bench": 0.82,
+      "smtp_sink": 0.19
+    }
+  },
+  {
+    "scenario": "mixed-delivery",
+    "started": "2026-10-11T14:28:41Z",
+    "ended": "2026-10-11T14:30:19Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 2455,
+    "throughput_per_s": 40.9,
+    "latency_ms": {
+      "mean": 697.3,
+      "p50": 12.29,
+      "p90": 983.04,
+      "p99": 15204.35,
+      "p999": 15728.64,
+      "max": 16033.73
+    },
+    "outcomes": {
+      "audit-query:ok": 117,
+      "client-credentials:ok": 630,
+      "email-delivery:ok": 117,
+      "import:ok": 126,
+      "introspection:ok": 379,
+      "passkey-assertion:ok": 116,
+      "password-login:ok": 123,
+      "policy:ok": 248,
+      "refresh:ok": 257,
+      "scim:ok": 138,
+      "webhook-delivery:ok": 110,
+      "webhook-retry:ok": 94
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 97.58,
+      "identity_server": 40.17,
+      "identity_worker": 4.26,
+      "postgres_container": 17.84,
+      "docker_vm_and_proxy": 101.04,
+      "identity_bench": 3.32,
+      "smtp_sink": 0.22
+    }
+  },
+  {
+    "scenario": "soak mixed-delivery",
+    "started": "2026-10-11T14:30:21Z",
+    "ended": "2026-10-11T14:40:57Z",
+    "windows": 10,
+    "operations": 24687,
+    "throughput_per_s": {
+      "min": 40.4,
+      "max": 41.7
+    },
+    "p99_ms": {
+      "min": 14155.78,
+      "max": 15204.35
+    },
+    "outcomes": {
+      "audit-query:ok": 1190,
+      "client-credentials:ok": 6322,
+      "email-delivery:ok": 1192,
+      "import:ok": 1263,
+      "introspection:ok": 3796,
+      "passkey-assertion:ok": 1142,
+      "password-login:ok": 1236,
+      "policy:ok": 2506,
+      "refresh:ok": 2590,
+      "scim:ok": 1390,
+      "webhook-delivery:ok": 1091,
+      "webhook-retry:ok": 969
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 635.8,
+      "identity_server": 277.25,
+      "identity_worker": 36.48,
+      "postgres_container": 196.78,
+      "docker_vm_and_proxy": 881,
+      "identity_bench": 42.27,
+      "smtp_sink": 1.17
+    }
+  }
+]

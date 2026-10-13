@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/plugins/manifest.v1.json",
+  "title": "Plugin manifest (manifest_version 1)",
+  "description": "Signed description of a plugin version (EXT-014). The publisher signs SigningContext (\"proudauth-plugin-v1\\n\") followed by the exact manifest bytes with an Ed25519 key the operator trusts (extensions.plugin_publishers); the manifest binds the payload by payload_sha256. The server refuses undeclared permissions, unknown permissions, contracts it does not support and missing dependencies.",
+  "type": "object",
+  "required": [
+    "manifest_version",
+    "name",
+    "version",
+    "publisher",
+    "permissions",
+    "payload_sha256"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "manifest_version": {
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Plugin name; belongs to its publisher within a realm."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,5})\\.(0|[1-9][0-9]{0,5})\\.(0|[1-9][0-9]{0,5})$"
+    },
+    "publisher": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]{0,62}$",
+      "description": "Must equal the signing key's publisher."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "permissions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": {
+        "type": "string",
+        "pattern": "^(realm|org|support)\\.[a-z_.]+$"
+      },
+      "description": "Every permission the parts need (realm.hooks.write for hooks, realm.webhooks.write for subscriptions, realm.workflows.write and realm.workflows.publish plus each step's permission for workflows). Uploader, reviewer and installer must hold them all."
+    },
+    "requires": {
+      "type": "object",
+      "description": "Per contract, the versions the plugin works with; the server must support at least one of each.",
+      "propertyNames": {
+        "enum": [
+          "webhook_events",
+          "hook_contract",
+          "plugin_manifest",
+          "workflow_definition",
+          "management_api"
+        ]
+      },
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "min_version"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+          },
+          "min_version": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,5})\\.(0|[1-9][0-9]{0,5})\\.(0|[1-9][0-9]{0,5})$"
+          }
+        }
+      }
+    },
+    "payload_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "x-contract": "plugin_manifest",
+  "x-contract-version": 1,
+  "examples": [
+    {
+      "manifest_version": 1,
+      "name": "hr-onboarding",
+      "version": "1.2.0",
+      "publisher": "acme",
+      "description": "Onboarding for HR-provisioned members",
+      "permissions": [
+        "realm.hooks.write",
+        "realm.webhooks.write",
+        "realm.workflows.write",
+        "realm.workflows.publish",
+        "org.roles.assign"
+      ],
+      "requires": {
+        "hook_contract": [
+          1
+        ],
+        "workflow_definition": [
+          1
+        ],
+        "webhook_events": [
+          1,
+          2
+        ]
+      },
+      "dependencies": [
+        {
+          "name": "hr-base",
+          "min_version": "1.0.0"
+        }
+      ],
+      "payload_sha256": "9f2c6f3b1a0d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789ab"
+    }
+  ]
+}

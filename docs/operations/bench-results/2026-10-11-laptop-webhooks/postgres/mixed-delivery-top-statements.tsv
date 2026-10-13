@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+6488	1429.7	0.220	574636	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+438	554.0	1.265	438	SELECT 1 FROM organizations WHERE id=$1 FOR UPDATE
+438	526.3	1.202	438	SELECT EXISTS (SELECT 1 FROM role_assignments ra JOIN roles r ON r.id=ra.role_id WHERE ra.membership_id=$1 AND r.is_owner_role AND (ra.expires_at IS NULL OR ra.expires_at > $2))
+438	385.2	0.879	438	DELETE FROM role_assignments WHERE membership_id=$1
+221	338.0	1.529	221	SELECT id, verifier, state FROM credentials WHERE user_id=$1 AND type=$2 AND state IN ($3 /*, ... */) ORDER BY state LIMIT $4
+385	318.9	0.828	385	SELECT pg_advisory_xact_lock(hashtext($1))
+563	290.4	0.516	563	SELECT ra.role_id, ra.conditions FROM role_assignments ra WHERE ra.realm_id=$1 AND ra.scope_type='organization' AND ra.scope_id=$2 AND ra.membership_id=$3 AND (ra.valid_from IS NULL OR ra.valid_from <
+4245	208.9	0.049	4245	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+438	168.0	0.383	438	INSERT INTO memberships (id, realm_id, organization_id, user_id, state, source, source_reference, joined_at, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)
+1959	166.8	0.085	140991	SELECT id, channel, template, coalesce(recipient_hint,$7), state, attempts, coalesce(last_error,$8), coalesce(reference_type,$9), coalesce(reference_id,$10), created_at, updated_at FROM notification_j
+30	141.5	4.715	1500	SELECT seq, id, schema_version, type, occurred_at, coalesce(realm_id,$4), coalesce(organization_id,$5), actor_type, actor_id, coalesce(actor_session_id,$6), coalesce(subject_type,$7), coalesce(subject
+5512	136.0	0.025	5512	SELECT id, realm_id, user_id, state, auth_time, mfa_time, amr, acr, factors, recovery_restricted, remember_me, transient, created_at, last_activity_at, idle_expires_at, absolute_expires_at, revoked_at

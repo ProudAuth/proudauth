@@ -1,0 +1,216 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "complex-audit-filter",
+  "target": "http://127.0.0.1:58313",
+  "started_at": "2026-10-12T20:21:43.961211Z",
+  "duration_s": 60.000270084,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 76443,
+  "outcomes": {
+    "compound_empty": 10921,
+    "compound_match": 10920,
+    "cursor_page": 10919,
+    "cursor_scope_rejected": 10921,
+    "invalid_network": 10921,
+    "invalid_time": 10921,
+    "literal_prefix_empty": 10920
+  },
+  "throughput_per_s": 1274.0442650171453,
+  "latency_ms": {
+    "mean": 25.110099564381304,
+    "p50": 25.6,
+    "p90": 30.72,
+    "p99": 34.816,
+    "p999": 45.056,
+    "max": 68.343
+  },
+  "histogram": [
+    {
+      "le_ms": 14.848,
+      "count": 2
+    },
+    {
+      "le_ms": 15.36,
+      "count": 5
+    },
+    {
+      "le_ms": 15.872,
+      "count": 16
+    },
+    {
+      "le_ms": 16.384,
+      "count": 53
+    },
+    {
+      "le_ms": 17.408,
+      "count": 344
+    },
+    {
+      "le_ms": 18.432,
+      "count": 1105
+    },
+    {
+      "le_ms": 19.456,
+      "count": 2516
+    },
+    {
+      "le_ms": 20.48,
+      "count": 4307
+    },
+    {
+      "le_ms": 21.504,
+      "count": 6144
+    },
+    {
+      "le_ms": 22.528,
+      "count": 7198
+    },
+    {
+      "le_ms": 23.552,
+      "count": 7513
+    },
+    {
+      "le_ms": 24.576,
+      "count": 7313
+    },
+    {
+      "le_ms": 25.6,
+      "count": 6965
+    },
+    {
+      "le_ms": 26.624,
+      "count": 6639
+    },
+    {
+      "le_ms": 27.648,
+      "count": 6214
+    },
+    {
+      "le_ms": 28.672,
+      "count": 5807
+    },
+    {
+      "le_ms": 29.696,
+      "count": 4957
+    },
+    {
+      "le_ms": 30.72,
+      "count": 3593
+    },
+    {
+      "le_ms": 31.744,
+      "count": 2418
+    },
+    {
+      "le_ms": 32.768,
+      "count": 1463
+    },
+    {
+      "le_ms": 34.816,
+      "count": 1230
+    },
+    {
+      "le_ms": 36.864,
+      "count": 348
+    },
+    {
+      "le_ms": 38.912,
+      "count": 113
+    },
+    {
+      "le_ms": 40.96,
+      "count": 50
+    },
+    {
+      "le_ms": 43.008,
+      "count": 33
+    },
+    {
+      "le_ms": 45.056,
+      "count": 21
+    },
+    {
+      "le_ms": 47.104,
+      "count": 18
+    },
+    {
+      "le_ms": 49.152,
+      "count": 16
+    },
+    {
+      "le_ms": 51.2,
+      "count": 5
+    },
+    {
+      "le_ms": 53.248,
+      "count": 3
+    },
+    {
+      "le_ms": 55.296,
+      "count": 6
+    },
+    {
+      "le_ms": 57.344,
+      "count": 4
+    },
+    {
+      "le_ms": 59.392,
+      "count": 3
+    },
+    {
+      "le_ms": 61.44,
+      "count": 6
+    },
+    {
+      "le_ms": 63.488,
+      "count": 5
+    },
+    {
+      "le_ms": 65.536,
+      "count": 5
+    },
+    {
+      "le_ms": 69.632,
+      "count": 5
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "warm-up used benign discovery requests only, so warm-up did not consume the measured attack budgets; scenario notes describe any fixture preparation budget use",
+    "10000 additional public application reports, matching seed.spec.users; serial fixture setup took 29.727s and is unmeasured",
+    "eleven simultaneous type-prefix, organization, actor, subject, client, request, category, outcome, network and from/to predicates; exact owned sequence pages capped at 200 despite limit=1000",
+    "seven alternating profiles cover nonempty/empty conjunctions, a literal percent prefix, invalid network/time, a changed-filter cursor refusal and a resumed page; each operation is one GET",
+    "fixture writes are application-reported evidence from one isolated service principal; credentials and event identifiers remain private; no counters are reset and no audit retention/partition or multi-host capacity is claimed"
+  ],
+  "observations": {
+    "after": {
+      "compound_matches": 1250,
+      "fixture_events": 10000,
+      "fixture_source": "public application reports",
+      "prepared_seconds": 29.727098209,
+      "profiles": 7,
+      "requested_page_size": 1000,
+      "required_max_page_size": 200,
+      "scope": "one realm, two seeded organizations, one isolated reporting service; identifiers and authority omitted"
+    },
+    "before": {
+      "compound_matches": 1250,
+      "fixture_events": 10000,
+      "fixture_source": "public application reports",
+      "prepared_seconds": 29.727098209,
+      "profiles": 7,
+      "requested_page_size": 1000,
+      "required_max_page_size": 200,
+      "scope": "one realm, two seeded organizations, one isolated reporting service; identifiers and authority omitted"
+    }
+  },
+  "complete": true
+}

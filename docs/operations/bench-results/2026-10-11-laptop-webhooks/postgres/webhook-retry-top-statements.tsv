@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+2191	491.7	0.224	194293	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+209	213.3	1.021	209	SELECT pg_advisory_xact_lock(hashtext($1))
+193	205.3	1.064	193	SELECT EXISTS (SELECT 1 FROM role_assignments ra JOIN roles r ON r.id=ra.role_id WHERE ra.membership_id=$1 AND r.is_owner_role AND (ra.expires_at IS NULL OR ra.expires_at > $2))
+193	162.0	0.839	193	DELETE FROM role_assignments WHERE membership_id=$1
+32	60.0	1.874	32	SELECT id, realm_id, state, coalesce(display_name,$5), coalesce(given_name,$6), coalesce(family_name,$7), coalesce(locale,$8), coalesce(zoneinfo,$9), profile, admin_metadata, internal_metadata, protec
+708	36.7	0.052	708	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+53	24.4	0.460	675	SELECT seq, id, coalesce(realm_id,''), coalesce(organization_id,''), event_type, payload FROM outbox_events WHERE state='pending' ORDER BY seq LIMIT $1 FOR UPDATE SKIP LOCKED
+675	21.3	0.031	675	INSERT INTO outbox_events (id, realm_id, organization_id, event_type, event_version, aggregate_type, aggregate_id, payload, occurred_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+675	20.8	0.031	675	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+386	19.3	0.050	386	INSERT INTO webhook_deliveries (id, realm_id, subscription_id, event_id, event_type, payload, next_attempt_at, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$7) ON CONFLICT (subscription_id, event_id) DO N
+193	18.7	0.097	193	INSERT INTO role_assignments (id, realm_id, role_id, subject_type, subject_id, membership_id, scope_type, scope_id, conditions, valid_from, expires_at, granted_by_type, granted_by_id, approved_by_id, 
+2	18.4	9.197	804	UPDATE audit_events SET batch_id=$1 WHERE id = ANY($2)

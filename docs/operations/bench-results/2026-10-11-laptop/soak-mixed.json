@@ -1,0 +1,3381 @@
+{
+  "soak": true,
+  "windows": [
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T09:46:55.683529Z",
+      "duration_s": 60.00405525,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 28950,
+      "outcomes": {
+        "audit-query:ok": 1399,
+        "client-credentials:ok": 11538,
+        "introspection:ok": 7369,
+        "password-login:ok": 1416,
+        "policy:ok": 4357,
+        "refresh:ok": 2871
+      },
+      "throughput_per_s": 482.4673912351949,
+      "latency_ms": {
+        "mean": 66.21675734024178,
+        "p50": 40.96,
+        "p90": 102.4,
+        "p99": 442.368,
+        "p999": 491.52,
+        "max": 571.088
+      },
+      "histogram": [
+        {
+          "le_ms": 11.776,
+          "count": 2
+        },
+        {
+          "le_ms": 12.8,
+          "count": 1
+        },
+        {
+          "le_ms": 13.824,
+          "count": 2
+        },
+        {
+          "le_ms": 14.336,
+          "count": 1
+        },
+        {
+          "le_ms": 15.36,
+          "count": 1
+        },
+        {
+          "le_ms": 17.408,
+          "count": 4
+        },
+        {
+          "le_ms": 18.432,
+          "count": 18
+        },
+        {
+          "le_ms": 19.456,
+          "count": 56
+        },
+        {
+          "le_ms": 20.48,
+          "count": 110
+        },
+        {
+          "le_ms": 21.504,
+          "count": 193
+        },
+        {
+          "le_ms": 22.528,
+          "count": 299
+        },
+        {
+          "le_ms": 23.552,
+          "count": 390
+        },
+        {
+          "le_ms": 24.576,
+          "count": 480
+        },
+        {
+          "le_ms": 25.6,
+          "count": 518
+        },
+        {
+          "le_ms": 26.624,
+          "count": 545
+        },
+        {
+          "le_ms": 27.648,
+          "count": 569
+        },
+        {
+          "le_ms": 28.672,
+          "count": 686
+        },
+        {
+          "le_ms": 29.696,
+          "count": 662
+        },
+        {
+          "le_ms": 30.72,
+          "count": 761
+        },
+        {
+          "le_ms": 31.744,
+          "count": 860
+        },
+        {
+          "le_ms": 32.768,
+          "count": 966
+        },
+        {
+          "le_ms": 34.816,
+          "count": 1914
+        },
+        {
+          "le_ms": 36.864,
+          "count": 1953
+        },
+        {
+          "le_ms": 38.912,
+          "count": 1823
+        },
+        {
+          "le_ms": 40.96,
+          "count": 1670
+        },
+        {
+          "le_ms": 43.008,
+          "count": 1326
+        },
+        {
+          "le_ms": 45.056,
+          "count": 1225
+        },
+        {
+          "le_ms": 47.104,
+          "count": 989
+        },
+        {
+          "le_ms": 49.152,
+          "count": 822
+        },
+        {
+          "le_ms": 51.2,
+          "count": 731
+        },
+        {
+          "le_ms": 53.248,
+          "count": 584
+        },
+        {
+          "le_ms": 55.296,
+          "count": 539
+        },
+        {
+          "le_ms": 57.344,
+          "count": 406
+        },
+        {
+          "le_ms": 59.392,
+          "count": 407
+        },
+        {
+          "le_ms": 61.44,
+          "count": 320
+        },
+        {
+          "le_ms": 63.488,
+          "count": 290
+        },
+        {
+          "le_ms": 65.536,
+          "count": 269
+        },
+        {
+          "le_ms": 69.632,
+          "count": 550
+        },
+        {
+          "le_ms": 73.728,
+          "count": 545
+        },
+        {
+          "le_ms": 77.824,
+          "count": 539
+        },
+        {
+          "le_ms": 81.92,
+          "count": 487
+        },
+        {
+          "le_ms": 86.016,
+          "count": 432
+        },
+        {
+          "le_ms": 90.112,
+          "count": 409
+        },
+        {
+          "le_ms": 94.208,
+          "count": 363
+        },
+        {
+          "le_ms": 98.304,
+          "count": 321
+        },
+        {
+          "le_ms": 102.4,
+          "count": 296
+        },
+        {
+          "le_ms": 106.496,
+          "count": 262
+        },
+        {
+          "le_ms": 110.592,
+          "count": 221
+        },
+        {
+          "le_ms": 114.688,
+          "count": 166
+        },
+        {
+          "le_ms": 118.784,
+          "count": 146
+        },
+        {
+          "le_ms": 122.88,
+          "count": 100
+        },
+        {
+          "le_ms": 126.976,
+          "count": 74
+        },
+        {
+          "le_ms": 131.072,
+          "count": 77
+        },
+        {
+          "le_ms": 139.264,
+          "count": 66
+        },
+        {
+          "le_ms": 147.456,
+          "count": 35
+        },
+        {
+          "le_ms": 155.648,
+          "count": 21
+        },
+        {
+          "le_ms": 163.84,
+          "count": 14
+        },
+        {
+          "le_ms": 172.032,
+          "count": 11
+        },
+        {
+          "le_ms": 180.224,
+          "count": 3
+        },
+        {
+          "le_ms": 188.416,
+          "count": 4
+        },
+        {
+          "le_ms": 360.448,
+          "count": 1
+        },
+        {
+          "le_ms": 376.832,
+          "count": 22
+        },
+        {
+          "le_ms": 393.216,
+          "count": 199
+        },
+        {
+          "le_ms": 409.6,
+          "count": 351
+        },
+        {
+          "le_ms": 425.984,
+          "count": 360
+        },
+        {
+          "le_ms": 442.368,
+          "count": 222
+        },
+        {
+          "le_ms": 458.752,
+          "count": 134
+        },
+        {
+          "le_ms": 475.136,
+          "count": 74
+        },
+        {
+          "le_ms": 491.52,
+          "count": 33
+        },
+        {
+          "le_ms": 507.904,
+          "count": 16
+        },
+        {
+          "le_ms": 524.288,
+          "count": 2
+        },
+        {
+          "le_ms": 557.056,
+          "count": 1
+        },
+        {
+          "le_ms": 589.824,
+          "count": 1
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 40, introspection 25, policy 15, refresh 10, password-login 5, audit-query 5"
+      ]
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T09:47:55.68693Z",
+      "duration_s": 60.000451417,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 28601,
+      "outcomes": {
+        "audit-query:ok": 1392,
+        "client-credentials:ok": 11386,
+        "introspection:ok": 7293,
+        "password-login:ok": 1392,
+        "policy:ok": 4305,
+        "refresh:ok": 2833
+      },
+      "throughput_per_s": 476.6797469776443,
+      "latency_ms": {
+        "mean": 67.02339309814343,
+        "p50": 43.008,
+        "p90": 102.4,
+        "p99": 458.752,
+        "p999": 507.904,
+        "max": 567.052
+      },
+      "histogram": [
+        {
+          "le_ms": 13.824,
+          "count": 1
+        },
+        {
+          "le_ms": 17.408,
+          "count": 3
+        },
+        {
+          "le_ms": 18.432,
+          "count": 17
+        },
+        {
+          "le_ms": 19.456,
+          "count": 58
+        },
+        {
+          "le_ms": 20.48,
+          "count": 94
+        },
+        {
+          "le_ms": 21.504,
+          "count": 202
+        },
+        {
+          "le_ms": 22.528,
+          "count": 263
+        },
+        {
+          "le_ms": 23.552,
+          "count": 354
+        },
+        {
+          "le_ms": 24.576,
+          "count": 402
+        },
+        {
+          "le_ms": 25.6,
+          "count": 515
+        },
+        {
+          "le_ms": 26.624,
+          "count": 545
+        },
+        {
+          "le_ms": 27.648,
+          "count": 576
+        },
+        {
+          "le_ms": 28.672,
+          "count": 683
+        },
+        {
+          "le_ms": 29.696,
+          "count": 682
+        },
+        {
+          "le_ms": 30.72,
+          "count": 755
+        },
+        {
+          "le_ms": 31.744,
+          "count": 869
+        },
+        {
+          "le_ms": 32.768,
+          "count": 885
+        },
+        {
+          "le_ms": 34.816,
+          "count": 1859
+        },
+        {
+          "le_ms": 36.864,
+          "count": 1917
+        },
+        {
+          "le_ms": 38.912,
+          "count": 1710
+        },
+        {
+          "le_ms": 40.96,
+          "count": 1611
+        },
+        {
+          "le_ms": 43.008,
+          "count": 1494
+        },
+        {
+          "le_ms": 45.056,
+          "count": 1209
+        },
+        {
+          "le_ms": 47.104,
+          "count": 992
+        },
+        {
+          "le_ms": 49.152,
+          "count": 811
+        },
+        {
+          "le_ms": 51.2,
+          "count": 634
+        },
+        {
+          "le_ms": 53.248,
+          "count": 585
+        },
+        {
+          "le_ms": 55.296,
+          "count": 489
+        },
+        {
+          "le_ms": 57.344,
+          "count": 440
+        },
+        {
+          "le_ms": 59.392,
+          "count": 385
+        },
+        {
+          "le_ms": 61.44,
+          "count": 323
+        },
+        {
+          "le_ms": 63.488,
+          "count": 300
+        },
+        {
+          "le_ms": 65.536,
+          "count": 292
+        },
+        {
+          "le_ms": 69.632,
+          "count": 501
+        },
+        {
+          "le_ms": 73.728,
+          "count": 548
+        },
+        {
+          "le_ms": 77.824,
+          "count": 544
+        },
+        {
+          "le_ms": 81.92,
+          "count": 496
+        },
+        {
+          "le_ms": 86.016,
+          "count": 495
+        },
+        {
+          "le_ms": 90.112,
+          "count": 438
+        },
+        {
+          "le_ms": 94.208,
+          "count": 367
+        },
+        {
+          "le_ms": 98.304,
+          "count": 300
+        },
+        {
+          "le_ms": 102.4,
+          "count": 266
+        },
+        {
+          "le_ms": 106.496,
+          "count": 232
+        },
+        {
+          "le_ms": 110.592,
+          "count": 191
+        },
+        {
+          "le_ms": 114.688,
+          "count": 168
+        },
+        {
+          "le_ms": 118.784,
+          "count": 140
+        },
+        {
+          "le_ms": 122.88,
+          "count": 101
+        },
+        {
+          "le_ms": 126.976,
+          "count": 117
+        },
+        {
+          "le_ms": 131.072,
+          "count": 81
+        },
+        {
+          "le_ms": 139.264,
+          "count": 89
+        },
+        {
+          "le_ms": 147.456,
+          "count": 43
+        },
+        {
+          "le_ms": 155.648,
+          "count": 51
+        },
+        {
+          "le_ms": 163.84,
+          "count": 27
+        },
+        {
+          "le_ms": 172.032,
+          "count": 22
+        },
+        {
+          "le_ms": 180.224,
+          "count": 13
+        },
+        {
+          "le_ms": 188.416,
+          "count": 5
+        },
+        {
+          "le_ms": 196.608,
+          "count": 2
+        },
+        {
+          "le_ms": 204.8,
+          "count": 3
+        },
+        {
+          "le_ms": 212.992,
+          "count": 1
+        },
+        {
+          "le_ms": 221.184,
+          "count": 1
+        },
+        {
+          "le_ms": 229.376,
+          "count": 5
+        },
+        {
+          "le_ms": 237.568,
+          "count": 2
+        },
+        {
+          "le_ms": 245.76,
+          "count": 1
+        },
+        {
+          "le_ms": 376.832,
+          "count": 27
+        },
+        {
+          "le_ms": 393.216,
+          "count": 178
+        },
+        {
+          "le_ms": 409.6,
+          "count": 323
+        },
+        {
+          "le_ms": 425.984,
+          "count": 331
+        },
+        {
+          "le_ms": 442.368,
+          "count": 226
+        },
+        {
+          "le_ms": 458.752,
+          "count": 164
+        },
+        {
+          "le_ms": 475.136,
+          "count": 71
+        },
+        {
+          "le_ms": 491.52,
+          "count": 36
+        },
+        {
+          "le_ms": 507.904,
+          "count": 15
+        },
+        {
+          "le_ms": 524.288,
+          "count": 9
+        },
+        {
+          "le_ms": 557.056,
+          "count": 13
+        },
+        {
+          "le_ms": 589.824,
+          "count": 3
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 40, introspection 25, policy 15, refresh 10, password-login 5, audit-query 5"
+      ]
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T09:48:55.687795Z",
+      "duration_s": 60.000482667,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 27635,
+      "outcomes": {
+        "audit-query:ok": 1340,
+        "client-credentials:ok": 10997,
+        "introspection:ok": 7054,
+        "password-login:ok": 1344,
+        "policy:ok": 4151,
+        "refresh:ok": 2749
+      },
+      "throughput_per_s": 460.57962822354307,
+      "latency_ms": {
+        "mean": 69.36043625836801,
+        "p50": 45.056,
+        "p90": 106.496,
+        "p99": 458.752,
+        "p999": 524.288,
+        "max": 556.249
+      },
+      "histogram": [
+        {
+          "le_ms": 15.36,
+          "count": 1
+        },
+        {
+          "le_ms": 17.408,
+          "count": 1
+        },
+        {
+          "le_ms": 18.432,
+          "count": 5
+        },
+        {
+          "le_ms": 19.456,
+          "count": 18
+        },
+        {
+          "le_ms": 20.48,
+          "count": 45
+        },
+        {
+          "le_ms": 21.504,
+          "count": 100
+        },
+        {
+          "le_ms": 22.528,
+          "count": 174
+        },
+        {
+          "le_ms": 23.552,
+          "count": 252
+        },
+        {
+          "le_ms": 24.576,
+          "count": 342
+        },
+        {
+          "le_ms": 25.6,
+          "count": 429
+        },
+        {
+          "le_ms": 26.624,
+          "count": 458
+        },
+        {
+          "le_ms": 27.648,
+          "count": 545
+        },
+        {
+          "le_ms": 28.672,
+          "count": 538
+        },
+        {
+          "le_ms": 29.696,
+          "count": 541
+        },
+        {
+          "le_ms": 30.72,
+          "count": 622
+        },
+        {
+          "le_ms": 31.744,
+          "count": 654
+        },
+        {
+          "le_ms": 32.768,
+          "count": 753
+        },
+        {
+          "le_ms": 34.816,
+          "count": 1715
+        },
+        {
+          "le_ms": 36.864,
+          "count": 1820
+        },
+        {
+          "le_ms": 38.912,
+          "count": 1697
+        },
+        {
+          "le_ms": 40.96,
+          "count": 1560
+        },
+        {
+          "le_ms": 43.008,
+          "count": 1382
+        },
+        {
+          "le_ms": 45.056,
+          "count": 1242
+        },
+        {
+          "le_ms": 47.104,
+          "count": 1012
+        },
+        {
+          "le_ms": 49.152,
+          "count": 936
+        },
+        {
+          "le_ms": 51.2,
+          "count": 806
+        },
+        {
+          "le_ms": 53.248,
+          "count": 651
+        },
+        {
+          "le_ms": 55.296,
+          "count": 561
+        },
+        {
+          "le_ms": 57.344,
+          "count": 472
+        },
+        {
+          "le_ms": 59.392,
+          "count": 453
+        },
+        {
+          "le_ms": 61.44,
+          "count": 355
+        },
+        {
+          "le_ms": 63.488,
+          "count": 294
+        },
+        {
+          "le_ms": 65.536,
+          "count": 295
+        },
+        {
+          "le_ms": 69.632,
+          "count": 569
+        },
+        {
+          "le_ms": 73.728,
+          "count": 591
+        },
+        {
+          "le_ms": 77.824,
+          "count": 525
+        },
+        {
+          "le_ms": 81.92,
+          "count": 490
+        },
+        {
+          "le_ms": 86.016,
+          "count": 470
+        },
+        {
+          "le_ms": 90.112,
+          "count": 439
+        },
+        {
+          "le_ms": 94.208,
+          "count": 383
+        },
+        {
+          "le_ms": 98.304,
+          "count": 311
+        },
+        {
+          "le_ms": 102.4,
+          "count": 298
+        },
+        {
+          "le_ms": 106.496,
+          "count": 214
+        },
+        {
+          "le_ms": 110.592,
+          "count": 226
+        },
+        {
+          "le_ms": 114.688,
+          "count": 213
+        },
+        {
+          "le_ms": 118.784,
+          "count": 165
+        },
+        {
+          "le_ms": 122.88,
+          "count": 135
+        },
+        {
+          "le_ms": 126.976,
+          "count": 120
+        },
+        {
+          "le_ms": 131.072,
+          "count": 82
+        },
+        {
+          "le_ms": 139.264,
+          "count": 136
+        },
+        {
+          "le_ms": 147.456,
+          "count": 53
+        },
+        {
+          "le_ms": 155.648,
+          "count": 49
+        },
+        {
+          "le_ms": 163.84,
+          "count": 37
+        },
+        {
+          "le_ms": 172.032,
+          "count": 28
+        },
+        {
+          "le_ms": 180.224,
+          "count": 15
+        },
+        {
+          "le_ms": 188.416,
+          "count": 6
+        },
+        {
+          "le_ms": 196.608,
+          "count": 5
+        },
+        {
+          "le_ms": 376.832,
+          "count": 7
+        },
+        {
+          "le_ms": 393.216,
+          "count": 106
+        },
+        {
+          "le_ms": 409.6,
+          "count": 240
+        },
+        {
+          "le_ms": 425.984,
+          "count": 321
+        },
+        {
+          "le_ms": 442.368,
+          "count": 276
+        },
+        {
+          "le_ms": 458.752,
+          "count": 174
+        },
+        {
+          "le_ms": 475.136,
+          "count": 109
+        },
+        {
+          "le_ms": 491.52,
+          "count": 63
+        },
+        {
+          "le_ms": 507.904,
+          "count": 22
+        },
+        {
+          "le_ms": 524.288,
+          "count": 17
+        },
+        {
+          "le_ms": 557.056,
+          "count": 11
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 40, introspection 25, policy 15, refresh 10, password-login 5, audit-query 5"
+      ]
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T09:49:55.688578Z",
+      "duration_s": 60.000955791,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 28359,
+      "outcomes": {
+        "audit-query:ok": 1378,
+        "client-credentials:ok": 11288,
+        "introspection:ok": 7232,
+        "password-login:ok": 1382,
+        "policy:ok": 4265,
+        "refresh:ok": 2814
+      },
+      "throughput_per_s": 472.64247087633527,
+      "latency_ms": {
+        "mean": 67.59819732712718,
+        "p50": 43.008,
+        "p90": 102.4,
+        "p99": 458.752,
+        "p999": 507.904,
+        "max": 567.015
+      },
+      "histogram": [
+        {
+          "le_ms": 13.312,
+          "count": 1
+        },
+        {
+          "le_ms": 13.824,
+          "count": 1
+        },
+        {
+          "le_ms": 14.848,
+          "count": 1
+        },
+        {
+          "le_ms": 15.36,
+          "count": 1
+        },
+        {
+          "le_ms": 17.408,
+          "count": 1
+        },
+        {
+          "le_ms": 18.432,
+          "count": 10
+        },
+        {
+          "le_ms": 19.456,
+          "count": 31
+        },
+        {
+          "le_ms": 20.48,
+          "count": 97
+        },
+        {
+          "le_ms": 21.504,
+          "count": 168
+        },
+        {
+          "le_ms": 22.528,
+          "count": 268
+        },
+        {
+          "le_ms": 23.552,
+          "count": 297
+        },
+        {
+          "le_ms": 24.576,
+          "count": 345
+        },
+        {
+          "le_ms": 25.6,
+          "count": 456
+        },
+        {
+          "le_ms": 26.624,
+          "count": 509
+        },
+        {
+          "le_ms": 27.648,
+          "count": 586
+        },
+        {
+          "le_ms": 28.672,
+          "count": 632
+        },
+        {
+          "le_ms": 29.696,
+          "count": 668
+        },
+        {
+          "le_ms": 30.72,
+          "count": 739
+        },
+        {
+          "le_ms": 31.744,
+          "count": 822
+        },
+        {
+          "le_ms": 32.768,
+          "count": 823
+        },
+        {
+          "le_ms": 34.816,
+          "count": 1788
+        },
+        {
+          "le_ms": 36.864,
+          "count": 1828
+        },
+        {
+          "le_ms": 38.912,
+          "count": 1709
+        },
+        {
+          "le_ms": 40.96,
+          "count": 1631
+        },
+        {
+          "le_ms": 43.008,
+          "count": 1392
+        },
+        {
+          "le_ms": 45.056,
+          "count": 1242
+        },
+        {
+          "le_ms": 47.104,
+          "count": 1062
+        },
+        {
+          "le_ms": 49.152,
+          "count": 940
+        },
+        {
+          "le_ms": 51.2,
+          "count": 760
+        },
+        {
+          "le_ms": 53.248,
+          "count": 636
+        },
+        {
+          "le_ms": 55.296,
+          "count": 533
+        },
+        {
+          "le_ms": 57.344,
+          "count": 467
+        },
+        {
+          "le_ms": 59.392,
+          "count": 358
+        },
+        {
+          "le_ms": 61.44,
+          "count": 314
+        },
+        {
+          "le_ms": 63.488,
+          "count": 303
+        },
+        {
+          "le_ms": 65.536,
+          "count": 276
+        },
+        {
+          "le_ms": 69.632,
+          "count": 552
+        },
+        {
+          "le_ms": 73.728,
+          "count": 508
+        },
+        {
+          "le_ms": 77.824,
+          "count": 491
+        },
+        {
+          "le_ms": 81.92,
+          "count": 473
+        },
+        {
+          "le_ms": 86.016,
+          "count": 468
+        },
+        {
+          "le_ms": 90.112,
+          "count": 418
+        },
+        {
+          "le_ms": 94.208,
+          "count": 403
+        },
+        {
+          "le_ms": 98.304,
+          "count": 347
+        },
+        {
+          "le_ms": 102.4,
+          "count": 325
+        },
+        {
+          "le_ms": 106.496,
+          "count": 234
+        },
+        {
+          "le_ms": 110.592,
+          "count": 210
+        },
+        {
+          "le_ms": 114.688,
+          "count": 169
+        },
+        {
+          "le_ms": 118.784,
+          "count": 150
+        },
+        {
+          "le_ms": 122.88,
+          "count": 126
+        },
+        {
+          "le_ms": 126.976,
+          "count": 98
+        },
+        {
+          "le_ms": 131.072,
+          "count": 75
+        },
+        {
+          "le_ms": 139.264,
+          "count": 103
+        },
+        {
+          "le_ms": 147.456,
+          "count": 38
+        },
+        {
+          "le_ms": 155.648,
+          "count": 38
+        },
+        {
+          "le_ms": 163.84,
+          "count": 19
+        },
+        {
+          "le_ms": 172.032,
+          "count": 8
+        },
+        {
+          "le_ms": 180.224,
+          "count": 5
+        },
+        {
+          "le_ms": 188.416,
+          "count": 12
+        },
+        {
+          "le_ms": 196.608,
+          "count": 6
+        },
+        {
+          "le_ms": 212.992,
+          "count": 4
+        },
+        {
+          "le_ms": 229.376,
+          "count": 1
+        },
+        {
+          "le_ms": 376.832,
+          "count": 15
+        },
+        {
+          "le_ms": 393.216,
+          "count": 149
+        },
+        {
+          "le_ms": 409.6,
+          "count": 305
+        },
+        {
+          "le_ms": 425.984,
+          "count": 341
+        },
+        {
+          "le_ms": 442.368,
+          "count": 254
+        },
+        {
+          "le_ms": 458.752,
+          "count": 138
+        },
+        {
+          "le_ms": 475.136,
+          "count": 85
+        },
+        {
+          "le_ms": 491.52,
+          "count": 61
+        },
+        {
+          "le_ms": 507.904,
+          "count": 16
+        },
+        {
+          "le_ms": 524.288,
+          "count": 7
+        },
+        {
+          "le_ms": 557.056,
+          "count": 11
+        },
+        {
+          "le_ms": 589.824,
+          "count": 1
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 40, introspection 25, policy 15, refresh 10, password-login 5, audit-query 5"
+      ]
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T09:50:55.689872Z",
+      "duration_s": 60.000289208,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 28675,
+      "outcomes": {
+        "audit-query:ok": 1390,
+        "client-credentials:ok": 11414,
+        "introspection:ok": 7317,
+        "password-login:ok": 1402,
+        "policy:ok": 4315,
+        "refresh:ok": 2837
+      },
+      "throughput_per_s": 477.91436305571483,
+      "latency_ms": {
+        "mean": 66.82726346992155,
+        "p50": 43.008,
+        "p90": 98.304,
+        "p99": 442.368,
+        "p999": 491.52,
+        "max": 606.661
+      },
+      "histogram": [
+        {
+          "le_ms": 15.872,
+          "count": 1
+        },
+        {
+          "le_ms": 16.384,
+          "count": 1
+        },
+        {
+          "le_ms": 17.408,
+          "count": 3
+        },
+        {
+          "le_ms": 18.432,
+          "count": 19
+        },
+        {
+          "le_ms": 19.456,
+          "count": 51
+        },
+        {
+          "le_ms": 20.48,
+          "count": 107
+        },
+        {
+          "le_ms": 21.504,
+          "count": 183
+        },
+        {
+          "le_ms": 22.528,
+          "count": 296
+        },
+        {
+          "le_ms": 23.552,
+          "count": 356
+        },
+        {
+          "le_ms": 24.576,
+          "count": 467
+        },
+        {
+          "le_ms": 25.6,
+          "count": 469
+        },
+        {
+          "le_ms": 26.624,
+          "count": 532
+        },
+        {
+          "le_ms": 27.648,
+          "count": 578
+        },
+        {
+          "le_ms": 28.672,
+          "count": 675
+        },
+        {
+          "le_ms": 29.696,
+          "count": 690
+        },
+        {
+          "le_ms": 30.72,
+          "count": 794
+        },
+        {
+          "le_ms": 31.744,
+          "count": 894
+        },
+        {
+          "le_ms": 32.768,
+          "count": 855
+        },
+        {
+          "le_ms": 34.816,
+          "count": 1826
+        },
+        {
+          "le_ms": 36.864,
+          "count": 1882
+        },
+        {
+          "le_ms": 38.912,
+          "count": 1809
+        },
+        {
+          "le_ms": 40.96,
+          "count": 1580
+        },
+        {
+          "le_ms": 43.008,
+          "count": 1415
+        },
+        {
+          "le_ms": 45.056,
+          "count": 1245
+        },
+        {
+          "le_ms": 47.104,
+          "count": 992
+        },
+        {
+          "le_ms": 49.152,
+          "count": 856
+        },
+        {
+          "le_ms": 51.2,
+          "count": 703
+        },
+        {
+          "le_ms": 53.248,
+          "count": 591
+        },
+        {
+          "le_ms": 55.296,
+          "count": 488
+        },
+        {
+          "le_ms": 57.344,
+          "count": 414
+        },
+        {
+          "le_ms": 59.392,
+          "count": 334
+        },
+        {
+          "le_ms": 61.44,
+          "count": 306
+        },
+        {
+          "le_ms": 63.488,
+          "count": 293
+        },
+        {
+          "le_ms": 65.536,
+          "count": 242
+        },
+        {
+          "le_ms": 69.632,
+          "count": 536
+        },
+        {
+          "le_ms": 73.728,
+          "count": 579
+        },
+        {
+          "le_ms": 77.824,
+          "count": 535
+        },
+        {
+          "le_ms": 81.92,
+          "count": 564
+        },
+        {
+          "le_ms": 86.016,
+          "count": 488
+        },
+        {
+          "le_ms": 90.112,
+          "count": 443
+        },
+        {
+          "le_ms": 94.208,
+          "count": 408
+        },
+        {
+          "le_ms": 98.304,
+          "count": 331
+        },
+        {
+          "le_ms": 102.4,
+          "count": 279
+        },
+        {
+          "le_ms": 106.496,
+          "count": 192
+        },
+        {
+          "le_ms": 110.592,
+          "count": 190
+        },
+        {
+          "le_ms": 114.688,
+          "count": 173
+        },
+        {
+          "le_ms": 118.784,
+          "count": 134
+        },
+        {
+          "le_ms": 122.88,
+          "count": 93
+        },
+        {
+          "le_ms": 126.976,
+          "count": 85
+        },
+        {
+          "le_ms": 131.072,
+          "count": 60
+        },
+        {
+          "le_ms": 139.264,
+          "count": 75
+        },
+        {
+          "le_ms": 147.456,
+          "count": 68
+        },
+        {
+          "le_ms": 155.648,
+          "count": 23
+        },
+        {
+          "le_ms": 163.84,
+          "count": 24
+        },
+        {
+          "le_ms": 172.032,
+          "count": 16
+        },
+        {
+          "le_ms": 180.224,
+          "count": 4
+        },
+        {
+          "le_ms": 188.416,
+          "count": 12
+        },
+        {
+          "le_ms": 196.608,
+          "count": 2
+        },
+        {
+          "le_ms": 204.8,
+          "count": 2
+        },
+        {
+          "le_ms": 221.184,
+          "count": 1
+        },
+        {
+          "le_ms": 262.144,
+          "count": 1
+        },
+        {
+          "le_ms": 278.528,
+          "count": 7
+        },
+        {
+          "le_ms": 376.832,
+          "count": 11
+        },
+        {
+          "le_ms": 393.216,
+          "count": 169
+        },
+        {
+          "le_ms": 409.6,
+          "count": 336
+        },
+        {
+          "le_ms": 425.984,
+          "count": 336
+        },
+        {
+          "le_ms": 442.368,
+          "count": 272
+        },
+        {
+          "le_ms": 458.752,
+          "count": 154
+        },
+        {
+          "le_ms": 475.136,
+          "count": 69
+        },
+        {
+          "le_ms": 491.52,
+          "count": 30
+        },
+        {
+          "le_ms": 507.904,
+          "count": 19
+        },
+        {
+          "le_ms": 524.288,
+          "count": 2
+        },
+        {
+          "le_ms": 557.056,
+          "count": 3
+        },
+        {
+          "le_ms": 589.824,
+          "count": 1
+        },
+        {
+          "le_ms": 622.592,
+          "count": 1
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 40, introspection 25, policy 15, refresh 10, password-login 5, audit-query 5"
+      ]
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T09:51:55.690463Z",
+      "duration_s": 60.000340667,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 28773,
+      "outcomes": {
+        "audit-query:ok": 1395,
+        "client-credentials:ok": 11453,
+        "introspection:ok": 7339,
+        "password-login:ok": 1404,
+        "policy:ok": 4330,
+        "refresh:ok": 2852
+      },
+      "throughput_per_s": 479.5472772344618,
+      "latency_ms": {
+        "mean": 66.63492955201056,
+        "p50": 40.96,
+        "p90": 102.4,
+        "p99": 458.752,
+        "p999": 507.904,
+        "max": 616.696
+      },
+      "histogram": [
+        {
+          "le_ms": 17.408,
+          "count": 5
+        },
+        {
+          "le_ms": 18.432,
+          "count": 14
+        },
+        {
+          "le_ms": 19.456,
+          "count": 38
+        },
+        {
+          "le_ms": 20.48,
+          "count": 101
+        },
+        {
+          "le_ms": 21.504,
+          "count": 229
+        },
+        {
+          "le_ms": 22.528,
+          "count": 309
+        },
+        {
+          "le_ms": 23.552,
+          "count": 354
+        },
+        {
+          "le_ms": 24.576,
+          "count": 379
+        },
+        {
+          "le_ms": 25.6,
+          "count": 500
+        },
+        {
+          "le_ms": 26.624,
+          "count": 526
+        },
+        {
+          "le_ms": 27.648,
+          "count": 603
+        },
+        {
+          "le_ms": 28.672,
+          "count": 705
+        },
+        {
+          "le_ms": 29.696,
+          "count": 791
+        },
+        {
+          "le_ms": 30.72,
+          "count": 792
+        },
+        {
+          "le_ms": 31.744,
+          "count": 837
+        },
+        {
+          "le_ms": 32.768,
+          "count": 909
+        },
+        {
+          "le_ms": 34.816,
+          "count": 1916
+        },
+        {
+          "le_ms": 36.864,
+          "count": 1936
+        },
+        {
+          "le_ms": 38.912,
+          "count": 1857
+        },
+        {
+          "le_ms": 40.96,
+          "count": 1587
+        },
+        {
+          "le_ms": 43.008,
+          "count": 1336
+        },
+        {
+          "le_ms": 45.056,
+          "count": 1154
+        },
+        {
+          "le_ms": 47.104,
+          "count": 1011
+        },
+        {
+          "le_ms": 49.152,
+          "count": 904
+        },
+        {
+          "le_ms": 51.2,
+          "count": 761
+        },
+        {
+          "le_ms": 53.248,
+          "count": 560
+        },
+        {
+          "le_ms": 55.296,
+          "count": 478
+        },
+        {
+          "le_ms": 57.344,
+          "count": 359
+        },
+        {
+          "le_ms": 59.392,
+          "count": 320
+        },
+        {
+          "le_ms": 61.44,
+          "count": 276
+        },
+        {
+          "le_ms": 63.488,
+          "count": 302
+        },
+        {
+          "le_ms": 65.536,
+          "count": 261
+        },
+        {
+          "le_ms": 69.632,
+          "count": 520
+        },
+        {
+          "le_ms": 73.728,
+          "count": 500
+        },
+        {
+          "le_ms": 77.824,
+          "count": 521
+        },
+        {
+          "le_ms": 81.92,
+          "count": 513
+        },
+        {
+          "le_ms": 86.016,
+          "count": 529
+        },
+        {
+          "le_ms": 90.112,
+          "count": 453
+        },
+        {
+          "le_ms": 94.208,
+          "count": 399
+        },
+        {
+          "le_ms": 98.304,
+          "count": 337
+        },
+        {
+          "le_ms": 102.4,
+          "count": 287
+        },
+        {
+          "le_ms": 106.496,
+          "count": 228
+        },
+        {
+          "le_ms": 110.592,
+          "count": 204
+        },
+        {
+          "le_ms": 114.688,
+          "count": 131
+        },
+        {
+          "le_ms": 118.784,
+          "count": 126
+        },
+        {
+          "le_ms": 122.88,
+          "count": 103
+        },
+        {
+          "le_ms": 126.976,
+          "count": 76
+        },
+        {
+          "le_ms": 131.072,
+          "count": 76
+        },
+        {
+          "le_ms": 139.264,
+          "count": 103
+        },
+        {
+          "le_ms": 147.456,
+          "count": 59
+        },
+        {
+          "le_ms": 155.648,
+          "count": 43
+        },
+        {
+          "le_ms": 163.84,
+          "count": 19
+        },
+        {
+          "le_ms": 172.032,
+          "count": 9
+        },
+        {
+          "le_ms": 180.224,
+          "count": 2
+        },
+        {
+          "le_ms": 188.416,
+          "count": 5
+        },
+        {
+          "le_ms": 196.608,
+          "count": 3
+        },
+        {
+          "le_ms": 204.8,
+          "count": 1
+        },
+        {
+          "le_ms": 212.992,
+          "count": 1
+        },
+        {
+          "le_ms": 221.184,
+          "count": 1
+        },
+        {
+          "le_ms": 229.376,
+          "count": 1
+        },
+        {
+          "le_ms": 245.76,
+          "count": 1
+        },
+        {
+          "le_ms": 262.144,
+          "count": 4
+        },
+        {
+          "le_ms": 376.832,
+          "count": 20
+        },
+        {
+          "le_ms": 393.216,
+          "count": 202
+        },
+        {
+          "le_ms": 409.6,
+          "count": 371
+        },
+        {
+          "le_ms": 425.984,
+          "count": 275
+        },
+        {
+          "le_ms": 442.368,
+          "count": 244
+        },
+        {
+          "le_ms": 458.752,
+          "count": 152
+        },
+        {
+          "le_ms": 475.136,
+          "count": 88
+        },
+        {
+          "le_ms": 491.52,
+          "count": 27
+        },
+        {
+          "le_ms": 507.904,
+          "count": 8
+        },
+        {
+          "le_ms": 524.288,
+          "count": 8
+        },
+        {
+          "le_ms": 557.056,
+          "count": 9
+        },
+        {
+          "le_ms": 589.824,
+          "count": 3
+        },
+        {
+          "le_ms": 622.592,
+          "count": 1
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 40, introspection 25, policy 15, refresh 10, password-login 5, audit-query 5"
+      ]
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T09:52:55.691095Z",
+      "duration_s": 60.000425709,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 28067,
+      "outcomes": {
+        "audit-query:ok": 1359,
+        "client-credentials:ok": 11166,
+        "introspection:ok": 7167,
+        "password-login:ok": 1371,
+        "policy:ok": 4221,
+        "refresh:ok": 2783
+      },
+      "throughput_per_s": 467.7800143639644,
+      "latency_ms": {
+        "mean": 68.33629094666334,
+        "p50": 43.008,
+        "p90": 102.4,
+        "p99": 458.752,
+        "p999": 524.288,
+        "max": 608.454
+      },
+      "histogram": [
+        {
+          "le_ms": 17.408,
+          "count": 3
+        },
+        {
+          "le_ms": 18.432,
+          "count": 27
+        },
+        {
+          "le_ms": 19.456,
+          "count": 37
+        },
+        {
+          "le_ms": 20.48,
+          "count": 77
+        },
+        {
+          "le_ms": 21.504,
+          "count": 148
+        },
+        {
+          "le_ms": 22.528,
+          "count": 255
+        },
+        {
+          "le_ms": 23.552,
+          "count": 263
+        },
+        {
+          "le_ms": 24.576,
+          "count": 354
+        },
+        {
+          "le_ms": 25.6,
+          "count": 432
+        },
+        {
+          "le_ms": 26.624,
+          "count": 545
+        },
+        {
+          "le_ms": 27.648,
+          "count": 537
+        },
+        {
+          "le_ms": 28.672,
+          "count": 568
+        },
+        {
+          "le_ms": 29.696,
+          "count": 701
+        },
+        {
+          "le_ms": 30.72,
+          "count": 700
+        },
+        {
+          "le_ms": 31.744,
+          "count": 708
+        },
+        {
+          "le_ms": 32.768,
+          "count": 799
+        },
+        {
+          "le_ms": 34.816,
+          "count": 1701
+        },
+        {
+          "le_ms": 36.864,
+          "count": 1799
+        },
+        {
+          "le_ms": 38.912,
+          "count": 1783
+        },
+        {
+          "le_ms": 40.96,
+          "count": 1660
+        },
+        {
+          "le_ms": 43.008,
+          "count": 1413
+        },
+        {
+          "le_ms": 45.056,
+          "count": 1185
+        },
+        {
+          "le_ms": 47.104,
+          "count": 1103
+        },
+        {
+          "le_ms": 49.152,
+          "count": 926
+        },
+        {
+          "le_ms": 51.2,
+          "count": 750
+        },
+        {
+          "le_ms": 53.248,
+          "count": 586
+        },
+        {
+          "le_ms": 55.296,
+          "count": 536
+        },
+        {
+          "le_ms": 57.344,
+          "count": 425
+        },
+        {
+          "le_ms": 59.392,
+          "count": 350
+        },
+        {
+          "le_ms": 61.44,
+          "count": 361
+        },
+        {
+          "le_ms": 63.488,
+          "count": 319
+        },
+        {
+          "le_ms": 65.536,
+          "count": 299
+        },
+        {
+          "le_ms": 69.632,
+          "count": 526
+        },
+        {
+          "le_ms": 73.728,
+          "count": 460
+        },
+        {
+          "le_ms": 77.824,
+          "count": 484
+        },
+        {
+          "le_ms": 81.92,
+          "count": 489
+        },
+        {
+          "le_ms": 86.016,
+          "count": 486
+        },
+        {
+          "le_ms": 90.112,
+          "count": 447
+        },
+        {
+          "le_ms": 94.208,
+          "count": 439
+        },
+        {
+          "le_ms": 98.304,
+          "count": 376
+        },
+        {
+          "le_ms": 102.4,
+          "count": 302
+        },
+        {
+          "le_ms": 106.496,
+          "count": 249
+        },
+        {
+          "le_ms": 110.592,
+          "count": 176
+        },
+        {
+          "le_ms": 114.688,
+          "count": 169
+        },
+        {
+          "le_ms": 118.784,
+          "count": 133
+        },
+        {
+          "le_ms": 122.88,
+          "count": 128
+        },
+        {
+          "le_ms": 126.976,
+          "count": 92
+        },
+        {
+          "le_ms": 131.072,
+          "count": 74
+        },
+        {
+          "le_ms": 139.264,
+          "count": 99
+        },
+        {
+          "le_ms": 147.456,
+          "count": 83
+        },
+        {
+          "le_ms": 155.648,
+          "count": 62
+        },
+        {
+          "le_ms": 163.84,
+          "count": 29
+        },
+        {
+          "le_ms": 172.032,
+          "count": 9
+        },
+        {
+          "le_ms": 180.224,
+          "count": 11
+        },
+        {
+          "le_ms": 188.416,
+          "count": 5
+        },
+        {
+          "le_ms": 196.608,
+          "count": 6
+        },
+        {
+          "le_ms": 204.8,
+          "count": 1
+        },
+        {
+          "le_ms": 212.992,
+          "count": 3
+        },
+        {
+          "le_ms": 229.376,
+          "count": 2
+        },
+        {
+          "le_ms": 245.76,
+          "count": 2
+        },
+        {
+          "le_ms": 262.144,
+          "count": 2
+        },
+        {
+          "le_ms": 278.528,
+          "count": 1
+        },
+        {
+          "le_ms": 360.448,
+          "count": 1
+        },
+        {
+          "le_ms": 376.832,
+          "count": 9
+        },
+        {
+          "le_ms": 393.216,
+          "count": 144
+        },
+        {
+          "le_ms": 409.6,
+          "count": 304
+        },
+        {
+          "le_ms": 425.984,
+          "count": 299
+        },
+        {
+          "le_ms": 442.368,
+          "count": 257
+        },
+        {
+          "le_ms": 458.752,
+          "count": 148
+        },
+        {
+          "le_ms": 475.136,
+          "count": 94
+        },
+        {
+          "le_ms": 491.52,
+          "count": 54
+        },
+        {
+          "le_ms": 507.904,
+          "count": 22
+        },
+        {
+          "le_ms": 524.288,
+          "count": 17
+        },
+        {
+          "le_ms": 557.056,
+          "count": 16
+        },
+        {
+          "le_ms": 589.824,
+          "count": 5
+        },
+        {
+          "le_ms": 622.592,
+          "count": 2
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 40, introspection 25, policy 15, refresh 10, password-login 5, audit-query 5"
+      ]
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T09:53:55.691811Z",
+      "duration_s": 60.000700875,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 26269,
+      "outcomes": {
+        "audit-query:ok": 1285,
+        "client-credentials:ok": 10436,
+        "introspection:ok": 6719,
+        "password-login:ok": 1263,
+        "policy:ok": 3946,
+        "refresh:ok": 2620
+      },
+      "throughput_per_s": 437.81155248046923,
+      "latency_ms": {
+        "mean": 72.96326106817922,
+        "p50": 47.104,
+        "p90": 110.592,
+        "p99": 475.136,
+        "p999": 557.056,
+        "max": 700.396
+      },
+      "histogram": [
+        {
+          "le_ms": 19.456,
+          "count": 7
+        },
+        {
+          "le_ms": 20.48,
+          "count": 18
+        },
+        {
+          "le_ms": 21.504,
+          "count": 51
+        },
+        {
+          "le_ms": 22.528,
+          "count": 102
+        },
+        {
+          "le_ms": 23.552,
+          "count": 152
+        },
+        {
+          "le_ms": 24.576,
+          "count": 189
+        },
+        {
+          "le_ms": 25.6,
+          "count": 249
+        },
+        {
+          "le_ms": 26.624,
+          "count": 279
+        },
+        {
+          "le_ms": 27.648,
+          "count": 347
+        },
+        {
+          "le_ms": 28.672,
+          "count": 364
+        },
+        {
+          "le_ms": 29.696,
+          "count": 438
+        },
+        {
+          "le_ms": 30.72,
+          "count": 460
+        },
+        {
+          "le_ms": 31.744,
+          "count": 530
+        },
+        {
+          "le_ms": 32.768,
+          "count": 581
+        },
+        {
+          "le_ms": 34.816,
+          "count": 1386
+        },
+        {
+          "le_ms": 36.864,
+          "count": 1452
+        },
+        {
+          "le_ms": 38.912,
+          "count": 1575
+        },
+        {
+          "le_ms": 40.96,
+          "count": 1427
+        },
+        {
+          "le_ms": 43.008,
+          "count": 1388
+        },
+        {
+          "le_ms": 45.056,
+          "count": 1268
+        },
+        {
+          "le_ms": 47.104,
+          "count": 1223
+        },
+        {
+          "le_ms": 49.152,
+          "count": 1111
+        },
+        {
+          "le_ms": 51.2,
+          "count": 960
+        },
+        {
+          "le_ms": 53.248,
+          "count": 834
+        },
+        {
+          "le_ms": 55.296,
+          "count": 727
+        },
+        {
+          "le_ms": 57.344,
+          "count": 600
+        },
+        {
+          "le_ms": 59.392,
+          "count": 517
+        },
+        {
+          "le_ms": 61.44,
+          "count": 482
+        },
+        {
+          "le_ms": 63.488,
+          "count": 386
+        },
+        {
+          "le_ms": 65.536,
+          "count": 320
+        },
+        {
+          "le_ms": 69.632,
+          "count": 518
+        },
+        {
+          "le_ms": 73.728,
+          "count": 513
+        },
+        {
+          "le_ms": 77.824,
+          "count": 443
+        },
+        {
+          "le_ms": 81.92,
+          "count": 386
+        },
+        {
+          "le_ms": 86.016,
+          "count": 360
+        },
+        {
+          "le_ms": 90.112,
+          "count": 361
+        },
+        {
+          "le_ms": 94.208,
+          "count": 341
+        },
+        {
+          "le_ms": 98.304,
+          "count": 347
+        },
+        {
+          "le_ms": 102.4,
+          "count": 339
+        },
+        {
+          "le_ms": 106.496,
+          "count": 320
+        },
+        {
+          "le_ms": 110.592,
+          "count": 296
+        },
+        {
+          "le_ms": 114.688,
+          "count": 245
+        },
+        {
+          "le_ms": 118.784,
+          "count": 183
+        },
+        {
+          "le_ms": 122.88,
+          "count": 164
+        },
+        {
+          "le_ms": 126.976,
+          "count": 153
+        },
+        {
+          "le_ms": 131.072,
+          "count": 120
+        },
+        {
+          "le_ms": 139.264,
+          "count": 171
+        },
+        {
+          "le_ms": 147.456,
+          "count": 117
+        },
+        {
+          "le_ms": 155.648,
+          "count": 50
+        },
+        {
+          "le_ms": 163.84,
+          "count": 50
+        },
+        {
+          "le_ms": 172.032,
+          "count": 27
+        },
+        {
+          "le_ms": 180.224,
+          "count": 15
+        },
+        {
+          "le_ms": 188.416,
+          "count": 9
+        },
+        {
+          "le_ms": 196.608,
+          "count": 11
+        },
+        {
+          "le_ms": 204.8,
+          "count": 14
+        },
+        {
+          "le_ms": 212.992,
+          "count": 6
+        },
+        {
+          "le_ms": 221.184,
+          "count": 4
+        },
+        {
+          "le_ms": 229.376,
+          "count": 10
+        },
+        {
+          "le_ms": 237.568,
+          "count": 4
+        },
+        {
+          "le_ms": 344.064,
+          "count": 3
+        },
+        {
+          "le_ms": 376.832,
+          "count": 5
+        },
+        {
+          "le_ms": 393.216,
+          "count": 46
+        },
+        {
+          "le_ms": 409.6,
+          "count": 125
+        },
+        {
+          "le_ms": 425.984,
+          "count": 265
+        },
+        {
+          "le_ms": 442.368,
+          "count": 286
+        },
+        {
+          "le_ms": 458.752,
+          "count": 225
+        },
+        {
+          "le_ms": 475.136,
+          "count": 135
+        },
+        {
+          "le_ms": 491.52,
+          "count": 84
+        },
+        {
+          "le_ms": 507.904,
+          "count": 37
+        },
+        {
+          "le_ms": 524.288,
+          "count": 20
+        },
+        {
+          "le_ms": 557.056,
+          "count": 24
+        },
+        {
+          "le_ms": 589.824,
+          "count": 8
+        },
+        {
+          "le_ms": 622.592,
+          "count": 2
+        },
+        {
+          "le_ms": 655.36,
+          "count": 2
+        },
+        {
+          "le_ms": 720.896,
+          "count": 2
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 40, introspection 25, policy 15, refresh 10, password-login 5, audit-query 5"
+      ]
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T09:54:55.692897Z",
+      "duration_s": 60.000425959,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 28673,
+      "outcomes": {
+        "audit-query:ok": 1392,
+        "client-credentials:ok": 11418,
+        "introspection:ok": 7311,
+        "password-login:ok": 1401,
+        "policy:ok": 4313,
+        "refresh:ok": 2838
+      },
+      "throughput_per_s": 477.8799407123056,
+      "latency_ms": {
+        "mean": 66.85145258605657,
+        "p50": 43.008,
+        "p90": 102.4,
+        "p99": 442.368,
+        "p999": 491.52,
+        "max": 575.666
+      },
+      "histogram": [
+        {
+          "le_ms": 13.824,
+          "count": 1
+        },
+        {
+          "le_ms": 15.36,
+          "count": 3
+        },
+        {
+          "le_ms": 15.872,
+          "count": 2
+        },
+        {
+          "le_ms": 16.384,
+          "count": 5
+        },
+        {
+          "le_ms": 17.408,
+          "count": 19
+        },
+        {
+          "le_ms": 18.432,
+          "count": 46
+        },
+        {
+          "le_ms": 19.456,
+          "count": 76
+        },
+        {
+          "le_ms": 20.48,
+          "count": 134
+        },
+        {
+          "le_ms": 21.504,
+          "count": 224
+        },
+        {
+          "le_ms": 22.528,
+          "count": 247
+        },
+        {
+          "le_ms": 23.552,
+          "count": 312
+        },
+        {
+          "le_ms": 24.576,
+          "count": 431
+        },
+        {
+          "le_ms": 25.6,
+          "count": 457
+        },
+        {
+          "le_ms": 26.624,
+          "count": 549
+        },
+        {
+          "le_ms": 27.648,
+          "count": 585
+        },
+        {
+          "le_ms": 28.672,
+          "count": 642
+        },
+        {
+          "le_ms": 29.696,
+          "count": 718
+        },
+        {
+          "le_ms": 30.72,
+          "count": 775
+        },
+        {
+          "le_ms": 31.744,
+          "count": 832
+        },
+        {
+          "le_ms": 32.768,
+          "count": 866
+        },
+        {
+          "le_ms": 34.816,
+          "count": 1797
+        },
+        {
+          "le_ms": 36.864,
+          "count": 1849
+        },
+        {
+          "le_ms": 38.912,
+          "count": 1706
+        },
+        {
+          "le_ms": 40.96,
+          "count": 1611
+        },
+        {
+          "le_ms": 43.008,
+          "count": 1524
+        },
+        {
+          "le_ms": 45.056,
+          "count": 1262
+        },
+        {
+          "le_ms": 47.104,
+          "count": 1010
+        },
+        {
+          "le_ms": 49.152,
+          "count": 880
+        },
+        {
+          "le_ms": 51.2,
+          "count": 734
+        },
+        {
+          "le_ms": 53.248,
+          "count": 610
+        },
+        {
+          "le_ms": 55.296,
+          "count": 536
+        },
+        {
+          "le_ms": 57.344,
+          "count": 438
+        },
+        {
+          "le_ms": 59.392,
+          "count": 323
+        },
+        {
+          "le_ms": 61.44,
+          "count": 328
+        },
+        {
+          "le_ms": 63.488,
+          "count": 293
+        },
+        {
+          "le_ms": 65.536,
+          "count": 244
+        },
+        {
+          "le_ms": 69.632,
+          "count": 548
+        },
+        {
+          "le_ms": 73.728,
+          "count": 499
+        },
+        {
+          "le_ms": 77.824,
+          "count": 457
+        },
+        {
+          "le_ms": 81.92,
+          "count": 486
+        },
+        {
+          "le_ms": 86.016,
+          "count": 489
+        },
+        {
+          "le_ms": 90.112,
+          "count": 409
+        },
+        {
+          "le_ms": 94.208,
+          "count": 405
+        },
+        {
+          "le_ms": 98.304,
+          "count": 361
+        },
+        {
+          "le_ms": 102.4,
+          "count": 294
+        },
+        {
+          "le_ms": 106.496,
+          "count": 209
+        },
+        {
+          "le_ms": 110.592,
+          "count": 187
+        },
+        {
+          "le_ms": 114.688,
+          "count": 188
+        },
+        {
+          "le_ms": 118.784,
+          "count": 156
+        },
+        {
+          "le_ms": 122.88,
+          "count": 119
+        },
+        {
+          "le_ms": 126.976,
+          "count": 95
+        },
+        {
+          "le_ms": 131.072,
+          "count": 86
+        },
+        {
+          "le_ms": 139.264,
+          "count": 79
+        },
+        {
+          "le_ms": 147.456,
+          "count": 58
+        },
+        {
+          "le_ms": 155.648,
+          "count": 27
+        },
+        {
+          "le_ms": 163.84,
+          "count": 16
+        },
+        {
+          "le_ms": 172.032,
+          "count": 14
+        },
+        {
+          "le_ms": 180.224,
+          "count": 1
+        },
+        {
+          "le_ms": 188.416,
+          "count": 8
+        },
+        {
+          "le_ms": 196.608,
+          "count": 5
+        },
+        {
+          "le_ms": 204.8,
+          "count": 2
+        },
+        {
+          "le_ms": 212.992,
+          "count": 1
+        },
+        {
+          "le_ms": 262.144,
+          "count": 2
+        },
+        {
+          "le_ms": 360.448,
+          "count": 1
+        },
+        {
+          "le_ms": 376.832,
+          "count": 34
+        },
+        {
+          "le_ms": 393.216,
+          "count": 167
+        },
+        {
+          "le_ms": 409.6,
+          "count": 336
+        },
+        {
+          "le_ms": 425.984,
+          "count": 334
+        },
+        {
+          "le_ms": 442.368,
+          "count": 257
+        },
+        {
+          "le_ms": 458.752,
+          "count": 139
+        },
+        {
+          "le_ms": 475.136,
+          "count": 74
+        },
+        {
+          "le_ms": 491.52,
+          "count": 38
+        },
+        {
+          "le_ms": 507.904,
+          "count": 13
+        },
+        {
+          "le_ms": 524.288,
+          "count": 4
+        },
+        {
+          "le_ms": 557.056,
+          "count": 5
+        },
+        {
+          "le_ms": 589.824,
+          "count": 1
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 40, introspection 25, policy 15, refresh 10, password-login 5, audit-query 5"
+      ]
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T09:55:55.693623Z",
+      "duration_s": 60.00085125,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 28939,
+      "outcomes": {
+        "audit-query:ok": 1397,
+        "client-credentials:ok": 11531,
+        "introspection:ok": 7381,
+        "password-login:ok": 1418,
+        "policy:ok": 4349,
+        "refresh:ok": 2863
+      },
+      "throughput_per_s": 482.30982389604014,
+      "latency_ms": {
+        "mean": 66.23006461868067,
+        "p50": 40.96,
+        "p90": 102.4,
+        "p99": 442.368,
+        "p999": 507.904,
+        "max": 546.816
+      },
+      "histogram": [
+        {
+          "le_ms": 10.24,
+          "count": 1
+        },
+        {
+          "le_ms": 10.752,
+          "count": 1
+        },
+        {
+          "le_ms": 12.8,
+          "count": 2
+        },
+        {
+          "le_ms": 13.312,
+          "count": 2
+        },
+        {
+          "le_ms": 13.824,
+          "count": 1
+        },
+        {
+          "le_ms": 14.848,
+          "count": 1
+        },
+        {
+          "le_ms": 15.872,
+          "count": 1
+        },
+        {
+          "le_ms": 17.408,
+          "count": 3
+        },
+        {
+          "le_ms": 18.432,
+          "count": 12
+        },
+        {
+          "le_ms": 19.456,
+          "count": 45
+        },
+        {
+          "le_ms": 20.48,
+          "count": 98
+        },
+        {
+          "le_ms": 21.504,
+          "count": 178
+        },
+        {
+          "le_ms": 22.528,
+          "count": 298
+        },
+        {
+          "le_ms": 23.552,
+          "count": 388
+        },
+        {
+          "le_ms": 24.576,
+          "count": 483
+        },
+        {
+          "le_ms": 25.6,
+          "count": 508
+        },
+        {
+          "le_ms": 26.624,
+          "count": 575
+        },
+        {
+          "le_ms": 27.648,
+          "count": 629
+        },
+        {
+          "le_ms": 28.672,
+          "count": 651
+        },
+        {
+          "le_ms": 29.696,
+          "count": 724
+        },
+        {
+          "le_ms": 30.72,
+          "count": 829
+        },
+        {
+          "le_ms": 31.744,
+          "count": 922
+        },
+        {
+          "le_ms": 32.768,
+          "count": 911
+        },
+        {
+          "le_ms": 34.816,
+          "count": 1938
+        },
+        {
+          "le_ms": 36.864,
+          "count": 1893
+        },
+        {
+          "le_ms": 38.912,
+          "count": 1872
+        },
+        {
+          "le_ms": 40.96,
+          "count": 1695
+        },
+        {
+          "le_ms": 43.008,
+          "count": 1404
+        },
+        {
+          "le_ms": 45.056,
+          "count": 1143
+        },
+        {
+          "le_ms": 47.104,
+          "count": 991
+        },
+        {
+          "le_ms": 49.152,
+          "count": 844
+        },
+        {
+          "le_ms": 51.2,
+          "count": 757
+        },
+        {
+          "le_ms": 53.248,
+          "count": 558
+        },
+        {
+          "le_ms": 55.296,
+          "count": 448
+        },
+        {
+          "le_ms": 57.344,
+          "count": 370
+        },
+        {
+          "le_ms": 59.392,
+          "count": 351
+        },
+        {
+          "le_ms": 61.44,
+          "count": 323
+        },
+        {
+          "le_ms": 63.488,
+          "count": 270
+        },
+        {
+          "le_ms": 65.536,
+          "count": 257
+        },
+        {
+          "le_ms": 69.632,
+          "count": 516
+        },
+        {
+          "le_ms": 73.728,
+          "count": 533
+        },
+        {
+          "le_ms": 77.824,
+          "count": 534
+        },
+        {
+          "le_ms": 81.92,
+          "count": 453
+        },
+        {
+          "le_ms": 86.016,
+          "count": 480
+        },
+        {
+          "le_ms": 90.112,
+          "count": 419
+        },
+        {
+          "le_ms": 94.208,
+          "count": 358
+        },
+        {
+          "le_ms": 98.304,
+          "count": 351
+        },
+        {
+          "le_ms": 102.4,
+          "count": 337
+        },
+        {
+          "le_ms": 106.496,
+          "count": 236
+        },
+        {
+          "le_ms": 110.592,
+          "count": 174
+        },
+        {
+          "le_ms": 114.688,
+          "count": 177
+        },
+        {
+          "le_ms": 118.784,
+          "count": 132
+        },
+        {
+          "le_ms": 122.88,
+          "count": 95
+        },
+        {
+          "le_ms": 126.976,
+          "count": 81
+        },
+        {
+          "le_ms": 131.072,
+          "count": 58
+        },
+        {
+          "le_ms": 139.264,
+          "count": 76
+        },
+        {
+          "le_ms": 147.456,
+          "count": 38
+        },
+        {
+          "le_ms": 155.648,
+          "count": 24
+        },
+        {
+          "le_ms": 163.84,
+          "count": 23
+        },
+        {
+          "le_ms": 172.032,
+          "count": 20
+        },
+        {
+          "le_ms": 180.224,
+          "count": 7
+        },
+        {
+          "le_ms": 188.416,
+          "count": 3
+        },
+        {
+          "le_ms": 196.608,
+          "count": 4
+        },
+        {
+          "le_ms": 204.8,
+          "count": 5
+        },
+        {
+          "le_ms": 212.992,
+          "count": 2
+        },
+        {
+          "le_ms": 221.184,
+          "count": 4
+        },
+        {
+          "le_ms": 376.832,
+          "count": 47
+        },
+        {
+          "le_ms": 393.216,
+          "count": 202
+        },
+        {
+          "le_ms": 409.6,
+          "count": 332
+        },
+        {
+          "le_ms": 425.984,
+          "count": 386
+        },
+        {
+          "le_ms": 442.368,
+          "count": 211
+        },
+        {
+          "le_ms": 458.752,
+          "count": 118
+        },
+        {
+          "le_ms": 475.136,
+          "count": 59
+        },
+        {
+          "le_ms": 491.52,
+          "count": 24
+        },
+        {
+          "le_ms": 507.904,
+          "count": 28
+        },
+        {
+          "le_ms": 524.288,
+          "count": 8
+        },
+        {
+          "le_ms": 557.056,
+          "count": 7
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 40, introspection 25, policy 15, refresh 10, password-login 5, audit-query 5"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7098 @@
+{
+  "soak": true,
+  "windows": [
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed-delivery",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T14:05:51.046358Z",
+      "duration_s": 60.001507083,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 560,
+      "outcomes": {
+        "audit-query:ok": 27,
+        "client-credentials:ok": 148,
+        "email-delivery:ok": 33,
+        "import:ok": 29,
+        "introspection:ok": 84,
+        "passkey-assertion:ok": 18,
+        "password-login:ok": 29,
+        "policy:ok": 57,
+        "refresh:ok": 68,
+        "scim:ok": 35,
+        "webhook-delivery:delivery_timeout": 15,
+        "webhook-retry:delivery_timeout": 17
+      },
+      "throughput_per_s": 9.333098904088406,
+      "latency_ms": {
+        "mean": 1831.5010910714284,
+        "p50": 11.776,
+        "p90": 983.04,
+        "p99": 30001.003,
+        "p999": 30001.003,
+        "max": 30001.003
+      },
+      "histogram": [
+        {
+          "le_ms": 2.176,
+          "count": 1
+        },
+        {
+          "le_ms": 2.304,
+          "count": 5
+        },
+        {
+          "le_ms": 2.432,
+          "count": 1
+        },
+        {
+          "le_ms": 2.56,
+          "count": 2
+        },
+        {
+          "le_ms": 2.816,
+          "count": 2
+        },
+        {
+          "le_ms": 2.944,
+          "count": 2
+        },
+        {
+          "le_ms": 3.072,
+          "count": 2
+        },
+        {
+          "le_ms": 3.2,
+          "count": 5
+        },
+        {
+          "le_ms": 3.328,
+          "count": 7
+        },
+        {
+          "le_ms": 3.456,
+          "count": 6
+        },
+        {
+          "le_ms": 3.584,
+          "count": 2
+        },
+        {
+          "le_ms": 3.712,
+          "count": 4
+        },
+        {
+          "le_ms": 3.84,
+          "count": 5
+        },
+        {
+          "le_ms": 3.968,
+          "count": 5
+        },
+        {
+          "le_ms": 4.096,
+          "count": 2
+        },
+        {
+          "le_ms": 4.352,
+          "count": 6
+        },
+        {
+          "le_ms": 4.608,
+          "count": 5
+        },
+        {
+          "le_ms": 4.864,
+          "count": 5
+        },
+        {
+          "le_ms": 5.12,
+          "count": 5
+        },
+        {
+          "le_ms": 5.376,
+          "count": 5
+        },
+        {
+          "le_ms": 5.632,
+          "count": 6
+        },
+        {
+          "le_ms": 5.888,
+          "count": 9
+        },
+        {
+          "le_ms": 6.144,
+          "count": 8
+        },
+        {
+          "le_ms": 6.4,
+          "count": 6
+        },
+        {
+          "le_ms": 6.656,
+          "count": 11
+        },
+        {
+          "le_ms": 6.912,
+          "count": 8
+        },
+        {
+          "le_ms": 7.168,
+          "count": 6
+        },
+        {
+          "le_ms": 7.424,
+          "count": 11
+        },
+        {
+          "le_ms": 7.68,
+          "count": 12
+        },
+        {
+          "le_ms": 7.936,
+          "count": 13
+        },
+        {
+          "le_ms": 8.192,
+          "count": 9
+        },
+        {
+          "le_ms": 8.704,
+          "count": 19
+        },
+        {
+          "le_ms": 9.216,
+          "count": 13
+        },
+        {
+          "le_ms": 9.728,
+          "count": 24
+        },
+        {
+          "le_ms": 10.24,
+          "count": 16
+        },
+        {
+          "le_ms": 10.752,
+          "count": 12
+        },
+        {
+          "le_ms": 11.264,
+          "count": 12
+        },
+        {
+          "le_ms": 11.776,
+          "count": 9
+        },
+        {
+          "le_ms": 12.288,
+          "count": 10
+        },
+        {
+          "le_ms": 12.8,
+          "count": 3
+        },
+        {
+          "le_ms": 13.312,
+          "count": 7
+        },
+        {
+          "le_ms": 13.824,
+          "count": 9
+        },
+        {
+          "le_ms": 14.336,
+          "count": 3
+        },
+        {
+          "le_ms": 14.848,
+          "count": 2
+        },
+        {
+          "le_ms": 15.36,
+          "count": 3
+        },
+        {
+          "le_ms": 15.872,
+          "count": 2
+        },
+        {
+          "le_ms": 16.384,
+          "count": 3
+        },
+        {
+          "le_ms": 17.408,
+          "count": 5
+        },
+        {
+          "le_ms": 18.432,
+          "count": 5
+        },
+        {
+          "le_ms": 19.456,
+          "count": 5
+        },
+        {
+          "le_ms": 20.48,
+          "count": 6
+        },
+        {
+          "le_ms": 21.504,
+          "count": 4
+        },
+        {
+          "le_ms": 22.528,
+          "count": 4
+        },
+        {
+          "le_ms": 23.552,
+          "count": 3
+        },
+        {
+          "le_ms": 25.6,
+          "count": 4
+        },
+        {
+          "le_ms": 26.624,
+          "count": 2
+        },
+        {
+          "le_ms": 27.648,
+          "count": 1
+        },
+        {
+          "le_ms": 28.672,
+          "count": 2
+        },
+        {
+          "le_ms": 29.696,
+          "count": 7
+        },
+        {
+          "le_ms": 30.72,
+          "count": 5
+        },
+        {
+          "le_ms": 31.744,
+          "count": 2
+        },
+        {
+          "le_ms": 32.768,
+          "count": 8
+        },
+        {
+          "le_ms": 34.816,
+          "count": 7
+        },
+        {
+          "le_ms": 36.864,
+          "count": 9
+        },
+        {
+          "le_ms": 38.912,
+          "count": 2
+        },
+        {
+          "le_ms": 40.96,
+          "count": 4
+        },
+        {
+          "le_ms": 43.008,
+          "count": 7
+        },
+        {
+          "le_ms": 45.056,
+          "count": 3
+        },
+        {
+          "le_ms": 47.104,
+          "count": 4
+        },
+        {
+          "le_ms": 49.152,
+          "count": 2
+        },
+        {
+          "le_ms": 51.2,
+          "count": 1
+        },
+        {
+          "le_ms": 55.296,
+          "count": 2
+        },
+        {
+          "le_ms": 57.344,
+          "count": 1
+        },
+        {
+          "le_ms": 59.392,
+          "count": 1
+        },
+        {
+          "le_ms": 63.488,
+          "count": 1
+        },
+        {
+          "le_ms": 69.632,
+          "count": 1
+        },
+        {
+          "le_ms": 73.728,
+          "count": 1
+        },
+        {
+          "le_ms": 77.824,
+          "count": 1
+        },
+        {
+          "le_ms": 102.4,
+          "count": 1
+        },
+        {
+          "le_ms": 147.456,
+          "count": 1
+        },
+        {
+          "le_ms": 155.648,
+          "count": 2
+        },
+        {
+          "le_ms": 163.84,
+          "count": 3
+        },
+        {
+          "le_ms": 172.032,
+          "count": 1
+        },
+        {
+          "le_ms": 188.416,
+          "count": 3
+        },
+        {
+          "le_ms": 196.608,
+          "count": 1
+        },
+        {
+          "le_ms": 237.568,
+          "count": 1
+        },
+        {
+          "le_ms": 278.528,
+          "count": 1
+        },
+        {
+          "le_ms": 294.912,
+          "count": 23
+        },
+        {
+          "le_ms": 311.296,
+          "count": 12
+        },
+        {
+          "le_ms": 327.68,
+          "count": 4
+        },
+        {
+          "le_ms": 344.064,
+          "count": 1
+        },
+        {
+          "le_ms": 360.448,
+          "count": 3
+        },
+        {
+          "le_ms": 376.832,
+          "count": 4
+        },
+        {
+          "le_ms": 393.216,
+          "count": 1
+        },
+        {
+          "le_ms": 442.368,
+          "count": 1
+        },
+        {
+          "le_ms": 557.056,
+          "count": 1
+        },
+        {
+          "le_ms": 753.664,
+          "count": 1
+        },
+        {
+          "le_ms": 884.736,
+          "count": 2
+        },
+        {
+          "le_ms": 983.04,
+          "count": 4
+        },
+        {
+          "le_ms": 1015.808,
+          "count": 1
+        },
+        {
+          "le_ms": 1114.112,
+          "count": 4
+        },
+        {
+          "le_ms": 1179.648,
+          "count": 1
+        },
+        {
+          "le_ms": 1245.184,
+          "count": 3
+        },
+        {
+          "le_ms": 1310.72,
+          "count": 2
+        },
+        {
+          "le_ms": 1376.256,
+          "count": 4
+        },
+        {
+          "le_ms": 1572.864,
+          "count": 1
+        },
+        {
+          "le_ms": 1769.472,
+          "count": 1
+        },
+        {
+          "le_ms": 1900.544,
+          "count": 1
+        },
+        {
+          "le_ms": 1966.08,
+          "count": 3
+        },
+        {
+          "le_ms": 2031.616,
+          "count": 2
+        },
+        {
+          "le_ms": 2097.152,
+          "count": 1
+        },
+        {
+          "le_ms": 30408.704,
+          "count": 32
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 25, introspection 15, policy 10, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 5, webhook-delivery 5, webhook-retry 5",
+        "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+        "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+        "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+        "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+        "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+        "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+        "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+      ],
+      "observations": {
+        "after": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 0,
+              "accepted": 0,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 0,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 0,
+              "accepted": 0,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 0,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        },
+        "before": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 0,
+              "accepted": 0,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 0,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 0,
+              "accepted": 0,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 0,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        }
+      }
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed-delivery",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T14:06:51.048559Z",
+      "duration_s": 60.001388125,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 560,
+      "outcomes": {
+        "audit-query:ok": 27,
+        "client-credentials:ok": 148,
+        "email-delivery:ok": 33,
+        "import:ok": 29,
+        "introspection:ok": 84,
+        "passkey-assertion:ok": 18,
+        "password-login:ok": 29,
+        "policy:ok": 57,
+        "refresh:ok": 68,
+        "scim:ok": 35,
+        "webhook-delivery:delivery_timeout": 15,
+        "webhook-retry:delivery_timeout": 17
+      },
+      "throughput_per_s": 9.333117407773306,
+      "latency_ms": {
+        "mean": 1798.752105357143,
+        "p50": 14.336,
+        "p90": 344.064,
+        "p99": 30001.682,
+        "p999": 30001.682,
+        "max": 30001.682
+      },
+      "histogram": [
+        {
+          "le_ms": 2.816,
+          "count": 4
+        },
+        {
+          "le_ms": 2.944,
+          "count": 5
+        },
+        {
+          "le_ms": 3.072,
+          "count": 3
+        },
+        {
+          "le_ms": 3.2,
+          "count": 1
+        },
+        {
+          "le_ms": 3.328,
+          "count": 1
+        },
+        {
+          "le_ms": 3.456,
+          "count": 2
+        },
+        {
+          "le_ms": 3.584,
+          "count": 2
+        },
+        {
+          "le_ms": 3.712,
+          "count": 5
+        },
+        {
+          "le_ms": 3.84,
+          "count": 6
+        },
+        {
+          "le_ms": 3.968,
+          "count": 1
+        },
+        {
+          "le_ms": 4.096,
+          "count": 3
+        },
+        {
+          "le_ms": 4.352,
+          "count": 5
+        },
+        {
+          "le_ms": 4.608,
+          "count": 5
+        },
+        {
+          "le_ms": 4.864,
+          "count": 5
+        },
+        {
+          "le_ms": 5.12,
+          "count": 4
+        },
+        {
+          "le_ms": 5.376,
+          "count": 4
+        },
+        {
+          "le_ms": 5.632,
+          "count": 12
+        },
+        {
+          "le_ms": 5.888,
+          "count": 7
+        },
+        {
+          "le_ms": 6.144,
+          "count": 9
+        },
+        {
+          "le_ms": 6.4,
+          "count": 5
+        },
+        {
+          "le_ms": 6.656,
+          "count": 13
+        },
+        {
+          "le_ms": 6.912,
+          "count": 4
+        },
+        {
+          "le_ms": 7.168,
+          "count": 5
+        },
+        {
+          "le_ms": 7.424,
+          "count": 5
+        },
+        {
+          "le_ms": 7.68,
+          "count": 6
+        },
+        {
+          "le_ms": 7.936,
+          "count": 9
+        },
+        {
+          "le_ms": 8.192,
+          "count": 8
+        },
+        {
+          "le_ms": 8.704,
+          "count": 19
+        },
+        {
+          "le_ms": 9.216,
+          "count": 11
+        },
+        {
+          "le_ms": 9.728,
+          "count": 15
+        },
+        {
+          "le_ms": 10.24,
+          "count": 13
+        },
+        {
+          "le_ms": 10.752,
+          "count": 21
+        },
+        {
+          "le_ms": 11.264,
+          "count": 10
+        },
+        {
+          "le_ms": 11.776,
+          "count": 10
+        },
+        {
+          "le_ms": 12.288,
+          "count": 11
+        },
+        {
+          "le_ms": 12.8,
+          "count": 10
+        },
+        {
+          "le_ms": 13.312,
+          "count": 6
+        },
+        {
+          "le_ms": 13.824,
+          "count": 6
+        },
+        {
+          "le_ms": 14.336,
+          "count": 10
+        },
+        {
+          "le_ms": 14.848,
+          "count": 6
+        },
+        {
+          "le_ms": 15.36,
+          "count": 7
+        },
+        {
+          "le_ms": 15.872,
+          "count": 3
+        },
+        {
+          "le_ms": 16.384,
+          "count": 1
+        },
+        {
+          "le_ms": 17.408,
+          "count": 15
+        },
+        {
+          "le_ms": 18.432,
+          "count": 9
+        },
+        {
+          "le_ms": 19.456,
+          "count": 7
+        },
+        {
+          "le_ms": 20.48,
+          "count": 7
+        },
+        {
+          "le_ms": 21.504,
+          "count": 2
+        },
+        {
+          "le_ms": 22.528,
+          "count": 3
+        },
+        {
+          "le_ms": 23.552,
+          "count": 1
+        },
+        {
+          "le_ms": 24.576,
+          "count": 4
+        },
+        {
+          "le_ms": 25.6,
+          "count": 5
+        },
+        {
+          "le_ms": 26.624,
+          "count": 8
+        },
+        {
+          "le_ms": 27.648,
+          "count": 8
+        },
+        {
+          "le_ms": 28.672,
+          "count": 1
+        },
+        {
+          "le_ms": 29.696,
+          "count": 6
+        },
+        {
+          "le_ms": 30.72,
+          "count": 5
+        },
+        {
+          "le_ms": 31.744,
+          "count": 9
+        },
+        {
+          "le_ms": 32.768,
+          "count": 2
+        },
+        {
+          "le_ms": 34.816,
+          "count": 4
+        },
+        {
+          "le_ms": 36.864,
+          "count": 6
+        },
+        {
+          "le_ms": 38.912,
+          "count": 4
+        },
+        {
+          "le_ms": 40.96,
+          "count": 6
+        },
+        {
+          "le_ms": 43.008,
+          "count": 3
+        },
+        {
+          "le_ms": 45.056,
+          "count": 4
+        },
+        {
+          "le_ms": 47.104,
+          "count": 2
+        },
+        {
+          "le_ms": 49.152,
+          "count": 5
+        },
+        {
+          "le_ms": 51.2,
+          "count": 3
+        },
+        {
+          "le_ms": 53.248,
+          "count": 5
+        },
+        {
+          "le_ms": 55.296,
+          "count": 5
+        },
+        {
+          "le_ms": 57.344,
+          "count": 1
+        },
+        {
+          "le_ms": 59.392,
+          "count": 1
+        },
+        {
+          "le_ms": 61.44,
+          "count": 4
+        },
+        {
+          "le_ms": 65.536,
+          "count": 1
+        },
+        {
+          "le_ms": 77.824,
+          "count": 1
+        },
+        {
+          "le_ms": 86.016,
+          "count": 1
+        },
+        {
+          "le_ms": 114.688,
+          "count": 1
+        },
+        {
+          "le_ms": 118.784,
+          "count": 2
+        },
+        {
+          "le_ms": 131.072,
+          "count": 1
+        },
+        {
+          "le_ms": 139.264,
+          "count": 1
+        },
+        {
+          "le_ms": 147.456,
+          "count": 3
+        },
+        {
+          "le_ms": 155.648,
+          "count": 3
+        },
+        {
+          "le_ms": 163.84,
+          "count": 2
+        },
+        {
+          "le_ms": 172.032,
+          "count": 1
+        },
+        {
+          "le_ms": 180.224,
+          "count": 2
+        },
+        {
+          "le_ms": 196.608,
+          "count": 1
+        },
+        {
+          "le_ms": 212.992,
+          "count": 1
+        },
+        {
+          "le_ms": 229.376,
+          "count": 2
+        },
+        {
+          "le_ms": 245.76,
+          "count": 1
+        },
+        {
+          "le_ms": 278.528,
+          "count": 4
+        },
+        {
+          "le_ms": 294.912,
+          "count": 16
+        },
+        {
+          "le_ms": 311.296,
+          "count": 9
+        },
+        {
+          "le_ms": 327.68,
+          "count": 7
+        },
+        {
+          "le_ms": 344.064,
+          "count": 1
+        },
+        {
+          "le_ms": 360.448,
+          "count": 2
+        },
+        {
+          "le_ms": 442.368,
+          "count": 1
+        },
+        {
+          "le_ms": 557.056,
+          "count": 2
+        },
+        {
+          "le_ms": 655.36,
+          "count": 1
+        },
+        {
+          "le_ms": 884.736,
+          "count": 2
+        },
+        {
+          "le_ms": 917.504,
+          "count": 1
+        },
+        {
+          "le_ms": 983.04,
+          "count": 3
+        },
+        {
+          "le_ms": 1015.808,
+          "count": 1
+        },
+        {
+          "le_ms": 1114.112,
+          "count": 6
+        },
+        {
+          "le_ms": 1900.544,
+          "count": 1
+        },
+        {
+          "le_ms": 1966.08,
+          "count": 4
+        },
+        {
+          "le_ms": 30408.704,
+          "count": 32
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 25, introspection 15, policy 10, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 5, webhook-delivery 5, webhook-retry 5",
+        "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+        "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+        "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+        "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+        "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+        "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+        "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+      ],
+      "observations": {
+        "after": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 0,
+              "accepted": 0,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 0,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 0,
+              "accepted": 0,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 0,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        },
+        "before": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 0,
+              "accepted": 0,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 0,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 0,
+              "accepted": 0,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 0,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        }
+      }
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed-delivery",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T14:07:51.05055Z",
+      "duration_s": 60.000538125,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 1764,
+      "outcomes": {
+        "audit-query:ok": 89,
+        "client-credentials:ok": 452,
+        "email-delivery:ok": 82,
+        "import:ok": 88,
+        "introspection:ok": 275,
+        "passkey-assertion:ok": 78,
+        "password-login:ok": 87,
+        "policy:ok": 182,
+        "refresh:ok": 195,
+        "scim:ok": 98,
+        "webhook-delivery:ok": 70,
+        "webhook-retry:delivery_timeout": 8,
+        "webhook-retry:ok": 60
+      },
+      "throughput_per_s": 29.399736321114872,
+      "latency_ms": {
+        "mean": 962.809191043084,
+        "p50": 11.776,
+        "p90": 983.04,
+        "p99": 19922.944,
+        "p999": 30001.064,
+        "max": 30001.064
+      },
+      "histogram": [
+        {
+          "le_ms": 2.176,
+          "count": 1
+        },
+        {
+          "le_ms": 2.304,
+          "count": 3
+        },
+        {
+          "le_ms": 2.432,
+          "count": 5
+        },
+        {
+          "le_ms": 2.56,
+          "count": 4
+        },
+        {
+          "le_ms": 2.688,
+          "count": 12
+        },
+        {
+          "le_ms": 2.816,
+          "count": 7
+        },
+        {
+          "le_ms": 2.944,
+          "count": 15
+        },
+        {
+          "le_ms": 3.072,
+          "count": 8
+        },
+        {
+          "le_ms": 3.2,
+          "count": 9
+        },
+        {
+          "le_ms": 3.328,
+          "count": 6
+        },
+        {
+          "le_ms": 3.456,
+          "count": 14
+        },
+        {
+          "le_ms": 3.584,
+          "count": 16
+        },
+        {
+          "le_ms": 3.712,
+          "count": 16
+        },
+        {
+          "le_ms": 3.84,
+          "count": 10
+        },
+        {
+          "le_ms": 3.968,
+          "count": 16
+        },
+        {
+          "le_ms": 4.096,
+          "count": 11
+        },
+        {
+          "le_ms": 4.352,
+          "count": 27
+        },
+        {
+          "le_ms": 4.608,
+          "count": 13
+        },
+        {
+          "le_ms": 4.864,
+          "count": 21
+        },
+        {
+          "le_ms": 5.12,
+          "count": 20
+        },
+        {
+          "le_ms": 5.376,
+          "count": 23
+        },
+        {
+          "le_ms": 5.632,
+          "count": 33
+        },
+        {
+          "le_ms": 5.888,
+          "count": 23
+        },
+        {
+          "le_ms": 6.144,
+          "count": 20
+        },
+        {
+          "le_ms": 6.4,
+          "count": 25
+        },
+        {
+          "le_ms": 6.656,
+          "count": 32
+        },
+        {
+          "le_ms": 6.912,
+          "count": 36
+        },
+        {
+          "le_ms": 7.168,
+          "count": 23
+        },
+        {
+          "le_ms": 7.424,
+          "count": 31
+        },
+        {
+          "le_ms": 7.68,
+          "count": 23
+        },
+        {
+          "le_ms": 7.936,
+          "count": 35
+        },
+        {
+          "le_ms": 8.192,
+          "count": 38
+        },
+        {
+          "le_ms": 8.704,
+          "count": 54
+        },
+        {
+          "le_ms": 9.216,
+          "count": 46
+        },
+        {
+          "le_ms": 9.728,
+          "count": 47
+        },
+        {
+          "le_ms": 10.24,
+          "count": 37
+        },
+        {
+          "le_ms": 10.752,
+          "count": 47
+        },
+        {
+          "le_ms": 11.264,
+          "count": 41
+        },
+        {
+          "le_ms": 11.776,
+          "count": 36
+        },
+        {
+          "le_ms": 12.288,
+          "count": 36
+        },
+        {
+          "le_ms": 12.8,
+          "count": 31
+        },
+        {
+          "le_ms": 13.312,
+          "count": 22
+        },
+        {
+          "le_ms": 13.824,
+          "count": 19
+        },
+        {
+          "le_ms": 14.336,
+          "count": 19
+        },
+        {
+          "le_ms": 14.848,
+          "count": 21
+        },
+        {
+          "le_ms": 15.36,
+          "count": 22
+        },
+        {
+          "le_ms": 15.872,
+          "count": 23
+        },
+        {
+          "le_ms": 16.384,
+          "count": 16
+        },
+        {
+          "le_ms": 17.408,
+          "count": 28
+        },
+        {
+          "le_ms": 18.432,
+          "count": 16
+        },
+        {
+          "le_ms": 19.456,
+          "count": 23
+        },
+        {
+          "le_ms": 20.48,
+          "count": 14
+        },
+        {
+          "le_ms": 21.504,
+          "count": 14
+        },
+        {
+          "le_ms": 22.528,
+          "count": 11
+        },
+        {
+          "le_ms": 23.552,
+          "count": 7
+        },
+        {
+          "le_ms": 24.576,
+          "count": 8
+        },
+        {
+          "le_ms": 25.6,
+          "count": 11
+        },
+        {
+          "le_ms": 26.624,
+          "count": 7
+        },
+        {
+          "le_ms": 27.648,
+          "count": 9
+        },
+        {
+          "le_ms": 28.672,
+          "count": 8
+        },
+        {
+          "le_ms": 29.696,
+          "count": 9
+        },
+        {
+          "le_ms": 30.72,
+          "count": 6
+        },
+        {
+          "le_ms": 31.744,
+          "count": 14
+        },
+        {
+          "le_ms": 32.768,
+          "count": 7
+        },
+        {
+          "le_ms": 34.816,
+          "count": 14
+        },
+        {
+          "le_ms": 36.864,
+          "count": 11
+        },
+        {
+          "le_ms": 38.912,
+          "count": 11
+        },
+        {
+          "le_ms": 40.96,
+          "count": 10
+        },
+        {
+          "le_ms": 43.008,
+          "count": 7
+        },
+        {
+          "le_ms": 45.056,
+          "count": 13
+        },
+        {
+          "le_ms": 47.104,
+          "count": 7
+        },
+        {
+          "le_ms": 49.152,
+          "count": 2
+        },
+        {
+          "le_ms": 51.2,
+          "count": 5
+        },
+        {
+          "le_ms": 53.248,
+          "count": 7
+        },
+        {
+          "le_ms": 55.296,
+          "count": 11
+        },
+        {
+          "le_ms": 57.344,
+          "count": 2
+        },
+        {
+          "le_ms": 59.392,
+          "count": 3
+        },
+        {
+          "le_ms": 61.44,
+          "count": 4
+        },
+        {
+          "le_ms": 63.488,
+          "count": 3
+        },
+        {
+          "le_ms": 65.536,
+          "count": 6
+        },
+        {
+          "le_ms": 69.632,
+          "count": 2
+        },
+        {
+          "le_ms": 73.728,
+          "count": 5
+        },
+        {
+          "le_ms": 77.824,
+          "count": 3
+        },
+        {
+          "le_ms": 81.92,
+          "count": 2
+        },
+        {
+          "le_ms": 86.016,
+          "count": 3
+        },
+        {
+          "le_ms": 122.88,
+          "count": 1
+        },
+        {
+          "le_ms": 131.072,
+          "count": 1
+        },
+        {
+          "le_ms": 139.264,
+          "count": 2
+        },
+        {
+          "le_ms": 147.456,
+          "count": 1
+        },
+        {
+          "le_ms": 155.648,
+          "count": 1
+        },
+        {
+          "le_ms": 163.84,
+          "count": 1
+        },
+        {
+          "le_ms": 172.032,
+          "count": 3
+        },
+        {
+          "le_ms": 196.608,
+          "count": 2
+        },
+        {
+          "le_ms": 237.568,
+          "count": 2
+        },
+        {
+          "le_ms": 245.76,
+          "count": 2
+        },
+        {
+          "le_ms": 253.952,
+          "count": 1
+        },
+        {
+          "le_ms": 278.528,
+          "count": 6
+        },
+        {
+          "le_ms": 294.912,
+          "count": 59
+        },
+        {
+          "le_ms": 311.296,
+          "count": 32
+        },
+        {
+          "le_ms": 327.68,
+          "count": 13
+        },
+        {
+          "le_ms": 344.064,
+          "count": 4
+        },
+        {
+          "le_ms": 442.368,
+          "count": 1
+        },
+        {
+          "le_ms": 557.056,
+          "count": 3
+        },
+        {
+          "le_ms": 589.824,
+          "count": 1
+        },
+        {
+          "le_ms": 655.36,
+          "count": 4
+        },
+        {
+          "le_ms": 688.128,
+          "count": 1
+        },
+        {
+          "le_ms": 753.664,
+          "count": 3
+        },
+        {
+          "le_ms": 786.432,
+          "count": 3
+        },
+        {
+          "le_ms": 851.968,
+          "count": 4
+        },
+        {
+          "le_ms": 884.736,
+          "count": 6
+        },
+        {
+          "le_ms": 917.504,
+          "count": 2
+        },
+        {
+          "le_ms": 950.272,
+          "count": 1
+        },
+        {
+          "le_ms": 983.04,
+          "count": 18
+        },
+        {
+          "le_ms": 1015.808,
+          "count": 4
+        },
+        {
+          "le_ms": 1114.112,
+          "count": 10
+        },
+        {
+          "le_ms": 1179.648,
+          "count": 1
+        },
+        {
+          "le_ms": 1245.184,
+          "count": 5
+        },
+        {
+          "le_ms": 1310.72,
+          "count": 2
+        },
+        {
+          "le_ms": 1376.256,
+          "count": 3
+        },
+        {
+          "le_ms": 1441.792,
+          "count": 4
+        },
+        {
+          "le_ms": 1507.328,
+          "count": 2
+        },
+        {
+          "le_ms": 1572.864,
+          "count": 5
+        },
+        {
+          "le_ms": 1638.4,
+          "count": 2
+        },
+        {
+          "le_ms": 1703.936,
+          "count": 5
+        },
+        {
+          "le_ms": 1835.008,
+          "count": 1
+        },
+        {
+          "le_ms": 1900.544,
+          "count": 12
+        },
+        {
+          "le_ms": 1966.08,
+          "count": 14
+        },
+        {
+          "le_ms": 2031.616,
+          "count": 11
+        },
+        {
+          "le_ms": 2097.152,
+          "count": 5
+        },
+        {
+          "le_ms": 3670.016,
+          "count": 1
+        },
+        {
+          "le_ms": 12058.624,
+          "count": 5
+        },
+        {
+          "le_ms": 12582.912,
+          "count": 4
+        },
+        {
+          "le_ms": 13107.2,
+          "count": 8
+        },
+        {
+          "le_ms": 13631.488,
+          "count": 6
+        },
+        {
+          "le_ms": 14155.776,
+          "count": 13
+        },
+        {
+          "le_ms": 15204.352,
+          "count": 11
+        },
+        {
+          "le_ms": 16252.928,
+          "count": 4
+        },
+        {
+          "le_ms": 16777.216,
+          "count": 1
+        },
+        {
+          "le_ms": 17825.792,
+          "count": 11
+        },
+        {
+          "le_ms": 18874.368,
+          "count": 2
+        },
+        {
+          "le_ms": 19922.944,
+          "count": 1
+        },
+        {
+          "le_ms": 26214.4,
+          "count": 1
+        },
+        {
+          "le_ms": 27262.976,
+          "count": 1
+        },
+        {
+          "le_ms": 28311.552,
+          "count": 1
+        },
+        {
+          "le_ms": 29360.128,
+          "count": 6
+        },
+        {
+          "le_ms": 30408.704,
+          "count": 8
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 25, introspection 15, policy 10, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 5, webhook-delivery 5, webhook-retry 5",
+        "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+        "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+        "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+        "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+        "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+        "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+        "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+      ],
+      "observations": {
+        "after": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 296,
+              "accepted": 140,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 156,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 479,
+              "accepted": 126,
+              "intentional_503": 178,
+              "recovered": 126,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 175,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:08:49.338757Z",
+              "last_recovery_at": "2026-10-11T14:08:49.342354Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        },
+        "before": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 0,
+              "accepted": 0,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 0,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 0,
+              "accepted": 0,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 0,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        }
+      }
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed-delivery",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T14:08:51.051677Z",
+      "duration_s": 60.00026525,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 2520,
+      "outcomes": {
+        "audit-query:ok": 123,
+        "client-credentials:ok": 643,
+        "email-delivery:ok": 124,
+        "import:ok": 128,
+        "introspection:ok": 384,
+        "passkey-assertion:ok": 118,
+        "password-login:ok": 129,
+        "policy:ok": 258,
+        "refresh:ok": 262,
+        "scim:ok": 143,
+        "webhook-delivery:ok": 112,
+        "webhook-retry:ok": 96
+      },
+      "throughput_per_s": 41.999814325820836,
+      "latency_ms": {
+        "mean": 686.495819047619,
+        "p50": 12.288,
+        "p90": 1015.808,
+        "p99": 14155.776,
+        "p999": 16055.943,
+        "max": 16055.943
+      },
+      "histogram": [
+        {
+          "le_ms": 2.176,
+          "count": 3
+        },
+        {
+          "le_ms": 2.304,
+          "count": 15
+        },
+        {
+          "le_ms": 2.432,
+          "count": 7
+        },
+        {
+          "le_ms": 2.56,
+          "count": 2
+        },
+        {
+          "le_ms": 2.688,
+          "count": 7
+        },
+        {
+          "le_ms": 2.816,
+          "count": 5
+        },
+        {
+          "le_ms": 2.944,
+          "count": 16
+        },
+        {
+          "le_ms": 3.072,
+          "count": 13
+        },
+        {
+          "le_ms": 3.2,
+          "count": 7
+        },
+        {
+          "le_ms": 3.328,
+          "count": 10
+        },
+        {
+          "le_ms": 3.456,
+          "count": 17
+        },
+        {
+          "le_ms": 3.584,
+          "count": 17
+        },
+        {
+          "le_ms": 3.712,
+          "count": 19
+        },
+        {
+          "le_ms": 3.84,
+          "count": 9
+        },
+        {
+          "le_ms": 3.968,
+          "count": 18
+        },
+        {
+          "le_ms": 4.096,
+          "count": 13
+        },
+        {
+          "le_ms": 4.352,
+          "count": 34
+        },
+        {
+          "le_ms": 4.608,
+          "count": 38
+        },
+        {
+          "le_ms": 4.864,
+          "count": 46
+        },
+        {
+          "le_ms": 5.12,
+          "count": 21
+        },
+        {
+          "le_ms": 5.376,
+          "count": 28
+        },
+        {
+          "le_ms": 5.632,
+          "count": 35
+        },
+        {
+          "le_ms": 5.888,
+          "count": 32
+        },
+        {
+          "le_ms": 6.144,
+          "count": 25
+        },
+        {
+          "le_ms": 6.4,
+          "count": 31
+        },
+        {
+          "le_ms": 6.656,
+          "count": 35
+        },
+        {
+          "le_ms": 6.912,
+          "count": 39
+        },
+        {
+          "le_ms": 7.168,
+          "count": 37
+        },
+        {
+          "le_ms": 7.424,
+          "count": 39
+        },
+        {
+          "le_ms": 7.68,
+          "count": 47
+        },
+        {
+          "le_ms": 7.936,
+          "count": 46
+        },
+        {
+          "le_ms": 8.192,
+          "count": 40
+        },
+        {
+          "le_ms": 8.704,
+          "count": 77
+        },
+        {
+          "le_ms": 9.216,
+          "count": 67
+        },
+        {
+          "le_ms": 9.728,
+          "count": 71
+        },
+        {
+          "le_ms": 10.24,
+          "count": 65
+        },
+        {
+          "le_ms": 10.752,
+          "count": 57
+        },
+        {
+          "le_ms": 11.264,
+          "count": 63
+        },
+        {
+          "le_ms": 11.776,
+          "count": 55
+        },
+        {
+          "le_ms": 12.288,
+          "count": 54
+        },
+        {
+          "le_ms": 12.8,
+          "count": 43
+        },
+        {
+          "le_ms": 13.312,
+          "count": 47
+        },
+        {
+          "le_ms": 13.824,
+          "count": 43
+        },
+        {
+          "le_ms": 14.336,
+          "count": 23
+        },
+        {
+          "le_ms": 14.848,
+          "count": 26
+        },
+        {
+          "le_ms": 15.36,
+          "count": 25
+        },
+        {
+          "le_ms": 15.872,
+          "count": 28
+        },
+        {
+          "le_ms": 16.384,
+          "count": 22
+        },
+        {
+          "le_ms": 17.408,
+          "count": 43
+        },
+        {
+          "le_ms": 18.432,
+          "count": 41
+        },
+        {
+          "le_ms": 19.456,
+          "count": 29
+        },
+        {
+          "le_ms": 20.48,
+          "count": 26
+        },
+        {
+          "le_ms": 21.504,
+          "count": 17
+        },
+        {
+          "le_ms": 22.528,
+          "count": 20
+        },
+        {
+          "le_ms": 23.552,
+          "count": 22
+        },
+        {
+          "le_ms": 24.576,
+          "count": 12
+        },
+        {
+          "le_ms": 25.6,
+          "count": 16
+        },
+        {
+          "le_ms": 26.624,
+          "count": 7
+        },
+        {
+          "le_ms": 27.648,
+          "count": 16
+        },
+        {
+          "le_ms": 28.672,
+          "count": 9
+        },
+        {
+          "le_ms": 29.696,
+          "count": 15
+        },
+        {
+          "le_ms": 30.72,
+          "count": 4
+        },
+        {
+          "le_ms": 31.744,
+          "count": 9
+        },
+        {
+          "le_ms": 32.768,
+          "count": 5
+        },
+        {
+          "le_ms": 34.816,
+          "count": 16
+        },
+        {
+          "le_ms": 36.864,
+          "count": 17
+        },
+        {
+          "le_ms": 38.912,
+          "count": 13
+        },
+        {
+          "le_ms": 40.96,
+          "count": 11
+        },
+        {
+          "le_ms": 43.008,
+          "count": 10
+        },
+        {
+          "le_ms": 45.056,
+          "count": 14
+        },
+        {
+          "le_ms": 47.104,
+          "count": 6
+        },
+        {
+          "le_ms": 49.152,
+          "count": 10
+        },
+        {
+          "le_ms": 51.2,
+          "count": 7
+        },
+        {
+          "le_ms": 53.248,
+          "count": 9
+        },
+        {
+          "le_ms": 55.296,
+          "count": 12
+        },
+        {
+          "le_ms": 57.344,
+          "count": 4
+        },
+        {
+          "le_ms": 59.392,
+          "count": 6
+        },
+        {
+          "le_ms": 61.44,
+          "count": 3
+        },
+        {
+          "le_ms": 63.488,
+          "count": 4
+        },
+        {
+          "le_ms": 65.536,
+          "count": 5
+        },
+        {
+          "le_ms": 69.632,
+          "count": 15
+        },
+        {
+          "le_ms": 73.728,
+          "count": 13
+        },
+        {
+          "le_ms": 77.824,
+          "count": 8
+        },
+        {
+          "le_ms": 81.92,
+          "count": 9
+        },
+        {
+          "le_ms": 86.016,
+          "count": 5
+        },
+        {
+          "le_ms": 90.112,
+          "count": 5
+        },
+        {
+          "le_ms": 94.208,
+          "count": 2
+        },
+        {
+          "le_ms": 98.304,
+          "count": 1
+        },
+        {
+          "le_ms": 102.4,
+          "count": 1
+        },
+        {
+          "le_ms": 106.496,
+          "count": 1
+        },
+        {
+          "le_ms": 114.688,
+          "count": 2
+        },
+        {
+          "le_ms": 118.784,
+          "count": 1
+        },
+        {
+          "le_ms": 122.88,
+          "count": 1
+        },
+        {
+          "le_ms": 126.976,
+          "count": 2
+        },
+        {
+          "le_ms": 139.264,
+          "count": 2
+        },
+        {
+          "le_ms": 147.456,
+          "count": 3
+        },
+        {
+          "le_ms": 155.648,
+          "count": 2
+        },
+        {
+          "le_ms": 163.84,
+          "count": 1
+        },
+        {
+          "le_ms": 172.032,
+          "count": 1
+        },
+        {
+          "le_ms": 188.416,
+          "count": 2
+        },
+        {
+          "le_ms": 204.8,
+          "count": 1
+        },
+        {
+          "le_ms": 212.992,
+          "count": 3
+        },
+        {
+          "le_ms": 229.376,
+          "count": 2
+        },
+        {
+          "le_ms": 237.568,
+          "count": 1
+        },
+        {
+          "le_ms": 253.952,
+          "count": 4
+        },
+        {
+          "le_ms": 262.144,
+          "count": 2
+        },
+        {
+          "le_ms": 278.528,
+          "count": 7
+        },
+        {
+          "le_ms": 294.912,
+          "count": 83
+        },
+        {
+          "le_ms": 311.296,
+          "count": 35
+        },
+        {
+          "le_ms": 327.68,
+          "count": 20
+        },
+        {
+          "le_ms": 344.064,
+          "count": 3
+        },
+        {
+          "le_ms": 360.448,
+          "count": 3
+        },
+        {
+          "le_ms": 376.832,
+          "count": 4
+        },
+        {
+          "le_ms": 393.216,
+          "count": 1
+        },
+        {
+          "le_ms": 409.6,
+          "count": 2
+        },
+        {
+          "le_ms": 442.368,
+          "count": 2
+        },
+        {
+          "le_ms": 458.752,
+          "count": 2
+        },
+        {
+          "le_ms": 557.056,
+          "count": 3
+        },
+        {
+          "le_ms": 589.824,
+          "count": 3
+        },
+        {
+          "le_ms": 655.36,
+          "count": 8
+        },
+        {
+          "le_ms": 688.128,
+          "count": 4
+        },
+        {
+          "le_ms": 786.432,
+          "count": 4
+        },
+        {
+          "le_ms": 851.968,
+          "count": 3
+        },
+        {
+          "le_ms": 884.736,
+          "count": 13
+        },
+        {
+          "le_ms": 917.504,
+          "count": 1
+        },
+        {
+          "le_ms": 950.272,
+          "count": 2
+        },
+        {
+          "le_ms": 983.04,
+          "count": 19
+        },
+        {
+          "le_ms": 1015.808,
+          "count": 14
+        },
+        {
+          "le_ms": 1114.112,
+          "count": 11
+        },
+        {
+          "le_ms": 1179.648,
+          "count": 1
+        },
+        {
+          "le_ms": 1245.184,
+          "count": 4
+        },
+        {
+          "le_ms": 1310.72,
+          "count": 2
+        },
+        {
+          "le_ms": 1441.792,
+          "count": 3
+        },
+        {
+          "le_ms": 1507.328,
+          "count": 4
+        },
+        {
+          "le_ms": 1572.864,
+          "count": 9
+        },
+        {
+          "le_ms": 1638.4,
+          "count": 6
+        },
+        {
+          "le_ms": 1703.936,
+          "count": 12
+        },
+        {
+          "le_ms": 1769.472,
+          "count": 5
+        },
+        {
+          "le_ms": 1835.008,
+          "count": 9
+        },
+        {
+          "le_ms": 1900.544,
+          "count": 31
+        },
+        {
+          "le_ms": 1966.08,
+          "count": 22
+        },
+        {
+          "le_ms": 2031.616,
+          "count": 12
+        },
+        {
+          "le_ms": 2097.152,
+          "count": 6
+        },
+        {
+          "le_ms": 2228.224,
+          "count": 4
+        },
+        {
+          "le_ms": 2359.296,
+          "count": 1
+        },
+        {
+          "le_ms": 3276.8,
+          "count": 1
+        },
+        {
+          "le_ms": 12058.624,
+          "count": 4
+        },
+        {
+          "le_ms": 12582.912,
+          "count": 2
+        },
+        {
+          "le_ms": 13107.2,
+          "count": 20
+        },
+        {
+          "le_ms": 13631.488,
+          "count": 13
+        },
+        {
+          "le_ms": 14155.776,
+          "count": 32
+        },
+        {
+          "le_ms": 14680.064,
+          "count": 3
+        },
+        {
+          "le_ms": 15204.352,
+          "count": 11
+        },
+        {
+          "le_ms": 15728.64,
+          "count": 4
+        },
+        {
+          "le_ms": 16252.928,
+          "count": 7
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 25, introspection 15, policy 10, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 5, webhook-delivery 5, webhook-retry 5",
+        "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+        "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+        "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+        "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+        "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+        "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+        "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+      ],
+      "observations": {
+        "after": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 530,
+              "accepted": 364,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 166,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 959,
+              "accepted": 319,
+              "intentional_503": 418,
+              "recovered": 319,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 222,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:09:49.341676Z",
+              "last_recovery_at": "2026-10-11T14:09:49.337239Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        },
+        "before": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 296,
+              "accepted": 140,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 156,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 479,
+              "accepted": 126,
+              "intentional_503": 178,
+              "recovered": 126,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 175,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:08:49.338757Z",
+              "last_recovery_at": "2026-10-11T14:08:49.342354Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        }
+      }
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed-delivery",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T14:09:51.052959Z",
+      "duration_s": 60.001079458,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 2473,
+      "outcomes": {
+        "audit-query:ok": 121,
+        "client-credentials:ok": 633,
+        "email-delivery:ok": 120,
+        "import:ok": 127,
+        "introspection:ok": 380,
+        "passkey-assertion:ok": 113,
+        "password-login:ok": 127,
+        "policy:ok": 251,
+        "refresh:ok": 259,
+        "scim:ok": 141,
+        "webhook-delivery:ok": 106,
+        "webhook-retry:ok": 95
+      },
+      "throughput_per_s": 41.21592515233112,
+      "latency_ms": {
+        "mean": 686.948728669632,
+        "p50": 12.8,
+        "p90": 983.04,
+        "p99": 15204.352,
+        "p999": 15728.64,
+        "max": 15939.703
+      },
+      "histogram": [
+        {
+          "le_ms": 2.176,
+          "count": 5
+        },
+        {
+          "le_ms": 2.304,
+          "count": 13
+        },
+        {
+          "le_ms": 2.432,
+          "count": 7
+        },
+        {
+          "le_ms": 2.56,
+          "count": 3
+        },
+        {
+          "le_ms": 2.688,
+          "count": 6
+        },
+        {
+          "le_ms": 2.816,
+          "count": 10
+        },
+        {
+          "le_ms": 2.944,
+          "count": 12
+        },
+        {
+          "le_ms": 3.072,
+          "count": 11
+        },
+        {
+          "le_ms": 3.2,
+          "count": 13
+        },
+        {
+          "le_ms": 3.328,
+          "count": 15
+        },
+        {
+          "le_ms": 3.456,
+          "count": 13
+        },
+        {
+          "le_ms": 3.584,
+          "count": 10
+        },
+        {
+          "le_ms": 3.712,
+          "count": 15
+        },
+        {
+          "le_ms": 3.84,
+          "count": 19
+        },
+        {
+          "le_ms": 3.968,
+          "count": 21
+        },
+        {
+          "le_ms": 4.096,
+          "count": 11
+        },
+        {
+          "le_ms": 4.352,
+          "count": 24
+        },
+        {
+          "le_ms": 4.608,
+          "count": 30
+        },
+        {
+          "le_ms": 4.864,
+          "count": 23
+        },
+        {
+          "le_ms": 5.12,
+          "count": 20
+        },
+        {
+          "le_ms": 5.376,
+          "count": 27
+        },
+        {
+          "le_ms": 5.632,
+          "count": 29
+        },
+        {
+          "le_ms": 5.888,
+          "count": 29
+        },
+        {
+          "le_ms": 6.144,
+          "count": 40
+        },
+        {
+          "le_ms": 6.4,
+          "count": 40
+        },
+        {
+          "le_ms": 6.656,
+          "count": 41
+        },
+        {
+          "le_ms": 6.912,
+          "count": 50
+        },
+        {
+          "le_ms": 7.168,
+          "count": 39
+        },
+        {
+          "le_ms": 7.424,
+          "count": 53
+        },
+        {
+          "le_ms": 7.68,
+          "count": 36
+        },
+        {
+          "le_ms": 7.936,
+          "count": 48
+        },
+        {
+          "le_ms": 8.192,
+          "count": 42
+        },
+        {
+          "le_ms": 8.704,
+          "count": 76
+        },
+        {
+          "le_ms": 9.216,
+          "count": 78
+        },
+        {
+          "le_ms": 9.728,
+          "count": 56
+        },
+        {
+          "le_ms": 10.24,
+          "count": 47
+        },
+        {
+          "le_ms": 10.752,
+          "count": 54
+        },
+        {
+          "le_ms": 11.264,
+          "count": 49
+        },
+        {
+          "le_ms": 11.776,
+          "count": 44
+        },
+        {
+          "le_ms": 12.288,
+          "count": 59
+        },
+        {
+          "le_ms": 12.8,
+          "count": 38
+        },
+        {
+          "le_ms": 13.312,
+          "count": 36
+        },
+        {
+          "le_ms": 13.824,
+          "count": 40
+        },
+        {
+          "le_ms": 14.336,
+          "count": 36
+        },
+        {
+          "le_ms": 14.848,
+          "count": 35
+        },
+        {
+          "le_ms": 15.36,
+          "count": 33
+        },
+        {
+          "le_ms": 15.872,
+          "count": 24
+        },
+        {
+          "le_ms": 16.384,
+          "count": 25
+        },
+        {
+          "le_ms": 17.408,
+          "count": 50
+        },
+        {
+          "le_ms": 18.432,
+          "count": 25
+        },
+        {
+          "le_ms": 19.456,
+          "count": 38
+        },
+        {
+          "le_ms": 20.48,
+          "count": 32
+        },
+        {
+          "le_ms": 21.504,
+          "count": 26
+        },
+        {
+          "le_ms": 22.528,
+          "count": 19
+        },
+        {
+          "le_ms": 23.552,
+          "count": 8
+        },
+        {
+          "le_ms": 24.576,
+          "count": 15
+        },
+        {
+          "le_ms": 25.6,
+          "count": 12
+        },
+        {
+          "le_ms": 26.624,
+          "count": 14
+        },
+        {
+          "le_ms": 27.648,
+          "count": 14
+        },
+        {
+          "le_ms": 28.672,
+          "count": 8
+        },
+        {
+          "le_ms": 29.696,
+          "count": 9
+        },
+        {
+          "le_ms": 30.72,
+          "count": 13
+        },
+        {
+          "le_ms": 31.744,
+          "count": 10
+        },
+        {
+          "le_ms": 32.768,
+          "count": 8
+        },
+        {
+          "le_ms": 34.816,
+          "count": 13
+        },
+        {
+          "le_ms": 36.864,
+          "count": 15
+        },
+        {
+          "le_ms": 38.912,
+          "count": 17
+        },
+        {
+          "le_ms": 40.96,
+          "count": 15
+        },
+        {
+          "le_ms": 43.008,
+          "count": 12
+        },
+        {
+          "le_ms": 45.056,
+          "count": 8
+        },
+        {
+          "le_ms": 47.104,
+          "count": 5
+        },
+        {
+          "le_ms": 49.152,
+          "count": 13
+        },
+        {
+          "le_ms": 51.2,
+          "count": 5
+        },
+        {
+          "le_ms": 53.248,
+          "count": 10
+        },
+        {
+          "le_ms": 55.296,
+          "count": 7
+        },
+        {
+          "le_ms": 57.344,
+          "count": 5
+        },
+        {
+          "le_ms": 59.392,
+          "count": 6
+        },
+        {
+          "le_ms": 61.44,
+          "count": 4
+        },
+        {
+          "le_ms": 63.488,
+          "count": 5
+        },
+        {
+          "le_ms": 65.536,
+          "count": 2
+        },
+        {
+          "le_ms": 69.632,
+          "count": 14
+        },
+        {
+          "le_ms": 73.728,
+          "count": 7
+        },
+        {
+          "le_ms": 77.824,
+          "count": 7
+        },
+        {
+          "le_ms": 81.92,
+          "count": 8
+        },
+        {
+          "le_ms": 86.016,
+          "count": 9
+        },
+        {
+          "le_ms": 90.112,
+          "count": 4
+        },
+        {
+          "le_ms": 94.208,
+          "count": 3
+        },
+        {
+          "le_ms": 98.304,
+          "count": 1
+        },
+        {
+          "le_ms": 102.4,
+          "count": 2
+        },
+        {
+          "le_ms": 114.688,
+          "count": 1
+        },
+        {
+          "le_ms": 126.976,
+          "count": 1
+        },
+        {
+          "le_ms": 131.072,
+          "count": 2
+        },
+        {
+          "le_ms": 139.264,
+          "count": 1
+        },
+        {
+          "le_ms": 147.456,
+          "count": 3
+        },
+        {
+          "le_ms": 155.648,
+          "count": 1
+        },
+        {
+          "le_ms": 163.84,
+          "count": 3
+        },
+        {
+          "le_ms": 172.032,
+          "count": 1
+        },
+        {
+          "le_ms": 180.224,
+          "count": 1
+        },
+        {
+          "le_ms": 188.416,
+          "count": 1
+        },
+        {
+          "le_ms": 196.608,
+          "count": 1
+        },
+        {
+          "le_ms": 204.8,
+          "count": 1
+        },
+        {
+          "le_ms": 212.992,
+          "count": 1
+        },
+        {
+          "le_ms": 229.376,
+          "count": 1
+        },
+        {
+          "le_ms": 237.568,
+          "count": 1
+        },
+        {
+          "le_ms": 245.76,
+          "count": 2
+        },
+        {
+          "le_ms": 253.952,
+          "count": 4
+        },
+        {
+          "le_ms": 262.144,
+          "count": 1
+        },
+        {
+          "le_ms": 278.528,
+          "count": 8
+        },
+        {
+          "le_ms": 294.912,
+          "count": 68
+        },
+        {
+          "le_ms": 311.296,
+          "count": 52
+        },
+        {
+          "le_ms": 327.68,
+          "count": 14
+        },
+        {
+          "le_ms": 344.064,
+          "count": 1
+        },
+        {
+          "le_ms": 360.448,
+          "count": 3
+        },
+        {
+          "le_ms": 376.832,
+          "count": 2
+        },
+        {
+          "le_ms": 393.216,
+          "count": 3
+        },
+        {
+          "le_ms": 442.368,
+          "count": 2
+        },
+        {
+          "le_ms": 458.752,
+          "count": 4
+        },
+        {
+          "le_ms": 507.904,
+          "count": 1
+        },
+        {
+          "le_ms": 524.288,
+          "count": 2
+        },
+        {
+          "le_ms": 557.056,
+          "count": 4
+        },
+        {
+          "le_ms": 655.36,
+          "count": 8
+        },
+        {
+          "le_ms": 688.128,
+          "count": 3
+        },
+        {
+          "le_ms": 720.896,
+          "count": 1
+        },
+        {
+          "le_ms": 753.664,
+          "count": 4
+        },
+        {
+          "le_ms": 786.432,
+          "count": 3
+        },
+        {
+          "le_ms": 851.968,
+          "count": 3
+        },
+        {
+          "le_ms": 884.736,
+          "count": 13
+        },
+        {
+          "le_ms": 950.272,
+          "count": 1
+        },
+        {
+          "le_ms": 983.04,
+          "count": 20
+        },
+        {
+          "le_ms": 1015.808,
+          "count": 10
+        },
+        {
+          "le_ms": 1048.576,
+          "count": 2
+        },
+        {
+          "le_ms": 1114.112,
+          "count": 11
+        },
+        {
+          "le_ms": 1245.184,
+          "count": 2
+        },
+        {
+          "le_ms": 1310.72,
+          "count": 5
+        },
+        {
+          "le_ms": 1376.256,
+          "count": 2
+        },
+        {
+          "le_ms": 1441.792,
+          "count": 1
+        },
+        {
+          "le_ms": 1507.328,
+          "count": 3
+        },
+        {
+          "le_ms": 1572.864,
+          "count": 9
+        },
+        {
+          "le_ms": 1638.4,
+          "count": 6
+        },
+        {
+          "le_ms": 1703.936,
+          "count": 10
+        },
+        {
+          "le_ms": 1769.472,
+          "count": 7
+        },
+        {
+          "le_ms": 1835.008,
+          "count": 4
+        },
+        {
+          "le_ms": 1900.544,
+          "count": 27
+        },
+        {
+          "le_ms": 1966.08,
+          "count": 24
+        },
+        {
+          "le_ms": 2031.616,
+          "count": 17
+        },
+        {
+          "le_ms": 2097.152,
+          "count": 3
+        },
+        {
+          "le_ms": 2228.224,
+          "count": 3
+        },
+        {
+          "le_ms": 2359.296,
+          "count": 1
+        },
+        {
+          "le_ms": 2490.368,
+          "count": 1
+        },
+        {
+          "le_ms": 11534.336,
+          "count": 2
+        },
+        {
+          "le_ms": 12058.624,
+          "count": 5
+        },
+        {
+          "le_ms": 12582.912,
+          "count": 5
+        },
+        {
+          "le_ms": 13107.2,
+          "count": 13
+        },
+        {
+          "le_ms": 13631.488,
+          "count": 11
+        },
+        {
+          "le_ms": 14155.776,
+          "count": 25
+        },
+        {
+          "le_ms": 14680.064,
+          "count": 6
+        },
+        {
+          "le_ms": 15204.352,
+          "count": 24
+        },
+        {
+          "le_ms": 15728.64,
+          "count": 3
+        },
+        {
+          "le_ms": 16252.928,
+          "count": 1
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 25, introspection 15, policy 10, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 5, webhook-delivery 5, webhook-retry 5",
+        "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+        "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+        "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+        "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+        "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+        "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+        "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+      ],
+      "observations": {
+        "after": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 746,
+              "accepted": 576,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 170,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 1439,
+              "accepted": 510,
+              "intentional_503": 654,
+              "recovered": 510,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 275,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:10:49.342542Z",
+              "last_recovery_at": "2026-10-11T14:10:49.340973Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        },
+        "before": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 530,
+              "accepted": 364,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 166,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 959,
+              "accepted": 319,
+              "intentional_503": 418,
+              "recovered": 319,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 222,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:09:49.341676Z",
+              "last_recovery_at": "2026-10-11T14:09:49.337239Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        }
+      }
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed-delivery",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T14:10:51.054536Z",
+      "duration_s": 60.000181417,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 2505,
+      "outcomes": {
+        "audit-query:ok": 122,
+        "client-credentials:ok": 643,
+        "email-delivery:ok": 121,
+        "import:ok": 130,
+        "introspection:ok": 385,
+        "passkey-assertion:ok": 116,
+        "password-login:ok": 125,
+        "policy:ok": 254,
+        "refresh:ok": 261,
+        "scim:ok": 141,
+        "webhook-delivery:ok": 110,
+        "webhook-retry:ok": 97
+      },
+      "throughput_per_s": 41.74987376438585,
+      "latency_ms": {
+        "mean": 691.5642011976048,
+        "p50": 12.288,
+        "p90": 983.04,
+        "p99": 15204.352,
+        "p999": 16036.398,
+        "max": 16036.398
+      },
+      "histogram": [
+        {
+          "le_ms": 2.176,
+          "count": 9
+        },
+        {
+          "le_ms": 2.304,
+          "count": 18
+        },
+        {
+          "le_ms": 2.432,
+          "count": 9
+        },
+        {
+          "le_ms": 2.56,
+          "count": 2
+        },
+        {
+          "le_ms": 2.688,
+          "count": 6
+        },
+        {
+          "le_ms": 2.816,
+          "count": 12
+        },
+        {
+          "le_ms": 2.944,
+          "count": 10
+        },
+        {
+          "le_ms": 3.072,
+          "count": 14
+        },
+        {
+          "le_ms": 3.2,
+          "count": 15
+        },
+        {
+          "le_ms": 3.328,
+          "count": 15
+        },
+        {
+          "le_ms": 3.456,
+          "count": 12
+        },
+        {
+          "le_ms": 3.584,
+          "count": 16
+        },
+        {
+          "le_ms": 3.712,
+          "count": 18
+        },
+        {
+          "le_ms": 3.84,
+          "count": 16
+        },
+        {
+          "le_ms": 3.968,
+          "count": 17
+        },
+        {
+          "le_ms": 4.096,
+          "count": 18
+        },
+        {
+          "le_ms": 4.352,
+          "count": 32
+        },
+        {
+          "le_ms": 4.608,
+          "count": 25
+        },
+        {
+          "le_ms": 4.864,
+          "count": 38
+        },
+        {
+          "le_ms": 5.12,
+          "count": 26
+        },
+        {
+          "le_ms": 5.376,
+          "count": 22
+        },
+        {
+          "le_ms": 5.632,
+          "count": 42
+        },
+        {
+          "le_ms": 5.888,
+          "count": 26
+        },
+        {
+          "le_ms": 6.144,
+          "count": 37
+        },
+        {
+          "le_ms": 6.4,
+          "count": 24
+        },
+        {
+          "le_ms": 6.656,
+          "count": 40
+        },
+        {
+          "le_ms": 6.912,
+          "count": 48
+        },
+        {
+          "le_ms": 7.168,
+          "count": 39
+        },
+        {
+          "le_ms": 7.424,
+          "count": 43
+        },
+        {
+          "le_ms": 7.68,
+          "count": 32
+        },
+        {
+          "le_ms": 7.936,
+          "count": 43
+        },
+        {
+          "le_ms": 8.192,
+          "count": 36
+        },
+        {
+          "le_ms": 8.704,
+          "count": 83
+        },
+        {
+          "le_ms": 9.216,
+          "count": 78
+        },
+        {
+          "le_ms": 9.728,
+          "count": 73
+        },
+        {
+          "le_ms": 10.24,
+          "count": 52
+        },
+        {
+          "le_ms": 10.752,
+          "count": 77
+        },
+        {
+          "le_ms": 11.264,
+          "count": 52
+        },
+        {
+          "le_ms": 11.776,
+          "count": 64
+        },
+        {
+          "le_ms": 12.288,
+          "count": 56
+        },
+        {
+          "le_ms": 12.8,
+          "count": 47
+        },
+        {
+          "le_ms": 13.312,
+          "count": 46
+        },
+        {
+          "le_ms": 13.824,
+          "count": 35
+        },
+        {
+          "le_ms": 14.336,
+          "count": 23
+        },
+        {
+          "le_ms": 14.848,
+          "count": 32
+        },
+        {
+          "le_ms": 15.36,
+          "count": 21
+        },
+        {
+          "le_ms": 15.872,
+          "count": 29
+        },
+        {
+          "le_ms": 16.384,
+          "count": 23
+        },
+        {
+          "le_ms": 17.408,
+          "count": 48
+        },
+        {
+          "le_ms": 18.432,
+          "count": 32
+        },
+        {
+          "le_ms": 19.456,
+          "count": 36
+        },
+        {
+          "le_ms": 20.48,
+          "count": 12
+        },
+        {
+          "le_ms": 21.504,
+          "count": 18
+        },
+        {
+          "le_ms": 22.528,
+          "count": 17
+        },
+        {
+          "le_ms": 23.552,
+          "count": 10
+        },
+        {
+          "le_ms": 24.576,
+          "count": 10
+        },
+        {
+          "le_ms": 25.6,
+          "count": 15
+        },
+        {
+          "le_ms": 26.624,
+          "count": 17
+        },
+        {
+          "le_ms": 27.648,
+          "count": 14
+        },
+        {
+          "le_ms": 28.672,
+          "count": 10
+        },
+        {
+          "le_ms": 29.696,
+          "count": 6
+        },
+        {
+          "le_ms": 30.72,
+          "count": 6
+        },
+        {
+          "le_ms": 31.744,
+          "count": 8
+        },
+        {
+          "le_ms": 32.768,
+          "count": 6
+        },
+        {
+          "le_ms": 34.816,
+          "count": 18
+        },
+        {
+          "le_ms": 36.864,
+          "count": 9
+        },
+        {
+          "le_ms": 38.912,
+          "count": 17
+        },
+        {
+          "le_ms": 40.96,
+          "count": 13
+        },
+        {
+          "le_ms": 43.008,
+          "count": 16
+        },
+        {
+          "le_ms": 45.056,
+          "count": 13
+        },
+        {
+          "le_ms": 47.104,
+          "count": 9
+        },
+        {
+          "le_ms": 49.152,
+          "count": 8
+        },
+        {
+          "le_ms": 51.2,
+          "count": 12
+        },
+        {
+          "le_ms": 53.248,
+          "count": 10
+        },
+        {
+          "le_ms": 55.296,
+          "count": 3
+        },
+        {
+          "le_ms": 57.344,
+          "count": 6
+        },
+        {
+          "le_ms": 59.392,
+          "count": 7
+        },
+        {
+          "le_ms": 61.44,
+          "count": 6
+        },
+        {
+          "le_ms": 63.488,
+          "count": 6
+        },
+        {
+          "le_ms": 65.536,
+          "count": 3
+        },
+        {
+          "le_ms": 69.632,
+          "count": 3
+        },
+        {
+          "le_ms": 73.728,
+          "count": 10
+        },
+        {
+          "le_ms": 77.824,
+          "count": 9
+        },
+        {
+          "le_ms": 81.92,
+          "count": 4
+        },
+        {
+          "le_ms": 86.016,
+          "count": 4
+        },
+        {
+          "le_ms": 90.112,
+          "count": 2
+        },
+        {
+          "le_ms": 94.208,
+          "count": 3
+        },
+        {
+          "le_ms": 98.304,
+          "count": 1
+        },
+        {
+          "le_ms": 102.4,
+          "count": 1
+        },
+        {
+          "le_ms": 106.496,
+          "count": 1
+        },
+        {
+          "le_ms": 122.88,
+          "count": 2
+        },
+        {
+          "le_ms": 131.072,
+          "count": 2
+        },
+        {
+          "le_ms": 139.264,
+          "count": 2
+        },
+        {
+          "le_ms": 147.456,
+          "count": 3
+        },
+        {
+          "le_ms": 172.032,
+          "count": 3
+        },
+        {
+          "le_ms": 180.224,
+          "count": 1
+        },
+        {
+          "le_ms": 188.416,
+          "count": 4
+        },
+        {
+          "le_ms": 212.992,
+          "count": 1
+        },
+        {
+          "le_ms": 229.376,
+          "count": 2
+        },
+        {
+          "le_ms": 237.568,
+          "count": 1
+        },
+        {
+          "le_ms": 245.76,
+          "count": 2
+        },
+        {
+          "le_ms": 253.952,
+          "count": 2
+        },
+        {
+          "le_ms": 262.144,
+          "count": 1
+        },
+        {
+          "le_ms": 278.528,
+          "count": 10
+        },
+        {
+          "le_ms": 294.912,
+          "count": 71
+        },
+        {
+          "le_ms": 311.296,
+          "count": 51
+        },
+        {
+          "le_ms": 327.68,
+          "count": 7
+        },
+        {
+          "le_ms": 344.064,
+          "count": 6
+        },
+        {
+          "le_ms": 360.448,
+          "count": 2
+        },
+        {
+          "le_ms": 376.832,
+          "count": 3
+        },
+        {
+          "le_ms": 393.216,
+          "count": 5
+        },
+        {
+          "le_ms": 409.6,
+          "count": 1
+        },
+        {
+          "le_ms": 442.368,
+          "count": 2
+        },
+        {
+          "le_ms": 458.752,
+          "count": 2
+        },
+        {
+          "le_ms": 475.136,
+          "count": 1
+        },
+        {
+          "le_ms": 557.056,
+          "count": 7
+        },
+        {
+          "le_ms": 589.824,
+          "count": 1
+        },
+        {
+          "le_ms": 655.36,
+          "count": 8
+        },
+        {
+          "le_ms": 688.128,
+          "count": 3
+        },
+        {
+          "le_ms": 753.664,
+          "count": 3
+        },
+        {
+          "le_ms": 786.432,
+          "count": 4
+        },
+        {
+          "le_ms": 819.2,
+          "count": 1
+        },
+        {
+          "le_ms": 851.968,
+          "count": 4
+        },
+        {
+          "le_ms": 884.736,
+          "count": 14
+        },
+        {
+          "le_ms": 917.504,
+          "count": 3
+        },
+        {
+          "le_ms": 950.272,
+          "count": 3
+        },
+        {
+          "le_ms": 983.04,
+          "count": 22
+        },
+        {
+          "le_ms": 1015.808,
+          "count": 12
+        },
+        {
+          "le_ms": 1048.576,
+          "count": 5
+        },
+        {
+          "le_ms": 1114.112,
+          "count": 6
+        },
+        {
+          "le_ms": 1245.184,
+          "count": 1
+        },
+        {
+          "le_ms": 1310.72,
+          "count": 1
+        },
+        {
+          "le_ms": 1376.256,
+          "count": 3
+        },
+        {
+          "le_ms": 1441.792,
+          "count": 2
+        },
+        {
+          "le_ms": 1507.328,
+          "count": 2
+        },
+        {
+          "le_ms": 1572.864,
+          "count": 6
+        },
+        {
+          "le_ms": 1638.4,
+          "count": 5
+        },
+        {
+          "le_ms": 1703.936,
+          "count": 8
+        },
+        {
+          "le_ms": 1769.472,
+          "count": 14
+        },
+        {
+          "le_ms": 1835.008,
+          "count": 5
+        },
+        {
+          "le_ms": 1900.544,
+          "count": 21
+        },
+        {
+          "le_ms": 1966.08,
+          "count": 12
+        },
+        {
+          "le_ms": 2031.616,
+          "count": 20
+        },
+        {
+          "le_ms": 2097.152,
+          "count": 10
+        },
+        {
+          "le_ms": 2228.224,
+          "count": 2
+        },
+        {
+          "le_ms": 2359.296,
+          "count": 2
+        },
+        {
+          "le_ms": 2490.368,
+          "count": 1
+        },
+        {
+          "le_ms": 12058.624,
+          "count": 2
+        },
+        {
+          "le_ms": 12582.912,
+          "count": 8
+        },
+        {
+          "le_ms": 13107.2,
+          "count": 13
+        },
+        {
+          "le_ms": 13631.488,
+          "count": 13
+        },
+        {
+          "le_ms": 14155.776,
+          "count": 22
+        },
+        {
+          "le_ms": 14680.064,
+          "count": 7
+        },
+        {
+          "le_ms": 15204.352,
+          "count": 28
+        },
+        {
+          "le_ms": 15728.64,
+          "count": 1
+        },
+        {
+          "le_ms": 16252.928,
+          "count": 3
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 25, introspection 15, policy 10, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 5, webhook-delivery 5, webhook-retry 5",
+        "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+        "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+        "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+        "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+        "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+        "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+        "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+      ],
+      "observations": {
+        "after": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 978,
+              "accepted": 796,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 182,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 1925,
+              "accepted": 707,
+              "intentional_503": 896,
+              "recovered": 707,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 322,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:11:50.33984Z",
+              "last_recovery_at": "2026-10-11T14:11:50.338813Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        },
+        "before": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 746,
+              "accepted": 576,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 170,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 1439,
+              "accepted": 510,
+              "intentional_503": 654,
+              "recovered": 510,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 275,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:10:49.342542Z",
+              "last_recovery_at": "2026-10-11T14:10:49.340973Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        }
+      }
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed-delivery",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T14:11:51.055039Z",
+      "duration_s": 60.001180791,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 2448,
+      "outcomes": {
+        "audit-query:ok": 117,
+        "client-credentials:ok": 628,
+        "email-delivery:ok": 116,
+        "import:ok": 124,
+        "introspection:ok": 380,
+        "passkey-assertion:ok": 113,
+        "password-login:ok": 121,
+        "policy:ok": 245,
+        "refresh:ok": 259,
+        "scim:ok": 139,
+        "webhook-delivery:ok": 108,
+        "webhook-retry:ok": 98
+      },
+      "throughput_per_s": 40.799197077921384,
+      "latency_ms": {
+        "mean": 724.9609015522876,
+        "p50": 12.288,
+        "p90": 1114.112,
+        "p99": 15204.352,
+        "p999": 16777.216,
+        "max": 17074.171
+      },
+      "histogram": [
+        {
+          "le_ms": 2.176,
+          "count": 6
+        },
+        {
+          "le_ms": 2.304,
+          "count": 5
+        },
+        {
+          "le_ms": 2.432,
+          "count": 4
+        },
+        {
+          "le_ms": 2.56,
+          "count": 1
+        },
+        {
+          "le_ms": 2.688,
+          "count": 11
+        },
+        {
+          "le_ms": 2.816,
+          "count": 17
+        },
+        {
+          "le_ms": 2.944,
+          "count": 14
+        },
+        {
+          "le_ms": 3.072,
+          "count": 13
+        },
+        {
+          "le_ms": 3.2,
+          "count": 17
+        },
+        {
+          "le_ms": 3.328,
+          "count": 15
+        },
+        {
+          "le_ms": 3.456,
+          "count": 11
+        },
+        {
+          "le_ms": 3.584,
+          "count": 20
+        },
+        {
+          "le_ms": 3.712,
+          "count": 16
+        },
+        {
+          "le_ms": 3.84,
+          "count": 20
+        },
+        {
+          "le_ms": 3.968,
+          "count": 18
+        },
+        {
+          "le_ms": 4.096,
+          "count": 18
+        },
+        {
+          "le_ms": 4.352,
+          "count": 41
+        },
+        {
+          "le_ms": 4.608,
+          "count": 42
+        },
+        {
+          "le_ms": 4.864,
+          "count": 26
+        },
+        {
+          "le_ms": 5.12,
+          "count": 25
+        },
+        {
+          "le_ms": 5.376,
+          "count": 22
+        },
+        {
+          "le_ms": 5.632,
+          "count": 39
+        },
+        {
+          "le_ms": 5.888,
+          "count": 29
+        },
+        {
+          "le_ms": 6.144,
+          "count": 26
+        },
+        {
+          "le_ms": 6.4,
+          "count": 40
+        },
+        {
+          "le_ms": 6.656,
+          "count": 41
+        },
+        {
+          "le_ms": 6.912,
+          "count": 45
+        },
+        {
+          "le_ms": 7.168,
+          "count": 40
+        },
+        {
+          "le_ms": 7.424,
+          "count": 34
+        },
+        {
+          "le_ms": 7.68,
+          "count": 33
+        },
+        {
+          "le_ms": 7.936,
+          "count": 54
+        },
+        {
+          "le_ms": 8.192,
+          "count": 48
+        },
+        {
+          "le_ms": 8.704,
+          "count": 71
+        },
+        {
+          "le_ms": 9.216,
+          "count": 72
+        },
+        {
+          "le_ms": 9.728,
+          "count": 66
+        },
+        {
+          "le_ms": 10.24,
+          "count": 63
+        },
+        {
+          "le_ms": 10.752,
+          "count": 58
+        },
+        {
+          "le_ms": 11.264,
+          "count": 49
+        },
+        {
+          "le_ms": 11.776,
+          "count": 52
+        },
+        {
+          "le_ms": 12.288,
+          "count": 49
+        },
+        {
+          "le_ms": 12.8,
+          "count": 45
+        },
+        {
+          "le_ms": 13.312,
+          "count": 32
+        },
+        {
+          "le_ms": 13.824,
+          "count": 29
+        },
+        {
+          "le_ms": 14.336,
+          "count": 38
+        },
+        {
+          "le_ms": 14.848,
+          "count": 37
+        },
+        {
+          "le_ms": 15.36,
+          "count": 28
+        },
+        {
+          "le_ms": 15.872,
+          "count": 19
+        },
+        {
+          "le_ms": 16.384,
+          "count": 23
+        },
+        {
+          "le_ms": 17.408,
+          "count": 38
+        },
+        {
+          "le_ms": 18.432,
+          "count": 35
+        },
+        {
+          "le_ms": 19.456,
+          "count": 29
+        },
+        {
+          "le_ms": 20.48,
+          "count": 24
+        },
+        {
+          "le_ms": 21.504,
+          "count": 18
+        },
+        {
+          "le_ms": 22.528,
+          "count": 16
+        },
+        {
+          "le_ms": 23.552,
+          "count": 10
+        },
+        {
+          "le_ms": 24.576,
+          "count": 15
+        },
+        {
+          "le_ms": 25.6,
+          "count": 7
+        },
+        {
+          "le_ms": 26.624,
+          "count": 11
+        },
+        {
+          "le_ms": 27.648,
+          "count": 11
+        },
+        {
+          "le_ms": 28.672,
+          "count": 4
+        },
+        {
+          "le_ms": 29.696,
+          "count": 13
+        },
+        {
+          "le_ms": 30.72,
+          "count": 10
+        },
+        {
+          "le_ms": 31.744,
+          "count": 7
+        },
+        {
+          "le_ms": 32.768,
+          "count": 7
+        },
+        {
+          "le_ms": 34.816,
+          "count": 20
+        },
+        {
+          "le_ms": 36.864,
+          "count": 17
+        },
+        {
+          "le_ms": 38.912,
+          "count": 19
+        },
+        {
+          "le_ms": 40.96,
+          "count": 11
+        },
+        {
+          "le_ms": 43.008,
+          "count": 8
+        },
+        {
+          "le_ms": 45.056,
+          "count": 13
+        },
+        {
+          "le_ms": 47.104,
+          "count": 13
+        },
+        {
+          "le_ms": 49.152,
+          "count": 12
+        },
+        {
+          "le_ms": 51.2,
+          "count": 6
+        },
+        {
+          "le_ms": 53.248,
+          "count": 4
+        },
+        {
+          "le_ms": 55.296,
+          "count": 14
+        },
+        {
+          "le_ms": 57.344,
+          "count": 2
+        },
+        {
+          "le_ms": 59.392,
+          "count": 7
+        },
+        {
+          "le_ms": 61.44,
+          "count": 4
+        },
+        {
+          "le_ms": 63.488,
+          "count": 3
+        },
+        {
+          "le_ms": 65.536,
+          "count": 3
+        },
+        {
+          "le_ms": 69.632,
+          "count": 6
+        },
+        {
+          "le_ms": 73.728,
+          "count": 5
+        },
+        {
+          "le_ms": 77.824,
+          "count": 6
+        },
+        {
+          "le_ms": 81.92,
+          "count": 5
+        },
+        {
+          "le_ms": 86.016,
+          "count": 5
+        },
+        {
+          "le_ms": 94.208,
+          "count": 1
+        },
+        {
+          "le_ms": 98.304,
+          "count": 2
+        },
+        {
+          "le_ms": 110.592,
+          "count": 1
+        },
+        {
+          "le_ms": 118.784,
+          "count": 1
+        },
+        {
+          "le_ms": 122.88,
+          "count": 1
+        },
+        {
+          "le_ms": 139.264,
+          "count": 2
+        },
+        {
+          "le_ms": 147.456,
+          "count": 1
+        },
+        {
+          "le_ms": 163.84,
+          "count": 4
+        },
+        {
+          "le_ms": 172.032,
+          "count": 2
+        },
+        {
+          "le_ms": 212.992,
+          "count": 1
+        },
+        {
+          "le_ms": 221.184,
+          "count": 1
+        },
+        {
+          "le_ms": 237.568,
+          "count": 3
+        },
+        {
+          "le_ms": 245.76,
+          "count": 2
+        },
+        {
+          "le_ms": 262.144,
+          "count": 2
+        },
+        {
+          "le_ms": 278.528,
+          "count": 5
+        },
+        {
+          "le_ms": 294.912,
+          "count": 73
+        },
+        {
+          "le_ms": 311.296,
+          "count": 46
+        },
+        {
+          "le_ms": 327.68,
+          "count": 14
+        },
+        {
+          "le_ms": 344.064,
+          "count": 9
+        },
+        {
+          "le_ms": 360.448,
+          "count": 1
+        },
+        {
+          "le_ms": 557.056,
+          "count": 5
+        },
+        {
+          "le_ms": 589.824,
+          "count": 2
+        },
+        {
+          "le_ms": 655.36,
+          "count": 6
+        },
+        {
+          "le_ms": 688.128,
+          "count": 4
+        },
+        {
+          "le_ms": 753.664,
+          "count": 2
+        },
+        {
+          "le_ms": 786.432,
+          "count": 4
+        },
+        {
+          "le_ms": 851.968,
+          "count": 3
+        },
+        {
+          "le_ms": 884.736,
+          "count": 4
+        },
+        {
+          "le_ms": 917.504,
+          "count": 4
+        },
+        {
+          "le_ms": 983.04,
+          "count": 15
+        },
+        {
+          "le_ms": 1015.808,
+          "count": 7
+        },
+        {
+          "le_ms": 1048.576,
+          "count": 4
+        },
+        {
+          "le_ms": 1114.112,
+          "count": 12
+        },
+        {
+          "le_ms": 1179.648,
+          "count": 2
+        },
+        {
+          "le_ms": 1245.184,
+          "count": 3
+        },
+        {
+          "le_ms": 1310.72,
+          "count": 5
+        },
+        {
+          "le_ms": 1376.256,
+          "count": 8
+        },
+        {
+          "le_ms": 1441.792,
+          "count": 2
+        },
+        {
+          "le_ms": 1507.328,
+          "count": 4
+        },
+        {
+          "le_ms": 1572.864,
+          "count": 8
+        },
+        {
+          "le_ms": 1638.4,
+          "count": 5
+        },
+        {
+          "le_ms": 1703.936,
+          "count": 11
+        },
+        {
+          "le_ms": 1769.472,
+          "count": 3
+        },
+        {
+          "le_ms": 1835.008,
+          "count": 9
+        },
+        {
+          "le_ms": 1900.544,
+          "count": 27
+        },
+        {
+          "le_ms": 1966.08,
+          "count": 15
+        },
+        {
+          "le_ms": 2031.616,
+          "count": 32
+        },
+        {
+          "le_ms": 2097.152,
+          "count": 6
+        },
+        {
+          "le_ms": 2490.368,
+          "count": 1
+        },
+        {
+          "le_ms": 2752.512,
+          "count": 1
+        },
+        {
+          "le_ms": 3145.728,
+          "count": 1
+        },
+        {
+          "le_ms": 3276.8,
+          "count": 2
+        },
+        {
+          "le_ms": 3538.944,
+          "count": 1
+        },
+        {
+          "le_ms": 12058.624,
+          "count": 4
+        },
+        {
+          "le_ms": 12582.912,
+          "count": 5
+        },
+        {
+          "le_ms": 13107.2,
+          "count": 21
+        },
+        {
+          "le_ms": 13631.488,
+          "count": 16
+        },
+        {
+          "le_ms": 14155.776,
+          "count": 17
+        },
+        {
+          "le_ms": 14680.064,
+          "count": 2
+        },
+        {
+          "le_ms": 15204.352,
+          "count": 19
+        },
+        {
+          "le_ms": 15728.64,
+          "count": 2
+        },
+        {
+          "le_ms": 16252.928,
+          "count": 8
+        },
+        {
+          "le_ms": 16777.216,
+          "count": 2
+        },
+        {
+          "le_ms": 17825.792,
+          "count": 2
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 25, introspection 15, policy 10, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 5, webhook-delivery 5, webhook-retry 5",
+        "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+        "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+        "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+        "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+        "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+        "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+        "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+      ],
+      "observations": {
+        "after": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 1202,
+              "accepted": 1012,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 190,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 2405,
+              "accepted": 904,
+              "intentional_503": 1132,
+              "recovered": 904,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 369,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:12:50.364658Z",
+              "last_recovery_at": "2026-10-11T14:12:50.367955Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        },
+        "before": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 978,
+              "accepted": 796,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 182,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 1925,
+              "accepted": 707,
+              "intentional_503": 896,
+              "recovered": 707,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 322,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:11:50.33984Z",
+              "last_recovery_at": "2026-10-11T14:11:50.338813Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        }
+      }
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed-delivery",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T14:12:51.056566Z",
+      "duration_s": 60.001172417,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 2469,
+      "outcomes": {
+        "audit-query:ok": 119,
+        "client-credentials:ok": 633,
+        "email-delivery:ok": 119,
+        "import:ok": 126,
+        "introspection:ok": 378,
+        "passkey-assertion:ok": 115,
+        "password-login:ok": 125,
+        "policy:ok": 251,
+        "refresh:ok": 259,
+        "scim:ok": 140,
+        "webhook-delivery:ok": 108,
+        "webhook-retry:ok": 96
+      },
+      "throughput_per_s": 41.14919593305253,
+      "latency_ms": {
+        "mean": 712.428675982179,
+        "p50": 12.8,
+        "p90": 1114.112,
+        "p99": 15204.352,
+        "p999": 16031.437,
+        "max": 16031.437
+      },
+      "histogram": [
+        {
+          "le_ms": 2.176,
+          "count": 8
+        },
+        {
+          "le_ms": 2.304,
+          "count": 13
+        },
+        {
+          "le_ms": 2.432,
+          "count": 12
+        },
+        {
+          "le_ms": 2.56,
+          "count": 10
+        },
+        {
+          "le_ms": 2.688,
+          "count": 11
+        },
+        {
+          "le_ms": 2.816,
+          "count": 12
+        },
+        {
+          "le_ms": 2.944,
+          "count": 11
+        },
+        {
+          "le_ms": 3.072,
+          "count": 17
+        },
+        {
+          "le_ms": 3.2,
+          "count": 13
+        },
+        {
+          "le_ms": 3.328,
+          "count": 10
+        },
+        {
+          "le_ms": 3.456,
+          "count": 9
+        },
+        {
+          "le_ms": 3.584,
+          "count": 13
+        },
+        {
+          "le_ms": 3.712,
+          "count": 16
+        },
+        {
+          "le_ms": 3.84,
+          "count": 16
+        },
+        {
+          "le_ms": 3.968,
+          "count": 22
+        },
+        {
+          "le_ms": 4.096,
+          "count": 15
+        },
+        {
+          "le_ms": 4.352,
+          "count": 27
+        },
+        {
+          "le_ms": 4.608,
+          "count": 33
+        },
+        {
+          "le_ms": 4.864,
+          "count": 19
+        },
+        {
+          "le_ms": 5.12,
+          "count": 18
+        },
+        {
+          "le_ms": 5.376,
+          "count": 34
+        },
+        {
+          "le_ms": 5.632,
+          "count": 36
+        },
+        {
+          "le_ms": 5.888,
+          "count": 29
+        },
+        {
+          "le_ms": 6.144,
+          "count": 36
+        },
+        {
+          "le_ms": 6.4,
+          "count": 39
+        },
+        {
+          "le_ms": 6.656,
+          "count": 37
+        },
+        {
+          "le_ms": 6.912,
+          "count": 35
+        },
+        {
+          "le_ms": 7.168,
+          "count": 49
+        },
+        {
+          "le_ms": 7.424,
+          "count": 49
+        },
+        {
+          "le_ms": 7.68,
+          "count": 44
+        },
+        {
+          "le_ms": 7.936,
+          "count": 45
+        },
+        {
+          "le_ms": 8.192,
+          "count": 40
+        },
+        {
+          "le_ms": 8.704,
+          "count": 75
+        },
+        {
+          "le_ms": 9.216,
+          "count": 59
+        },
+        {
+          "le_ms": 9.728,
+          "count": 72
+        },
+        {
+          "le_ms": 10.24,
+          "count": 58
+        },
+        {
+          "le_ms": 10.752,
+          "count": 50
+        },
+        {
+          "le_ms": 11.264,
+          "count": 54
+        },
+        {
+          "le_ms": 11.776,
+          "count": 50
+        },
+        {
+          "le_ms": 12.288,
+          "count": 36
+        },
+        {
+          "le_ms": 12.8,
+          "count": 38
+        },
+        {
+          "le_ms": 13.312,
+          "count": 35
+        },
+        {
+          "le_ms": 13.824,
+          "count": 43
+        },
+        {
+          "le_ms": 14.336,
+          "count": 34
+        },
+        {
+          "le_ms": 14.848,
+          "count": 30
+        },
+        {
+          "le_ms": 15.36,
+          "count": 30
+        },
+        {
+          "le_ms": 15.872,
+          "count": 32
+        },
+        {
+          "le_ms": 16.384,
+          "count": 24
+        },
+        {
+          "le_ms": 17.408,
+          "count": 45
+        },
+        {
+          "le_ms": 18.432,
+          "count": 27
+        },
+        {
+          "le_ms": 19.456,
+          "count": 31
+        },
+        {
+          "le_ms": 20.48,
+          "count": 22
+        },
+        {
+          "le_ms": 21.504,
+          "count": 23
+        },
+        {
+          "le_ms": 22.528,
+          "count": 26
+        },
+        {
+          "le_ms": 23.552,
+          "count": 14
+        },
+        {
+          "le_ms": 24.576,
+          "count": 22
+        },
+        {
+          "le_ms": 25.6,
+          "count": 13
+        },
+        {
+          "le_ms": 26.624,
+          "count": 12
+        },
+        {
+          "le_ms": 27.648,
+          "count": 15
+        },
+        {
+          "le_ms": 28.672,
+          "count": 12
+        },
+        {
+          "le_ms": 29.696,
+          "count": 11
+        },
+        {
+          "le_ms": 30.72,
+          "count": 9
+        },
+        {
+          "le_ms": 31.744,
+          "count": 8
+        },
+        {
+          "le_ms": 32.768,
+          "count": 6
+        },
+        {
+          "le_ms": 34.816,
+          "count": 14
+        },
+        {
+          "le_ms": 36.864,
+          "count": 15
+        },
+        {
+          "le_ms": 38.912,
+          "count": 14
+        },
+        {
+          "le_ms": 40.96,
+          "count": 9
+        },
+        {
+          "le_ms": 43.008,
+          "count": 11
+        },
+        {
+          "le_ms": 45.056,
+          "count": 9
+        },
+        {
+          "le_ms": 47.104,
+          "count": 8
+        },
+        {
+          "le_ms": 49.152,
+          "count": 8
+        },
+        {
+          "le_ms": 51.2,
+          "count": 8
+        },
+        {
+          "le_ms": 53.248,
+          "count": 6
+        },
+        {
+          "le_ms": 55.296,
+          "count": 7
+        },
+        {
+          "le_ms": 57.344,
+          "count": 7
+        },
+        {
+          "le_ms": 59.392,
+          "count": 10
+        },
+        {
+          "le_ms": 61.44,
+          "count": 6
+        },
+        {
+          "le_ms": 63.488,
+          "count": 5
+        },
+        {
+          "le_ms": 65.536,
+          "count": 10
+        },
+        {
+          "le_ms": 69.632,
+          "count": 7
+        },
+        {
+          "le_ms": 73.728,
+          "count": 5
+        },
+        {
+          "le_ms": 77.824,
+          "count": 3
+        },
+        {
+          "le_ms": 81.92,
+          "count": 8
+        },
+        {
+          "le_ms": 86.016,
+          "count": 6
+        },
+        {
+          "le_ms": 90.112,
+          "count": 3
+        },
+        {
+          "le_ms": 94.208,
+          "count": 5
+        },
+        {
+          "le_ms": 98.304,
+          "count": 1
+        },
+        {
+          "le_ms": 110.592,
+          "count": 2
+        },
+        {
+          "le_ms": 118.784,
+          "count": 2
+        },
+        {
+          "le_ms": 122.88,
+          "count": 1
+        },
+        {
+          "le_ms": 131.072,
+          "count": 1
+        },
+        {
+          "le_ms": 147.456,
+          "count": 1
+        },
+        {
+          "le_ms": 172.032,
+          "count": 2
+        },
+        {
+          "le_ms": 180.224,
+          "count": 1
+        },
+        {
+          "le_ms": 188.416,
+          "count": 2
+        },
+        {
+          "le_ms": 237.568,
+          "count": 7
+        },
+        {
+          "le_ms": 245.76,
+          "count": 1
+        },
+        {
+          "le_ms": 262.144,
+          "count": 3
+        },
+        {
+          "le_ms": 278.528,
+          "count": 5
+        },
+        {
+          "le_ms": 294.912,
+          "count": 70
+        },
+        {
+          "le_ms": 311.296,
+          "count": 56
+        },
+        {
+          "le_ms": 327.68,
+          "count": 11
+        },
+        {
+          "le_ms": 344.064,
+          "count": 3
+        },
+        {
+          "le_ms": 442.368,
+          "count": 1
+        },
+        {
+          "le_ms": 557.056,
+          "count": 5
+        },
+        {
+          "le_ms": 589.824,
+          "count": 3
+        },
+        {
+          "le_ms": 655.36,
+          "count": 7
+        },
+        {
+          "le_ms": 688.128,
+          "count": 1
+        },
+        {
+          "le_ms": 753.664,
+          "count": 4
+        },
+        {
+          "le_ms": 786.432,
+          "count": 2
+        },
+        {
+          "le_ms": 851.968,
+          "count": 5
+        },
+        {
+          "le_ms": 884.736,
+          "count": 5
+        },
+        {
+          "le_ms": 917.504,
+          "count": 2
+        },
+        {
+          "le_ms": 950.272,
+          "count": 2
+        },
+        {
+          "le_ms": 983.04,
+          "count": 25
+        },
+        {
+          "le_ms": 1015.808,
+          "count": 6
+        },
+        {
+          "le_ms": 1114.112,
+          "count": 15
+        },
+        {
+          "le_ms": 1179.648,
+          "count": 3
+        },
+        {
+          "le_ms": 1245.184,
+          "count": 5
+        },
+        {
+          "le_ms": 1310.72,
+          "count": 1
+        },
+        {
+          "le_ms": 1376.256,
+          "count": 8
+        },
+        {
+          "le_ms": 1441.792,
+          "count": 3
+        },
+        {
+          "le_ms": 1507.328,
+          "count": 6
+        },
+        {
+          "le_ms": 1572.864,
+          "count": 9
+        },
+        {
+          "le_ms": 1638.4,
+          "count": 10
+        },
+        {
+          "le_ms": 1703.936,
+          "count": 5
+        },
+        {
+          "le_ms": 1769.472,
+          "count": 6
+        },
+        {
+          "le_ms": 1835.008,
+          "count": 8
+        },
+        {
+          "le_ms": 1900.544,
+          "count": 25
+        },
+        {
+          "le_ms": 1966.08,
+          "count": 23
+        },
+        {
+          "le_ms": 2031.616,
+          "count": 20
+        },
+        {
+          "le_ms": 2097.152,
+          "count": 2
+        },
+        {
+          "le_ms": 2490.368,
+          "count": 1
+        },
+        {
+          "le_ms": 2752.512,
+          "count": 1
+        },
+        {
+          "le_ms": 3145.728,
+          "count": 2
+        },
+        {
+          "le_ms": 3276.8,
+          "count": 4
+        },
+        {
+          "le_ms": 3407.872,
+          "count": 1
+        },
+        {
+          "le_ms": 12058.624,
+          "count": 4
+        },
+        {
+          "le_ms": 12582.912,
+          "count": 1
+        },
+        {
+          "le_ms": 13107.2,
+          "count": 13
+        },
+        {
+          "le_ms": 13631.488,
+          "count": 14
+        },
+        {
+          "le_ms": 14155.776,
+          "count": 26
+        },
+        {
+          "le_ms": 14680.064,
+          "count": 6
+        },
+        {
+          "le_ms": 15204.352,
+          "count": 23
+        },
+        {
+          "le_ms": 15728.64,
+          "count": 2
+        },
+        {
+          "le_ms": 16252.928,
+          "count": 7
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 25, introspection 15, policy 10, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 5, webhook-delivery 5, webhook-retry 5",
+        "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+        "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+        "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+        "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+        "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+        "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+        "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+      ],
+      "observations": {
+        "after": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 1428,
+              "accepted": 1228,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 200,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 2878,
+              "accepted": 1096,
+              "intentional_503": 1368,
+              "recovered": 1096,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 414,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:13:50.325993Z",
+              "last_recovery_at": "2026-10-11T14:13:50.32657Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        },
+        "before": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 1202,
+              "accepted": 1012,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 190,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 2405,
+              "accepted": 904,
+              "intentional_503": 1132,
+              "recovered": 904,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 369,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:12:50.364658Z",
+              "last_recovery_at": "2026-10-11T14:12:50.367955Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        }
+      }
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed-delivery",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T14:13:51.058076Z",
+      "duration_s": 60.000553666,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 2431,
+      "outcomes": {
+        "audit-query:ok": 114,
+        "client-credentials:ok": 625,
+        "email-delivery:ok": 116,
+        "import:ok": 124,
+        "introspection:ok": 374,
+        "passkey-assertion:ok": 112,
+        "password-login:ok": 124,
+        "policy:ok": 247,
+        "refresh:ok": 255,
+        "scim:ok": 138,
+        "webhook-delivery:ok": 107,
+        "webhook-retry:ok": 95
+      },
+      "throughput_per_s": 40.51629279177058,
+      "latency_ms": {
+        "mean": 699.308264911559,
+        "p50": 12.288,
+        "p90": 983.04,
+        "p99": 15204.352,
+        "p999": 16162.164,
+        "max": 16162.164
+      },
+      "histogram": [
+        {
+          "le_ms": 2.176,
+          "count": 11
+        },
+        {
+          "le_ms": 2.304,
+          "count": 14
+        },
+        {
+          "le_ms": 2.432,
+          "count": 8
+        },
+        {
+          "le_ms": 2.56,
+          "count": 5
+        },
+        {
+          "le_ms": 2.688,
+          "count": 8
+        },
+        {
+          "le_ms": 2.816,
+          "count": 9
+        },
+        {
+          "le_ms": 2.944,
+          "count": 11
+        },
+        {
+          "le_ms": 3.072,
+          "count": 19
+        },
+        {
+          "le_ms": 3.2,
+          "count": 19
+        },
+        {
+          "le_ms": 3.328,
+          "count": 11
+        },
+        {
+          "le_ms": 3.456,
+          "count": 11
+        },
+        {
+          "le_ms": 3.584,
+          "count": 9
+        },
+        {
+          "le_ms": 3.712,
+          "count": 15
+        },
+        {
+          "le_ms": 3.84,
+          "count": 15
+        },
+        {
+          "le_ms": 3.968,
+          "count": 14
+        },
+        {
+          "le_ms": 4.096,
+          "count": 10
+        },
+        {
+          "le_ms": 4.352,
+          "count": 30
+        },
+        {
+          "le_ms": 4.608,
+          "count": 29
+        },
+        {
+          "le_ms": 4.864,
+          "count": 30
+        },
+        {
+          "le_ms": 5.12,
+          "count": 17
+        },
+        {
+          "le_ms": 5.376,
+          "count": 38
+        },
+        {
+          "le_ms": 5.632,
+          "count": 51
+        },
+        {
+          "le_ms": 5.888,
+          "count": 37
+        },
+        {
+          "le_ms": 6.144,
+          "count": 31
+        },
+        {
+          "le_ms": 6.4,
+          "count": 35
+        },
+        {
+          "le_ms": 6.656,
+          "count": 48
+        },
+        {
+          "le_ms": 6.912,
+          "count": 51
+        },
+        {
+          "le_ms": 7.168,
+          "count": 49
+        },
+        {
+          "le_ms": 7.424,
+          "count": 29
+        },
+        {
+          "le_ms": 7.68,
+          "count": 31
+        },
+        {
+          "le_ms": 7.936,
+          "count": 45
+        },
+        {
+          "le_ms": 8.192,
+          "count": 32
+        },
+        {
+          "le_ms": 8.704,
+          "count": 62
+        },
+        {
+          "le_ms": 9.216,
+          "count": 71
+        },
+        {
+          "le_ms": 9.728,
+          "count": 60
+        },
+        {
+          "le_ms": 10.24,
+          "count": 71
+        },
+        {
+          "le_ms": 10.752,
+          "count": 50
+        },
+        {
+          "le_ms": 11.264,
+          "count": 51
+        },
+        {
+          "le_ms": 11.776,
+          "count": 53
+        },
+        {
+          "le_ms": 12.288,
+          "count": 58
+        },
+        {
+          "le_ms": 12.8,
+          "count": 52
+        },
+        {
+          "le_ms": 13.312,
+          "count": 42
+        },
+        {
+          "le_ms": 13.824,
+          "count": 46
+        },
+        {
+          "le_ms": 14.336,
+          "count": 31
+        },
+        {
+          "le_ms": 14.848,
+          "count": 33
+        },
+        {
+          "le_ms": 15.36,
+          "count": 25
+        },
+        {
+          "le_ms": 15.872,
+          "count": 34
+        },
+        {
+          "le_ms": 16.384,
+          "count": 28
+        },
+        {
+          "le_ms": 17.408,
+          "count": 26
+        },
+        {
+          "le_ms": 18.432,
+          "count": 23
+        },
+        {
+          "le_ms": 19.456,
+          "count": 33
+        },
+        {
+          "le_ms": 20.48,
+          "count": 21
+        },
+        {
+          "le_ms": 21.504,
+          "count": 13
+        },
+        {
+          "le_ms": 22.528,
+          "count": 13
+        },
+        {
+          "le_ms": 23.552,
+          "count": 8
+        },
+        {
+          "le_ms": 24.576,
+          "count": 16
+        },
+        {
+          "le_ms": 25.6,
+          "count": 17
+        },
+        {
+          "le_ms": 26.624,
+          "count": 10
+        },
+        {
+          "le_ms": 27.648,
+          "count": 14
+        },
+        {
+          "le_ms": 28.672,
+          "count": 8
+        },
+        {
+          "le_ms": 29.696,
+          "count": 8
+        },
+        {
+          "le_ms": 30.72,
+          "count": 6
+        },
+        {
+          "le_ms": 31.744,
+          "count": 11
+        },
+        {
+          "le_ms": 32.768,
+          "count": 9
+        },
+        {
+          "le_ms": 34.816,
+          "count": 15
+        },
+        {
+          "le_ms": 36.864,
+          "count": 9
+        },
+        {
+          "le_ms": 38.912,
+          "count": 13
+        },
+        {
+          "le_ms": 40.96,
+          "count": 15
+        },
+        {
+          "le_ms": 43.008,
+          "count": 10
+        },
+        {
+          "le_ms": 45.056,
+          "count": 5
+        },
+        {
+          "le_ms": 47.104,
+          "count": 12
+        },
+        {
+          "le_ms": 49.152,
+          "count": 8
+        },
+        {
+          "le_ms": 51.2,
+          "count": 11
+        },
+        {
+          "le_ms": 53.248,
+          "count": 7
+        },
+        {
+          "le_ms": 55.296,
+          "count": 10
+        },
+        {
+          "le_ms": 57.344,
+          "count": 15
+        },
+        {
+          "le_ms": 59.392,
+          "count": 8
+        },
+        {
+          "le_ms": 61.44,
+          "count": 4
+        },
+        {
+          "le_ms": 63.488,
+          "count": 4
+        },
+        {
+          "le_ms": 65.536,
+          "count": 2
+        },
+        {
+          "le_ms": 69.632,
+          "count": 9
+        },
+        {
+          "le_ms": 73.728,
+          "count": 7
+        },
+        {
+          "le_ms": 77.824,
+          "count": 3
+        },
+        {
+          "le_ms": 81.92,
+          "count": 1
+        },
+        {
+          "le_ms": 86.016,
+          "count": 1
+        },
+        {
+          "le_ms": 90.112,
+          "count": 1
+        },
+        {
+          "le_ms": 94.208,
+          "count": 1
+        },
+        {
+          "le_ms": 98.304,
+          "count": 1
+        },
+        {
+          "le_ms": 106.496,
+          "count": 1
+        },
+        {
+          "le_ms": 118.784,
+          "count": 2
+        },
+        {
+          "le_ms": 122.88,
+          "count": 1
+        },
+        {
+          "le_ms": 126.976,
+          "count": 1
+        },
+        {
+          "le_ms": 131.072,
+          "count": 2
+        },
+        {
+          "le_ms": 147.456,
+          "count": 1
+        },
+        {
+          "le_ms": 163.84,
+          "count": 5
+        },
+        {
+          "le_ms": 180.224,
+          "count": 1
+        },
+        {
+          "le_ms": 188.416,
+          "count": 1
+        },
+        {
+          "le_ms": 196.608,
+          "count": 1
+        },
+        {
+          "le_ms": 204.8,
+          "count": 1
+        },
+        {
+          "le_ms": 221.184,
+          "count": 2
+        },
+        {
+          "le_ms": 237.568,
+          "count": 1
+        },
+        {
+          "le_ms": 245.76,
+          "count": 1
+        },
+        {
+          "le_ms": 253.952,
+          "count": 3
+        },
+        {
+          "le_ms": 262.144,
+          "count": 1
+        },
+        {
+          "le_ms": 278.528,
+          "count": 9
+        },
+        {
+          "le_ms": 294.912,
+          "count": 67
+        },
+        {
+          "le_ms": 311.296,
+          "count": 55
+        },
+        {
+          "le_ms": 327.68,
+          "count": 8
+        },
+        {
+          "le_ms": 344.064,
+          "count": 6
+        },
+        {
+          "le_ms": 360.448,
+          "count": 1
+        },
+        {
+          "le_ms": 376.832,
+          "count": 5
+        },
+        {
+          "le_ms": 393.216,
+          "count": 4
+        },
+        {
+          "le_ms": 442.368,
+          "count": 2
+        },
+        {
+          "le_ms": 458.752,
+          "count": 2
+        },
+        {
+          "le_ms": 557.056,
+          "count": 5
+        },
+        {
+          "le_ms": 589.824,
+          "count": 1
+        },
+        {
+          "le_ms": 655.36,
+          "count": 8
+        },
+        {
+          "le_ms": 688.128,
+          "count": 2
+        },
+        {
+          "le_ms": 753.664,
+          "count": 6
+        },
+        {
+          "le_ms": 786.432,
+          "count": 4
+        },
+        {
+          "le_ms": 851.968,
+          "count": 2
+        },
+        {
+          "le_ms": 884.736,
+          "count": 10
+        },
+        {
+          "le_ms": 917.504,
+          "count": 1
+        },
+        {
+          "le_ms": 950.272,
+          "count": 3
+        },
+        {
+          "le_ms": 983.04,
+          "count": 23
+        },
+        {
+          "le_ms": 1015.808,
+          "count": 8
+        },
+        {
+          "le_ms": 1048.576,
+          "count": 1
+        },
+        {
+          "le_ms": 1114.112,
+          "count": 10
+        },
+        {
+          "le_ms": 1179.648,
+          "count": 2
+        },
+        {
+          "le_ms": 1245.184,
+          "count": 2
+        },
+        {
+          "le_ms": 1376.256,
+          "count": 4
+        },
+        {
+          "le_ms": 1441.792,
+          "count": 2
+        },
+        {
+          "le_ms": 1507.328,
+          "count": 2
+        },
+        {
+          "le_ms": 1572.864,
+          "count": 5
+        },
+        {
+          "le_ms": 1638.4,
+          "count": 6
+        },
+        {
+          "le_ms": 1703.936,
+          "count": 8
+        },
+        {
+          "le_ms": 1769.472,
+          "count": 11
+        },
+        {
+          "le_ms": 1835.008,
+          "count": 4
+        },
+        {
+          "le_ms": 1900.544,
+          "count": 25
+        },
+        {
+          "le_ms": 1966.08,
+          "count": 19
+        },
+        {
+          "le_ms": 2031.616,
+          "count": 23
+        },
+        {
+          "le_ms": 2097.152,
+          "count": 4
+        },
+        {
+          "le_ms": 2228.224,
+          "count": 2
+        },
+        {
+          "le_ms": 2359.296,
+          "count": 2
+        },
+        {
+          "le_ms": 11534.336,
+          "count": 2
+        },
+        {
+          "le_ms": 12058.624,
+          "count": 4
+        },
+        {
+          "le_ms": 12582.912,
+          "count": 2
+        },
+        {
+          "le_ms": 13107.2,
+          "count": 15
+        },
+        {
+          "le_ms": 13631.488,
+          "count": 13
+        },
+        {
+          "le_ms": 14155.776,
+          "count": 22
+        },
+        {
+          "le_ms": 14680.064,
+          "count": 5
+        },
+        {
+          "le_ms": 15204.352,
+          "count": 24
+        },
+        {
+          "le_ms": 15728.64,
+          "count": 1
+        },
+        {
+          "le_ms": 16252.928,
+          "count": 7
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 25, introspection 15, policy 10, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 5, webhook-delivery 5, webhook-retry 5",
+        "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+        "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+        "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+        "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+        "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+        "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+        "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+      ],
+      "observations": {
+        "after": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 1650,
+              "accepted": 1442,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 208,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 3361,
+              "accepted": 1289,
+              "intentional_503": 1606,
+              "recovered": 1289,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 466,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:14:49.355511Z",
+              "last_recovery_at": "2026-10-11T14:14:49.358028Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        },
+        "before": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 1428,
+              "accepted": 1228,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 200,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 2878,
+              "accepted": 1096,
+              "intentional_503": 1368,
+              "recovered": 1096,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 414,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:13:50.325993Z",
+              "last_recovery_at": "2026-10-11T14:13:50.32657Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        }
+      }
+    },
+    {
+      "tool": "identity-bench",
+      "format_version": "1",
+      "scenario": "mixed-delivery",
+      "target": "http://127.0.0.1:18591",
+      "started_at": "2026-10-11T14:14:51.059109Z",
+      "duration_s": 60.000085792,
+      "concurrency": 32,
+      "seed": 1,
+      "operations": 2473,
+      "outcomes": {
+        "audit-query:ok": 120,
+        "client-credentials:ok": 634,
+        "email-delivery:ok": 117,
+        "import:ok": 127,
+        "introspection:ok": 381,
+        "passkey-assertion:ok": 116,
+        "password-login:ok": 122,
+        "policy:ok": 250,
+        "refresh:ok": 260,
+        "scim:ok": 140,
+        "webhook-delivery:ok": 109,
+        "webhook-retry:ok": 97
+      },
+      "throughput_per_s": 41.21660773241316,
+      "latency_ms": {
+        "mean": 704.1798883946623,
+        "p50": 12.8,
+        "p90": 1015.808,
+        "p99": 15204.352,
+        "p999": 16252.928,
+        "max": 16648.465
+      },
+      "histogram": [
+        {
+          "le_ms": 2.176,
+          "count": 6
+        },
+        {
+          "le_ms": 2.304,
+          "count": 11
+        },
+        {
+          "le_ms": 2.432,
+          "count": 3
+        },
+        {
+          "le_ms": 2.56,
+          "count": 3
+        },
+        {
+          "le_ms": 2.688,
+          "count": 9
+        },
+        {
+          "le_ms": 2.816,
+          "count": 12
+        },
+        {
+          "le_ms": 2.944,
+          "count": 12
+        },
+        {
+          "le_ms": 3.072,
+          "count": 17
+        },
+        {
+          "le_ms": 3.2,
+          "count": 16
+        },
+        {
+          "le_ms": 3.328,
+          "count": 10
+        },
+        {
+          "le_ms": 3.456,
+          "count": 12
+        },
+        {
+          "le_ms": 3.584,
+          "count": 13
+        },
+        {
+          "le_ms": 3.712,
+          "count": 17
+        },
+        {
+          "le_ms": 3.84,
+          "count": 15
+        },
+        {
+          "le_ms": 3.968,
+          "count": 20
+        },
+        {
+          "le_ms": 4.096,
+          "count": 12
+        },
+        {
+          "le_ms": 4.352,
+          "count": 31
+        },
+        {
+          "le_ms": 4.608,
+          "count": 23
+        },
+        {
+          "le_ms": 4.864,
+          "count": 31
+        },
+        {
+          "le_ms": 5.12,
+          "count": 19
+        },
+        {
+          "le_ms": 5.376,
+          "count": 29
+        },
+        {
+          "le_ms": 5.632,
+          "count": 39
+        },
+        {
+          "le_ms": 5.888,
+          "count": 29
+        },
+        {
+          "le_ms": 6.144,
+          "count": 25
+        },
+        {
+          "le_ms": 6.4,
+          "count": 39
+        },
+        {
+          "le_ms": 6.656,
+          "count": 44
+        },
+        {
+          "le_ms": 6.912,
+          "count": 48
+        },
+        {
+          "le_ms": 7.168,
+          "count": 43
+        },
+        {
+          "le_ms": 7.424,
+          "count": 33
+        },
+        {
+          "le_ms": 7.68,
+          "count": 42
+        },
+        {
+          "le_ms": 7.936,
+          "count": 37
+        },
+        {
+          "le_ms": 8.192,
+          "count": 47
+        },
+        {
+          "le_ms": 8.704,
+          "count": 78
+        },
+        {
+          "le_ms": 9.216,
+          "count": 68
+        },
+        {
+          "le_ms": 9.728,
+          "count": 65
+        },
+        {
+          "le_ms": 10.24,
+          "count": 56
+        },
+        {
+          "le_ms": 10.752,
+          "count": 63
+        },
+        {
+          "le_ms": 11.264,
+          "count": 43
+        },
+        {
+          "le_ms": 11.776,
+          "count": 46
+        },
+        {
+          "le_ms": 12.288,
+          "count": 47
+        },
+        {
+          "le_ms": 12.8,
+          "count": 44
+        },
+        {
+          "le_ms": 13.312,
+          "count": 42
+        },
+        {
+          "le_ms": 13.824,
+          "count": 31
+        },
+        {
+          "le_ms": 14.336,
+          "count": 39
+        },
+        {
+          "le_ms": 14.848,
+          "count": 17
+        },
+        {
+          "le_ms": 15.36,
+          "count": 29
+        },
+        {
+          "le_ms": 15.872,
+          "count": 24
+        },
+        {
+          "le_ms": 16.384,
+          "count": 19
+        },
+        {
+          "le_ms": 17.408,
+          "count": 43
+        },
+        {
+          "le_ms": 18.432,
+          "count": 42
+        },
+        {
+          "le_ms": 19.456,
+          "count": 41
+        },
+        {
+          "le_ms": 20.48,
+          "count": 30
+        },
+        {
+          "le_ms": 21.504,
+          "count": 23
+        },
+        {
+          "le_ms": 22.528,
+          "count": 27
+        },
+        {
+          "le_ms": 23.552,
+          "count": 15
+        },
+        {
+          "le_ms": 24.576,
+          "count": 9
+        },
+        {
+          "le_ms": 25.6,
+          "count": 20
+        },
+        {
+          "le_ms": 26.624,
+          "count": 16
+        },
+        {
+          "le_ms": 27.648,
+          "count": 13
+        },
+        {
+          "le_ms": 28.672,
+          "count": 8
+        },
+        {
+          "le_ms": 29.696,
+          "count": 9
+        },
+        {
+          "le_ms": 30.72,
+          "count": 11
+        },
+        {
+          "le_ms": 31.744,
+          "count": 11
+        },
+        {
+          "le_ms": 32.768,
+          "count": 7
+        },
+        {
+          "le_ms": 34.816,
+          "count": 16
+        },
+        {
+          "le_ms": 36.864,
+          "count": 12
+        },
+        {
+          "le_ms": 38.912,
+          "count": 16
+        },
+        {
+          "le_ms": 40.96,
+          "count": 14
+        },
+        {
+          "le_ms": 43.008,
+          "count": 9
+        },
+        {
+          "le_ms": 45.056,
+          "count": 5
+        },
+        {
+          "le_ms": 47.104,
+          "count": 18
+        },
+        {
+          "le_ms": 49.152,
+          "count": 15
+        },
+        {
+          "le_ms": 51.2,
+          "count": 5
+        },
+        {
+          "le_ms": 53.248,
+          "count": 10
+        },
+        {
+          "le_ms": 55.296,
+          "count": 5
+        },
+        {
+          "le_ms": 57.344,
+          "count": 6
+        },
+        {
+          "le_ms": 59.392,
+          "count": 6
+        },
+        {
+          "le_ms": 61.44,
+          "count": 4
+        },
+        {
+          "le_ms": 63.488,
+          "count": 4
+        },
+        {
+          "le_ms": 65.536,
+          "count": 8
+        },
+        {
+          "le_ms": 69.632,
+          "count": 9
+        },
+        {
+          "le_ms": 73.728,
+          "count": 7
+        },
+        {
+          "le_ms": 77.824,
+          "count": 8
+        },
+        {
+          "le_ms": 81.92,
+          "count": 6
+        },
+        {
+          "le_ms": 86.016,
+          "count": 6
+        },
+        {
+          "le_ms": 90.112,
+          "count": 2
+        },
+        {
+          "le_ms": 94.208,
+          "count": 6
+        },
+        {
+          "le_ms": 102.4,
+          "count": 3
+        },
+        {
+          "le_ms": 106.496,
+          "count": 1
+        },
+        {
+          "le_ms": 110.592,
+          "count": 1
+        },
+        {
+          "le_ms": 118.784,
+          "count": 1
+        },
+        {
+          "le_ms": 131.072,
+          "count": 1
+        },
+        {
+          "le_ms": 147.456,
+          "count": 4
+        },
+        {
+          "le_ms": 155.648,
+          "count": 2
+        },
+        {
+          "le_ms": 163.84,
+          "count": 3
+        },
+        {
+          "le_ms": 180.224,
+          "count": 1
+        },
+        {
+          "le_ms": 196.608,
+          "count": 1
+        },
+        {
+          "le_ms": 204.8,
+          "count": 2
+        },
+        {
+          "le_ms": 212.992,
+          "count": 2
+        },
+        {
+          "le_ms": 221.184,
+          "count": 3
+        },
+        {
+          "le_ms": 229.376,
+          "count": 2
+        },
+        {
+          "le_ms": 237.568,
+          "count": 1
+        },
+        {
+          "le_ms": 245.76,
+          "count": 1
+        },
+        {
+          "le_ms": 253.952,
+          "count": 2
+        },
+        {
+          "le_ms": 262.144,
+          "count": 3
+        },
+        {
+          "le_ms": 278.528,
+          "count": 4
+        },
+        {
+          "le_ms": 294.912,
+          "count": 70
+        },
+        {
+          "le_ms": 311.296,
+          "count": 56
+        },
+        {
+          "le_ms": 327.68,
+          "count": 9
+        },
+        {
+          "le_ms": 344.064,
+          "count": 7
+        },
+        {
+          "le_ms": 360.448,
+          "count": 3
+        },
+        {
+          "le_ms": 376.832,
+          "count": 1
+        },
+        {
+          "le_ms": 442.368,
+          "count": 2
+        },
+        {
+          "le_ms": 557.056,
+          "count": 4
+        },
+        {
+          "le_ms": 589.824,
+          "count": 3
+        },
+        {
+          "le_ms": 655.36,
+          "count": 9
+        },
+        {
+          "le_ms": 688.128,
+          "count": 3
+        },
+        {
+          "le_ms": 753.664,
+          "count": 5
+        },
+        {
+          "le_ms": 786.432,
+          "count": 3
+        },
+        {
+          "le_ms": 819.2,
+          "count": 1
+        },
+        {
+          "le_ms": 851.968,
+          "count": 2
+        },
+        {
+          "le_ms": 884.736,
+          "count": 8
+        },
+        {
+          "le_ms": 917.504,
+          "count": 2
+        },
+        {
+          "le_ms": 950.272,
+          "count": 1
+        },
+        {
+          "le_ms": 983.04,
+          "count": 16
+        },
+        {
+          "le_ms": 1015.808,
+          "count": 13
+        },
+        {
+          "le_ms": 1048.576,
+          "count": 1
+        },
+        {
+          "le_ms": 1114.112,
+          "count": 14
+        },
+        {
+          "le_ms": 1179.648,
+          "count": 1
+        },
+        {
+          "le_ms": 1245.184,
+          "count": 6
+        },
+        {
+          "le_ms": 1310.72,
+          "count": 4
+        },
+        {
+          "le_ms": 1376.256,
+          "count": 5
+        },
+        {
+          "le_ms": 1441.792,
+          "count": 2
+        },
+        {
+          "le_ms": 1507.328,
+          "count": 5
+        },
+        {
+          "le_ms": 1572.864,
+          "count": 4
+        },
+        {
+          "le_ms": 1638.4,
+          "count": 2
+        },
+        {
+          "le_ms": 1703.936,
+          "count": 12
+        },
+        {
+          "le_ms": 1769.472,
+          "count": 8
+        },
+        {
+          "le_ms": 1835.008,
+          "count": 2
+        },
+        {
+          "le_ms": 1900.544,
+          "count": 24
+        },
+        {
+          "le_ms": 1966.08,
+          "count": 19
+        },
+        {
+          "le_ms": 2031.616,
+          "count": 17
+        },
+        {
+          "le_ms": 2097.152,
+          "count": 9
+        },
+        {
+          "le_ms": 2359.296,
+          "count": 1
+        },
+        {
+          "le_ms": 2490.368,
+          "count": 1
+        },
+        {
+          "le_ms": 2621.44,
+          "count": 1
+        },
+        {
+          "le_ms": 2752.512,
+          "count": 1
+        },
+        {
+          "le_ms": 2883.584,
+          "count": 1
+        },
+        {
+          "le_ms": 11534.336,
+          "count": 1
+        },
+        {
+          "le_ms": 12058.624,
+          "count": 4
+        },
+        {
+          "le_ms": 12582.912,
+          "count": 1
+        },
+        {
+          "le_ms": 13107.2,
+          "count": 13
+        },
+        {
+          "le_ms": 13631.488,
+          "count": 10
+        },
+        {
+          "le_ms": 14155.776,
+          "count": 32
+        },
+        {
+          "le_ms": 14680.064,
+          "count": 9
+        },
+        {
+          "le_ms": 15204.352,
+          "count": 18
+        },
+        {
+          "le_ms": 15728.64,
+          "count": 3
+        },
+        {
+          "le_ms": 16252.928,
+          "count": 4
+        },
+        {
+          "le_ms": 16777.216,
+          "count": 2
+        }
+      ],
+      "environment": {
+        "arch": "arm64",
+        "cpus": 12,
+        "go": "go1.27.1",
+        "host": "laptop",
+        "os": "darwin"
+      },
+      "notes": [
+        "weights: client-credentials 25, introspection 15, policy 10, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 5, webhook-delivery 5, webhook-retry 5",
+        "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+        "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+        "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+        "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+        "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+        "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+        "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53806; private signing keys only in memory",
+        "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+        "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+      ],
+      "observations": {
+        "after": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 1874,
+              "accepted": 1660,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 214,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 3845,
+              "accepted": 1484,
+              "intentional_503": 1846,
+              "recovered": 1484,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 515,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:15:50.33655Z",
+              "last_recovery_at": "2026-10-11T14:15:50.341277Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        },
+        "before": {
+          "webhook-delivery": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 1650,
+              "accepted": 1442,
+              "intentional_503": 0,
+              "recovered": 0,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 208,
+              "first_retry_at": "0001-01-01T00:00:00Z",
+              "last_retry_at": "0001-01-01T00:00:00Z",
+              "last_recovery_at": "0001-01-01T00:00:00Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          },
+          "webhook-retry": {
+            "active_cycles": 0,
+            "cumulative": {
+              "received": 3361,
+              "accepted": 1289,
+              "intentional_503": 1606,
+              "recovered": 1289,
+              "invalid": 0,
+              "ignored_abandoned_or_old_events": 466,
+              "first_retry_at": "2026-10-11T14:08:08.383353Z",
+              "last_retry_at": "2026-10-11T14:14:49.355511Z",
+              "last_recovery_at": "2026-10-11T14:14:49.358028Z"
+            },
+            "receiver": "http://127.0.0.1:53806",
+            "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+            "subscriptions": 32
+          }
+        }
+      }
+    }
+  ]
+}

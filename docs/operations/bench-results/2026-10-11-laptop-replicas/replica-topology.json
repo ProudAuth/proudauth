@@ -1,0 +1,35 @@
+{
+  "server_count": 3,
+  "servers": [
+    {
+      "node": 1,
+      "process_id": 32260,
+      "public_listen": "127.0.0.1:57843",
+      "internal_listen": "127.0.0.1:57836",
+      "configuration": "proudauth-config-node-1.yaml"
+    },
+    {
+      "node": 2,
+      "process_id": 32263,
+      "public_listen": "127.0.0.1:57844",
+      "internal_listen": "127.0.0.1:57845",
+      "configuration": "proudauth-config-node-2.yaml"
+    },
+    {
+      "node": 3,
+      "process_id": 32266,
+      "public_listen": "127.0.0.1:57846",
+      "internal_listen": "127.0.0.1:57847",
+      "configuration": "proudauth-config-node-3.yaml"
+    }
+  ],
+  "worker_process_id": 32286,
+  "proxy": {
+    "process_id": 32287,
+    "public_origin": "http://127.0.0.1:57835",
+    "routing": "round robin per HTTP request, no sticky sessions or cross-backend retries",
+    "transport": "plain HTTP/1.1 loopback; outgoing pooled connections; incoming Host and one-use bodies preserved"
+  },
+  "shared_state": "one PostgreSQL database; equivalent root-key files read independently; no application memory/cache shared",
+  "limits": "all processes, load generator, proxy and database share one machine; not multi-machine or failover evidence"
+}

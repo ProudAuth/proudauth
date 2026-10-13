@@ -1,0 +1,15 @@
+jobs	79797	1450041344
+audit_events	431062	427950080
+auth_transactions	70502	120528896
+refresh_tokens	106953	62226432
+outbox_events	49987	50896896
+authorization_grants	20769	13590528
+sessions	20772	11812864
+memberships	15000	10477568
+refresh_families	20730	9076736
+role_assignments	15002	8790016
+user_identifiers	10002	7299072
+authorization_codes	5770	7217152
+rate_limit_counters	20078	7102464
+client_sessions	20769	6914048
+client_credentials	22	6152192

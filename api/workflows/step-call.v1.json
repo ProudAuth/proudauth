@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/workflows/step-call.v1.json",
+  "title": "Lifecycle workflow step call (contract_version 1)",
+  "description": "Body of the POST a call_webhook step sends to the destination of the step's webhook subscription. Headers: Webhook-Id (unique per attempt), Webhook-Timestamp and Webhook-Signature signed with the subscription's secret exactly like event deliveries, Idempotency-Key (identical for every attempt of the step, and <key>.compensate for its compensation call), User-Agent ProudAuth-Workflows/1. Answer 2xx to complete the step; 4xx other than 408/429 (and 410) fail the step permanently, anything else is retried under the step's retry policy. Deduplicate by Idempotency-Key: a retry after a crash carries the same key.",
+  "type": "object",
+  "required": [
+    "type",
+    "contract_version",
+    "action",
+    "realm_id",
+    "workflow_id",
+    "revision",
+    "run_id",
+    "step_id",
+    "attempt",
+    "idempotency_key",
+    "subject",
+    "trigger",
+    "sent_at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "const": "workflow.step"
+    },
+    "contract_version": {
+      "const": 1
+    },
+    "action": {
+      "enum": [
+        "execute",
+        "compensate"
+      ],
+      "description": "compensate: an earlier execute of this step must be undone because the run failed later."
+    },
+    "realm_id": {
+      "type": "string",
+      "pattern": "^rlm_[0-9a-z]{26}$",
+      "description": "Realm."
+    },
+    "organization_id": {
+      "type": "string",
+      "pattern": "^org_[0-9a-z]{26}$",
+      "description": "Organization of the run, when it has one."
+    },
+    "workflow_id": {
+      "type": "string",
+      "pattern": "^wfl_[0-9a-z]{26}$",
+      "description": "Workflow."
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Revision the run executes."
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^wrn_[0-9a-z]{26}$",
+      "description": "Run."
+    },
+    "step_id": {
+      "type": "string"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "idempotency_key": {
+      "type": "string",
+      "description": "Equal to the Idempotency-Key header."
+    },
+    "subject": {
+      "type": "object",
+      "required": [
+        "type",
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "user"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^usr_[0-9a-z]{26}$",
+          "description": "The user the run is about."
+        }
+      }
+    },
+    "trigger": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "event",
+            "schedule",
+            "manual"
+          ]
+        },
+        "event_type": {
+          "type": "string"
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^obx_[0-9a-z]{26}$"
+        }
+      }
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "x-contract": "workflow_step_call",
+  "x-contract-version": 1,
+  "examples": [
+    {
+      "type": "workflow.step",
+      "contract_version": 1,
+      "action": "execute",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "workflow_id": "wfl_01jbh0ybgaravg3xcq0zdp2egd",
+      "revision": 3,
+      "run_id": "wrn_01jbh0ybgaravg3xcq0zdp2egd",
+      "step_id": "sync",
+      "attempt": 1,
+      "idempotency_key": "wrn_01jbh0ybgaravg3xcq0zdp2egd.sync",
+      "subject": {
+        "type": "user",
+        "id": "usr_01jb4rsd73q99h2e30n9ak6n8d"
+      },
+      "trigger": {
+        "type": "event",
+        "event_type": "organization.membership.added",
+        "event_id": "obx_01jbxd7zp17z3kcswc3jj4m6np"
+      },
+      "sent_at": "2026-10-10T12:10:00Z"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/user.recovery_restricted.v1.json",
+  "title": "user.recovery_restricted (v1)",
+  "description": "A user account became recovery-restricted (MFA-010, USR-003): an active account signed in with a recovery code and no other strong factor. Sessions are not revoked; the session that used the recovery code is itself restricted to enrolling a new factor and ending sessions. Audit reason RECOVERY_CODE_USED. Subscribable (webhooks.EventTypes). org_id is never set.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "user.recovery_restricted"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "user_id",
+        "state"
+      ],
+      "properties": {
+        "user_id": {
+          "$ref": "envelope.v1.json#/$defs/user_id",
+          "description": "The user whose account state changed."
+        },
+        "state": {
+          "type": "string",
+          "const": "recovery_restricted",
+          "description": "The new account state."
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Never set for this event type by the current server."
+    }
+  },
+  "x-event-type": "user.recovery_restricted",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/authentication/steps.go: (*Service).complete (recovery-code sign-in) via (*identity.Service).SetStateTx"
+  ],
+  "x-org-scoped": "never",
+  "examples": [
+    {
+      "event_id": "obx_01jbne5h353m1c39h2p6c1ftc5",
+      "event_type": "user.recovery_restricted",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "state": "recovery_restricted"
+      }
+    }
+  ]
+}

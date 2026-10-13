@@ -1,0 +1,10 @@
+{
+  "subject_accounts": 1,
+  "transactions": 8,
+  "evaluated_proofs": 10,
+  "max_transaction_failures": 2,
+  "pending_transactions": 8,
+  "failed_transactions": 0,
+  "audited_failed_proofs": 10,
+  "pass": true
+}

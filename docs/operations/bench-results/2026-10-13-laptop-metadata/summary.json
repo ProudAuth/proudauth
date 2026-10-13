@@ -1,0 +1,39 @@
+[
+  {
+    "scenario": "metadata-fetch",
+    "started": "2026-10-12T21:28:39Z",
+    "ended": "2026-10-12T21:30:00Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 157079,
+    "throughput_per_s": 2617.9,
+    "latency_ms": {
+      "mean": 11.21,
+      "p50": 9.22,
+      "p90": 24.58,
+      "p99": 27.65,
+      "p999": 34.82,
+      "max": 56.65
+    },
+    "outcomes": {
+      "http_failure_rejected": 19639,
+      "malformed_rejected": 19639,
+      "oversized_rejected": 19639,
+      "private_rejected": 19638,
+      "redirect_rejected": 19639,
+      "timeout_rejected": 19607,
+      "unknown_key_rejected": 19639,
+      "valid:ok": 19639
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 80.34,
+      "identity_server": 140.54,
+      "identity_worker": 1.32,
+      "postgres_container": 85.86,
+      "docker_vm_and_proxy": 387.59,
+      "identity_bench": 39.71,
+      "metadata_receiver": 0.12
+    }
+  }
+]

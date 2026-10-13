@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/user.deleted.v2.json",
+  "title": "user.deleted (v2)",
+  "description": "A user account was erased. Emitted when an account is erased (identifiers, credentials and profile removed, a tombstone kept): immediate deletion by an administrator, scheduled self-service deletion after the grace period, clean-up of expired unverified registrations or unused guest accounts (lifecycle job), the source account of a completed account merge (user.merged follows). Sessions and grants are revoked (session.revoked with reason \"account_deleted\"); the user's memberships are marked removed without organization.membership.removed events. Requesting or cancelling a self-service deletion does not emit an event. org_id is never set.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v2.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "user.deleted"
+    },
+    "event_version": {
+      "const": 2
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "user_id"
+      ],
+      "properties": {
+        "user_id": {
+          "$ref": "envelope.v2.json#/$defs/user_id",
+          "description": "The erased user. The identifier is never reused."
+        }
+      },
+      "additionalProperties": false
+    },
+    "organization_id": {
+      "description": "Never set for this event type by the current server."
+    }
+  },
+  "x-event-type": "user.deleted",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/identity/identity.go: (*Service).DeleteNowTx"
+  ],
+  "x-org-scoped": "never",
+  "examples": [
+    {
+      "event_id": "obx_01jbjxmbk5858jc2errhktdwwe",
+      "event_type": "user.deleted",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d"
+      }
+    }
+  ]
+}

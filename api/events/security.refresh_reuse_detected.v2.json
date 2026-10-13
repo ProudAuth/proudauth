@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/security.refresh_reuse_detected.v2.json",
+  "title": "security.refresh_reuse_detected (v2)",
+  "description": "A rotated refresh token was presented again (possible token theft). Emitted the first time an already-rotated refresh token is presented by the client it was issued to. The refresh family is marked compromised, the grant is revoked and, for session-bound online grants, the session is revoked as well (session.revoked with reason \"refresh_reuse\"). org_id is set when the grant was bound to an organization. The worker also logs and counts every security.* event as an alertable signal.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v2.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "security.refresh_reuse_detected"
+    },
+    "event_version": {
+      "const": 2
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "subject_id",
+        "family_id"
+      ],
+      "properties": {
+        "subject_id": {
+          "$ref": "envelope.v2.json#/$defs/grant_subject_id",
+          "description": "The grant's subject (user or service principal)."
+        },
+        "family_id": {
+          "$ref": "envelope.v2.json#/$defs/refresh_family_id",
+          "description": "The compromised refresh token family."
+        }
+      },
+      "additionalProperties": false
+    },
+    "organization_id": {
+      "description": "Set only when the event is bound to an organization (see description)."
+    }
+  },
+  "x-event-type": "security.refresh_reuse_detected",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/session/grants.go: (*Service).RotateRefresh"
+  ],
+  "x-org-scoped": "optional",
+  "examples": [
+    {
+      "event_id": "obx_01jb5xp7emjh1j533pcwdgk81d",
+      "event_type": "security.refresh_reuse_detected",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "subject_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "family_id": "rff_01jbzjcw71xw20xg9ydmv78wpc"
+      }
+    }
+  ]
+}

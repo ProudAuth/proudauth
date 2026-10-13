@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+47875	36320.8	0.759	47875	SELECT ra.role_id, ra.conditions FROM role_assignments ra WHERE ra.realm_id=$1 AND ra.scope_type=$5 AND ra.scope_id=$2 AND ra.membership_id=$3 AND (ra.valid_from IS NULL OR ra.valid_from <= $4) AND (r
+95766	3978.3	0.042	431013	SELECT r.name, p.name, rp.effect FROM roles r LEFT JOIN role_permissions rp ON rp.role_id=r.id LEFT JOIN permissions p ON p.id=rp.permission_id WHERE r.id = ANY($1) ORDER BY r.name, p.name
+47853	3851.6	0.080	47853	WITH RECURSIVE mygroups(id, depth) AS ( SELECT gm.group_id, $5 FROM group_memberships gm JOIN memberships m ON m.id=gm.membership_id WHERE m.user_id=$3 AND m.state=$6 UNION SELECT g.parent_id, d.depth
+191498	1159.7	0.006	191498	SELECT composite_role_ids FROM roles WHERE id=$1
+95828	1011.1	0.011	95828	SELECT id, realm_id, client_id, coalesce(project_id,$3), name, coalesce(description,$4), client_type, token_endpoint_auth_method, grant_types, security_profile, state, first_party, consent_mode, allow
+47853	1000.9	0.021	47853	SELECT o.state || $3 || o.authz_revision || $4 || coalesce((SELECT m.state || $5 || m.revision FROM memberships m WHERE m.organization_id=o.id AND m.user_id=$2 ORDER BY m.created_at DESC LIMIT $6), $7
+95900	947.5	0.010	47983	SELECT uri, purpose FROM client_redirect_uris WHERE client_ref=$1 ORDER BY created_at, uri
+95787	939.5	0.010	47909	SELECT ra.role_id, ra.conditions FROM role_assignments ra WHERE ra.realm_id=$1 AND ra.subject_type=$2 AND ra.subject_id=$3 AND ra.scope_type=$5 AND (ra.valid_from IS NULL OR ra.valid_from <= $4) AND (
+95741	854.8	0.009	95741	SELECT authz_revision FROM users WHERE id=$1
+95865	772.4	0.008	143812	SELECT id, coalesce(resource_id,$3), name, coalesce(description,$4), coalesce(consent_text,$5), sensitivity, is_default, kind, required_permissions, coalesce(step_up_acr,$6), coalesce(max_auth_age_sec
+47877	770.2	0.016	47877	SELECT m.id FROM memberships m JOIN organizations o ON o.id=m.organization_id WHERE m.realm_id=$1 AND m.organization_id=$2 AND m.user_id=$3 AND m.state=$6 AND (o.state=$7 OR ($5 AND o.state=$8)) AND (
+95898	724.3	0.008	0	SELECT origin FROM client_origins WHERE client_ref=$1 ORDER BY origin

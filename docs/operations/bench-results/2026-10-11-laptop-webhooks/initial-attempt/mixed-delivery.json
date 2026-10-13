@@ -1,0 +1,588 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "mixed-delivery",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T14:04:28.058542Z",
+  "duration_s": 60.000864333,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 560,
+  "outcomes": {
+    "audit-query:ok": 27,
+    "client-credentials:ok": 148,
+    "email-delivery:ok": 33,
+    "import:ok": 29,
+    "introspection:ok": 84,
+    "passkey-assertion:ok": 18,
+    "password-login:ok": 29,
+    "policy:ok": 57,
+    "refresh:ok": 68,
+    "scim:ok": 35,
+    "webhook-delivery:delivery_timeout": 15,
+    "webhook-retry:delivery_timeout": 17
+  },
+  "throughput_per_s": 9.333198883470157,
+  "latency_ms": {
+    "mean": 1819.7510732142857,
+    "p50": 13.312,
+    "p90": 884.736,
+    "p99": 30001.181,
+    "p999": 30001.181,
+    "max": 30001.181
+  },
+  "histogram": [
+    {
+      "le_ms": 2.304,
+      "count": 1
+    },
+    {
+      "le_ms": 2.432,
+      "count": 3
+    },
+    {
+      "le_ms": 2.688,
+      "count": 1
+    },
+    {
+      "le_ms": 2.816,
+      "count": 2
+    },
+    {
+      "le_ms": 3.072,
+      "count": 5
+    },
+    {
+      "le_ms": 3.2,
+      "count": 2
+    },
+    {
+      "le_ms": 3.328,
+      "count": 3
+    },
+    {
+      "le_ms": 3.456,
+      "count": 5
+    },
+    {
+      "le_ms": 3.584,
+      "count": 3
+    },
+    {
+      "le_ms": 3.712,
+      "count": 5
+    },
+    {
+      "le_ms": 3.968,
+      "count": 2
+    },
+    {
+      "le_ms": 4.096,
+      "count": 1
+    },
+    {
+      "le_ms": 4.352,
+      "count": 7
+    },
+    {
+      "le_ms": 4.608,
+      "count": 6
+    },
+    {
+      "le_ms": 4.864,
+      "count": 6
+    },
+    {
+      "le_ms": 5.12,
+      "count": 6
+    },
+    {
+      "le_ms": 5.376,
+      "count": 7
+    },
+    {
+      "le_ms": 5.632,
+      "count": 11
+    },
+    {
+      "le_ms": 5.888,
+      "count": 3
+    },
+    {
+      "le_ms": 6.144,
+      "count": 3
+    },
+    {
+      "le_ms": 6.4,
+      "count": 9
+    },
+    {
+      "le_ms": 6.656,
+      "count": 7
+    },
+    {
+      "le_ms": 6.912,
+      "count": 14
+    },
+    {
+      "le_ms": 7.168,
+      "count": 11
+    },
+    {
+      "le_ms": 7.424,
+      "count": 13
+    },
+    {
+      "le_ms": 7.68,
+      "count": 9
+    },
+    {
+      "le_ms": 7.936,
+      "count": 11
+    },
+    {
+      "le_ms": 8.192,
+      "count": 11
+    },
+    {
+      "le_ms": 8.704,
+      "count": 13
+    },
+    {
+      "le_ms": 9.216,
+      "count": 16
+    },
+    {
+      "le_ms": 9.728,
+      "count": 21
+    },
+    {
+      "le_ms": 10.24,
+      "count": 16
+    },
+    {
+      "le_ms": 10.752,
+      "count": 13
+    },
+    {
+      "le_ms": 11.264,
+      "count": 8
+    },
+    {
+      "le_ms": 11.776,
+      "count": 11
+    },
+    {
+      "le_ms": 12.288,
+      "count": 7
+    },
+    {
+      "le_ms": 12.8,
+      "count": 7
+    },
+    {
+      "le_ms": 13.312,
+      "count": 5
+    },
+    {
+      "le_ms": 13.824,
+      "count": 5
+    },
+    {
+      "le_ms": 14.336,
+      "count": 3
+    },
+    {
+      "le_ms": 14.848,
+      "count": 4
+    },
+    {
+      "le_ms": 15.36,
+      "count": 5
+    },
+    {
+      "le_ms": 15.872,
+      "count": 5
+    },
+    {
+      "le_ms": 16.384,
+      "count": 6
+    },
+    {
+      "le_ms": 17.408,
+      "count": 7
+    },
+    {
+      "le_ms": 18.432,
+      "count": 9
+    },
+    {
+      "le_ms": 19.456,
+      "count": 1
+    },
+    {
+      "le_ms": 20.48,
+      "count": 6
+    },
+    {
+      "le_ms": 21.504,
+      "count": 2
+    },
+    {
+      "le_ms": 22.528,
+      "count": 2
+    },
+    {
+      "le_ms": 23.552,
+      "count": 2
+    },
+    {
+      "le_ms": 24.576,
+      "count": 3
+    },
+    {
+      "le_ms": 25.6,
+      "count": 4
+    },
+    {
+      "le_ms": 26.624,
+      "count": 3
+    },
+    {
+      "le_ms": 27.648,
+      "count": 1
+    },
+    {
+      "le_ms": 28.672,
+      "count": 3
+    },
+    {
+      "le_ms": 29.696,
+      "count": 2
+    },
+    {
+      "le_ms": 30.72,
+      "count": 2
+    },
+    {
+      "le_ms": 31.744,
+      "count": 9
+    },
+    {
+      "le_ms": 32.768,
+      "count": 5
+    },
+    {
+      "le_ms": 34.816,
+      "count": 5
+    },
+    {
+      "le_ms": 36.864,
+      "count": 6
+    },
+    {
+      "le_ms": 38.912,
+      "count": 10
+    },
+    {
+      "le_ms": 40.96,
+      "count": 7
+    },
+    {
+      "le_ms": 43.008,
+      "count": 3
+    },
+    {
+      "le_ms": 45.056,
+      "count": 7
+    },
+    {
+      "le_ms": 47.104,
+      "count": 3
+    },
+    {
+      "le_ms": 49.152,
+      "count": 3
+    },
+    {
+      "le_ms": 51.2,
+      "count": 3
+    },
+    {
+      "le_ms": 53.248,
+      "count": 1
+    },
+    {
+      "le_ms": 55.296,
+      "count": 5
+    },
+    {
+      "le_ms": 61.44,
+      "count": 1
+    },
+    {
+      "le_ms": 73.728,
+      "count": 1
+    },
+    {
+      "le_ms": 81.92,
+      "count": 1
+    },
+    {
+      "le_ms": 90.112,
+      "count": 2
+    },
+    {
+      "le_ms": 94.208,
+      "count": 1
+    },
+    {
+      "le_ms": 102.4,
+      "count": 1
+    },
+    {
+      "le_ms": 106.496,
+      "count": 1
+    },
+    {
+      "le_ms": 126.976,
+      "count": 1
+    },
+    {
+      "le_ms": 147.456,
+      "count": 1
+    },
+    {
+      "le_ms": 163.84,
+      "count": 1
+    },
+    {
+      "le_ms": 180.224,
+      "count": 2
+    },
+    {
+      "le_ms": 188.416,
+      "count": 2
+    },
+    {
+      "le_ms": 196.608,
+      "count": 1
+    },
+    {
+      "le_ms": 204.8,
+      "count": 2
+    },
+    {
+      "le_ms": 237.568,
+      "count": 1
+    },
+    {
+      "le_ms": 245.76,
+      "count": 1
+    },
+    {
+      "le_ms": 253.952,
+      "count": 1
+    },
+    {
+      "le_ms": 278.528,
+      "count": 1
+    },
+    {
+      "le_ms": 294.912,
+      "count": 14
+    },
+    {
+      "le_ms": 311.296,
+      "count": 16
+    },
+    {
+      "le_ms": 327.68,
+      "count": 4
+    },
+    {
+      "le_ms": 344.064,
+      "count": 3
+    },
+    {
+      "le_ms": 360.448,
+      "count": 3
+    },
+    {
+      "le_ms": 376.832,
+      "count": 3
+    },
+    {
+      "le_ms": 393.216,
+      "count": 3
+    },
+    {
+      "le_ms": 409.6,
+      "count": 1
+    },
+    {
+      "le_ms": 425.984,
+      "count": 2
+    },
+    {
+      "le_ms": 442.368,
+      "count": 1
+    },
+    {
+      "le_ms": 688.128,
+      "count": 1
+    },
+    {
+      "le_ms": 753.664,
+      "count": 2
+    },
+    {
+      "le_ms": 786.432,
+      "count": 1
+    },
+    {
+      "le_ms": 884.736,
+      "count": 2
+    },
+    {
+      "le_ms": 917.504,
+      "count": 1
+    },
+    {
+      "le_ms": 950.272,
+      "count": 1
+    },
+    {
+      "le_ms": 983.04,
+      "count": 7
+    },
+    {
+      "le_ms": 1015.808,
+      "count": 1
+    },
+    {
+      "le_ms": 1114.112,
+      "count": 3
+    },
+    {
+      "le_ms": 1245.184,
+      "count": 2
+    },
+    {
+      "le_ms": 1310.72,
+      "count": 3
+    },
+    {
+      "le_ms": 1376.256,
+      "count": 4
+    },
+    {
+      "le_ms": 2031.616,
+      "count": 1
+    },
+    {
+      "le_ms": 2097.152,
+      "count": 1
+    },
+    {
+      "le_ms": 30408.704,
+      "count": 32
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "weights: client-credentials 25, introspection 15, policy 10, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 5, webhook-delivery 5, webhook-retry 5",
+    "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+    "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+    "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+    "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+    "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+    "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+    "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged",
+    "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53670; private signing keys only in memory",
+    "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+    "32 additional isolated users, organizations and scoped version-2 minimal subscriptions; callback receiver http://127.0.0.1:53670; private signing keys only in memory",
+    "one operation: clear an interrupted live membership, add/remove the worker's synthetic member, verify both request-correlated HMAC callbacks and poll both exact deliveries until delivered; 100 ms polling included; at-least-once delivery, no inbox/remote/TLS capacity claim",
+    "receiver returns 503 for each event's first valid attempt, then 204; require identical event ID/body, a fresh timestamp and exactly two delivered attempts under unmodified retry backoff"
+  ],
+  "observations": {
+    "after": {
+      "webhook-delivery": {
+        "active_cycles": 0,
+        "cumulative": {
+          "received": 0,
+          "accepted": 0,
+          "intentional_503": 0,
+          "recovered": 0,
+          "invalid": 0,
+          "ignored_abandoned_or_old_events": 0,
+          "first_retry_at": "0001-01-01T00:00:00Z",
+          "last_retry_at": "0001-01-01T00:00:00Z",
+          "last_recovery_at": "0001-01-01T00:00:00Z"
+        },
+        "receiver": "http://127.0.0.1:53670",
+        "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+        "subscriptions": 32
+      },
+      "webhook-retry": {
+        "active_cycles": 0,
+        "cumulative": {
+          "received": 0,
+          "accepted": 0,
+          "intentional_503": 0,
+          "recovered": 0,
+          "invalid": 0,
+          "ignored_abandoned_or_old_events": 0,
+          "first_retry_at": "0001-01-01T00:00:00Z",
+          "last_retry_at": "0001-01-01T00:00:00Z",
+          "last_recovery_at": "0001-01-01T00:00:00Z"
+        },
+        "receiver": "http://127.0.0.1:53670",
+        "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+        "subscriptions": 32
+      }
+    },
+    "before": {
+      "webhook-delivery": {
+        "active_cycles": 0,
+        "cumulative": {
+          "received": 0,
+          "accepted": 0,
+          "intentional_503": 0,
+          "recovered": 0,
+          "invalid": 0,
+          "ignored_abandoned_or_old_events": 0,
+          "first_retry_at": "0001-01-01T00:00:00Z",
+          "last_retry_at": "0001-01-01T00:00:00Z",
+          "last_recovery_at": "0001-01-01T00:00:00Z"
+        },
+        "receiver": "http://127.0.0.1:53670",
+        "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+        "subscriptions": 32
+      },
+      "webhook-retry": {
+        "active_cycles": 0,
+        "cumulative": {
+          "received": 0,
+          "accepted": 0,
+          "intentional_503": 0,
+          "recovered": 0,
+          "invalid": 0,
+          "ignored_abandoned_or_old_events": 0,
+          "first_retry_at": "0001-01-01T00:00:00Z",
+          "last_retry_at": "0001-01-01T00:00:00Z",
+          "last_recovery_at": "0001-01-01T00:00:00Z"
+        },
+        "receiver": "http://127.0.0.1:53670",
+        "scope": "counts include preparation/warm-up and boundary-interrupted cycles; subtract before from after for a measurement/window",
+        "subscriptions": 32
+      }
+    }
+  }
+}

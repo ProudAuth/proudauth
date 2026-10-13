@@ -1,0 +1,53 @@
+{
+  "complete": true,
+  "started_at": "2026-10-11T19:41:29.644928Z",
+  "observed_at": "2026-10-11T19:48:15.942572Z",
+  "inflight_requests": 0,
+  "backends": [
+    {
+      "url": "http://127.0.0.1:57843",
+      "assigned_requests": 62127,
+      "response_statuses": {
+        "200": 53943,
+        "201": 1130,
+        "202": 5,
+        "204": 351,
+        "400": 6651,
+        "502": 47
+      },
+      "transport_errors": 0,
+      "response_aborts": 0,
+      "client_cancellations": 47
+    },
+    {
+      "url": "http://127.0.0.1:57844",
+      "assigned_requests": 62127,
+      "response_statuses": {
+        "200": 54118,
+        "201": 1172,
+        "202": 2,
+        "204": 336,
+        "400": 6453,
+        "502": 46
+      },
+      "transport_errors": 0,
+      "response_aborts": 0,
+      "client_cancellations": 46
+    },
+    {
+      "url": "http://127.0.0.1:57846",
+      "assigned_requests": 62127,
+      "response_statuses": {
+        "200": 54152,
+        "201": 1138,
+        "202": 7,
+        "204": 337,
+        "400": 6448,
+        "502": 45
+      },
+      "transport_errors": 0,
+      "response_aborts": 0,
+      "client_cancellations": 45
+    }
+  ]
+}

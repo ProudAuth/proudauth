@@ -1,0 +1,5 @@
+# Frozen tool/SQL output retains captured whitespace and empty TSV fields.
+docs/operations/**/build-info.txt whitespace=-blank-at-eol
+docs/operations/**/postgres/*.tsv whitespace=-blank-at-eol
+# The original plan uses intentional Markdown hard line breaks.
+docs/plan.md whitespace=-blank-at-eol

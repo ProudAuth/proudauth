@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+143432	554371.9	3.865	143432	INSERT INTO rate_limit_counters (bucket, window_start, count, expires_at) VALUES ($1, $2, 1, $3) ON CONFLICT (bucket, window_start) DO UPDATE SET count = rate_limit_counters.count + 1 RETURNING count
+5000	9353.9	1.871	5000	SELECT EXISTS (SELECT $3 FROM role_assignments ra JOIN roles r ON r.id=ra.role_id WHERE ra.membership_id=$1 AND r.is_owner_role AND (ra.expires_at IS NULL OR ra.expires_at > $2))
+691	9059.8	13.111	6910000	SELECT id, realm_id, state, coalesce(display_name,$3), coalesce(given_name,$4), coalesce(family_name,$5), coalesce(locale,$6), coalesce(zoneinfo,$7), profile, admin_metadata, internal_metadata, protec
+685	7111.6	10.382	6850000	SELECT user_id, id, type, original_value, canonical_value, verified_at, is_primary, source FROM user_identifiers WHERE realm_id=$1 AND user_id=ANY($2) ORDER BY user_id, created_at, id
+698	4682.1	6.708	6980000	SELECT x.external_id, x.local_id, x.resource_version, x.created_at, x.updated_at FROM connector_external_ids x WHERE x.connector_id=$1 AND x.resource_type=$3 AND x.local_id=ANY($2)
+682	4579.2	6.714	6820000	SELECT user_id, id, state FROM memberships WHERE realm_id=$1 AND organization_id=$2 AND user_id=ANY($3) AND state NOT IN ($4 /*, ... */)
+143434	1944.9	0.014	143434	SELECT c.id, c.realm_id, c.organization_id, c.name, c.kind, c.state, c.allowed_resource_types, c.role_ceiling_ids, c.group_role_mappings, coalesce(c.default_role_id,$3), c.config, c.last_sync_at, coal
+1852	1765.2	0.953	1852	SELECT pg_advisory_xact_lock(hashtext($1))
+702	1518.3	2.163	7020000	SELECT local_id FROM connector_external_ids WHERE connector_id=$1 AND resource_type=$2 ORDER BY local_id LIMIT $3
+35001	1344.2	0.038	35001	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+47405	1342.8	0.028	47405	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+10000	883.6	0.088	10000	INSERT INTO role_assignments (id, realm_id, role_id, subject_type, subject_id, membership_id, scope_type, scope_id, conditions, valid_from, expires_at, granted_by_type, granted_by_id, approved_by_id, 

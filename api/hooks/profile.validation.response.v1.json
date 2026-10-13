@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/hooks/profile.validation.response.v1.json",
+  "title": "profile.validation hook response (contract v1)",
+  "description": "Answer with HTTP 200 and this body.",
+  "x-hook-kind": "profile.validation",
+  "x-contract-version": 1,
+  "examples": [
+    {
+      "allow": true
+    },
+    {
+      "allow": false,
+      "errors": {
+        "display_name": "may not impersonate staff"
+      }
+    }
+  ],
+  "type": "object",
+  "required": [
+    "allow"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "allow": {
+      "type": "boolean",
+      "description": "false refuses the action."
+    },
+    "reason_code": {
+      "$ref": "common.v1.json#/$defs/reason_code"
+    },
+    "errors": {
+      "type": "object",
+      "description": "Field validation messages (field: at most 64 characters, message: at most 200); a refusal with errors is reported as a validation failure.",
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 200
+      }
+    }
+  }
+}

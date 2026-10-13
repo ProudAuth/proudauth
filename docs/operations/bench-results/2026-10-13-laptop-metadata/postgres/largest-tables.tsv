@@ -1,0 +1,15 @@
+audit_events	183102	164495360
+outbox_events	25509	25427968
+memberships	15000	10518528
+role_assignments	15002	8790016
+user_identifiers	10002	7299072
+jobs	14	4677632
+users	10001	4636672
+credentials	10002	3743744
+import_mappings	10000	2981888
+group_memberships	1000	425984
+organizations	501	311296
+rate_limit_counters	33	278528
+workload_trusts	8	196608
+permissions	108	122880
+notification_jobs	2	106496

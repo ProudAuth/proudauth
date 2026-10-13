@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/hooks/token.claims.request.v1.json",
+  "title": "token.claims hook request (contract v1)",
+  "description": "Sent while an access token is minted. Fails closed unless the hook's failure_mode is skip.",
+  "type": "object",
+  "required": [
+    "hook_kind",
+    "realm_id",
+    "token"
+  ],
+  "properties": {
+    "hook_kind": {
+      "const": "token.claims",
+      "description": "The hook kind."
+    },
+    "realm_id": {
+      "$ref": "common.v1.json#/$defs/realm_id"
+    },
+    "token": {
+      "type": "object",
+      "required": [
+        "subject_type",
+        "subject_id",
+        "client_id",
+        "audience",
+        "scopes",
+        "token_kind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "subject_type": {
+          "type": "string",
+          "enum": [
+            "user",
+            "service_principal"
+          ]
+        },
+        "subject_id": {
+          "type": "string"
+        },
+        "client_id": {
+          "type": "string"
+        },
+        "audience": {
+          "type": "string"
+        },
+        "scopes": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "organization_id": {
+          "$ref": "common.v1.json#/$defs/organization_id"
+        },
+        "token_kind": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "x-hook-kind": "token.claims",
+  "x-contract-version": 1,
+  "examples": [
+    {
+      "hook_kind": "token.claims",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "token": {
+        "subject_type": "user",
+        "subject_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "client_id": "web-bff",
+        "audience": "https://orders.example.com",
+        "scopes": [
+          "orders:read"
+        ],
+        "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+        "token_kind": "access"
+      }
+    }
+  ]
+}

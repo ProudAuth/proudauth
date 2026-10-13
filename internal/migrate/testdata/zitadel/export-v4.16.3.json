@@ -1,0 +1,469 @@
+{
+  "orgs": [
+    {
+      "orgId": "394589032694218757",
+      "org": {
+        "name": "Demo"
+      },
+      "projects": [
+        {
+          "projectId": "394589032694284293",
+          "project": {
+            "name": "ZITADEL"
+          }
+        },
+        {
+          "projectId": "394589278597808133",
+          "project": {
+            "name": "Shop",
+            "projectRoleAssertion": true
+          }
+        }
+      ],
+      "projectRoles": [
+        {
+          "projectId": "394589278597808133",
+          "roleKey": "shop.admin",
+          "displayName": "Shop admin",
+          "group": "shop"
+        },
+        {
+          "projectId": "394589278597808133",
+          "roleKey": "shop.viewer",
+          "displayName": "Shop viewer",
+          "group": "shop"
+        }
+      ],
+      "apiApps": [
+        {
+          "appId": "394589032694349829",
+          "app": {
+            "projectId": "394589032694284293",
+            "name": "Management-API",
+            "authMethodType": "API_AUTH_METHOD_TYPE_PRIVATE_KEY_JWT"
+          }
+        },
+        {
+          "appId": "394589032694415365",
+          "app": {
+            "projectId": "394589032694284293",
+            "name": "Admin-API",
+            "authMethodType": "API_AUTH_METHOD_TYPE_PRIVATE_KEY_JWT"
+          }
+        },
+        {
+          "appId": "394589032694480901",
+          "app": {
+            "projectId": "394589032694284293",
+            "name": "Auth-API",
+            "authMethodType": "API_AUTH_METHOD_TYPE_PRIVATE_KEY_JWT"
+          }
+        }
+      ],
+      "oidcApps": [
+        {
+          "appId": "394589032694546437",
+          "app": {
+            "projectId": "394589032694284293",
+            "name": "Management Console",
+            "redirectUris": [
+              "http://zitadel-3z2bsj.localhost:58081/ui/console/auth/callback",
+              "http://localhost:58081/ui/console/auth/callback"
+            ],
+            "responseTypes": [
+              "OIDC_RESPONSE_TYPE_CODE"
+            ],
+            "grantTypes": [
+              "OIDC_GRANT_TYPE_AUTHORIZATION_CODE"
+            ],
+            "appType": "OIDC_APP_TYPE_USER_AGENT",
+            "authMethodType": "OIDC_AUTH_METHOD_TYPE_NONE",
+            "postLogoutRedirectUris": [
+              "http://zitadel-3z2bsj.localhost:58081/ui/console/signedout",
+              "http://localhost:58081/ui/console/signedout"
+            ],
+            "devMode": true,
+            "clockSkew": "0s"
+          }
+        },
+        {
+          "appId": "394589278765580293",
+          "app": {
+            "projectId": "394589278597808133",
+            "name": "shop-web",
+            "redirectUris": [
+              "https://shop.example/cb"
+            ],
+            "responseTypes": [
+              "OIDC_RESPONSE_TYPE_CODE"
+            ],
+            "grantTypes": [
+              "OIDC_GRANT_TYPE_AUTHORIZATION_CODE"
+            ],
+            "clockSkew": "0s"
+          }
+        }
+      ],
+      "humanUsers": [
+        {
+          "userId": "394589032694874117",
+          "user": {
+            "userName": "zitadel-admin@demo.localhost",
+            "profile": {
+              "firstName": "ZITADEL",
+              "lastName": "Admin",
+              "displayName": "ZITADEL Admin",
+              "preferredLanguage": "en"
+            },
+            "email": {
+              "email": "zitadel-admin@demo.localhost",
+              "isEmailVerified": true
+            },
+            "hashedPassword": {
+              "value": "$2a$14$Y.qz/K/dLXSLpSofeTouqO6UEn/3bXl8UvUOMUt2/mg9wfIYIv2z."
+            }
+          },
+          "state": "USER_STATE_ACTIVE"
+        }
+      ],
+      "machineUsers": [
+        {
+          "userId": "394589278581030917",
+          "user": {
+            "userName": "ci-bot",
+            "name": "CI Bot",
+            "description": "deploys"
+          },
+          "state": "USER_STATE_ACTIVE"
+        },
+        {
+          "userId": "394589032694743045",
+          "user": {
+            "userName": "migration-sa",
+            "name": "Migration SA"
+          },
+          "state": "USER_STATE_ACTIVE"
+        }
+      ],
+      "userGrants": [
+        {
+          "userId": "394589178924367877",
+          "projectId": "394589278597808133",
+          "roleKeys": [
+            "shop.admin"
+          ]
+        },
+        {
+          "userId": "394589254186958853",
+          "projectId": "394589278597808133",
+          "roleKeys": [
+            "shop.viewer"
+          ]
+        },
+        {
+          "userId": "394589236218560517",
+          "projectId": "394589278597808133",
+          "roleKeys": [
+            "shop.viewer",
+            "shop.admin"
+          ]
+        }
+      ],
+      "orgMembers": [
+        {
+          "userId": "394589032694743045",
+          "roles": [
+            "ORG_OWNER"
+          ]
+        },
+        {
+          "userId": "394589032694874117",
+          "roles": [
+            "ORG_OWNER"
+          ]
+        },
+        {
+          "userId": "394589178924367877",
+          "roles": [
+            "ORG_OWNER"
+          ]
+        },
+        {
+          "userId": "394589236252114949",
+          "roles": [
+            "ORG_USER_MANAGER"
+          ]
+        }
+      ],
+      "domains": [
+        {
+          "orgId": "394589032694218757",
+          "domainName": "demo.localhost",
+          "isVerified": true,
+          "isPrimary": true
+        }
+      ],
+      "orgState": "ORG_STATE_ACTIVE"
+    },
+    {
+      "orgId": "394589153439776773",
+      "org": {
+        "name": "Acme"
+      },
+      "projects": [
+        {
+          "projectId": "394589305978224645",
+          "project": {
+            "name": "Portal",
+            "projectRoleAssertion": true
+          }
+        }
+      ],
+      "projectRoles": [
+        {
+          "projectId": "394589305978224645",
+          "roleKey": "portal.auditor",
+          "displayName": "Auditor"
+        },
+        {
+          "projectId": "394589305978224645",
+          "roleKey": "portal.editor",
+          "displayName": "Editor"
+        }
+      ],
+      "humanUsers": [
+        {
+          "userId": "394589255512358917",
+          "user": {
+            "userName": "uma",
+            "profile": {
+              "firstName": "Uma",
+              "lastName": "Ueda",
+              "displayName": "Uma Ueda",
+              "preferredLanguage": "und"
+            },
+            "email": {
+              "email": "uma@acme.example"
+            },
+            "hashedPassword": {
+              "value": "$2a$14$WzcQh4JFa1HCPMwQxZD9v.nagLPNiyxPxm4XgK07VqLWtTljvalHu"
+            }
+          },
+          "state": "USER_STATE_INACTIVE"
+        },
+        {
+          "userId": "394589254186958853",
+          "user": {
+            "userName": "vera",
+            "profile": {
+              "firstName": "Vera",
+              "lastName": "Vogel",
+              "displayName": "Vera Vogel",
+              "preferredLanguage": "und"
+            },
+            "email": {
+              "email": "vera@acme.example",
+              "isEmailVerified": true
+            },
+            "phone": {
+              "phone": "+4915112345678",
+              "isPhoneVerified": true
+            },
+            "hashedPassword": {
+              "value": "$2a$14$gxrZhXzvwwogwBAW8t3OiednDRiHLrHQ9AeB7wca3t4UIl98ySRD2"
+            },
+            "otpCode": "LV422DWLOKNW5WT4HS5QD72Q5RHZMSUO"
+          },
+          "state": "USER_STATE_ACTIVE"
+        },
+        {
+          "userId": "394589236285669381",
+          "user": {
+            "userName": "walt",
+            "profile": {
+              "firstName": "Walt",
+              "lastName": "Wong",
+              "displayName": "Walt Wong",
+              "preferredLanguage": "und"
+            },
+            "email": {
+              "email": "walt@acme.example"
+            },
+            "hashedPassword": {
+              "value": "$1$q8Fz3kLp$5gCbBfSTKFEkVwsPpodgv0"
+            }
+          },
+          "state": "USER_STATE_ACTIVE"
+        },
+        {
+          "userId": "394589236252114949",
+          "user": {
+            "userName": "xena",
+            "profile": {
+              "firstName": "Xena",
+              "lastName": "Xu",
+              "displayName": "Xena Xu",
+              "preferredLanguage": "und"
+            },
+            "email": {
+              "email": "xena@acme.example",
+              "isEmailVerified": true
+            },
+            "hashedPassword": {
+              "value": "$pbkdf2-sha256$29000$QLhFPTo5ZIDChTVW86.hfg$z1Apn3xKAGnGCO9W7KgFn7f8GiBHHSc.QpJB5tu6AC4"
+            }
+          },
+          "state": "USER_STATE_ACTIVE"
+        },
+        {
+          "userId": "394589236218560517",
+          "user": {
+            "userName": "yusuf",
+            "profile": {
+              "firstName": "Yusuf",
+              "lastName": "Yilmaz",
+              "displayName": "Yusuf Yilmaz",
+              "preferredLanguage": "und"
+            },
+            "email": {
+              "email": "yusuf@acme.example",
+              "isEmailVerified": true
+            },
+            "hashedPassword": {
+              "value": "$argon2id$v=19$m=19456,t=2,p=1$OlH1xfI6AFAHl/6/J4OPlQ$bV72OND8uZQDP+POSuikSFU4+SBbzOpZbslltQFUOPQ"
+            }
+          },
+          "state": "USER_STATE_ACTIVE"
+        },
+        {
+          "userId": "394589178924367877",
+          "user": {
+            "userName": "zoe",
+            "profile": {
+              "firstName": "Zoe",
+              "lastName": "Zimmer",
+              "displayName": "Zoe Z.",
+              "preferredLanguage": "de"
+            },
+            "email": {
+              "email": "zoe@acme.example",
+              "isEmailVerified": true
+            },
+            "hashedPassword": {
+              "value": "$2a$14$pHDpwQcgirbSg7bu4LlVGOrf6WBBSWj4d9cVt23jEABwuuTahpdlW"
+            }
+          },
+          "state": "USER_STATE_ACTIVE"
+        }
+      ],
+      "userGrants": [
+        {
+          "userId": "394589178924367877",
+          "projectId": "394589305978224645",
+          "roleKeys": [
+            "portal.editor"
+          ]
+        },
+        {
+          "userId": "394589254186958853",
+          "projectId": "394589305978224645",
+          "roleKeys": [
+            "portal.auditor"
+          ]
+        }
+      ],
+      "orgMembers": [
+        {
+          "userId": "394589178924367877",
+          "roles": [
+            "ORG_OWNER"
+          ]
+        },
+        {
+          "userId": "394589254186958853",
+          "roles": [
+            "ORG_USER_MANAGER"
+          ]
+        }
+      ],
+      "userMetadata": [
+        {
+          "id": "394589178924367877",
+          "key": "cost_center",
+          "value": "Q0MtNDQxMA=="
+        },
+        {
+          "id": "394589178924367877",
+          "key": "department",
+          "value": "ZW5naW5lZXJpbmc="
+        }
+      ],
+      "userLinks": [
+        {
+          "userId": "394589236218560517",
+          "idpId": "394589306129219589",
+          "idpName": "Corp SSO",
+          "providedUserId": "corp-sub-9001",
+          "providedUserName": "yusuf.y",
+          "idpType": "IDP_TYPE_OIDC"
+        }
+      ],
+      "domains": [
+        {
+          "orgId": "394589153439776773",
+          "domainName": "acme.localhost",
+          "isVerified": true,
+          "isPrimary": true
+        }
+      ],
+      "orgState": "ORG_STATE_ACTIVE"
+    },
+    {
+      "orgId": "394589153473331205",
+      "org": {
+        "name": "Globex"
+      },
+      "humanUsers": [
+        {
+          "userId": "394589256787427333",
+          "user": {
+            "userName": "tariq",
+            "profile": {
+              "firstName": "Tariq",
+              "lastName": "Toure",
+              "displayName": "Tariq Toure",
+              "preferredLanguage": "und"
+            },
+            "email": {
+              "email": "tariq@globex.example",
+              "isEmailVerified": true
+            },
+            "hashedPassword": {
+              "value": "$2a$14$4tVWUXl8wcTTmyPqSUh0t.IV8IJP2Mu7oQQGr9i.xgtcBmUXtS5vW"
+            }
+          },
+          "state": "USER_STATE_ACTIVE"
+        }
+      ],
+      "machineUsers": [
+        {
+          "userId": "394589306179551237",
+          "user": {
+            "userName": "globex-sync",
+            "name": "Globex Sync"
+          },
+          "state": "USER_STATE_ACTIVE"
+        }
+      ],
+      "domains": [
+        {
+          "orgId": "394589153473331205",
+          "domainName": "globex.localhost",
+          "isVerified": true,
+          "isPrimary": true
+        }
+      ],
+      "orgState": "ORG_STATE_ACTIVE"
+    }
+  ]
+}

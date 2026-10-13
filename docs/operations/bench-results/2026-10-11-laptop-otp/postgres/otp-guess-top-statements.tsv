@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+87883	341564.8	3.887	87883	SELECT id, realm_id, client_ref, mode, intent, continuation_digest, coalesce(csrf_digest,''), coalesce(redirect_uri,''), response_mode, requested_scopes, requested_resource_ids, coalesce(state_param,'
+87934	6961.1	0.079	87934	INSERT INTO rate_limit_counters (bucket, window_start, count, expires_at) VALUES ($1, $2, 1, $3) ON CONFLICT (bucket, window_start) DO UPDATE SET count = rate_limit_counters.count + 1 RETURNING count
+87862	1271.4	0.014	87862	SELECT EXISTS (SELECT $2 FROM credentials WHERE user_id=$1 AND type=$3 AND state=$4), EXISTS (SELECT $5 FROM credentials WHERE user_id=$1 AND type=$6 AND state=$7), EXISTS (SELECT $8 FROM webauthn_cre
+87910	860.1	0.010	87910	SELECT id, realm_id, client_id, coalesce(project_id,''), name, coalesce(description,''), client_type, token_endpoint_auth_method, grant_types, security_profile, state, first_party, consent_mode, allow
+87882	814.2	0.009	87882	SELECT id, realm_id, state, coalesce(display_name,''), coalesce(given_name,''), coalesce(family_name,''), coalesce(locale,''), coalesce(zoneinfo,''), profile, admin_metadata, internal_metadata, protec
+87925	748.9	0.009	87925	SELECT uri, purpose FROM client_redirect_uris WHERE client_ref=$1 ORDER BY created_at, uri
+87930	731.1	0.008	87930	SELECT id, name, display_name, issuer, state, settings, policy_revision, bootstrapped_at, disabled_grant_types, version, created_at FROM realms WHERE id=$1
+87883	689.2	0.008	87887	SELECT id, type, original_value, canonical_value, verified_at, is_primary, source FROM user_identifiers WHERE user_id=$1 ORDER BY created_at, id
+87879	532.4	0.006	175743	SELECT id, coalesce(resource_id,''), name, coalesce(description,''), coalesce(consent_text,''), sensitivity, is_default, kind, required_permissions, coalesce(step_up_acr,''), coalesce(max_auth_age_sec
+87862	488.3	0.006	87862	SELECT EXISTS (SELECT $4 FROM role_assignments ra JOIN roles r ON r.id=ra.role_id WHERE ra.realm_id=$1 AND ra.subject_type=$5 AND ra.subject_id=$2 AND ra.scope_type=$6 AND (ra.expires_at IS NULL OR ra
+87861	473.8	0.005	87861	SELECT id, realm_id, coalesce(project_id,''), name, audience, coalesce(description,''), kind, token_format, verification_mode, access_token_ttl_seconds, requires_organization, impersonation_enabled, i
+87925	435.0	0.005	0	SELECT origin FROM client_origins WHERE client_ref=$1 ORDER BY origin

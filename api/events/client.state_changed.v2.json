@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/client.state_changed.v2.json",
+  "title": "client.state_changed (v2)",
+  "description": "An OAuth client was suspended, reactivated or decommissioned. Emitted when an administrator changes a client's state. Suspension and decommissioning revoke the client's refresh families, grants and opaque access tokens; decommissioning also revokes its credentials and is final. Emitted by every successful call, even when the state is unchanged. org_id is never set.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v2.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "client.state_changed"
+    },
+    "event_version": {
+      "const": 2
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. Both payload forms carry every listed member (client_ref is kept in the minimal form).",
+      "required": [
+        "state",
+        "client_ref"
+      ],
+      "properties": {
+        "client_ref": {
+          "$ref": "envelope.v2.json#/$defs/client_ref",
+          "description": "The client's internal reference (cli_...), not its OAuth client_id."
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "active",
+            "suspended",
+            "decommissioned"
+          ],
+          "description": "The new client state."
+        }
+      },
+      "additionalProperties": false
+    },
+    "organization_id": {
+      "description": "Never set for this event type by the current server."
+    }
+  },
+  "x-event-type": "client.state_changed",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/application/application.go: (*Service).SetClientState"
+  ],
+  "x-org-scoped": "never",
+  "examples": [
+    {
+      "event_id": "obx_01jbrnnyxp012wjeprrt35g0xt",
+      "event_type": "client.state_changed",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "data": {
+        "client_ref": "cli_01jbgphaxv8vvfby5wwrgqzve0",
+        "state": "suspended"
+      }
+    }
+  ]
+}

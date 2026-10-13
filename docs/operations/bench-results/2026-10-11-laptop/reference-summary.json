@@ -1,0 +1,287 @@
+{
+  "requirements": [
+    "NFR-003",
+    "NFR-004",
+    "NFR-005",
+    "NFR-006",
+    "NFR-007",
+    "NFR-008"
+  ],
+  "all_selected_criteria_passed": true,
+  "scenarios": [
+    {
+      "scenario": "client-credentials",
+      "result": "client-credentials.json",
+      "environment": "environment.json",
+      "verdict": "pass",
+      "operations": 62199,
+      "throughput_per_s": 1036.6433813084486,
+      "latency_ms": {
+        "mean": 30.859803308734868,
+        "p50": 30.72,
+        "p90": 34.816,
+        "p99": 38.912,
+        "p999": 47.104,
+        "max": 69.515
+      },
+      "outcomes": {
+        "ok": 62199
+      }
+    },
+    {
+      "scenario": "introspection",
+      "result": "introspection.json",
+      "environment": "environment.json",
+      "verdict": "pass",
+      "operations": 122284,
+      "throughput_per_s": 2038.0556569201701,
+      "latency_ms": {
+        "mean": 15.698455595171895,
+        "p50": 15.872,
+        "p90": 18.432,
+        "p99": 21.504,
+        "p999": 36.864,
+        "max": 78.846
+      },
+      "outcomes": {
+        "ok": 122284
+      }
+    },
+    {
+      "scenario": "password-login",
+      "result": "password-login.json",
+      "environment": "environment.json",
+      "verdict": "pass",
+      "operations": 2828,
+      "throughput_per_s": 47.13275896881926,
+      "latency_ms": {
+        "mean": 674.3844975247525,
+        "p50": 688.128,
+        "p90": 753.664,
+        "p99": 851.968,
+        "p999": 1179.648,
+        "max": 1181.418
+      },
+      "outcomes": {
+        "ok": 2828
+      }
+    },
+    {
+      "scenario": "refresh",
+      "result": "refresh.json",
+      "environment": "environment.json",
+      "verdict": "pass",
+      "operations": 48911,
+      "throughput_per_s": 815.1788085203209,
+      "latency_ms": {
+        "mean": 39.241319314673596,
+        "p50": 38.912,
+        "p90": 49.152,
+        "p99": 55.296,
+        "p999": 73.728,
+        "max": 1024.217
+      },
+      "outcomes": {
+        "ok": 48911
+      }
+    },
+    {
+      "scenario": "policy",
+      "result": "policy.json",
+      "environment": "environment.json",
+      "verdict": "pass",
+      "operations": 44212,
+      "throughput_per_s": 736.8619978230812,
+      "latency_ms": {
+        "mean": 43.40996286076179,
+        "p50": 43.008,
+        "p90": 47.104,
+        "p99": 57.344,
+        "p999": 102.4,
+        "max": 177.138
+      },
+      "outcomes": {
+        "ok": 44212
+      }
+    },
+    {
+      "scenario": "audit-query",
+      "result": "audit-query.json",
+      "environment": "environment.json",
+      "verdict": "pass",
+      "operations": 45108,
+      "throughput_per_s": 751.7978552836084,
+      "latency_ms": {
+        "mean": 42.549420280216374,
+        "p50": 43.008,
+        "p90": 57.344,
+        "p99": 77.824,
+        "p999": 110.592,
+        "max": 137.784
+      },
+      "outcomes": {
+        "ok": 45108
+      }
+    },
+    {
+      "scenario": "mixed",
+      "result": "mixed.json",
+      "environment": "environment.json",
+      "verdict": "pass",
+      "operations": 33229,
+      "throughput_per_s": 553.8134683938868,
+      "latency_ms": {
+        "mean": 57.68388895242108,
+        "p50": 34.816,
+        "p90": 81.92,
+        "p99": 409.6,
+        "p999": 458.752,
+        "max": 503.125
+      },
+      "outcomes": {
+        "audit-query:ok": 1594,
+        "client-credentials:ok": 13259,
+        "introspection:ok": 8464,
+        "password-login:ok": 1645,
+        "policy:ok": 4990,
+        "refresh:ok": 3277
+      }
+    },
+    {
+      "scenario": "import",
+      "result": "import.json",
+      "environment": "environment.json",
+      "verdict": "pass",
+      "operations": 73170,
+      "throughput_per_s": 1219.386788411434,
+      "latency_ms": {
+        "mean": 26.05840237802378,
+        "p50": 25.6,
+        "p90": 30.72,
+        "p99": 43.008,
+        "p999": 86.016,
+        "max": 483.524
+      },
+      "outcomes": {
+        "ok": 73170
+      }
+    },
+    {
+      "scenario": "unknown-key",
+      "result": "unknown-key.json",
+      "environment": "environment.json",
+      "verdict": "pass",
+      "operations": 142233,
+      "throughput_per_s": 2370.544304095655,
+      "latency_ms": {
+        "mean": 13.496302855174255,
+        "p50": 12.288,
+        "p90": 21.504,
+        "p99": 34.816,
+        "p999": 51.2,
+        "max": 171.003
+      },
+      "outcomes": {
+        "ok": 142233
+      }
+    },
+    {
+      "scenario": "failed-password",
+      "result": "failed-password.json",
+      "environment": "environment.json",
+      "verdict": "pass",
+      "operations": 49523,
+      "throughput_per_s": 825.3771458660468,
+      "latency_ms": {
+        "mean": 38.755662197362845,
+        "p50": 38.912,
+        "p90": 45.056,
+        "p99": 69.632,
+        "p999": 188.416,
+        "max": 358.985
+      },
+      "outcomes": {
+        "http_401": 10,
+        "http_429": 20,
+        "identify_http_429": 49493
+      }
+    },
+    {
+      "scenario": "oversized-input",
+      "result": "oversized-rerun/oversized-input.json",
+      "environment": "oversized-rerun/environment.json",
+      "verdict": "pass",
+      "operations": 1370040,
+      "throughput_per_s": 22833.781810275657,
+      "latency_ms": {
+        "mean": 1.4007034947884733,
+        "p50": 1.28,
+        "p90": 2.176,
+        "p99": 3.328,
+        "p999": 69.632,
+        "max": 143.271
+      },
+      "outcomes": {
+        "http_413": 1370040
+      }
+    },
+    {
+      "scenario": "notification-flood",
+      "result": "notification-flood.json",
+      "environment": "environment.json",
+      "verdict": "pass",
+      "operations": 7616,
+      "throughput_per_s": 126.93238372043763,
+      "latency_ms": {
+        "mean": 251.13456538865546,
+        "p50": 253.82,
+        "p90": 253.82,
+        "p99": 253.82,
+        "p999": 253.82,
+        "max": 253.82
+      },
+      "outcomes": {
+        "http_429": 7613,
+        "ok": 3
+      }
+    },
+    {
+      "scenario": "refresh-race",
+      "result": "refresh-race.json",
+      "environment": "environment.json",
+      "verdict": "pass",
+      "operations": 1856,
+      "throughput_per_s": 30.932837398493366,
+      "latency_ms": {
+        "mean": 1026.510255387931,
+        "p50": 1015.808,
+        "p90": 1179.648,
+        "p99": 1376.256,
+        "p999": 1593.666,
+        "max": 1593.666
+      },
+      "outcomes": {
+        "ok": 1856
+      }
+    }
+  ],
+  "soak": {
+    "result": "soak-mixed.json",
+    "verdict": "pass",
+    "windows": 10,
+    "operations": 282941
+  },
+  "initial_failure": {
+    "result": "oversized-input.json",
+    "summary": "summary.json",
+    "verdict": "FAIL",
+    "note": "Retained as evidence; replaced for the selected reference by the header-only benchmark-tool rerun. Server, worker and CLI binary hashes match across runs."
+  },
+  "verification": {
+    "unit": "go test ./internal/bench ./cmd/identity-bench -count=1",
+    "e2e": "go test ./tests/e2e -run ^(TestBenchSuiteSmoke|TestTokenIssuanceBeyondConnectionPool)$ -count=1 -v -timeout 10m",
+    "database": "separate disposable PostgreSQL 18 container; no Go tests during measurements",
+    "status": "pass"
+  },
+  "privacy": "Each runner compared every published artifact against seed client secrets, admin tokens/password, database passwords and root key before removing private temporary files; only seed-spec.json is published."
+}

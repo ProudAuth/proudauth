@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/hooks/profile.validation.request.v1.json",
+  "title": "profile.validation hook request (contract v1)",
+  "description": "Sent before a profile change (self-service, registration, interaction steps) is stored. Security decision: fails closed.",
+  "type": "object",
+  "required": [
+    "hook_kind",
+    "realm_id",
+    "profile",
+    "user_id"
+  ],
+  "properties": {
+    "hook_kind": {
+      "const": "profile.validation",
+      "description": "The hook kind."
+    },
+    "realm_id": {
+      "$ref": "common.v1.json#/$defs/realm_id"
+    },
+    "profile": {
+      "type": "object",
+      "description": "Proposed profile values: display_name and realm profile attributes being set. Values are as submitted."
+    },
+    "user_id": {
+      "type": "string",
+      "description": "The account being changed; empty during registration.",
+      "pattern": "^(usr_[0-9a-z]{26})?$"
+    }
+  },
+  "additionalProperties": false,
+  "x-hook-kind": "profile.validation",
+  "x-contract-version": 1,
+  "examples": [
+    {
+      "hook_kind": "profile.validation",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+      "profile": {
+        "display_name": "Bobby"
+      }
+    }
+  ]
+}

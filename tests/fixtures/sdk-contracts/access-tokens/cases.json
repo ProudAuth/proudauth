@@ -1,0 +1,160 @@
+{
+  "description": "ProudAuth access-token verification fixtures (SDK-009). Test-only keys; never trust them in production.",
+  "issuer": "https://id.example.test/realms/main",
+  "audience": "https://api.example.test/orders",
+  "now": 1900000000,
+  "jwks": {
+    "keys": [
+      {
+        "use": "sig",
+        "kty": "RSA",
+        "kid": "rs-fixture-1",
+        "alg": "RS256",
+        "n": "rhx66WVtLC5Qcv4GMO53rY-cHfw1UoLwM1NsZYDrMUxj-KTva9b00utv8LrV3fMu1UT2Zh_kUMUEzk3KksI9qpBfWZXUCCcN3Lp0eRhImdgQ_lhbOsWMRTedEnmLwh3jQWWcr3BGmLzImWCpg1bMMpWbyuOGMY3B8rXxfyxt3iFeF4qThpaYJA1SX56fxFSecaJ3fZ2uzPp9nir83Ry1lPiQ6JSYInBgWsfaqlo_-YPiENeBD7XzSLcoIG0P88S4RXx9IygPNTP0HQAWdJjScZB2DJ0WqwnfYzCVg5F-JpooYb0FGmXtiZ5PJwoG0ke0LVULrKZRwp_YllO8jnZFuQ",
+        "e": "AQAB"
+      },
+      {
+        "use": "sig",
+        "kty": "OKP",
+        "kid": "ed-fixture-1",
+        "crv": "Ed25519",
+        "alg": "EdDSA",
+        "x": "SuWvIcQqnGqamPCNGY9setBjtD6JMEu8imVNc7VEMfc"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "valid_rs256_user_access",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJleHAiOjE5MDAwMDAzMDAsImlhdCI6MTg5OTk5OTk5MCwiaXNzIjoiaHR0cHM6Ly9pZC5leGFtcGxlLnRlc3QvcmVhbG1zL21haW4iLCJqdGkiOiJ0b2tfZml4dHVyZSIsIm5iZiI6MTg5OTk5OTk5MCwib3JnX2lkIjoib3JnX2ZpeHR1cmUiLCJzY29wZSI6Im9yZGVyczpyZWFkIiwic3ViIjoidXNyX2ZpeHR1cmUiLCJ0b2tlbl9raW5kIjoidXNlcl9hY2Nlc3MifQ.io-VDusUkHfCfC72xQmL_V_TJM096P7ip0OrOxTIBwB9Piyh8O_SdE-0C61u55qnK3_9WSeSahDPv_PFRqQRJbDsxGlfepMXv_ndL5Khbcco3u2z68sCa0wpOgE_rTnPrM-0mx4ideXLW6WVRw0FgAvwla4W7ubK8i2ztmYBtokVvZLuq1S29tQ-0Wvy9GGiRvwAkgjTsLYsMlubYPQ30pnXjK2YS6jcnj3-Cr7rtnqtneEripREGSyTldPJmVbPKxFSvLPQte3jFdqosOYRqizVT92X7A7V6cqCwPChTyBNOCiQSBagkzSmL2lkf9JYTNA4ozY4nUX6eeW705hBSQ",
+      "expect": "accept",
+      "why": "well-formed user access token"
+    },
+    {
+      "name": "valid_eddsa_service_access",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImVkLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJleHAiOjE5MDAwMDAzMDAsImlhdCI6MTg5OTk5OTk5MCwiaXNzIjoiaHR0cHM6Ly9pZC5leGFtcGxlLnRlc3QvcmVhbG1zL21haW4iLCJqdGkiOiJ0b2tfZml4dHVyZSIsIm5iZiI6MTg5OTk5OTk5MCwic2NvcGUiOiJvcmRlcnM6cmVhZCIsInN1YiI6InN2Y19maXh0dXJlIiwidG9rZW5fa2luZCI6InNlcnZpY2VfYWNjZXNzIn0.iPhMSQvwivPtSPYw89BP1HVBmYDJAdWz-992sKwXvzk1tOWCgYJsoWC_2jQK3fb2Wd2n_uHyqEQYXefXbf-zCg",
+      "expect": "accept",
+      "why": "service principal token signed with EdDSA"
+    },
+    {
+      "name": "wrong_issuer",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJleHAiOjE5MDAwMDAzMDAsImlhdCI6MTg5OTk5OTk5MCwiaXNzIjoiaHR0cHM6Ly9ldmlsLmV4YW1wbGUudGVzdC9yZWFsbXMvbWFpbiIsImp0aSI6InRva19maXh0dXJlIiwibmJmIjoxODk5OTk5OTkwLCJvcmdfaWQiOiJvcmdfZml4dHVyZSIsInNjb3BlIjoib3JkZXJzOnJlYWQiLCJzdWIiOiJ1c3JfZml4dHVyZSIsInRva2VuX2tpbmQiOiJ1c2VyX2FjY2VzcyJ9.ScVbw4DeSRtcIda9X-326DQbfVQ2jna3PQDJWcHWzi8tQR47N4QHHLkBqMP5rcvaqsy7nIZEqVZtUfSouA3g6bBFoKviucCOeuXsgfdP2jP0FxSxNzDrfXEQY20kUTagXUHoLdzX38uRSAFU8WaVc6U-jmI6pB2aZDOnTZfMvx5i-UqRgMUovQNAk68LAz14znAF78aucPdbQx0mMHTNAZ-0nNQoxcbXoFiEYnMZuTDH-g-I2OFFYlR3kmtZmseMTnxHMrSdcpZQU0EzcYgRz0xUVw7qI0cW9kqKuldRo66c-KvKnuzQMBeJMMWuzzdsavXVblRkEhufCyY9WpshkA",
+      "expect": "issuer",
+      "why": "issuer must match exactly"
+    },
+    {
+      "name": "wrong_audience",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3QvYmlsbGluZyIsImNsaWVudF9pZCI6ImZpeHR1cmUtY2xpZW50IiwiZXhwIjoxOTAwMDAwMzAwLCJpYXQiOjE4OTk5OTk5OTAsImlzcyI6Imh0dHBzOi8vaWQuZXhhbXBsZS50ZXN0L3JlYWxtcy9tYWluIiwianRpIjoidG9rX2ZpeHR1cmUiLCJuYmYiOjE4OTk5OTk5OTAsIm9yZ19pZCI6Im9yZ19maXh0dXJlIiwic2NvcGUiOiJvcmRlcnM6cmVhZCIsInN1YiI6InVzcl9maXh0dXJlIiwidG9rZW5fa2luZCI6InVzZXJfYWNjZXNzIn0.ZYspbJ-FGDDCk-6JYogHxEPyKHYiRzWnRpOZnh4fl3_eeiZJCmmYXEjsPE_-2aP4wjMl4KUSlaiPqXG670PdzXVap55_WUy2MlGTIOsl4BfvUjL7F8NNXdoXb2nAo1n0FUD0icm3N0Pcpw0vjbimkc6KDxuzYj6Xd6wyxgxgDnjb3McmUOzUmBgwTl8GtTV16yAnJbn4B8FXtPYzvwllgREUcLeYYg2Api7tHxlkBrQDkUC5ScOUe35Hc_fjiJAaHe9FGAoH88SarlD95-n7Urbs6rZbXtLmj7-1gcQiLutLukZZF2ZTQUV0cGO_6vUEX_LZ5SUYga0ZHCXHdDiG0w",
+      "expect": "audience",
+      "why": "token for another API"
+    },
+    {
+      "name": "multiple_audiences",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOlsiaHR0cHM6Ly9hcGkuZXhhbXBsZS50ZXN0L29yZGVycyIsImh0dHBzOi8vYXBpLmV4YW1wbGUudGVzdC9iaWxsaW5nIl0sImNsaWVudF9pZCI6ImZpeHR1cmUtY2xpZW50IiwiZXhwIjoxOTAwMDAwMzAwLCJpYXQiOjE4OTk5OTk5OTAsImlzcyI6Imh0dHBzOi8vaWQuZXhhbXBsZS50ZXN0L3JlYWxtcy9tYWluIiwianRpIjoidG9rX2ZpeHR1cmUiLCJuYmYiOjE4OTk5OTk5OTAsIm9yZ19pZCI6Im9yZ19maXh0dXJlIiwic2NvcGUiOiJvcmRlcnM6cmVhZCIsInN1YiI6InVzcl9maXh0dXJlIiwidG9rZW5fa2luZCI6InVzZXJfYWNjZXNzIn0.L2W8aljNyiBOwCUW1ujXNXbiXw1_hgNHmMlIWNvMjPi5iYV41JWT9Hw1Ej2_ziJWr7Vrg1N_suwg2cNA4s37QvfmY5Pp1SpHR8tuotx9CW2h4eQmEIlYpwEJN3QPfFYd3KpGM27EvIijHZ1Br1QvOlBLcfVGRF6bdALyF0o5UKKU5Ch1qtlDbsmGPoDPN9RtiZ0x-BJ6vj6wYqmS4xfc1BjEq4iyO2JI2nb0SkPe9o6fB3z0YLs25z4RsRzgynSgTJZrmHDQMQi910c2i7iVimC1ee3wjHRT23trWDY8IAivEoN4UzjG2B9TXIsGKedCHJCuNrsYNCM6Q3iXLKztAA",
+      "expect": "audience",
+      "why": "exactly one audience"
+    },
+    {
+      "name": "expired",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJleHAiOjE4OTk5OTk4ODAsImlhdCI6MTg5OTk5OTk5MCwiaXNzIjoiaHR0cHM6Ly9pZC5leGFtcGxlLnRlc3QvcmVhbG1zL21haW4iLCJqdGkiOiJ0b2tfZml4dHVyZSIsIm5iZiI6MTg5OTk5OTk5MCwib3JnX2lkIjoib3JnX2ZpeHR1cmUiLCJzY29wZSI6Im9yZGVyczpyZWFkIiwic3ViIjoidXNyX2ZpeHR1cmUiLCJ0b2tlbl9raW5kIjoidXNlcl9hY2Nlc3MifQ.X7wI7RRxfu2FEPWUf2BiX8BVi1Ah-YKFHq9jbZSupW7xDrKRgDGSP3iwVLjdgu-O2z0-5ERvhseG1Qebcpz97p6xu8v4JLsZUSMVCjjQEZCacGwqJJjhUMagOQOeSh9_kzbd2Cb1uwZQ3BYiWKtBqLz8x9lyvkJsU8LNuTPEZDEkpy7jfhKK5-yYdbZM6ZqWwwmz8fI3xFEFDEB1xTM0MbL-ZkKtk4mj6F7njToAuu2ah75gKTLmatWNet1gHCTFGSRh7wECzar9EBl0TT9b746PocVOQSR8bmZm9-Qi9TJB2J17cDAI3I1QBiyDLE6ZX-NyZKaaZnE79_8CbTsgvQ",
+      "expect": "expired",
+      "why": "beyond the 30s skew"
+    },
+    {
+      "name": "missing_exp",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJpYXQiOjE4OTk5OTk5OTAsImlzcyI6Imh0dHBzOi8vaWQuZXhhbXBsZS50ZXN0L3JlYWxtcy9tYWluIiwianRpIjoidG9rX2ZpeHR1cmUiLCJuYmYiOjE4OTk5OTk5OTAsIm9yZ19pZCI6Im9yZ19maXh0dXJlIiwic2NvcGUiOiJvcmRlcnM6cmVhZCIsInN1YiI6InVzcl9maXh0dXJlIiwidG9rZW5fa2luZCI6InVzZXJfYWNjZXNzIn0.aBFeT-7pXdFyemD8jKvbNBnG8KcelqrF8l5elsNErRM-Z5zCle3UKkTZe8TesUO8HCg2s7P6KgSP72vOIuJnT8i9MTF2hKTxXiV-s2dpOjY7aDqBAF9RE6YSiPiDGvzmQZ9BWUOH9S5zaLZvK0b5im3RhloMZe6nlEir_-yZRvOm62K2GydN0QFoDs3L6oipRBRWT1Xurw1K9xQRpCvUbRxIbPm3LhjyxyC2TAKSKYzInqmVGvYHJV8qff5ypwgFRQAtfgYQm8LpJDEPh6hzlwZnVuZpN79gaaL42B7PXvyzuem9WNHIDrp1yBmBl5tgfyR16L-AdgWuSwXJJK2c-g",
+      "expect": "expired",
+      "why": "exp is mandatory"
+    },
+    {
+      "name": "not_yet_valid",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJleHAiOjE5MDAwMDAzMDAsImlhdCI6MTg5OTk5OTk5MCwiaXNzIjoiaHR0cHM6Ly9pZC5leGFtcGxlLnRlc3QvcmVhbG1zL21haW4iLCJqdGkiOiJ0b2tfZml4dHVyZSIsIm5iZiI6MTkwMDAwMDYwMCwib3JnX2lkIjoib3JnX2ZpeHR1cmUiLCJzY29wZSI6Im9yZGVyczpyZWFkIiwic3ViIjoidXNyX2ZpeHR1cmUiLCJ0b2tlbl9raW5kIjoidXNlcl9hY2Nlc3MifQ.F-tjx99RNlmFP5BSyNXtEseF5dAr1M745cO-FkPcB6K4ZGiY3OgahllAJKGk3TB-2NBVi58egwOBotDTvLzz0E5cOU_Y3rJK328ar0aY_JSqc9gB2wsWe6yNd9-JZMnS0xKbZn3oMNZ3n2jl6ZTf1o0305P--CHxNVPWVyv1tlCgrhhb-IEV3LPnjV5Ye8-U3nKbXPd4an8OaL6rd_tgjBNBM67N_nHhw2AEqKCyAxGidn0Bwu11JgzY_DAeBzioX9774EyPFyrBHEQ19Q2IjY5xy8vEVm_NVEEyu70yBGqQcXTeSS6MqOABD9vXXHzF39TjA0JHphXGm20N24zu4A",
+      "expect": "not_yet_valid",
+      "why": "nbf in the future"
+    },
+    {
+      "name": "issued_in_future",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJleHAiOjE5MDAwMDAzMDAsImlhdCI6MTkwMDAwMDYwMCwiaXNzIjoiaHR0cHM6Ly9pZC5leGFtcGxlLnRlc3QvcmVhbG1zL21haW4iLCJqdGkiOiJ0b2tfZml4dHVyZSIsIm5iZiI6MTg5OTk5OTk5MCwib3JnX2lkIjoib3JnX2ZpeHR1cmUiLCJzY29wZSI6Im9yZGVyczpyZWFkIiwic3ViIjoidXNyX2ZpeHR1cmUiLCJ0b2tlbl9raW5kIjoidXNlcl9hY2Nlc3MifQ.VNy5XgcoputcptpLixxavdCR2cgX4iygMrYjqjJOOldmSGDtWrxn5S0VAUTa7hYRUuASjnSXS1EsvQW5BcQHhbYMTDhC-W8AbiRxoT_aLRVo8vmqI6VseJQZicMGyLWyU-wZOBUM4RFtYG86r_EIjBDVVsPJrjpvqm6lwqFxqipvNl6eT58zcQdTwFGydoNJBmXpNFGQY88Kg8hXlZy22Epk-3vPTkyuV2SsYCp-644Y1Dl2WJqPaVSfc6vtkGmq3r6eXEP2wtBsE_bGCn3W5E8gonayP0kRe4qs3JpKPO0Z6tg3SpgXWgU5WHwXwJninES-l5axCcq3NUz1I80eow",
+      "expect": "future_issued",
+      "why": "iat in the future"
+    },
+    {
+      "name": "tampered_payload",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJleHAiOjE5MDAwMDAzMDAsImlhdCI6MTg5OTk5OTk5MCwiaXNzIjoiaHR0cHM6Ly9pZC5leGFtcGxlLnRlc3QvcmVhbG1zL21haW4iLCJqdGkiOiJ0b2tfZml4dHVyZSIsIm5iZiI6MTg5OTk5OTk5MCwib3JnX2lkIjoib3JnX2ZpeHR1cmUiLCJzY29wZSI6Im9yZGVyczphZG1pbiIsInN1YiI6InVzcl9maXh0dXJlIiwidG9rZW5fa2luZCI6InVzZXJfYWNjZXNzIn0.io-VDusUkHfCfC72xQmL_V_TJM096P7ip0OrOxTIBwB9Piyh8O_SdE-0C61u55qnK3_9WSeSahDPv_PFRqQRJbDsxGlfepMXv_ndL5Khbcco3u2z68sCa0wpOgE_rTnPrM-0mx4ideXLW6WVRw0FgAvwla4W7ubK8i2ztmYBtokVvZLuq1S29tQ-0Wvy9GGiRvwAkgjTsLYsMlubYPQ30pnXjK2YS6jcnj3-Cr7rtnqtneEripREGSyTldPJmVbPKxFSvLPQte3jFdqosOYRqizVT92X7A7V6cqCwPChTyBNOCiQSBagkzSmL2lkf9JYTNA4ozY4nUX6eeW705hBSQ",
+      "expect": "signature",
+      "why": "payload changed after signing"
+    },
+    {
+      "name": "signed_by_unknown_key",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLXVua25vd24tOSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJleHAiOjE5MDAwMDAzMDAsImlhdCI6MTg5OTk5OTk5MCwiaXNzIjoiaHR0cHM6Ly9pZC5leGFtcGxlLnRlc3QvcmVhbG1zL21haW4iLCJqdGkiOiJ0b2tfZml4dHVyZSIsIm5iZiI6MTg5OTk5OTk5MCwib3JnX2lkIjoib3JnX2ZpeHR1cmUiLCJzY29wZSI6Im9yZGVyczpyZWFkIiwic3ViIjoidXNyX2ZpeHR1cmUiLCJ0b2tlbl9raW5kIjoidXNlcl9hY2Nlc3MifQ.eQLWPn6sbvM4O167_7gE6o0txTdE4oCi1fhCvQRm3iEuAgk3-3HGA5u4KAaHl8NEeSqtitJjzVDwZZIbKI5zmByGEW8Wie2ZzvGTlOv64Sg-st1sme6FOON0lg3Z-MOC4sAPvfwMdoqJmOsiAXD3MToGEfQl0CotSc2hIr_4yPApjtqdk_MvJsHlakRKRSbRHjIqxHPKAkwmkgwGN28b23yp1nET8vcPU4tZ6dkI_Z5vxcVJietaeDNIdnZklJ61JOz-T7xKyQ-_Fwf74R5oMWX9NUT3nmnzjHuG_-wHsZUSneCq8m2RP72Kp2_4S2RojyT5N3oJ7darg-srGALUJw",
+      "expect": "unknown_key",
+      "why": "kid not in the key set"
+    },
+    {
+      "name": "signed_by_other_key_same_kid",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJleHAiOjE5MDAwMDAzMDAsImlhdCI6MTg5OTk5OTk5MCwiaXNzIjoiaHR0cHM6Ly9pZC5leGFtcGxlLnRlc3QvcmVhbG1zL21haW4iLCJqdGkiOiJ0b2tfZml4dHVyZSIsIm5iZiI6MTg5OTk5OTk5MCwib3JnX2lkIjoib3JnX2ZpeHR1cmUiLCJzY29wZSI6Im9yZGVyczpyZWFkIiwic3ViIjoidXNyX2ZpeHR1cmUiLCJ0b2tlbl9raW5kIjoidXNlcl9hY2Nlc3MifQ.J2wDkTEtkTO-Y5Ec85iqhXEOLOSPK22z9Agla4DAIQBJhGph5pugIYGZwmORmr0hsKF6TbXFs-xcx4k8SntmyKzCPpyV78uOxQHYSHmtPCUhP65mPI_X2uLzhm_ricSrEmZDE8RpvkLil4ZnPHgrM2rrc7P6YdA5IGdoAWa-ERUkOhjJSy6nPVylRs2ue4r1a5KMiEeSQtk31yt25s7HGoNfkfwJ_o2iHXUnyWx5REsxpbIKc1ZA0LJkPKMB0cyTyApYn18vVYHbYrsPMsII3R1JSAyAtLVfc9cMDnGo1qfDZDP6ImfiO2qqenA9OgZ0wx6AIsEWbj1ukSyU8oVP1g",
+      "expect": "signature",
+      "why": "key confusion"
+    },
+    {
+      "name": "alg_none",
+      "token": "eyJhbGciOiJub25lIiwia2lkIjoicnMtZml4dHVyZS0xIiwidHlwIjoiYXQrand0In0.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJleHAiOjE5MDAwMDAzMDAsImlhdCI6MTg5OTk5OTk5MCwiaXNzIjoiaHR0cHM6Ly9pZC5leGFtcGxlLnRlc3QvcmVhbG1zL21haW4iLCJqdGkiOiJ0b2tfZml4dHVyZSIsIm5iZiI6MTg5OTk5OTk5MCwib3JnX2lkIjoib3JnX2ZpeHR1cmUiLCJzY29wZSI6Im9yZGVyczpyZWFkIiwic3ViIjoidXNyX2ZpeHR1cmUiLCJ0b2tlbl9raW5kIjoidXNlcl9hY2Nlc3MifQ.",
+      "expect": "algorithm",
+      "why": "unsigned tokens are never accepted"
+    },
+    {
+      "name": "id_token_type",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJleHAiOjE5MDAwMDAzMDAsImlhdCI6MTg5OTk5OTk5MCwiaXNzIjoiaHR0cHM6Ly9pZC5leGFtcGxlLnRlc3QvcmVhbG1zL21haW4iLCJqdGkiOiJ0b2tfZml4dHVyZSIsIm5iZiI6MTg5OTk5OTk5MCwib3JnX2lkIjoib3JnX2ZpeHR1cmUiLCJzY29wZSI6Im9yZGVyczpyZWFkIiwic3ViIjoidXNyX2ZpeHR1cmUiLCJ0b2tlbl9raW5kIjoidXNlcl9hY2Nlc3MifQ.NgVaVKnoTjzPs95JTp8v_tETh7OeZGQiAL7XhbqlZEj0lnQYMbc3mkqpuIxCrE8VPB3L3UPoBJy7-YOE1wsicGBe-WrFzxa28bmpYLTnzlALB5JJQJ7i0hBSNn6DgC3_QCSrMXHSXt29I8dfds-LZGqBSxBeDkuLSnHkloMxFYkpRqM36JtUGyKo6SQvmUqra-k60lGh-0uI4AbJOYYplMDK2mtn0jmDsuL6EQLMdIOot9SI4Qw_VbEXkmh47yVwk9ts5M0bwrYSCFoGchrPwqWBg57xiBfxonoArFj7Ah1ycG-Txc3ZuM4exm8h97qAEQM11VsYd56_sU7LQXyOzw",
+      "expect": "token_type",
+      "why": "an ID token is not an access token"
+    },
+    {
+      "name": "impersonation_kind",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJleHAiOjE5MDAwMDAzMDAsImlhdCI6MTg5OTk5OTk5MCwiaXNzIjoiaHR0cHM6Ly9pZC5leGFtcGxlLnRlc3QvcmVhbG1zL21haW4iLCJqdGkiOiJ0b2tfZml4dHVyZSIsIm5iZiI6MTg5OTk5OTk5MCwib3JnX2lkIjoib3JnX2ZpeHR1cmUiLCJzY29wZSI6Im9yZGVyczpyZWFkIiwic3ViIjoidXNyX2ZpeHR1cmUiLCJ0b2tlbl9raW5kIjoiaW1wZXJzb25hdGlvbl9hY2Nlc3MifQ.FTyh5Dti_9eqOb0m0GVEVdMh1nw13lCjP_xVQelFVkvsQZAivOu0cp0q1ztJChydQQMRWe7egLK2RxuxPBBsl5mC16rHqfXHUqAcYzMVHC9XgI_-we2JD7o1CkseWrHmx7jjqhqX4dOMQrQ6DWF4X6V6Ez0n3fyApQyCTFBX1Ghr6Gf8Utwfv2U7N0CEpK_-oo_rQwa7TeA8B9RsVPB2jsRJFZ58hmgATc36N_kd8kPkPx81PTXRTxQa9zyEKfpAEJkMMQGGgTXQC-O319oGsEzZKz1qcA6Da3R5lHFKLPf7hWdyF2nyEjXgv522zrdCTP09AYiMCoJW1tIVwqUDFw",
+      "expect": "token_kind",
+      "why": "support tokens are online-only"
+    },
+    {
+      "name": "missing_client_id",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiZXhwIjoxOTAwMDAwMzAwLCJpYXQiOjE4OTk5OTk5OTAsImlzcyI6Imh0dHBzOi8vaWQuZXhhbXBsZS50ZXN0L3JlYWxtcy9tYWluIiwianRpIjoidG9rX2ZpeHR1cmUiLCJuYmYiOjE4OTk5OTk5OTAsIm9yZ19pZCI6Im9yZ19maXh0dXJlIiwic2NvcGUiOiJvcmRlcnM6cmVhZCIsInN1YiI6InVzcl9maXh0dXJlIiwidG9rZW5fa2luZCI6InVzZXJfYWNjZXNzIn0.n5jBPco3PMOOt372skCQQCW6gZ-5BfcibI1B6OtZG4Uqk6ddr5VJHLbSQ4lUS74NOSHjGLRs8DBgh_0dRfj4tpABZRlVhccogoESA78QmUXGVFYpiNqj9TH0DnLCGgQ2CdWsEXN8e9-PIa5uExLRCMdvhzXLhhrGWq662UTCTEtdaW1f-F29-oD-7Fwb6PRmU_jFek44_u-gK-tpzMyibdFAQZHSQOF6K0UiiDBSaXvxp4utTbx8_0_DJEtTbxs5VEjoVjRyOLbX1NJG5V32pywyxbadLAd45HYWXSwpkeLqr9AgBO3PZUqcUg6kIVTiagU1NvTDVsCUJ6CFfj3WFA",
+      "expect": "token_kind",
+      "why": "client_id is mandatory"
+    },
+    {
+      "name": "duplicate_claim",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJpc3MiOiJodHRwczovL2lkLmV4YW1wbGUudGVzdC9yZWFsbXMvbWFpbiIsImF1ZCI6Imh0dHBzOi8vYXBpLmV4YW1wbGUudGVzdC9vcmRlcnMiLCJzdWIiOiJ1c3JfZml4dHVyZSIsInN1YiI6InVzcl9hZG1pbiIsImV4cCI6MTkwMDAwMDMwMH0.io-VDusUkHfCfC72xQmL_V_TJM096P7ip0OrOxTIBwB9Piyh8O_SdE-0C61u55qnK3_9WSeSahDPv_PFRqQRJbDsxGlfepMXv_ndL5Khbcco3u2z68sCa0wpOgE_rTnPrM-0mx4ideXLW6WVRw0FgAvwla4W7ubK8i2ztmYBtokVvZLuq1S29tQ-0Wvy9GGiRvwAkgjTsLYsMlubYPQ30pnXjK2YS6jcnj3-Cr7rtnqtneEripREGSyTldPJmVbPKxFSvLPQte3jFdqosOYRqizVT92X7A7V6cqCwPChTyBNOCiQSBagkzSmL2lkf9JYTNA4ozY4nUX6eeW705hBSQ",
+      "expect": "duplicate_claim",
+      "why": "duplicate JSON members are rejected"
+    },
+    {
+      "name": "not_a_jwt",
+      "token": "not.a.jwt.at.all",
+      "expect": "malformed",
+      "why": "five segments"
+    },
+    {
+      "name": "dpop_requires_sender_proof",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJjbmYiOnsiamt0IjoiZUhoNGVIaDRlSGg0ZUhoNGVIaDRlSGg0ZUhoNGVIaDRlSGg0ZUhoNGVIZyJ9LCJleHAiOjE5MDAwMDAzMDAsImlhdCI6MTg5OTk5OTk5MCwiaXNzIjoiaHR0cHM6Ly9pZC5leGFtcGxlLnRlc3QvcmVhbG1zL21haW4iLCJqdGkiOiJ0b2tfZml4dHVyZSIsIm5iZiI6MTg5OTk5OTk5MCwib3JnX2lkIjoib3JnX2ZpeHR1cmUiLCJzY29wZSI6Im9yZGVyczpyZWFkIiwic3ViIjoidXNyX2ZpeHR1cmUiLCJ0b2tlbl9raW5kIjoidXNlcl9hY2Nlc3MifQ.ZsH1nMWLQhAUZQjOsU7JVzSNy0rSL4NxpEnNaf8btqc867wGEdZGMrzq4_IYY4X4yUVoPin3CSmz9SJYBcIWKI5gvioquRLS-Iahuvg-qolJfQUB3_NRPyAAI3Q3hlYtNHCFf5e5execThVrgO2WoVAdvzvugM0LngtB0Ja_BcyQSGlEDNz6p05BqiW-zQrSMxHHPSVHUSk2ium9XyrZHpnxRT1cjhCYm0XoU_XkiufqnzoxG5lXbMO_MJz8Wsb8UJZ10GSW8enFkNVNCngbLVwx2FYNkvidoTID8fVnv_hdAH9Bdg0pmtPwJGTfbxqb31DseW_sEKLVUYfVwtie2Q",
+      "expect": "sender_constraint",
+      "why": "token-only APIs cannot verify the DPoP sender"
+    },
+    {
+      "name": "mtls_requires_certificate",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJjbmYiOnsieDV0I1MyNTYiOiJlSGg0ZUhoNGVIaDRlSGg0ZUhoNGVIaDRlSGg0ZUhoNGVIaDRlSGg0ZUhnIn0sImV4cCI6MTkwMDAwMDMwMCwiaWF0IjoxODk5OTk5OTkwLCJpc3MiOiJodHRwczovL2lkLmV4YW1wbGUudGVzdC9yZWFsbXMvbWFpbiIsImp0aSI6InRva19maXh0dXJlIiwibmJmIjoxODk5OTk5OTkwLCJvcmdfaWQiOiJvcmdfZml4dHVyZSIsInNjb3BlIjoib3JkZXJzOnJlYWQiLCJzdWIiOiJ1c3JfZml4dHVyZSIsInRva2VuX2tpbmQiOiJ1c2VyX2FjY2VzcyJ9.Qis1s4JVAbmEx40RLwclM3l4ySh2VEn05jbfhQNChNfUR4Bzav58Df4vD1rk4VlvXYSrC29nlYjty-ttuCMsa5sQhcAbwq5-_DiNI1pRYwQTKWW0Ai8DIJ_9ETd3WzaMx2ich5FBDXJPYZLKPXgY0dA8-tN8JtaOZynH8etspYpUN2U_Wwb7ogmeeS39ffSmYn9slBIjj-BFOrQGAz-WlRZH8dXKEAQY8Nqdojcb-nJY4WzhrVafozbiM6GOWIqZu4Sowo1VW0ZtJDx3ZxHsEEE5sX4dLsYKN42fuN8S2Wr4t9Dv_sqX1faIZ2-ZJyrlbGJ9QH6A3cmgBhDEKufFhw",
+      "expect": "sender_constraint",
+      "why": "token-only APIs cannot verify the TLS sender"
+    },
+    {
+      "name": "unknown_confirmation",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJjbmYiOnsidW5rbm93biI6ImJpbmRpbmcifSwiZXhwIjoxOTAwMDAwMzAwLCJpYXQiOjE4OTk5OTk5OTAsImlzcyI6Imh0dHBzOi8vaWQuZXhhbXBsZS50ZXN0L3JlYWxtcy9tYWluIiwianRpIjoidG9rX2ZpeHR1cmUiLCJuYmYiOjE4OTk5OTk5OTAsIm9yZ19pZCI6Im9yZ19maXh0dXJlIiwic2NvcGUiOiJvcmRlcnM6cmVhZCIsInN1YiI6InVzcl9maXh0dXJlIiwidG9rZW5fa2luZCI6InVzZXJfYWNjZXNzIn0.Z96LHAnOSPZP0EmCTw9TRvhq3THguLRB__e_fvGa4Y_oQdHeoOAtPUGOS5jKfATyJ0Z0Ecd5MGJTINQF-M7SLVQ9R6-Uc4-MulN07zfFPQGewdM5ajKHT6CjE8duGt4WZCEz0xMGhuxPFU1j0u7CTuLYOjvcJbxZoGa4npZpIw2MpyueG7fm8kS4p8iBimbXxu0eMflWXROo_USFdAnSUmEUvHUY8zaiDrtGsSPHpNPTnx3GNUfyGCp6nSNvtjf-k07nkIH6sNEtqq4o_6QwUv8YqFuSj8r542yooGH93JyzlGwNzUxCufltLrO2sgQBiXund3dpzeRIpPtw2qlDzw",
+      "expect": "sender_constraint",
+      "why": "unsupported confirmation cannot become bearer authority"
+    },
+    {
+      "name": "null_confirmation",
+      "token": "eyJhbGciOiJSUzI1NiIsImtpZCI6InJzLWZpeHR1cmUtMSIsInR5cCI6ImF0K2p3dCJ9.eyJhdWQiOiJodHRwczovL2FwaS5leGFtcGxlLnRlc3Qvb3JkZXJzIiwiY2xpZW50X2lkIjoiZml4dHVyZS1jbGllbnQiLCJjbmYiOm51bGwsImV4cCI6MTkwMDAwMDMwMCwiaWF0IjoxODk5OTk5OTkwLCJpc3MiOiJodHRwczovL2lkLmV4YW1wbGUudGVzdC9yZWFsbXMvbWFpbiIsImp0aSI6InRva19maXh0dXJlIiwibmJmIjoxODk5OTk5OTkwLCJvcmdfaWQiOiJvcmdfZml4dHVyZSIsInNjb3BlIjoib3JkZXJzOnJlYWQiLCJzdWIiOiJ1c3JfZml4dHVyZSIsInRva2VuX2tpbmQiOiJ1c2VyX2FjY2VzcyJ9.FrbPb8UziEE8hEwv_eeqH-qK0G6CvCNHBBmn6ja75-d_bRYF9z6p_0w8-vV1LPClVLKq764HG8vVZO3uG5RX6dc4c6WU3hvG1Y7r0MetSU6jIub5iIupeSixZDMGDgoYrgyqHXQM08H2Xxl9i4IQ2YEMTnRiK8LSiXZD15KZ0x6YxCfpyX0mALqvw4BEeo1HrvFI8JFraWZXdDXrMkDX6-BkWYyxLF1t_h62sbU6WpafRs88fIOMv_lhk_E-_PmVDL_mDeJQCXyglMg6LejNCSqYhSFHZ5anaoAHOQ7FJ_k0JL8ff9IIGIbNX4n_icDKfKQGu3LsTqulAKxuLc7n0Q",
+      "expect": "sender_constraint",
+      "why": "an explicit malformed confirmation cannot be ignored"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+60589	77203.8	1.274	60589	UPDATE client_credentials SET last_used_at=$2 WHERE id=$1
+60967	42802.5	0.702	60967	INSERT INTO rate_limit_counters (bucket, window_start, count, expires_at) VALUES ($1, $2, $4, $3) ON CONFLICT (bucket, window_start) DO UPDATE SET count = rate_limit_counters.count + $5 RETURNING coun
+60502	5086.1	0.084	60502	INSERT INTO refresh_tokens (id, realm_id, family_id, generation, token_digest, parent_id, issued_at) VALUES ($1,$2,$3,$4,$5,$6,$7)
+60607	4678.5	0.077	60607	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+60506	2299.4	0.038	60506	SELECT t.id, t.family_id, t.generation, t.consumed_at, t.revoked_at, coalesce(g.session_id,$3), g.offline, f.client_ref FROM refresh_tokens t JOIN refresh_families f ON f.id=t.family_id JOIN authoriza
+121314	1982.4	0.016	121314	SELECT id, realm_id, state, coalesce(display_name,$3), coalesce(given_name,$4), coalesce(family_name,$5), coalesce(locale,$6), coalesce(zoneinfo,$7), profile, admin_metadata, internal_metadata, protec
+60497	1791.3	0.030	60497	UPDATE refresh_families SET current_generation=current_generation+$4, idle_expires_at=$2, last_rotated_at=$3 WHERE id=$1
+121374	1755.1	0.014	121374	SELECT id, type, original_value, canonical_value, verified_at, is_primary, source FROM user_identifiers WHERE user_id=$1 ORDER BY created_at, id
+60502	1726.3	0.029	60502	UPDATE refresh_tokens SET consumed_at=$2 WHERE id=$1 AND consumed_at IS NULL
+181775	1632.1	0.009	242454	SELECT id, coalesce(resource_id,$3), name, coalesce(description,$4), coalesce(consent_text,$5), sensitivity, is_default, kind, required_permissions, coalesce(step_up_acr,$6), coalesce(max_auth_age_sec
+60592	1028.8	0.017	60592	SELECT id FROM client_credentials WHERE client_ref=$1 AND kind=$4 AND state=$5 AND secret_digest=$2 AND (expires_at IS NULL OR expires_at > $3)
+60506	1000.0	0.017	60506	SELECT id, grant_id, client_ref, current_generation, state, idle_expires_at, absolute_expires_at, idle_window_seconds FROM refresh_families WHERE id=$1 FOR UPDATE

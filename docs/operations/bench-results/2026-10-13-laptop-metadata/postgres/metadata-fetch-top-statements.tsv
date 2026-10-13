@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+157127	7185.7	0.046	157127	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+157119	2699.4	0.017	157119	INSERT INTO rate_limit_counters (bucket, window_start, count, expires_at) VALUES ($1, $2, 1, $3) ON CONFLICT (bucket, window_start) DO UPDATE SET count = rate_limit_counters.count + 1 RETURNING count
+157119	1925.9	0.012	157119	SELECT id, client_ref, name, profile, issuer, coalesce(jwks_uri,$4), jwks, audience, subject, claim_constraints, algorithms, max_assertion_lifetime, require_jti, state, version, created_by_id, created
+157162	1618.3	0.010	157162	SELECT id, realm_id, client_id, coalesce(project_id,''), name, coalesce(description,''), client_type, token_endpoint_auth_method, grant_types, security_profile, state, first_party, consent_mode, allow
+157178	1078.2	0.007	41	SELECT uri, purpose FROM client_redirect_uris WHERE client_ref=$1 ORDER BY created_at, uri
+157178	959.4	0.006	0	SELECT origin FROM client_origins WHERE client_ref=$1 ORDER BY origin
+19640	698.3	0.036	19640	UPDATE workload_trusts SET last_used_at=$2 WHERE id=$1
+157119	515.7	0.003	157119	SELECT EXISTS (SELECT 1 FROM hooks WHERE realm_id=$1 AND state='active')
+58920	405.4	0.007	58920	SELECT id, coalesce(resource_id,''), name, coalesce(description,''), coalesce(consent_text,''), sensitivity, is_default, kind, required_permissions, coalesce(step_up_acr,''), coalesce(max_auth_age_sec
+39334	315.1	0.008	78628	SELECT id, coalesce(resource_id,''), name, coalesce(description,''), coalesce(consent_text,''), sensitivity, is_default, kind, required_permissions, coalesce(step_up_acr,''), coalesce(max_auth_age_sec
+204	278.1	1.363	204	SELECT pg_advisory_xact_lock(hashtext($1))
+5300	219.9	0.041	5300	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1

@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+7538	43247.8	5.737	7538	INSERT INTO rate_limit_counters (bucket, window_start, count, expires_at) VALUES ($1, $2, $4, $3) ON CONFLICT (bucket, window_start) DO UPDATE SET count = rate_limit_counters.count + $5 RETURNING coun
+168	2434.4	14.491	168	SELECT pg_advisory_xact_lock(hashtext($1))
+168	1215.4	7.235	0	UPDATE jobs SET state='running', lease_owner=$1, lease_expires_at=$2, attempts=attempts+1, updated_at=$3 WHERE id = (SELECT id FROM jobs j WHERE type = ANY($4) AND ((state='queued' AND run_after <= $3
+4200	127.6	0.030	4200	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+2	36.4	18.196	2587	UPDATE audit_events SET batch_id=$1 WHERE id = ANY($2)
+42	27.0	0.643	4200	SELECT seq, id, coalesce(realm_id,''), coalesce(organization_id,''), event_type, payload FROM outbox_events WHERE state='pending' ORDER BY seq LIMIT $1 FOR UPDATE SKIP LOCKED
+884	24.8	0.028	884	SELECT id, name, display_name, issuer, state, settings, policy_revision, bootstrapped_at, disabled_grant_types, version, created_at FROM realms WHERE name=$1
+4200	7.8	0.002	0	SELECT id, event_types, payload_form, event_version FROM webhook_subscriptions WHERE realm_id=$1 AND state='active' AND (organization_id IS NULL OR organization_id=$2)
+1657	4.8	0.003	0	SELECT id, realm_id, coalesce(organization_id,''), name, kind, state, config, role_ceiling_ids, group_role_mappings, coalesce(default_role_id,''), secret_ciphertext, secret_set_at, last_sync_at, last_
+1657	3.6	0.002	0	SELECT w.id, w.name, w.published_by_id, r.number, r.definition_hash, r.definition FROM workflows w JOIN workflow_revisions r ON r.workflow_id=w.id AND r.number=w.active_revision WHERE w.state='active'
+11	3.4	0.310	0	UPDATE invitations i SET delivery_state = CASE j.state WHEN $1 THEN $2 WHEN $3 THEN $4 ELSE $5 END, state = CASE WHEN i.state=$6 AND j.state=$7 THEN $8 ELSE i.state END, updated_at=$9 FROM notificatio
+2	2.2	1.080	0	SELECT id, realm_id, organization_id, user_id FROM memberships WHERE state=$2 AND expires_at IS NOT NULL AND expires_at <= $1 LIMIT $3

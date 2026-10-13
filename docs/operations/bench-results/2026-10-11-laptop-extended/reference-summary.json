@@ -1,0 +1,123 @@
+{
+  "requirements": [
+    "NFR-003",
+    "NFR-008"
+  ],
+  "all_selected_criteria_passed": true,
+  "scenarios": [
+    {
+      "scenario": "passkey-assertion",
+      "started": "2026-10-11T12:15:59Z",
+      "ended": "2026-10-11T12:17:16Z",
+      "duration_s": 60,
+      "concurrency": 32,
+      "operations": 10570,
+      "throughput_per_s": 176.2,
+      "latency_ms": {
+        "mean": 181.31,
+        "p50": 180.22,
+        "p90": 196.61,
+        "p99": 221.18,
+        "p999": 237.57,
+        "max": 255.61
+      },
+      "outcomes": {
+        "ok": 10570
+      },
+      "verdict": "pass",
+      "cpu_seconds": {
+        "wall_s": 76.51,
+        "identity_server": 108.67,
+        "identity_worker": 1.2,
+        "postgres_container": 118.57,
+        "docker_vm_and_proxy": 472.75,
+        "identity_bench": 6.81
+      }
+    },
+    {
+      "scenario": "scim",
+      "started": "2026-10-11T12:17:16Z",
+      "ended": "2026-10-11T12:18:21Z",
+      "duration_s": 60,
+      "concurrency": 32,
+      "operations": 6351,
+      "throughput_per_s": 105.8,
+      "latency_ms": {
+        "mean": 301.49,
+        "p50": 311.3,
+        "p90": 409.6,
+        "p99": 458.75,
+        "p999": 475.14,
+        "max": 487.36
+      },
+      "outcomes": {
+        "ok": 6351
+      },
+      "verdict": "pass",
+      "cpu_seconds": {
+        "wall_s": 65.23,
+        "identity_server": 34.84,
+        "identity_worker": 0.66,
+        "postgres_container": 62.91,
+        "docker_vm_and_proxy": 228.49,
+        "identity_bench": 3.61
+      }
+    },
+    {
+      "scenario": "mixed-extended",
+      "started": "2026-10-11T12:18:22Z",
+      "ended": "2026-10-11T12:19:41Z",
+      "duration_s": 60,
+      "concurrency": 32,
+      "operations": 24562,
+      "throughput_per_s": 409.4,
+      "latency_ms": {
+        "mean": 78.02,
+        "p50": 45.06,
+        "p90": 172.03,
+        "p99": 442.37,
+        "p999": 475.14,
+        "max": 509.65
+      },
+      "outcomes": {
+        "audit-query:ok": 1214,
+        "client-credentials:ok": 7237,
+        "import:ok": 1254,
+        "introspection:ok": 4951,
+        "passkey-assertion:ok": 1206,
+        "password-login:ok": 1235,
+        "policy:ok": 3780,
+        "refresh:ok": 2468,
+        "scim:ok": 1217
+      },
+      "verdict": "pass",
+      "cpu_seconds": {
+        "wall_s": 79.19,
+        "identity_server": 251.98,
+        "identity_worker": 17.86,
+        "postgres_container": 120.14,
+        "docker_vm_and_proxy": 400.46,
+        "identity_bench": 6.76
+      }
+    }
+  ],
+  "build_source_digest_sha256_16": "84ae7e50370a9570",
+  "initial_attempt": {
+    "summary": "initial-attempt/summary.json",
+    "note": "Passkey preparation failed because an IP issuer does not provide a valid RP ID; SCIM passed with 6352 cycles. The runner now explicitly configures localhost RP/origin; all four binary hashes match across attempts."
+  },
+  "verification": {
+    "unit": "go test ./internal/bench ./cmd/identity-bench -race -count=1",
+    "e2e": "go test ./tests/e2e -run ^(TestBenchSuiteSmoke|TestTokenIssuanceBeyondConnectionPool)$ -race -count=1 -timeout 10m",
+    "vet": "go vet ./internal/bench ./cmd/identity-bench ./tests/e2e",
+    "status": "pass",
+    "note": "Separate disposable PostgreSQL 18; no Go tests during measurements."
+  },
+  "privacy": "Both runs checked all artifacts against seed client secrets, administrator credentials, database passwords and root keys before removing private temporary files; connector-token/private-key patterns are also rejected. Only the seed specification is published.",
+  "limitations": [
+    "One cohosted laptop, plain loopback HTTP and Docker Desktop; not guarantees or sizing advice.",
+    "Software passkeys assert UP/UV and none attestation; no browser or physical authenticator latency.",
+    "SCIM cycles are paced under unchanged connector budgets; pacing is included in latency.",
+    "No extended soak or delivery-worker capacity measurement."
+  ]
+}

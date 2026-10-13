@@ -1,0 +1,131 @@
+{
+  "format_version": "1",
+  "checked_at": "2026-10-12T22:14:28.120724+00:00",
+  "version": "dev-repro-20261013",
+  "image": "golang:1.27.2-trixie@sha256:e58d6f83b3416618d8bcac2b3dde1b7f7e3c4a77d25e88637f8bbae81536c48d",
+  "host": {
+    "os": "Darwin",
+    "architecture": "arm64",
+    "toolchain": "go version go1.27.2 darwin/arm64"
+  },
+  "linux": {
+    "os": "Linux",
+    "toolchain_version": "go1.27.2\ntime 2026-10-02T20:28:03Z",
+    "network": "none"
+  },
+  "source_snapshot_sha256": "1f0e4064801707023be84691cb60db9a47369b46df80d3b15c3ba818ae49b89b",
+  "build_flags": "CGO_ENABLED=0 GOAMD64=v1 GOARM64=v8.0; -mod=readonly -buildvcs=false -trimpath; -ldflags=-s -w -buildid= -X main.version=dev-repro-20261013",
+  "same_physical_host": true,
+  "separate_build_caches": true,
+  "modules": "same populated module cache, Linux mount read-only, proxy/sumdb/toolchain downloads disabled",
+  "targets": [
+    {
+      "target": "identity-server_linux_amd64",
+      "host_bytes": 27123836,
+      "linux_bytes": 27123836,
+      "host_sha256": "930690b409fcc198be3652234df12e29045af344cfe64d26fa9acc284a3e7259",
+      "linux_sha256": "930690b409fcc198be3652234df12e29045af344cfe64d26fa9acc284a3e7259",
+      "identical": true
+    },
+    {
+      "target": "identity-worker_linux_amd64",
+      "host_bytes": 24600700,
+      "linux_bytes": 24600700,
+      "host_sha256": "9c76f1b85e7725ca9aaacb7f0e17b67bbe4259510ca2500340ee082c6face83e",
+      "linux_sha256": "9c76f1b85e7725ca9aaacb7f0e17b67bbe4259510ca2500340ee082c6face83e",
+      "identical": true
+    },
+    {
+      "target": "identity-cli_linux_amd64",
+      "host_bytes": 16441468,
+      "linux_bytes": 16441468,
+      "host_sha256": "524969383118f882e0dba63e6e6e0e800936dd8795406066e036381772e17aa9",
+      "linux_sha256": "524969383118f882e0dba63e6e6e0e800936dd8795406066e036381772e17aa9",
+      "identical": true
+    },
+    {
+      "target": "identity-server_linux_arm64",
+      "host_bytes": 24772732,
+      "linux_bytes": 24772732,
+      "host_sha256": "fdfb3127b59ca8e289188b420a10cd2457a05a2e6ba6f76e34f5390d4dc2093b",
+      "linux_sha256": "fdfb3127b59ca8e289188b420a10cd2457a05a2e6ba6f76e34f5390d4dc2093b",
+      "identical": true
+    },
+    {
+      "target": "identity-worker_linux_arm64",
+      "host_bytes": 22610044,
+      "linux_bytes": 22610044,
+      "host_sha256": "5c0ce64465d07bed0c6964c22b35fe76fa2b3b75a84218f4cb24324a32402d07",
+      "linux_sha256": "5c0ce64465d07bed0c6964c22b35fe76fa2b3b75a84218f4cb24324a32402d07",
+      "identical": true
+    },
+    {
+      "target": "identity-cli_linux_arm64",
+      "host_bytes": 15335548,
+      "linux_bytes": 15335548,
+      "host_sha256": "fb2dc2452f540e4592eac2a2fb389c08c77a7bd16447632bf8f77b17445aca68",
+      "linux_sha256": "fb2dc2452f540e4592eac2a2fb389c08c77a7bd16447632bf8f77b17445aca68",
+      "identical": true
+    },
+    {
+      "target": "identity-server_darwin_amd64",
+      "host_bytes": 27690512,
+      "linux_bytes": 27690512,
+      "host_sha256": "aa58d509e8b9b55e33d84492e2e33cf445c8ddee5f7762d393591451d4183728",
+      "linux_sha256": "aa58d509e8b9b55e33d84492e2e33cf445c8ddee5f7762d393591451d4183728",
+      "identical": true
+    },
+    {
+      "target": "identity-worker_darwin_amd64",
+      "host_bytes": 25129008,
+      "linux_bytes": 25129008,
+      "host_sha256": "1aa40e4c71b4b5300f57176eabc7db85a3841a38c2f6b1f50727d11cb056328e",
+      "linux_sha256": "1aa40e4c71b4b5300f57176eabc7db85a3841a38c2f6b1f50727d11cb056328e",
+      "identical": true
+    },
+    {
+      "target": "identity-cli_darwin_amd64",
+      "host_bytes": 16806864,
+      "linux_bytes": 16806864,
+      "host_sha256": "815b47083ca2fab2e9318dd56160ea2d03580044673d42be90453dac298e8f05",
+      "linux_sha256": "815b47083ca2fab2e9318dd56160ea2d03580044673d42be90453dac298e8f05",
+      "identical": true
+    },
+    {
+      "target": "identity-server_darwin_arm64",
+      "host_bytes": 25441394,
+      "linux_bytes": 25441394,
+      "host_sha256": "35d29d799d467e9c558644db8fc2dd6131e259295f3cb1e9c46e58c70edf85a2",
+      "linux_sha256": "35d29d799d467e9c558644db8fc2dd6131e259295f3cb1e9c46e58c70edf85a2",
+      "identical": true
+    },
+    {
+      "target": "identity-worker_darwin_arm64",
+      "host_bytes": 23243746,
+      "linux_bytes": 23243746,
+      "host_sha256": "a1e1458b8fce83fd27269e4f728a6e2202da93cfaaf7b2321414d503c9684ed9",
+      "linux_sha256": "a1e1458b8fce83fd27269e4f728a6e2202da93cfaaf7b2321414d503c9684ed9",
+      "identical": true
+    },
+    {
+      "target": "identity-cli_darwin_arm64",
+      "host_bytes": 15765058,
+      "linux_bytes": 15765058,
+      "host_sha256": "6cc1afffd4cbbef1808a5c65463609584eef462f8f04517182f2c86d3640a551",
+      "linux_sha256": "6cc1afffd4cbbef1808a5c65463609584eef462f8f04517182f2c86d3640a551",
+      "identical": true
+    }
+  ],
+  "pass": true,
+  "limits": [
+    "Frozen development checkout, no Git commit/tag or official release attestation.",
+    "One physical host, separate OS environments; not an independent organization or machine.",
+    "Binary reproduction only; no container-image reproduction, current vulnerability audit or external security review."
+  ],
+  "repeat_validation": {
+    "pass": true,
+    "earlier_checked_at": "2026-10-12T22:08:23.718006+00:00",
+    "identical_target_hashes_across_both_runs": true,
+    "same_source_snapshot": true
+  }
+}

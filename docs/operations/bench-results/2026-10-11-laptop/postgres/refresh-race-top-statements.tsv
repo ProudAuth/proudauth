@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+14851	139956.3	9.424	14851	SELECT id, grant_id, client_ref, current_generation, state, idle_expires_at, absolute_expires_at, idle_window_seconds FROM refresh_families WHERE id=$1 FOR UPDATE
+391	59771.3	152.868	391	SELECT pg_advisory_xact_lock(hashtext($1))
+392	55734.6	142.180	392	UPDATE jobs SET state='running', lease_owner=$1, lease_expires_at=$2, attempts=attempts+1, updated_at=$3 WHERE id = (SELECT id FROM jobs j WHERE type = ANY($4) AND ((state='queued' AND run_after <= $3
+16748	16956.2	1.012	16748	UPDATE client_credentials SET last_used_at=$2 WHERE id=$1
+27992	12401.0	0.443	27992	INSERT INTO rate_limit_counters (bucket, window_start, count, expires_at) VALUES ($1, $2, 1, $3) ON CONFLICT (bucket, window_start) DO UPDATE SET count = rate_limit_counters.count + 1 RETURNING count
+1871	3404.9	1.820	1871	SELECT id, verifier, state FROM credentials WHERE user_id=$1 AND type=$2 AND state IN ($3 /*, ... */) ORDER BY state LIMIT $4
+16755	1101.6	0.066	16755	SELECT id FROM client_credentials WHERE client_ref=$1 AND kind=$4 AND state=$5 AND secret_digest=$2 AND (expires_at IS NULL OR expires_at > $3)
+7444	615.9	0.083	7444	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+35514	524.3	0.015	35514	SELECT uri, purpose FROM client_redirect_uris WHERE client_ref=$1 ORDER BY created_at, uri
+5612	419.2	0.075	5612	UPDATE auth_transactions SET intent=$18, user_id=$2, identified_via=$3, completed_factors=$4, required_actions_done=$5, auth_time=$6, selected_org_id=$7, granted_scopes=$8, consent_decided=$9, remembe
+39168	350.2	0.009	0	SELECT m.local_id, coalesce(u.state,'deleted') FROM import_mappings m LEFT JOIN users u ON u.id=m.local_id WHERE m.realm_id=$1 AND m.source_system=$2 AND m.source_type='user' AND m.source_id=$3
+39168	342.8	0.009	0	SELECT user_id FROM user_identifiers WHERE realm_id=$1 AND type=$2 AND canonical_value=$3

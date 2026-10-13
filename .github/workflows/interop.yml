@@ -1,0 +1,46 @@
+# Third-party interoperability (QA-004): ProudAuth against Keycloak 26.8.0 as
+# OpenID Connect relying party and provider and as SAML service provider and
+# identity provider, in throwaway containers started through the runner's
+# Docker (scripts/interop-keycloak.sh,
+# docs/integrations/interoperability.md#third-party-products), and against
+# ZITADEL v4.16.3 as the SCIM service provider of outbound provisioning
+# (scripts/interop-zitadel.sh). It needs no secret; the images are pulled
+# when the runner does not have them.
+name: interop
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 4 * * 2" # weekly, Tuesday 04:41 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  keycloak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          # The latest 1.27 patch, as in ci.yml.
+          go-version: "1.27.x"
+          check-latest: true
+      - name: Keycloak interoperability
+        run: make interop-keycloak
+  zitadel:
+    # ZITADEL v4.16.3 as the SCIM 2.0 service provider of outbound
+    # provisioning (PROV-010, PROV-017; scripts/interop-zitadel.sh,
+    # docs/integrations/outbound-provisioning.md#zitadel-v4163).
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          # The latest 1.27 patch, as in ci.yml.
+          go-version: "1.27.x"
+          check-latest: true
+      - name: ZITADEL interoperability
+        run: make interop-zitadel

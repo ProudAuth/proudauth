@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/organization.deleted.v2.json",
+  "title": "organization.deleted (v2)",
+  "description": "Deletion of an organization started. Emitted when organization deletion begins: the organization enters the \"deleting\" state, its grants and tokens are revoked, pending invitations are revoked, provisioning connectors are disabled and automation credentials revoked, and the organization's service principals, webhook subscriptions and identity providers are disabled (TEN-024). Because its own webhook subscriptions are disabled in the same transaction, only realm-wide subscriptions receive this event. The remaining clean-up runs as a background job, which emits no further event. org_id equals data.organization_id.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v2.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "organization.deleted"
+    },
+    "event_version": {
+      "const": 2
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "organization_id"
+      ],
+      "properties": {
+        "organization_id": {
+          "$ref": "envelope.v2.json#/$defs/organization_id",
+          "description": "The organization being deleted."
+        }
+      },
+      "additionalProperties": false
+    },
+    "organization_id": {
+      "description": "Always set for this event type."
+    }
+  },
+  "required": [
+    "organization_id"
+  ],
+  "x-event-type": "organization.deleted",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/organization/organization.go: (*Service).BeginDeletionTx"
+  ],
+  "x-org-scoped": "always",
+  "examples": [
+    {
+      "event_id": "obx_01jbk2698n4p3q5vea3mad2mys",
+      "event_type": "organization.deleted",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "organization_id": "org_01jb8wmw5drxrge3rmw4nf61x1"
+      }
+    }
+  ]
+}

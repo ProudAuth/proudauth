@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/session.revoked.v2.json",
+  "title": "session.revoked (v2)",
+  "description": "An active browser session was revoked. Emitted when an active browser (SSO) session is revoked together with its grants, refresh families and opaque tokens (back-channel logout tokens are queued for registered clients). Bulk revocations emit one event per session. Not emitted for session expiry, for already inactive sessions, or for sessions revoked by backup-restore reconciliation. org_id is never set.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v2.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "session.revoked"
+    },
+    "event_version": {
+      "const": 2
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "user_id",
+        "session_id",
+        "reason"
+      ],
+      "properties": {
+        "user_id": {
+          "$ref": "envelope.v2.json#/$defs/user_id",
+          "description": "The session's user."
+        },
+        "session_id": {
+          "$ref": "envelope.v2.json#/$defs/session_id",
+          "description": "The revoked session."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "examples": [
+            "account_suspended",
+            "account_locked",
+            "deletion_requested",
+            "account_deleted",
+            "user_revoked",
+            "user_logout_all",
+            "admin_revoked",
+            "assisted_recovery",
+            "password_reset",
+            "password_changed",
+            "credential_compromised",
+            "refresh_reuse",
+            "concurrent_limit",
+            "rp_logout"
+          ],
+          "description": "Machine-readable revocation reason supplied by the caller. Values currently produced: account_suspended, account_locked, deletion_requested, account_deleted, user_revoked, user_logout_all, admin_revoked, assisted_recovery, password_reset, password_changed, credential_compromised, refresh_reuse, concurrent_limit, rp_logout. New values may be added; treat unknown values as a generic revocation."
+        }
+      },
+      "additionalProperties": false
+    },
+    "organization_id": {
+      "description": "Never set for this event type by the current server."
+    }
+  },
+  "x-event-type": "session.revoked",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/session/session.go: (*Service).RevokeTx (also reached through RevokeUserTx)"
+  ],
+  "x-org-scoped": "never",
+  "examples": [
+    {
+      "event_id": "obx_01jbbej2427rxg86cbs39szat2",
+      "event_type": "session.revoked",
+      "event_version": 2,
+      "payload_form": "standard",
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "session_id": "ses_01jb8wpw2e17k8cxa6pvtdb1yj",
+        "reason": "admin_revoked"
+      }
+    }
+  ]
+}

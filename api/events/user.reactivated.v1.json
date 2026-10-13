@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/user.reactivated.v1.json",
+  "title": "user.reactivated (v1)",
+  "description": "A user account returned to active. Emitted when an administrator sets the account state to \"active\" (from suspended, locked, recovery_restricted, or pending_deletion, which cancels a scheduled deletion), and automatically (reason FACTOR_ASSURANCE_RESTORED) when a recovery-restricted account signs in with TOTP or a passkey or enrolls a new one. Previously revoked sessions and grants are not restored. A user cancelling their own pending deletion does not emit this event. org_id is never set.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "user.reactivated"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "user_id",
+        "state"
+      ],
+      "properties": {
+        "user_id": {
+          "$ref": "envelope.v1.json#/$defs/user_id",
+          "description": "The user whose account state changed."
+        },
+        "state": {
+          "type": "string",
+          "const": "active",
+          "description": "The new account state."
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Never set for this event type by the current server."
+    }
+  },
+  "x-event-type": "user.reactivated",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/identity/identity.go: (*Service).SetStateTx (admin API user state)",
+    "internal/authentication/steps.go: (*Service).complete (strong-factor sign-in of a recovery-restricted account)",
+    "internal/httpapi/selfservice.go: restoreAssuranceTx (new TOTP or passkey enrollment)"
+  ],
+  "x-org-scoped": "never",
+  "examples": [
+    {
+      "event_id": "obx_01jbhf8d2mwvsqt1h3hj0dvcq8",
+      "event_type": "user.reactivated",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "state": "active"
+      }
+    }
+  ]
+}

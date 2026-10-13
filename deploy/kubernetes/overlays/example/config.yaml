@@ -1,0 +1,30 @@
+mode: production
+server:
+  public_listen: ":8080"
+  internal_listen: ":9090"            # reachable only through proudauth-internal + NetworkPolicy
+  public_origin: "https://id.example.com"
+  trusted_proxies: ["10.0.0.0/8"]     # your ingress controller's pod CIDR
+  metrics_token: "file:/run/secrets/metrics_token"
+identity:
+  default_realm: main
+storage:
+  database_url: "file:/run/secrets/database_url"
+  max_conns: 20
+keys:
+  root_keys:
+    - version: 1
+      ref: "file:/run/secrets/root_key_v1"
+  active_version: 1
+delivery:
+  email:
+    adapter: smtp
+    smtp_host: smtp.example.com
+    smtp_port: 587
+    smtp_tls: starttls
+    smtp_username: proudauth
+    smtp_password: "file:/run/secrets/smtp_password"
+    from: "no-reply@example.com"
+workers:
+  # Private listener for the worker's /health/live (probes), /metrics and
+  # /status; reachable only from the monitoring namespace (NetworkPolicy).
+  metrics_listen: ":9091"

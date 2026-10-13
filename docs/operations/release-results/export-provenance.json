@@ -1,0 +1,24 @@
+{
+  "format_version": 1,
+  "scope": "Exported local preparation evidence, not a signed release or CI attestation.",
+  "redactions": [
+    {
+      "path": "docs/operations/release-results/2026-10-13-local-preparation/image-catalog.syft.json",
+      "fields": [
+        "descriptor.configuration.packages.golang.local-mod-cache-dir",
+        "descriptor.configuration.packages.java-archive.maven-localrepository-dir"
+      ],
+      "original_sha256": "77601c9daa6527fbeb991d5a287fc5da15f13175943601023159ae783f32ef40",
+      "export_sha256": "d6750558e84113b0ad28a428d174ac74f6166e77ec267fab419eb762a9f3c3b4"
+    }
+  ],
+  "artifact_manifest_updates": [
+    {
+      "path": "docs/operations/release-results/2026-10-13-local-preparation/artifact-sha256.json",
+      "original_sha256": "58e54b80078345f4425e46ad1eeb21f8fcaed222cc9267af1f6a6352e66cdb61",
+      "export_sha256": "87f411ea18896ecb695622fb6e9dbaebd429af9ad8c373834a77d233f3bae3d1"
+    }
+  ],
+  "preserved": "Catalogue package/file data and image identity; original SPDX source/image SBOM files and their bytes remain unchanged.",
+  "signature_policy": "Changed catalogue metadata and its recalculated manifest have new byte hashes. No prior signature/attestation is claimed to verify these exported copies; the original evidence was unsigned local preparation."
+}

@@ -1,0 +1,396 @@
+{
+  "cleanup": {
+    "dedicated_postgresql_container": "removed",
+    "private_full_test_log": "not published; removed after verification"
+  },
+  "command": "go test -json -race -count=1 -p=2 -timeout=20m ./...",
+  "date": "2026-10-12",
+  "environment": {
+    "cpu": "Apple M4 Pro",
+    "cpu_count": 12,
+    "go": "go1.27.1 darwin/arm64",
+    "harness": "development; 8MiB/one-pass password hashing, RSA-2048, no artificial authentication delay; independent replica pools 20/10/10",
+    "machine_model": "Mac16,8",
+    "memory_bytes": 25769803776,
+    "os": "macOS 27.0.1 (26A434)",
+    "postgresql": "18.6",
+    "postgresql_local_image_id": "sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722",
+    "postgresql_settings": {
+      "data": "2GiB tmpfs",
+      "host_authentication": "trust",
+      "host_binding": "127.0.0.1",
+      "host_port": 53361,
+      "max_connections": 120,
+      "memory_limit": "3GiB",
+      "shared_buffers": "128MB"
+    }
+  },
+  "kind": "correctness-verification",
+  "limits": [
+    "Correctness evidence on one laptop; not a capacity measurement.",
+    "Directory expiry is a deterministic clock/handler stall and takeover, not an operating-system process kill or physical network/database failure.",
+    "Previously published capacity artifacts retain their own older builds."
+  ],
+  "observation": "An earlier full-suite invocation lost its terminal observation after interruption and was not counted as passing; this report comes from the completed rerun.",
+  "offline_environment": {
+    "GOFLAGS": "-mod=readonly -buildvcs=false",
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local"
+  },
+  "results": {
+    "exit_code": 0,
+    "failed_tests": [],
+    "packages": {
+      "github.com/proudauth/cmd/identity-bench": {
+        "action": "pass",
+        "elapsed": 2.91
+      },
+      "github.com/proudauth/cmd/identity-cli": {
+        "action": "pass",
+        "elapsed": 10.329
+      },
+      "github.com/proudauth/cmd/identity-server": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/cmd/identity-worker": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/examples/backend-for-frontend": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/examples/backend-for-frontend/bff": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/examples/machine-client": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/examples/protected-billing-api": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/examples/protected-billing-api/billingapi": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/examples/protected-orders-api": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/examples/protected-orders-api/ordersapi": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/application": {
+        "action": "pass",
+        "elapsed": 1.323
+      },
+      "github.com/proudauth/internal/audit": {
+        "action": "pass",
+        "elapsed": 1.303
+      },
+      "github.com/proudauth/internal/authentication": {
+        "action": "pass",
+        "elapsed": 1.486
+      },
+      "github.com/proudauth/internal/authorization": {
+        "action": "pass",
+        "elapsed": 1.321
+      },
+      "github.com/proudauth/internal/bench": {
+        "action": "pass",
+        "elapsed": 11.487
+      },
+      "github.com/proudauth/internal/certauth": {
+        "action": "pass",
+        "elapsed": 1.353
+      },
+      "github.com/proudauth/internal/configuration": {
+        "action": "pass",
+        "elapsed": 2.79
+      },
+      "github.com/proudauth/internal/contracts": {
+        "action": "pass",
+        "elapsed": 1.487
+      },
+      "github.com/proudauth/internal/contracts/schemacheck": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/credential": {
+        "action": "pass",
+        "elapsed": 14.6
+      },
+      "github.com/proudauth/internal/directory": {
+        "action": "pass",
+        "elapsed": 2.359
+      },
+      "github.com/proudauth/internal/directory/ldaptest": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/egress": {
+        "action": "pass",
+        "elapsed": 1.329
+      },
+      "github.com/proudauth/internal/events": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/federation": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/hooks": {
+        "action": "pass",
+        "elapsed": 1.295
+      },
+      "github.com/proudauth/internal/httpapi": {
+        "action": "pass",
+        "elapsed": 1.561
+      },
+      "github.com/proudauth/internal/identity": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/impersonation": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/jobs": {
+        "action": "pass",
+        "elapsed": 2.769
+      },
+      "github.com/proudauth/internal/keys": {
+        "action": "pass",
+        "elapsed": 1.371
+      },
+      "github.com/proudauth/internal/machine": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/maintenance": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/migrate": {
+        "action": "pass",
+        "elapsed": 16.104
+      },
+      "github.com/proudauth/internal/notification": {
+        "action": "pass",
+        "elapsed": 1.317
+      },
+      "github.com/proudauth/internal/oauth": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/observability": {
+        "action": "pass",
+        "elapsed": 1.266
+      },
+      "github.com/proudauth/internal/organization": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/passkey": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/platform/canonical": {
+        "action": "pass",
+        "elapsed": 1.556
+      },
+      "github.com/proudauth/internal/platform/clock": {
+        "action": "pass",
+        "elapsed": 1.244
+      },
+      "github.com/proudauth/internal/platform/ids": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/platform/problem": {
+        "action": "pass",
+        "elapsed": 1.26
+      },
+      "github.com/proudauth/internal/platform/reqctx": {
+        "action": "pass",
+        "elapsed": 1.358
+      },
+      "github.com/proudauth/internal/platform/secret": {
+        "action": "pass",
+        "elapsed": 1.28
+      },
+      "github.com/proudauth/internal/platform/tracing": {
+        "action": "pass",
+        "elapsed": 1.311
+      },
+      "github.com/proudauth/internal/plugin": {
+        "action": "pass",
+        "elapsed": 1.319
+      },
+      "github.com/proudauth/internal/provision": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/provisioning": {
+        "action": "pass",
+        "elapsed": 1.306
+      },
+      "github.com/proudauth/internal/ratelimit": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/realm": {
+        "action": "pass",
+        "elapsed": 1.411
+      },
+      "github.com/proudauth/internal/registry": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/restore": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/runtime": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/saml": {
+        "action": "pass",
+        "elapsed": 1.568
+      },
+      "github.com/proudauth/internal/saml/idp": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/server": {
+        "action": "pass",
+        "elapsed": 1.544
+      },
+      "github.com/proudauth/internal/session": {
+        "action": "pass",
+        "elapsed": 1.353
+      },
+      "github.com/proudauth/internal/ssf": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/storage": {
+        "action": "pass",
+        "elapsed": 4.188
+      },
+      "github.com/proudauth/internal/testutil": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/token": {
+        "action": "pass",
+        "elapsed": 1.397
+      },
+      "github.com/proudauth/internal/webhooks": {
+        "action": "pass",
+        "elapsed": 1.358
+      },
+      "github.com/proudauth/internal/worker": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/internal/workflow": {
+        "action": "pass",
+        "elapsed": 1.407
+      },
+      "github.com/proudauth/internal/workload": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/migrations": {
+        "action": "skip",
+        "elapsed": 0
+      },
+      "github.com/proudauth/sdk/go/admin": {
+        "action": "pass",
+        "elapsed": 1.33
+      },
+      "github.com/proudauth/sdk/go/internal/httpclient": {
+        "action": "pass",
+        "elapsed": 1.409
+      },
+      "github.com/proudauth/sdk/go/oidcclient": {
+        "action": "pass",
+        "elapsed": 1.374
+      },
+      "github.com/proudauth/sdk/go/verifier": {
+        "action": "pass",
+        "elapsed": 1.612
+      },
+      "github.com/proudauth/tests/contract": {
+        "action": "pass",
+        "elapsed": 30.465
+      },
+      "github.com/proudauth/tests/e2e": {
+        "action": "pass",
+        "elapsed": 728.781
+      }
+    },
+    "packages_without_test_files": 32,
+    "passed_subtests": 452,
+    "passed_test_packages": 42,
+    "passed_top_tests": 686,
+    "selected_cases": {
+      "TestBenchSuiteSmoke": {
+        "elapsed_seconds": 50.53,
+        "result": "pass"
+      },
+      "TestJobAttemptFencing": {
+        "elapsed_seconds": 1.19,
+        "result": "pass"
+      },
+      "TestReplicaDirectoryExpiredLeaseRecovery": {
+        "elapsed_seconds": 1.3,
+        "result": "pass"
+      },
+      "TestReplicaDirectoryScheduleStress": {
+        "elapsed_seconds": 2.17,
+        "result": "pass"
+      },
+      "TestReplicaDirectorySynchronizationStress": {
+        "elapsed_seconds": 2.21,
+        "result": "pass"
+      },
+      "TestRequirementsTraceability": {
+        "elapsed_seconds": 7.18,
+        "result": "pass"
+      },
+      "TestTokenIssuanceBeyondConnectionPool": {
+        "elapsed_seconds": 14.59,
+        "result": "pass"
+      },
+      "TestWorkerPoolBoundsAndTenantShares": {
+        "elapsed_seconds": 1.33,
+        "result": "pass"
+      }
+    },
+    "skipped_tests": 0,
+    "wall_seconds": 792.694
+  },
+  "source": {
+    "frozen_files_sha256": {
+      "internal/directory/apply.go": "222767e60c126efc551dd1119c1b87104b3f7b439d30264de17ee02cc45c260c",
+      "internal/directory/groups.go": "e7381492c008d34845a1c3f3628d7effc50b1d26f714739cd76ec5a11ee00da3",
+      "internal/directory/outbound.go": "864eff7454222e32f76911cdfd80bd7c33fd9a00090eab68aea21f1cd407cbf3",
+      "internal/directory/sync.go": "48d7a1c7f4ec1ba1b1c279382b28e2fcb8b6d3e9345efb6c34b8ebb591f5b1c8",
+      "internal/jobs/jobs.go": "08da843650cb5536cbe8efc88ec700df02543bcf4ff730697e74050ba4f8b42f",
+      "internal/jobs/lease_fence_test.go": "7c024655e361d8e75ec20f7a39040bd65b95741f7d4e62c7b8f94fe9759ee865",
+      "tests/e2e/replica_directory_recovery_test.go": "a233ff9eca60a45386de8c7c62564815887eafb48c885374f834a352ab4b4425"
+    },
+    "git_commit": null,
+    "production_digest": "0a51116192cb1f18"
+  }
+}

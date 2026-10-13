@@ -1,0 +1,32 @@
+[
+  {
+    "scenario": "otp-guess",
+    "started": "2026-10-11T15:57:16Z",
+    "ended": "2026-10-11T15:58:25Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 87848,
+    "throughput_per_s": 1464.1,
+    "latency_ms": {
+      "mean": 21.85,
+      "p50": 22.53,
+      "p90": 24.58,
+      "p99": 27.65,
+      "p999": 40.96,
+      "max": 57.54
+    },
+    "outcomes": {
+      "invalid_proof": 10,
+      "rate_limited": 87838
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 68.63,
+      "identity_server": 91.75,
+      "identity_worker": 1.12,
+      "postgres_container": 63.3,
+      "docker_vm_and_proxy": 374.61,
+      "identity_bench": 35.55
+    }
+  }
+]

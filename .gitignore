@@ -1,0 +1,46 @@
+# Build output (release binaries, offline bundles, make bench).
+dist/
+bin/
+/identity-server
+/identity-worker
+/identity-cli
+/identity-bench
+*.test
+sbom.cdx.json
+
+# Files the tools write by default that hold secrets or private operational
+# data. Secret-bearing ones are written with mode 0600 (benchmark results,
+# which hold no secrets, 0644); none must ever be committed.
+#   identity-bench seed (--out seed.json; make bench uses bench-seed.json):
+#     the benchmark realm's client secrets
+seed.json
+bench-seed.json
+#   make bench results
+bench-*.json
+#   make bench-local results (scripts/bench-local.sh; published reference
+#   results live in docs/operations/bench-results/)
+/bench-results/
+#   identity-cli config-export (-o realm-config.json) and
+#   config-apply --secrets-out (new client secrets; any name, these are the
+#   conventional ones)
+realm-config.json
+secrets-out
+secrets-out.json
+*.secrets.json
+client-secrets.json
+#   identity-cli support-bundle (--out support-bundle.json)
+support-bundle.json
+#   identity-cli revocation-log --out (conventional names)
+revocation-log*.jsonl
+revocation-log*.json
+#   deploy/compose/init-secrets.sh (root key, database password)
+deploy/compose/secrets/
+.DS_Store
+
+# Standalone image deployment private state.
+docker-deploy/.env
+docker-deploy/.env.*
+!docker-deploy/.env.example
+docker-deploy/secrets/
+docker-deploy/images/
+/repro-results/

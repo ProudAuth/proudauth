@@ -1,0 +1,18 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "binary-sha256.txt": "b6be0c3fe129f21735e43db8553dd1523922a2c4832de7f01047f84c9a3c2f7b",
+    "build-info.txt": "581e580d6d2f5ffa9c01f134d3c5d73d80df5bdc6e673cf77edb147b2f9ea93e",
+    "complex-filter.json": "dc6a0eccb17e887fdcc7a272a0fb23d09ddb7b3eb3239e59a111fa6cf7ea773d",
+    "effective-config-redacted.json": "fc7e4db74fc8d0e247aaabb7accf9fe8a49b6d24b5e6cb5d12aa27cacb7e740e",
+    "environment.json": "ac0180889f2f03e72325c356ff6c5fb6447748f95679a0eb079e76da5a31d017",
+    "postgres/complex-filter-top-statements.tsv": "0255f6236e879fafb25c5cd3434b1e9b94cc5e4b9866d7522cf43e20147b9356",
+    "postgres/database-size-bytes.txt": "9a4a0cd9486599f6c1853706006ce8158d9a90a49c0bc7a5c8927cde4479b535",
+    "postgres/largest-tables.tsv": "5af08cf509e5ccbf7460cb3fc20b3bf3bb38a7d50e1147e72dbb07b70879404c",
+    "postgres/settings.tsv": "f181e2ac46f522c90ac3aaa6d589309eacac1f8e2d9ef25786cd9883ba35c73b",
+    "proudauth-config.yaml": "b64dc196c69ce723fa12afabc2069ae99733dab2b9969c1a630b96cbde9c8dc3",
+    "seed-spec.json": "bf83a837ad7f9bb95d2f8767de2bfdaee2859ea89472307fd75227d04f511f04",
+    "summary.json": "4141e1fe77a263b36ac4a8bf54df86ca8fba8b7fcaab5e642517bc237ee6ed11",
+    "validation.txt": "b23226ae245242bf61645287b58a77adca5aba37bc9e3d5942ba8112e2aaa1c5"
+  }
+}

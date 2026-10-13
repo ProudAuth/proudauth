@@ -1,0 +1,40 @@
+identity-server: go1.27.1
+	path	github.com/proudauth/cmd/identity-server
+	mod	github.com/proudauth	(devel)	
+	dep	github.com/Azure/go-ntlmssp	v0.1.1	h1:l+FM/EEMb0U9QZE7mKNEDw5Mu3mFiaa2GKOoTSsNDPw=
+	dep	github.com/beevik/etree	v1.7.0	h1:xjBk9O4p4x7D1YajePjfLzdaFC4/uYUENA7P0pv6gXA=
+	dep	github.com/boombuler/barcode	v1.0.1-0.20190219062509-6c824513bacc	h1:biVzkmvwrH8WK8raXaxBx6fRVTlJILwEwQGL1I/ByEI=
+	dep	github.com/fxamacker/cbor/v2	v2.9.4	h1:xwjVlxEMR3S605oUlgBjKLTTeGFciYPGYCtF/35LKGo=
+	dep	github.com/go-asn1-ber/asn1-ber	v1.5.8	h1:H9AZkK22UOmfX8J84ubyaZxKJZ3FMHVwn8swoMML7iQ=
+	dep	github.com/go-jose/go-jose/v4	v4.1.5	h1:RjgjO2LOtWOJKUC5wpwY9LR3B3vwVAz6JS2YHfYU6eA=
+	dep	github.com/go-ldap/ldap/v3	v3.4.15	h1:eRB4f4Ecn1POL1mO86+uUDlecmyWsdiJwh60bAUS4UY=
+	dep	github.com/go-viper/mapstructure/v2	v2.5.0	h1:vM5IJoUAy3d7zRSVtIwQgBj7BiWtMPfmPEgAXnvj1Ro=
+	dep	github.com/go-webauthn/webauthn	v0.18.2	h1:0BeftmEHU7i3Dv0VFwBtidy/ba37Vcdjvqst9EYu8Sk=
+	dep	github.com/go-webauthn/x	v0.3.1	h1:1ff37z3XfmTTomkhlURgGizLIDyOvPgTt2t9nlzKLRo=
+	dep	github.com/golang-jwt/jwt/v5	v5.3.1	h1:kYf81DTWFe7t+1VvL7eS+jKFVWaUnK9cB1qbwn63YCY=
+	dep	github.com/google/go-tpm	v0.9.8	h1:slArAR9Ft+1ybZu0lBwpSmpwhRXaa85hWtMinMyRAWo=
+	dep	github.com/google/uuid	v1.6.0	h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+	dep	github.com/jackc/pgpassfile	v1.0.0	h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
+	dep	github.com/jackc/pgservicefile	v0.0.0-20240606120523-5a60cdf6a761	h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=
+	dep	github.com/jackc/pgx/v5	v5.11.0	h1:IzBBtyK9AHqf98cctWFifYSci2hgQR/cd56wB4p+ogg=
+	dep	github.com/jackc/puddle/v2	v2.2.2	h1:PR8nw+E/1w0GLuRFSmiioY6UooMp6KJv0/61nB7icHo=
+	dep	github.com/jonboulle/clockwork	v0.5.0	h1:Hyh9A8u51kptdkR+cqRpT1EebBwTn1oK9YfGYbdFz6I=
+	dep	github.com/oklog/ulid/v2	v2.1.2	h1:IEclFb9JNvzYA6MW2SCxbLzcHTVsfqm3PrqGQJH5zec=
+	dep	github.com/philhofer/fwd	v1.2.0	h1:e6DnBTl7vGY+Gz322/ASL4Gyp1FspeMvx1RNDoToZuM=
+	dep	github.com/pquerna/otp	v1.5.0	h1:NMMR+WrmaqXU4EzdGJEE1aUUI0AMRzsp96fFFWNPwxs=
+	dep	github.com/russellhaering/goxmldsig	v1.6.1	h1:SB7R5ttvrGIDB2juJAK/i7DQ2Ivr7agG+ohfNJjwyYU=
+	dep	github.com/tinylib/msgp	v1.6.4	h1:mOwYbyYDLPj35mkA2BjjYejgJk9BuHxDdvRnb6v2ZcQ=
+	dep	github.com/x448/float16	v0.8.4	h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
+	dep	golang.org/x/crypto	v0.58.0	h1:COkYLr4k7nDI4r6QtMML2AfzeIswWHAJthLS6K/M/54=
+	dep	golang.org/x/net	v0.61.0	h1:RR+6j/BTBCrggOLugxa+66R8FvoN6MHlzDlZIbN9YFw=
+	dep	golang.org/x/sync	v0.24.0	h1:iqiDrGoDgyuvAKrhLQthUEzU/R378N78gXbBjxed7oA=
+	dep	golang.org/x/sys	v0.49.0	h1:XbzkgYJHdqh/8m2Uu0W/dQv8nktxx4BFHp1M0gROTXA=
+	dep	golang.org/x/text	v0.43.0	h1:1QivrlhwAsnMOcqgOdl9my7s9OyZl8O5/UGUTJVXoWc=
+	dep	gopkg.in/yaml.v3	v3.0.1	h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
+	build	-buildmode=exe
+	build	-compiler=gc
+	build	-trimpath=true
+	build	CGO_ENABLED=1
+	build	GOARCH=arm64
+	build	GOOS=darwin
+	build	GOARM64=v8.0

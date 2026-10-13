@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/user.signed_in.v1.json",
+  "title": "user.signed_in (v1)",
+  "description": "A user completed an interactive sign-in and a grant was issued to a client. Emitted when an authorization transaction (authorization code or device authorization flow) completes: a browser session was created or reused, an authorization grant was issued and the user's last-login time recorded. Emitted once per completed transaction, so single sign-on into a further client with an existing session emits it again. org_id is set when an organization was selected during sign-in.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "user.signed_in"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "user_id",
+        "session_id",
+        "client_id"
+      ],
+      "properties": {
+        "user_id": {
+          "$ref": "envelope.v1.json#/$defs/user_id",
+          "description": "The signed-in user."
+        },
+        "session_id": {
+          "$ref": "envelope.v1.json#/$defs/session_id",
+          "description": "The browser session that was created or reused."
+        },
+        "client_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "The OAuth client_id of the client that started the sign-in (not the internal cli_ reference)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Set only when the event is bound to an organization (see description)."
+    }
+  },
+  "x-event-type": "user.signed_in",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/authentication/steps.go: (*Service).complete"
+  ],
+  "x-org-scoped": "optional",
+  "examples": [
+    {
+      "event_id": "obx_01jbzxtes653mqqbn1rhn3g4wf",
+      "event_type": "user.signed_in",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "org_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "session_id": "ses_01jb8wpw2e17k8cxa6pvtdb1yj",
+        "client_id": "app_01jb1jewe77b1wmng5radagj9r"
+      }
+    }
+  ]
+}

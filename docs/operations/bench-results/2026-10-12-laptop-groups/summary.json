@@ -1,0 +1,35 @@
+[
+  {
+    "scenario": "complex-group-filter",
+    "started": "2026-10-12T19:46:52Z",
+    "ended": "2026-10-12T19:49:39Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 222321,
+    "throughput_per_s": 3705.3,
+    "latency_ms": {
+      "mean": 8.63,
+      "p50": 6.91,
+      "p90": 15.36,
+      "p99": 29.7,
+      "p999": 69.63,
+      "max": 103.81
+    },
+    "outcomes": {
+      "bounded_false": 476,
+      "bounded_true": 475,
+      "invalid_filter_bytes": 475,
+      "invalid_filter_nodes": 475,
+      "rate_limited": 220420
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 166.5,
+      "identity_server": 91.3,
+      "identity_worker": 2.46,
+      "postgres_container": 143.86,
+      "docker_vm_and_proxy": 410,
+      "identity_bench": 51.35
+    }
+  }
+]

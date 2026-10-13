@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/user.suspended.v1.json",
+  "title": "user.suspended (v1)",
+  "description": "An account was suspended. Emitted whenever the account state becomes \"suspended\": an administrator (PATCH user state or POST /users/{user}/suspend), a bulk user operation (user.bulk job), the lifecycle job (scheduled deactivation or dormant accounts under lifecycle.dormant_action=suspend), or a denied registration review. All of the user's sessions and grants, including offline grants, are revoked in the same transaction (one session.revoked event with reason \"account_suspended\" per active session).",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "user.suspended"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "user_id",
+        "state"
+      ],
+      "properties": {
+        "user_id": {
+          "$ref": "envelope.v1.json#/$defs/user_id",
+          "description": "The user whose account state changed."
+        },
+        "state": {
+          "type": "string",
+          "const": "suspended",
+          "description": "The new account state."
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Never set for this event type by the current server."
+    }
+  },
+  "x-event-type": "user.suspended",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/identity/identity.go: (*Service).SetStateTx (administrator, bulk operations, lifecycle job, registration review)"
+  ],
+  "x-org-scoped": "never",
+  "examples": [
+    {
+      "event_id": "obx_01jbpvqzvwkfqqk8g1zm957y9h",
+      "event_type": "user.suspended",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "state": "suspended"
+      }
+    }
+  ]
+}

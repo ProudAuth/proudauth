@@ -1,0 +1,81 @@
+Validation outside measurement, before the corrected run:
+- GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local
+  GOFLAGS='-mod=readonly -buildvcs=false'; no downloads or Git commits.
+- Separate disposable PostgreSQL 18.6, OS-allocated loopback port:
+  go test ./... -race -count=1 -timeout=20m
+  PASS, including tests/e2e (638.856s) and tests/contract (30.188s).
+  This full run includes the empty-member-page fix and webhook scenarios,
+  before the later benchmark-only readiness change.
+- The empty membership regression failed before the server fix:
+  empty_members_test.go:20: empty page violates the array contract:
+  {"items":null,"next_cursor":""}
+  TestEmptyMembershipPagesAreArrays now checks the required array before
+  the first member and after removing the last one, with default and active
+  filters (API-004).
+- After the readiness change:
+  go test ./internal/bench ./cmd/identity-bench -race -count=1
+  PASS: 10.945s / 1.538s.
+  TestBenchWebhookReadinessCrossesSetupBacklog checks a delayed callback,
+  the shorter measured deadline and rejection of an abandoned cycle as
+  evidence for a later operation.
+- Separate disposable PostgreSQL 18.6:
+  go test ./tests/e2e -race -count=1 -timeout=5m
+  -run '^(TestBenchSuiteSmoke|TestTokenIssuanceBeyondConnectionPool|TestEmptyMembershipPagesAreArrays)$'
+  PASS: 56.096s. All 21 benchmark scenarios are exercised for correctness;
+  the smoke uses a fake clock for retries and measures no capacity.
+- go vet ./internal/bench ./cmd/identity-bench ./tests/e2e: PASS.
+- sh -n scripts/bench-local.sh and gofmt: PASS.
+- tests/contract/traceability_test.go remains unchanged, SHA-256:
+  a4564fc87fb47542dbee707892f4a01838dcdd6900e44bd05f096972026bfde6.
+
+The first full-cardinality run started measured webhook operations while
+seed events still awaited dispatch. All three scenarios failed; the first
+three soak windows failed and the last seven passed after the queue drained.
+Those results are retained under initial-attempt/, not relabelled as passes.
+The corrected tool prepares an untimed, public-API readiness cycle before
+warm-up, recording its elapsed time. Measured operations still time out
+after 30 seconds; default worker polling, batches and retry backoff remain.
+
+These local checks do not replace independent security review, a current
+vulnerability audit, remote HTTPS/provider tests, multiple delivery workers
+or tenants, multiple-node consistency evidence or a multi-hour soak.
+
+Completed corrected measurement and publication checks:
+- All three 60-second scenarios PASS, concurrency 32, warm-up 5s;
+  full seed-1 cardinalities. Source digest: 429a0fc8380c103d, version dev.
+- Ten one-minute mixed-delivery windows PASS with all twelve components:
+  24687 completed operations, 40.4-41.7 operations/s.
+  Every window confirms callback invariants and zero invalid callbacks.
+  SMTP receiver counts confirm completed emails, with no rejected sessions.
+- Actual retry waits, 300-second token renewal, signing-key activation,
+  retention task runs, VACUUM and pg_dump are recorded in the artifacts.
+  Retention task invocation does not prove removal of session rows under
+  the unchanged 30-day session retention.
+- Initial and corrected server/worker/CLI binary hashes match. Only the
+  benchmark tool changed. A preparation diagnostic recorded 18162 pending
+  seed events; the corrected readiness cycle took 344.370 seconds.
+- Final benchmark unit/race tests, including the real-listener preparation
+  lifecycle regression TestBenchWebhookPreparationCycleIsNotMeasured:
+  PASS, internal/bench 11.218s / cmd/identity-bench 1.572s. That regression
+  proves the untimed callback cycle exists and is excluded from operations.
+- Requirements traceability contract PASS: 0.910s. The protected contract
+  test remains unchanged at the SHA-256 recorded above.
+- Final scripts/check-secrets.sh and scripts/check-licenses.sh: PASS.
+- Both runner attempts compared all their published artifacts against the
+  private seed/client secrets, password, access/refresh tokens, database
+  passwords and root key before cleanup, and rejected connector tokens,
+  webhook signing secrets and private keys. No seed or credential file,
+  event payload or email contents are published.
+- Both attempts removed their own containers, volumes, host processes and
+  temporary credentials. Existing containers were not modified.
+- Publication verification PASS: 23 parsed JSON artifacts, three corrected
+  runs plus ten soak windows; operation/outcome/histogram totals, throughput
+  arithmetic, per-window receiver counts and every new documentation table
+  cell match the raw results. Initial FAIL verdicts remain unchanged.
+  A separate recursive scan found no connector token, webhook signing
+  secret, JWT, private key, seed file or administrator credential file.
+- Final vet and shell syntax checks PASS. Both own work directories and
+  test helpers were removed; no own container, volume or host process
+  remains. Source digest still matches the measured 429a0fc8380c103d.
+- artifact-sha256.json covers all 48 companion files (49 files in total
+  including the manifest). It excludes itself and includes both attempts.

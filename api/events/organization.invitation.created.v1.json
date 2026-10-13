@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/organization.invitation.created.v1.json",
+  "title": "organization.invitation.created (v1)",
+  "description": "An organization invitation was created. Emitted when an invitation to an organization is created (e-mail, existing-user or shared-link invitation). The recipient and the invitation secret are deliberately not included; fetch the invitation through the API if needed.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "organization.invitation.created"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. All members are identifiers or state, so the minimal and standard payload forms are identical.",
+      "required": [
+        "invitation_id"
+      ],
+      "properties": {
+        "invitation_id": {
+          "$ref": "envelope.v1.json#/$defs/invitation_id",
+          "description": "The new invitation."
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Always set for this event type."
+    }
+  },
+  "required": [
+    "org_id"
+  ],
+  "x-event-type": "organization.invitation.created",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/organization/invitations.go: (*Service).CreateInvitation"
+  ],
+  "x-org-scoped": "always",
+  "examples": [
+    {
+      "event_id": "obx_01jbpr1nnt1qpb2qsd7a40n88q",
+      "event_type": "organization.invitation.created",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "org_id": "org_01jb8wmw5drxrge3rmw4nf61x1",
+      "data": {
+        "invitation_id": "inv_01jbcsq7dzy8vhvy4z9323zmte"
+      }
+    }
+  ]
+}

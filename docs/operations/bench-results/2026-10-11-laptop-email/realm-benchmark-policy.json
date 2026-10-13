@@ -1,0 +1,25 @@
+{
+  "policy_revision": 2,
+  "version": 2,
+  "login": {
+    "identifiers": [
+      "email",
+      "username"
+    ],
+    "password": true,
+    "email_otp": false,
+    "magic_link": false,
+    "passkeys": true,
+    "sms_otp": false,
+    "remember_devices": false
+  },
+  "webauthn": {
+    "rp_id": "localhost",
+    "origins": [
+      "http://localhost:18591"
+    ],
+    "allow_synced": true,
+    "user_verification": "preferred"
+  },
+  "note": "login.passkeys enabled; RP ID localhost and explicit HTTP localhost origin; all other policy values preserved"
+}

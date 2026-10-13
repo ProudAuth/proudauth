@@ -1,0 +1,204 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "import",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T09:40:18.412447Z",
+  "duration_s": 60.005570583,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 73170,
+  "outcomes": {
+    "ok": 73170
+  },
+  "throughput_per_s": 1219.386788411434,
+  "latency_ms": {
+    "mean": 26.05840237802378,
+    "p50": 25.6,
+    "p90": 30.72,
+    "p99": 43.008,
+    "p999": 86.016,
+    "max": 483.524
+  },
+  "histogram": [
+    {
+      "le_ms": 18.432,
+      "count": 5
+    },
+    {
+      "le_ms": 19.456,
+      "count": 78
+    },
+    {
+      "le_ms": 20.48,
+      "count": 556
+    },
+    {
+      "le_ms": 21.504,
+      "count": 2527
+    },
+    {
+      "le_ms": 22.528,
+      "count": 6508
+    },
+    {
+      "le_ms": 23.552,
+      "count": 10656
+    },
+    {
+      "le_ms": 24.576,
+      "count": 11742
+    },
+    {
+      "le_ms": 25.6,
+      "count": 10364
+    },
+    {
+      "le_ms": 26.624,
+      "count": 8231
+    },
+    {
+      "le_ms": 27.648,
+      "count": 6378
+    },
+    {
+      "le_ms": 28.672,
+      "count": 4612
+    },
+    {
+      "le_ms": 29.696,
+      "count": 3215
+    },
+    {
+      "le_ms": 30.72,
+      "count": 2323
+    },
+    {
+      "le_ms": 31.744,
+      "count": 1575
+    },
+    {
+      "le_ms": 32.768,
+      "count": 1064
+    },
+    {
+      "le_ms": 34.816,
+      "count": 1258
+    },
+    {
+      "le_ms": 36.864,
+      "count": 665
+    },
+    {
+      "le_ms": 38.912,
+      "count": 377
+    },
+    {
+      "le_ms": 40.96,
+      "count": 236
+    },
+    {
+      "le_ms": 43.008,
+      "count": 195
+    },
+    {
+      "le_ms": 45.056,
+      "count": 122
+    },
+    {
+      "le_ms": 47.104,
+      "count": 77
+    },
+    {
+      "le_ms": 49.152,
+      "count": 73
+    },
+    {
+      "le_ms": 51.2,
+      "count": 46
+    },
+    {
+      "le_ms": 53.248,
+      "count": 34
+    },
+    {
+      "le_ms": 55.296,
+      "count": 23
+    },
+    {
+      "le_ms": 57.344,
+      "count": 24
+    },
+    {
+      "le_ms": 59.392,
+      "count": 12
+    },
+    {
+      "le_ms": 61.44,
+      "count": 11
+    },
+    {
+      "le_ms": 63.488,
+      "count": 22
+    },
+    {
+      "le_ms": 65.536,
+      "count": 15
+    },
+    {
+      "le_ms": 69.632,
+      "count": 7
+    },
+    {
+      "le_ms": 73.728,
+      "count": 9
+    },
+    {
+      "le_ms": 77.824,
+      "count": 20
+    },
+    {
+      "le_ms": 81.92,
+      "count": 33
+    },
+    {
+      "le_ms": 86.016,
+      "count": 25
+    },
+    {
+      "le_ms": 90.112,
+      "count": 11
+    },
+    {
+      "le_ms": 94.208,
+      "count": 8
+    },
+    {
+      "le_ms": 98.304,
+      "count": 1
+    },
+    {
+      "le_ms": 409.6,
+      "count": 3
+    },
+    {
+      "le_ms": 425.984,
+      "count": 12
+    },
+    {
+      "le_ms": 475.136,
+      "count": 16
+    },
+    {
+      "le_ms": 491.52,
+      "count": 1
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  }
+}

@@ -1,0 +1,695 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "mixed-email",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T12:50:42.729448Z",
+  "duration_s": 60.000302125,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 10224,
+  "outcomes": {
+    "audit-query:ok": 502,
+    "client-credentials:ok": 2538,
+    "email-delivery:ok": 994,
+    "import:ok": 504,
+    "introspection:ok": 1544,
+    "passkey-assertion:ok": 519,
+    "password-login:ok": 492,
+    "policy:ok": 1537,
+    "refresh:ok": 1082,
+    "scim:ok": 512
+  },
+  "throughput_per_s": 170.39914196932054,
+  "latency_ms": {
+    "mean": 185.640436228482,
+    "p50": 19.456,
+    "p90": 360.448,
+    "p99": 2359.296,
+    "p999": 3145.728,
+    "max": 3581.059
+  },
+  "histogram": [
+    {
+      "le_ms": 2.176,
+      "count": 1
+    },
+    {
+      "le_ms": 2.304,
+      "count": 2
+    },
+    {
+      "le_ms": 2.432,
+      "count": 1
+    },
+    {
+      "le_ms": 2.688,
+      "count": 1
+    },
+    {
+      "le_ms": 2.816,
+      "count": 2
+    },
+    {
+      "le_ms": 2.944,
+      "count": 4
+    },
+    {
+      "le_ms": 3.072,
+      "count": 5
+    },
+    {
+      "le_ms": 3.2,
+      "count": 3
+    },
+    {
+      "le_ms": 3.328,
+      "count": 12
+    },
+    {
+      "le_ms": 3.456,
+      "count": 6
+    },
+    {
+      "le_ms": 3.584,
+      "count": 12
+    },
+    {
+      "le_ms": 3.712,
+      "count": 13
+    },
+    {
+      "le_ms": 3.84,
+      "count": 15
+    },
+    {
+      "le_ms": 3.968,
+      "count": 13
+    },
+    {
+      "le_ms": 4.096,
+      "count": 15
+    },
+    {
+      "le_ms": 4.352,
+      "count": 33
+    },
+    {
+      "le_ms": 4.608,
+      "count": 37
+    },
+    {
+      "le_ms": 4.864,
+      "count": 45
+    },
+    {
+      "le_ms": 5.12,
+      "count": 58
+    },
+    {
+      "le_ms": 5.376,
+      "count": 57
+    },
+    {
+      "le_ms": 5.632,
+      "count": 59
+    },
+    {
+      "le_ms": 5.888,
+      "count": 64
+    },
+    {
+      "le_ms": 6.144,
+      "count": 61
+    },
+    {
+      "le_ms": 6.4,
+      "count": 68
+    },
+    {
+      "le_ms": 6.656,
+      "count": 68
+    },
+    {
+      "le_ms": 6.912,
+      "count": 96
+    },
+    {
+      "le_ms": 7.168,
+      "count": 77
+    },
+    {
+      "le_ms": 7.424,
+      "count": 92
+    },
+    {
+      "le_ms": 7.68,
+      "count": 77
+    },
+    {
+      "le_ms": 7.936,
+      "count": 84
+    },
+    {
+      "le_ms": 8.192,
+      "count": 99
+    },
+    {
+      "le_ms": 8.704,
+      "count": 199
+    },
+    {
+      "le_ms": 9.216,
+      "count": 219
+    },
+    {
+      "le_ms": 9.728,
+      "count": 206
+    },
+    {
+      "le_ms": 10.24,
+      "count": 207
+    },
+    {
+      "le_ms": 10.752,
+      "count": 190
+    },
+    {
+      "le_ms": 11.264,
+      "count": 198
+    },
+    {
+      "le_ms": 11.776,
+      "count": 189
+    },
+    {
+      "le_ms": 12.288,
+      "count": 211
+    },
+    {
+      "le_ms": 12.8,
+      "count": 192
+    },
+    {
+      "le_ms": 13.312,
+      "count": 167
+    },
+    {
+      "le_ms": 13.824,
+      "count": 224
+    },
+    {
+      "le_ms": 14.336,
+      "count": 174
+    },
+    {
+      "le_ms": 14.848,
+      "count": 171
+    },
+    {
+      "le_ms": 15.36,
+      "count": 201
+    },
+    {
+      "le_ms": 15.872,
+      "count": 186
+    },
+    {
+      "le_ms": 16.384,
+      "count": 185
+    },
+    {
+      "le_ms": 17.408,
+      "count": 288
+    },
+    {
+      "le_ms": 18.432,
+      "count": 303
+    },
+    {
+      "le_ms": 19.456,
+      "count": 297
+    },
+    {
+      "le_ms": 20.48,
+      "count": 263
+    },
+    {
+      "le_ms": 21.504,
+      "count": 248
+    },
+    {
+      "le_ms": 22.528,
+      "count": 223
+    },
+    {
+      "le_ms": 23.552,
+      "count": 204
+    },
+    {
+      "le_ms": 24.576,
+      "count": 186
+    },
+    {
+      "le_ms": 25.6,
+      "count": 178
+    },
+    {
+      "le_ms": 26.624,
+      "count": 154
+    },
+    {
+      "le_ms": 27.648,
+      "count": 117
+    },
+    {
+      "le_ms": 28.672,
+      "count": 106
+    },
+    {
+      "le_ms": 29.696,
+      "count": 89
+    },
+    {
+      "le_ms": 30.72,
+      "count": 97
+    },
+    {
+      "le_ms": 31.744,
+      "count": 75
+    },
+    {
+      "le_ms": 32.768,
+      "count": 74
+    },
+    {
+      "le_ms": 34.816,
+      "count": 135
+    },
+    {
+      "le_ms": 36.864,
+      "count": 94
+    },
+    {
+      "le_ms": 38.912,
+      "count": 79
+    },
+    {
+      "le_ms": 40.96,
+      "count": 73
+    },
+    {
+      "le_ms": 43.008,
+      "count": 63
+    },
+    {
+      "le_ms": 45.056,
+      "count": 44
+    },
+    {
+      "le_ms": 47.104,
+      "count": 52
+    },
+    {
+      "le_ms": 49.152,
+      "count": 28
+    },
+    {
+      "le_ms": 51.2,
+      "count": 26
+    },
+    {
+      "le_ms": 53.248,
+      "count": 31
+    },
+    {
+      "le_ms": 55.296,
+      "count": 31
+    },
+    {
+      "le_ms": 57.344,
+      "count": 29
+    },
+    {
+      "le_ms": 59.392,
+      "count": 29
+    },
+    {
+      "le_ms": 61.44,
+      "count": 21
+    },
+    {
+      "le_ms": 63.488,
+      "count": 22
+    },
+    {
+      "le_ms": 65.536,
+      "count": 20
+    },
+    {
+      "le_ms": 69.632,
+      "count": 43
+    },
+    {
+      "le_ms": 73.728,
+      "count": 48
+    },
+    {
+      "le_ms": 77.824,
+      "count": 41
+    },
+    {
+      "le_ms": 81.92,
+      "count": 38
+    },
+    {
+      "le_ms": 86.016,
+      "count": 31
+    },
+    {
+      "le_ms": 90.112,
+      "count": 32
+    },
+    {
+      "le_ms": 94.208,
+      "count": 44
+    },
+    {
+      "le_ms": 98.304,
+      "count": 36
+    },
+    {
+      "le_ms": 102.4,
+      "count": 42
+    },
+    {
+      "le_ms": 106.496,
+      "count": 49
+    },
+    {
+      "le_ms": 110.592,
+      "count": 47
+    },
+    {
+      "le_ms": 114.688,
+      "count": 34
+    },
+    {
+      "le_ms": 118.784,
+      "count": 40
+    },
+    {
+      "le_ms": 122.88,
+      "count": 26
+    },
+    {
+      "le_ms": 126.976,
+      "count": 25
+    },
+    {
+      "le_ms": 131.072,
+      "count": 31
+    },
+    {
+      "le_ms": 139.264,
+      "count": 32
+    },
+    {
+      "le_ms": 147.456,
+      "count": 26
+    },
+    {
+      "le_ms": 155.648,
+      "count": 5
+    },
+    {
+      "le_ms": 163.84,
+      "count": 4
+    },
+    {
+      "le_ms": 172.032,
+      "count": 1
+    },
+    {
+      "le_ms": 180.224,
+      "count": 7
+    },
+    {
+      "le_ms": 188.416,
+      "count": 3
+    },
+    {
+      "le_ms": 196.608,
+      "count": 1
+    },
+    {
+      "le_ms": 204.8,
+      "count": 3
+    },
+    {
+      "le_ms": 212.992,
+      "count": 7
+    },
+    {
+      "le_ms": 221.184,
+      "count": 4
+    },
+    {
+      "le_ms": 229.376,
+      "count": 6
+    },
+    {
+      "le_ms": 237.568,
+      "count": 4
+    },
+    {
+      "le_ms": 245.76,
+      "count": 3
+    },
+    {
+      "le_ms": 253.952,
+      "count": 7
+    },
+    {
+      "le_ms": 262.144,
+      "count": 6
+    },
+    {
+      "le_ms": 278.528,
+      "count": 13
+    },
+    {
+      "le_ms": 294.912,
+      "count": 63
+    },
+    {
+      "le_ms": 311.296,
+      "count": 118
+    },
+    {
+      "le_ms": 327.68,
+      "count": 130
+    },
+    {
+      "le_ms": 344.064,
+      "count": 114
+    },
+    {
+      "le_ms": 360.448,
+      "count": 63
+    },
+    {
+      "le_ms": 376.832,
+      "count": 20
+    },
+    {
+      "le_ms": 393.216,
+      "count": 4
+    },
+    {
+      "le_ms": 409.6,
+      "count": 1
+    },
+    {
+      "le_ms": 557.056,
+      "count": 2
+    },
+    {
+      "le_ms": 589.824,
+      "count": 3
+    },
+    {
+      "le_ms": 655.36,
+      "count": 1
+    },
+    {
+      "le_ms": 688.128,
+      "count": 15
+    },
+    {
+      "le_ms": 720.896,
+      "count": 1
+    },
+    {
+      "le_ms": 786.432,
+      "count": 33
+    },
+    {
+      "le_ms": 819.2,
+      "count": 4
+    },
+    {
+      "le_ms": 884.736,
+      "count": 20
+    },
+    {
+      "le_ms": 917.504,
+      "count": 48
+    },
+    {
+      "le_ms": 950.272,
+      "count": 2
+    },
+    {
+      "le_ms": 983.04,
+      "count": 11
+    },
+    {
+      "le_ms": 1015.808,
+      "count": 77
+    },
+    {
+      "le_ms": 1048.576,
+      "count": 18
+    },
+    {
+      "le_ms": 1114.112,
+      "count": 46
+    },
+    {
+      "le_ms": 1179.648,
+      "count": 62
+    },
+    {
+      "le_ms": 1245.184,
+      "count": 61
+    },
+    {
+      "le_ms": 1310.72,
+      "count": 33
+    },
+    {
+      "le_ms": 1376.256,
+      "count": 54
+    },
+    {
+      "le_ms": 1441.792,
+      "count": 29
+    },
+    {
+      "le_ms": 1507.328,
+      "count": 30
+    },
+    {
+      "le_ms": 1572.864,
+      "count": 49
+    },
+    {
+      "le_ms": 1638.4,
+      "count": 30
+    },
+    {
+      "le_ms": 1703.936,
+      "count": 30
+    },
+    {
+      "le_ms": 1769.472,
+      "count": 49
+    },
+    {
+      "le_ms": 1835.008,
+      "count": 16
+    },
+    {
+      "le_ms": 1900.544,
+      "count": 57
+    },
+    {
+      "le_ms": 1966.08,
+      "count": 23
+    },
+    {
+      "le_ms": 2031.616,
+      "count": 24
+    },
+    {
+      "le_ms": 2097.152,
+      "count": 20
+    },
+    {
+      "le_ms": 2228.224,
+      "count": 26
+    },
+    {
+      "le_ms": 2359.296,
+      "count": 20
+    },
+    {
+      "le_ms": 2490.368,
+      "count": 29
+    },
+    {
+      "le_ms": 2621.44,
+      "count": 24
+    },
+    {
+      "le_ms": 2752.512,
+      "count": 16
+    },
+    {
+      "le_ms": 2883.584,
+      "count": 5
+    },
+    {
+      "le_ms": 3014.656,
+      "count": 11
+    },
+    {
+      "le_ms": 3145.728,
+      "count": 9
+    },
+    {
+      "le_ms": 3276.8,
+      "count": 3
+    },
+    {
+      "le_ms": 3407.872,
+      "count": 1
+    },
+    {
+      "le_ms": 3538.944,
+      "count": 1
+    },
+    {
+      "le_ms": 3670.016,
+      "count": 1
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "weights: client-credentials 25, introspection 15, policy 15, refresh 10, password-login 5, audit-query 5, passkey-assertion 5, scim 5, import 5, email-delivery 10",
+    "software ES256 discoverable passkeys: 32 additional isolated users/credentials, registered before warm-up; per-worker counters; none attestation; UP/UV asserted by software",
+    "one operation: headless transaction, discoverable assertion options, signed assertion verification, authorization-code/PKCE exchange; excludes browser/device latency",
+    "32 additional isolated connectors in the large organization, one per worker; default 1200 requests/minute per connector unchanged",
+    "one operation: SCIM user create, read, ETag-bound displayName patch, delete, and read expecting 404; no email or existing-user adoption",
+    "cycle starts paced >=300ms apart per connector (<=1000 requests/minute); pacing is included in latency, so this measures a budgeted lifecycle workload rather than saturation throughput",
+    "one operation: POST /notification-tests then poll the exact job until accepted by the SMTP adapter; provider acceptance does not prove inbox delivery",
+    "100 ms polling is included in latency and API/database load; one realm and one verified administrator destination; worker tenant shares and send budgets are unchanged"
+  ]
+}

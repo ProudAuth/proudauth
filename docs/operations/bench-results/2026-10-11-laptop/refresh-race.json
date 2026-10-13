@@ -1,0 +1,92 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "refresh-race",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-11T09:45:47.631228Z",
+  "duration_s": 60.000961958,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 1856,
+  "outcomes": {
+    "ok": 1856
+  },
+  "throughput_per_s": 30.932837398493366,
+  "latency_ms": {
+    "mean": 1026.510255387931,
+    "p50": 1015.808,
+    "p90": 1179.648,
+    "p99": 1376.256,
+    "p999": 1593.666,
+    "max": 1593.666
+  },
+  "histogram": [
+    {
+      "le_ms": 851.968,
+      "count": 3
+    },
+    {
+      "le_ms": 884.736,
+      "count": 23
+    },
+    {
+      "le_ms": 917.504,
+      "count": 82
+    },
+    {
+      "le_ms": 950.272,
+      "count": 218
+    },
+    {
+      "le_ms": 983.04,
+      "count": 326
+    },
+    {
+      "le_ms": 1015.808,
+      "count": 369
+    },
+    {
+      "le_ms": 1048.576,
+      "count": 232
+    },
+    {
+      "le_ms": 1114.112,
+      "count": 349
+    },
+    {
+      "le_ms": 1179.648,
+      "count": 121
+    },
+    {
+      "le_ms": 1245.184,
+      "count": 71
+    },
+    {
+      "le_ms": 1310.72,
+      "count": 36
+    },
+    {
+      "le_ms": 1376.256,
+      "count": 18
+    },
+    {
+      "le_ms": 1441.792,
+      "count": 6
+    },
+    {
+      "le_ms": 1638.4,
+      "count": 2
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "notes": [
+    "warm-up used benign discovery requests only, so the measured budgets started intact",
+    "invariant_violation_N_successes: N != 1 attempts succeeded although every attempt reached the token endpoint; inconclusive_rate_limited / inconclusive_http_5xx / inconclusive_transport_error: no attempt succeeded and some were rate limited, failed on the server or in transport, so the race did not test the invariant; one_success_with_http_5xx / one_success_with_transport_error: one attempt succeeded and others failed on the server or in transport"
+  ]
+}

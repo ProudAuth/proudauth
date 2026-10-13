@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://auth.proudbase.com/schemas/events/user.created.v1.json",
+  "title": "user.created (v1)",
+  "description": "A user account was created: self-service registration, administrator creation, invitation acceptance, just-in-time federation provisioning, or import. created_via names the path. org_id is never set; organization membership is reported separately by organization.membership.added.",
+  "type": "object",
+  "allOf": [
+    {
+      "$ref": "envelope.v1.json"
+    }
+  ],
+  "properties": {
+    "event_type": {
+      "const": "user.created"
+    },
+    "event_version": {
+      "const": 1
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data. Minimal payload form (the subscription default) omits: created_via. Standard form contains every listed member.",
+      "required": [
+        "user_id"
+      ],
+      "properties": {
+        "user_id": {
+          "$ref": "envelope.v1.json#/$defs/user_id",
+          "description": "The new user."
+        },
+        "created_via": {
+          "type": "string",
+          "description": "How the account was created, e.g. registration, admin, invitation, federation, bootstrap, or import:<source_system> for user imports. Standard payload form only: removed in the minimal form.",
+          "x-payload-form": "standard"
+        }
+      },
+      "additionalProperties": false
+    },
+    "org_id": {
+      "description": "Never set for this event type by the current server."
+    }
+  },
+  "x-event-type": "user.created",
+  "x-subscribable": true,
+  "x-emitted-by": [
+    "internal/identity/identity.go: (*Service).CreateTx"
+  ],
+  "x-org-scoped": "never",
+  "examples": [
+    {
+      "event_id": "obx_01jbjxmbk5858jc2errhktdwwf",
+      "event_type": "user.created",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d",
+        "created_via": "registration"
+      }
+    },
+    {
+      "event_id": "obx_01jbjxmbk5858jc2errhktdwwf",
+      "event_type": "user.created",
+      "event_version": 1,
+      "occurred_at": "2026-10-10T12:10:00.123456789Z",
+      "realm_id": "rlm_01jbxe2ktygrnsjxt1j8etsahj",
+      "data": {
+        "user_id": "usr_01jb4rsd73q99h2e30n9ak6n8d"
+      }
+    }
+  ]
+}
