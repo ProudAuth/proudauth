@@ -6,8 +6,10 @@ archive. Copy `.env.example` for production, or run `./init.sh demo` for local
 evaluation. Python 3.9+ safely parses the file; it never executes it as shell
 code. Values are literal `NAME=value`, with optional matching quotes. Do not
 use shell commands, variable interpolation or multiline values. Duplicate and
-unknown variables are refused. `init.sh` applies defaults for omitted fields;
-keep the supplied complete example when editing it.
+unknown variables are refused. Keep the supplied complete example when editing
+it: `PROUDAUTH_IMAGE` must be present in `.env` for Compose. The initializer
+uses defaults while generating configuration; it does not fill missing fields
+back into `.env` for Compose.
 
 `.env` has mode 0600. It contains deployment settings and SMTP account names,
 but no root key, database password, SMTP password, administrator password or
@@ -19,7 +21,7 @@ initialization refuses the example public origin, SMTP host and sender.
 | Variable | Production default | Required / behavior |
 | --- | --- | --- |
 | `COMPOSE_PROJECT_NAME` | `proudauth` | Compose resource prefix; choose a unique lowercase name for independent installations. Changing it selects a different volume, not a migration. Demo defaults to `proudauth-demo`. |
-| `PROUDAUTH_IMAGE` | `ghcr.io/proudbase/proudauth:0.2.0-alpha.1` | Explicit published image tag or verified digest. The Docker Hub mirror is `docker.io/mohamadalialghanem/proudauth:0.2.0-alpha.1`; check the release page for its published digest. Avoid `latest`; multi-architecture images select the host automatically. |
+| `PROUDAUTH_IMAGE` | `ghcr.io/proudbase/proudauth:0.2.0-alpha.1` | **Required in `.env`.** Explicit published image tag or verified digest. The Docker Hub mirror is `docker.io/mohamadalialghanem/proudauth:0.2.0-alpha.1`; check the release page for its published digest. Avoid `latest`; multi-architecture images select the host automatically. |
 | `POSTGRES_IMAGE` | `postgres:18.6` | Explicit PostgreSQL image version or digest. Do not change major versions on an existing volume without a supported database upgrade. |
 | `DEPLOYMENT_PROFILE` | `production` | `production` enables HTTPS/SMTP; `demo` enables the loopback-only development email sink and development cookies. |
 | `PROUDAUTH_PUBLIC_ORIGIN` | `https://identity.example.com` | **Replace for production.** Your canonical HTTPS origin without a path, query or credentials. Demo uses `http://localhost:8080`. Stored realm issuers do not change when this setting changes. |

@@ -53,6 +53,7 @@ the maintained `docker-compose.yaml`, adjacent `.env` examples and initializer:
 tar -xzf proudauth-v0.2.0-alpha.1-compose.tar.gz
 cd proudauth-v0.2.0-alpha.1-compose
 ./init.sh demo
+# This quickstart uses the default host ports 8080 and 9090.
 docker compose config --quiet
 docker compose pull
 docker compose up -d --wait
@@ -66,7 +67,14 @@ docker compose exec server /usr/local/bin/identity-cli login \
   --url http://localhost:8080 --realm main
 ```
 
-The demo uses loopback HTTP and a private email sink. For production, copy
+The demo uses loopback HTTP and a private email sink. At the first login prompt,
+use the bootstrap username `root-admin`; its email is not a sign-in identifier
+until verified.
+If you change the demo public port, complete setup/login with the
+[released host CLI](deploy/release/README.md#nondefault-local-ports) using the
+exact configured origin; container-local port 8080 is not a substitute issuer.
+
+For production, copy
 `.env.example` to `.env`, set **your** HTTPS issuer and real SMTP settings, store
 your SMTP password in the private file and run `./init.sh production`.
 The production profile uses Secure cookies, file-backed secrets and separate

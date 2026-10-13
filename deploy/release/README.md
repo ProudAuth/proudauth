@@ -77,7 +77,8 @@ docker compose config --quiet
 docker compose pull
 docker compose up -d --wait
 docker compose ps
-curl --fail http://localhost:8080/health/ready
+PA_ORIGIN=$(python3 -c 'import json; print(json.load(open("config.yaml"))["server"]["public_origin"])')
+curl --fail "$PA_ORIGIN/health/ready"
 ```
 
 This profile uses HTTP, development cookies and a private development email
@@ -91,15 +92,24 @@ Create your realm once, then bootstrap its first administrator:
 docker compose exec server /usr/local/bin/identity-cli realm-create -name main
 docker compose exec server /usr/local/bin/identity-cli bootstrap \
   -realm main -email admin@example.test -username root-admin
+```
+
+With the default public port **8080**, complete setup inside the server
+container as follows. For any other public port, use the host CLI instructions
+below instead; keep its URL equal to the canonical origin from `.env`.
+
+```sh
 docker compose exec server /usr/local/bin/identity-cli setup-account \
-  --url http://localhost:8080 --realm main
+  --url "$PA_ORIGIN" --realm main
 docker compose exec server /usr/local/bin/identity-cli login \
-  --url http://localhost:8080 --realm main
+  --url "$PA_ORIGIN" --realm main
 ```
 
 Keep the printed one-time setup token private. The setup command asks for it
 and a new password; there is no default administrator password. First sign-in
-requires TOTP enrollment and an email verification code. Store recovery codes
+uses the bootstrap username `root-admin`; the email becomes a sign-in
+identifier only after verification. Sign-in requires TOTP enrollment and an
+email verification code. Store recovery codes
 offline. For the demo, read your verification messages only from the host's
 private operator mailbox at
 `http://127.0.0.1:9090/dev/mailbox?realm=main&recipient=admin@example.test`.
@@ -109,6 +119,59 @@ The initial realm creates a CLI client and signing key. Discovery becomes
 available at `http://localhost:8080/realms/main/.well-known/openid-configuration`.
 `realm-create` and `bootstrap` are one-time operator actions; repeating either
 on an initialized realm is refused. Ordinary restarts preserve the realm.
+
+## Nondefault local ports
+
+For example, these settings use host ports 18080 and 19090:
+
+```dotenv
+PUBLIC_PORT=18080
+OPERATOR_PORT=19090
+PROUDAUTH_PUBLIC_ORIGIN=http://localhost:18080
+```
+
+Choose these ports and origin in `.env` **before** `realm-create` and bootstrap;
+run `./init.sh demo` and start the stack. Changing the public origin does not
+rewrite an existing realm's issuer. For a different origin after creating a
+realm, use a fresh demo installation directory and unique Compose project name.
+The server still listens on **8080 inside its container**. A CLI run there cannot
+reach its own loopback port 18080; switching its URL to 8080 would derive a
+different administrator resource audience from the realm's stored issuer.
+Run the released CLI **on the host** for setup and login, using the exact
+canonical origin. Operator commands `realm-create` and `bootstrap` still run
+inside the server container as above.
+
+The release provides `identity-cli_linux_amd64`, `identity-cli_linux_arm64`,
+`identity-cli_darwin_amd64` and `identity-cli_darwin_arm64`. These commands choose
+your Linux/macOS asset, download it and verify its checksum before execution:
+
+```sh
+case "$(uname -s)" in Linux) PA_CLI_OS=linux;; Darwin) PA_CLI_OS=darwin;; *) echo 'Use Linux/macOS, or WSL2 on Windows'; exit 1;; esac
+case "$(uname -m)" in x86_64|amd64) PA_CLI_ARCH=amd64;; arm64|aarch64) PA_CLI_ARCH=arm64;; *) echo 'Unsupported architecture'; exit 1;; esac
+PA_CLI_ASSET="identity-cli_${PA_CLI_OS}_${PA_CLI_ARCH}"
+PA_RELEASE_URL=https://github.com/proudbase/proudauth/releases/download/v0.2.0-alpha.1
+curl --fail --location --output "$PA_CLI_ASSET" "$PA_RELEASE_URL/$PA_CLI_ASSET"
+curl --fail --location --output RELEASE_SHA256SUMS "$PA_RELEASE_URL/SHA256SUMS"
+python3 - "$PA_CLI_ASSET" <<'PY'
+import hashlib, pathlib, sys
+name = sys.argv[1]
+lines = pathlib.Path('RELEASE_SHA256SUMS').read_text().splitlines()
+expected = next(line.split()[0] for line in lines if line.split()[-1].lstrip('*') == name)
+assert hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest() == expected, 'CLI checksum mismatch'
+print('CLI checksum verified')
+PY
+chmod 700 "$PA_CLI_ASSET"
+PA_ORIGIN=$(python3 -c 'import json; print(json.load(open("config.yaml"))["server"]["public_origin"])')
+"./$PA_CLI_ASSET" setup-account --url "$PA_ORIGIN" --realm main
+"./$PA_CLI_ASSET" login --url "$PA_ORIGIN" --realm main
+curl --fail "$PA_ORIGIN/health/ready"
+```
+
+Use your configured realm name instead of `main` when changed. For this
+example, verification email is at the **host's** private operator mailbox:
+`http://127.0.0.1:19090/dev/mailbox?realm=main&recipient=admin@example.test`.
+Use your configured `OPERATOR_PORT` in that URL. Host CLI credentials are stored
+with mode 0600 in your user configuration directory; keep them private.
 
 ## Production configuration
 
