@@ -1,3 +1,14 @@
+<p align="center">
+  <a href="https://proudauth.com"><img src="https://raw.githubusercontent.com/ProudAuth/.github/main/assets/banner-proudauth.png" alt="ProudAuth: your identity server. Free. Private. Yours." width="100%"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/ProudAuth/proudauth/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/ProudAuth/proudauth?include_prereleases&label=release&style=for-the-badge&labelColor=06120e&color=3ee6b0"></a>
+  <a href="https://github.com/ProudAuth/proudauth/pkgs/container/proudauth"><img alt="Docker image" src="https://img.shields.io/badge/docker-ghcr.io%2Fproudauth%2Fproudauth-3ee6b0?logo=docker&logoColor=3ee6b0&style=for-the-badge&labelColor=06120e"></a>
+  <a href="https://github.com/ProudAuth/proudauth/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ProudAuth/proudauth/ci.yml?branch=main&label=ci&style=for-the-badge&labelColor=06120e"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-3ee6b0?style=for-the-badge&labelColor=06120e"></a>
+</p>
+
 # ProudAuth
 
 **Your own identity server. Free, private and on your infrastructure.**
