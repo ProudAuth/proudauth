@@ -9,51 +9,33 @@ they are listed under **Changed** or **Removed** with migration notes.
 Security fixes name the affected versions and link the advisory (QA-008,
 GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 
-## [0.2.0-alpha.1] - 2026-10-13
+## [Unreleased]
 
-### Added
+No changes recorded after 0.2.0-alpha.4.
 
-- First public pre-release under `proudbase/proudauth`: versioned Linux/macOS
-  binaries, a multi-architecture Linux amd64/arm64 container image, source and
-  per-platform image SBOMs, release checksums, keyless image signatures and
-  GitHub build-provenance attestations (DEP-003, SEC-016, GOV-005).
-- Source-free Docker Compose installer with complete adjacent `.env`
-  documentation, production HTTPS/SMTP and loopback-only demo profiles,
-  stable file-backed keys, PostgreSQL 18.6, separated migration/runtime roles
-  and one-time administrator bootstrap (DEP-002, DEP-004, DEP-006, OPS-013).
-- Independent public Go, Node/TypeScript, Dart, PHP and .NET SDK repositories,
-  with standalone CI and a pinned Go SDK dependency. Project information and
-  documentation are maintained separately in `proudauth-website`.
-- Measured laptop capacity/adversarial/soak and restore evidence carried into
-  the public service repository with explicit build provenance and sizing
-  caveats (NFR-003..NFR-008, DEP-019, OPS-007).
+## [0.2.0-alpha.4] - 2026-10-15
 
 ### Changed
 
-- Go module path is now `github.com/proudbase/proudauth`; applications import
-  Go SDK packages from `github.com/proudbase/proudauth-sdk-go`. SDK source no
-  longer ships inside the service tree; package/registry publication remains
-  distinct from repository publication.
-- Release publication reuses successful main CI only for the exact tagged
-  commit, otherwise running the full reusable CI before publishing.
-- GitHub Container Registry is the automated organization-owned registry;
-  the Docker Hub mirror is published separately by the maintainer.
+- The Docker quickstart offers two setups, development first: ProudAuth with
+  PostgreSQL, Mailpit and Swagger UI on one machine, ready as is, then the
+  production files. A test keeps both identical to `deploy/dev` and
+  `deploy/prod` (DEP-002).
+- `deploy/dev` runs the released image named in its `.env`, so its two files
+  work without a checkout; Swagger UI reads the API contract from
+  proudauth.com. `make dev` builds the checkout as `proudauth:dev` and runs the
+  same stack on it.
+- The README opens with the ProudAuth banner and badges.
 
 ### Fixed
 
-- Deployment initialization rejects accidental public demo bindings, mismatched
-  demo issuer ports, globally trusted proxy ranges and invalid pool capacity.
-  Repeated initialization preserves credentials and mounted secret inodes.
-- Offline and Compose release archives exclude generated environment files,
-  secret directories, installed configuration and initializer locks.
-
-This is a pre-release, with no completed external security review or conformance
-certification. Existing benchmark numbers describe their recorded development
-builds and are not guarantees for this release.
-
-## [Unreleased]
-
-No changes recorded after 0.2.0-alpha.3.
+- The administrator example used the reserved username `admin`, which
+  `identity-cli bootstrap` refuses; it is now `owner`.
+- `identity-bench` no longer sends a token in the last tenth of its lifetime
+  (it waits for the renewal instead) and counts the lifetime from the token
+  request, so a slow network does not turn renewals into `401`s. A refresh
+  still running when the command ends is awaited before the credentials file
+  is reported saved, so the file never keeps a spent refresh token.
 
 ## [0.2.0-alpha.3] - 2026-10-15
 
@@ -136,6 +118,48 @@ No changes recorded after 0.2.0-alpha.3.
   `config.yaml`, `config.tunnel.yaml`, its Compose file and the copied OpenAPI
   file). Use `deploy/dev/` instead; Swagger UI there reads `api/openapi/`
   directly.
+
+## [0.2.0-alpha.1] - 2026-10-13
+
+### Added
+
+- First public pre-release under `proudbase/proudauth`: versioned Linux/macOS
+  binaries, a multi-architecture Linux amd64/arm64 container image, source and
+  per-platform image SBOMs, release checksums, keyless image signatures and
+  GitHub build-provenance attestations (DEP-003, SEC-016, GOV-005).
+- Source-free Docker Compose installer with complete adjacent `.env`
+  documentation, production HTTPS/SMTP and loopback-only demo profiles,
+  stable file-backed keys, PostgreSQL 18.6, separated migration/runtime roles
+  and one-time administrator bootstrap (DEP-002, DEP-004, DEP-006, OPS-013).
+- Independent public Go, Node/TypeScript, Dart, PHP and .NET SDK repositories,
+  with standalone CI and a pinned Go SDK dependency. Project information and
+  documentation are maintained separately in `proudauth-website`.
+- Measured laptop capacity/adversarial/soak and restore evidence carried into
+  the public service repository with explicit build provenance and sizing
+  caveats (NFR-003..NFR-008, DEP-019, OPS-007).
+
+### Changed
+
+- Go module path is now `github.com/proudbase/proudauth`; applications import
+  Go SDK packages from `github.com/proudbase/proudauth-sdk-go`. SDK source no
+  longer ships inside the service tree; package/registry publication remains
+  distinct from repository publication.
+- Release publication reuses successful main CI only for the exact tagged
+  commit, otherwise running the full reusable CI before publishing.
+- GitHub Container Registry is the automated organization-owned registry;
+  the Docker Hub mirror is published separately by the maintainer.
+
+### Fixed
+
+- Deployment initialization rejects accidental public demo bindings, mismatched
+  demo issuer ports, globally trusted proxy ranges and invalid pool capacity.
+  Repeated initialization preserves credentials and mounted secret inodes.
+- Offline and Compose release archives exclude generated environment files,
+  secret directories, installed configuration and initializer locks.
+
+This is a pre-release, with no completed external security review or conformance
+certification. Existing benchmark numbers describe their recorded development
+builds and are not guarantees for this release.
 
 ## Historical development before 0.2.0-alpha.1
 
