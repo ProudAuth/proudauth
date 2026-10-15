@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/application"
+	"github.com/proudauth/proudauth/internal/application"
 )
 
 // TestConfigDocumentClientAuthMethods keeps the configuration-document

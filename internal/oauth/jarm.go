@@ -3,9 +3,9 @@ package oauth
 import (
 	"context"
 
-	"github.com/proudbase/proudauth/internal/application"
-	"github.com/proudbase/proudauth/internal/authentication"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/application"
+	"github.com/proudauth/proudauth/internal/authentication"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // JARM (ADV-002): with response_mode=jwt or query.jwt the authorization

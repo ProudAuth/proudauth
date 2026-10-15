@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/bench"
+	"github.com/proudauth/proudauth/internal/bench"
 )
 
 func metadataReceiver(ctx context.Context, args []string) error {

@@ -29,7 +29,7 @@ import (
 	dsig "github.com/russellhaering/goxmldsig"
 	"github.com/russellhaering/goxmldsig/etreeutils"
 
-	"github.com/proudbase/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/configuration"
 )
 
 // The SAML test counterparties are built directly on etree and goxmldsig,

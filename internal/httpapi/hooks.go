@@ -3,7 +3,7 @@ package httpapi
 import (
 	"net/http"
 
-	"github.com/proudbase/proudauth/internal/hooks"
+	"github.com/proudauth/proudauth/internal/hooks"
 )
 
 // hookRoutes administers pre-action hooks (EXT-009, EXT-017).

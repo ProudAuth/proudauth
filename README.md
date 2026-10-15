@@ -8,11 +8,11 @@ one Docker image. Your applications keep their own login screen.
 
 [Quickstart](https://proudauth.com/docs/getting-started/quickstart/) ·
 [Documentation](https://proudauth.com/docs/) ·
-[Releases](https://github.com/proudbase/proudauth/releases) ·
-[Container image](https://github.com/orgs/proudbase/packages/container/package/proudauth) ·
+[Releases](https://github.com/proudauth/proudauth/releases) ·
+[Container image](https://github.com/orgs/proudauth/packages/container/package/proudauth) ·
 [Security](SECURITY.md)
 
-**Current release: `v0.2.0-alpha.2`** (pre-release; no external security review yet).
+**Current release: `v0.2.0-alpha.3`** (pre-release; no external security review yet).
 
 ## Install
 
@@ -20,8 +20,8 @@ You need Docker, a PostgreSQL database, an email (SMTP) account and a domain wit
 
 ```sh
 mkdir proudauth && cd proudauth
-curl -fsSLO https://raw.githubusercontent.com/proudbase/proudauth/v0.2.0-alpha.2/deploy/prod/docker-compose.yaml
-curl -fsSLO https://raw.githubusercontent.com/proudbase/proudauth/v0.2.0-alpha.2/deploy/prod/.env
+curl -fsSLO https://raw.githubusercontent.com/proudauth/proudauth/v0.2.0-alpha.3/deploy/prod/docker-compose.yaml
+curl -fsSLO https://raw.githubusercontent.com/proudauth/proudauth/v0.2.0-alpha.3/deploy/prod/.env
 ```
 
 Fill in the empty values in `.env`, then start:
@@ -41,11 +41,11 @@ files to copy and creates your first administrator.
 - **Organizations:** realms, organizations, invitations, groups, roles and permissions.
 - **Integrations:** OIDC and SAML federation, SCIM, signed webhooks and hooks.
 - **Operations:** audit evidence, backups, migrations and private metrics.
-- **SDKs:** [Go](https://github.com/proudbase/proudauth-sdk-go),
-  [Node.js](https://github.com/proudbase/proudauth-sdk-node),
-  [Dart](https://github.com/proudbase/proudauth-sdk-dart),
-  [PHP](https://github.com/proudbase/proudauth-sdk-php) and
-  [.NET](https://github.com/proudbase/proudauth-sdk-dotnet).
+- **SDKs:** [Go](https://github.com/proudauth/proudauth-sdk-go),
+  [Node.js](https://github.com/proudauth/proudauth-sdk-node),
+  [Dart](https://github.com/proudauth/proudauth-sdk-dart),
+  [PHP](https://github.com/proudauth/proudauth-sdk-php) and
+  [.NET](https://github.com/proudauth/proudauth-sdk-dotnet).
 
 The [capability inventory](docs/service-status.md) lists what is implemented and
 what is not; [benchmarks](docs/operations/benchmarks.md#reference-results) are
@@ -54,7 +54,7 @@ measured on one laptop and are not guarantees.
 ## Develop
 
 ```sh
-git clone https://github.com/proudbase/proudauth.git && cd proudauth
+git clone https://github.com/proudauth/proudauth.git && cd proudauth
 make dev          # PostgreSQL, Mailpit and Swagger UI, image built from source
 make test-unit
 ```
@@ -67,9 +67,9 @@ make test-unit
 ## Build a Docker image
 
 ```sh
-make image VERSION=0.2.0-alpha.2
+make image VERSION=0.2.0-alpha.3
 # Equivalent:
-docker build --build-arg VERSION=0.2.0-alpha.2 -t proudauth:0.2.0-alpha.2 .
+docker build --build-arg VERSION=0.2.0-alpha.3 -t proudauth:0.2.0-alpha.3 .
 ```
 
 The image includes `identity-server`, `identity-worker` and `identity-cli`.

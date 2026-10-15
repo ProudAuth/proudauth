@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/token"
+	"github.com/proudauth/proudauth/internal/token"
 )
 
 // TestGrantRevocationStopsJWTAuthority covers SES-008, SES-021, SES-023,

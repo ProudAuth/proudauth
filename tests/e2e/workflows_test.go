@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/audit"
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/webhooks"
-	"github.com/proudbase/proudauth/internal/worker"
-	"github.com/proudbase/proudauth/internal/workflow"
+	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/webhooks"
+	"github.com/proudauth/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/workflow"
 )
 
 // workflowEnv is a fixture with a realm-wide webhook subscription for

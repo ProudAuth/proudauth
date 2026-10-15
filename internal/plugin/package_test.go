@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 func signed(t *testing.T, priv ed25519.PrivateKey, keyID string, manifest map[string]any, payload []byte) Package {

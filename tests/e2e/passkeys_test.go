@@ -14,7 +14,7 @@ import (
 
 	"github.com/fxamacker/cbor/v2"
 
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // softKey is a software WebAuthn authenticator for tests. It produces "none"

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/organization"
+	"github.com/proudauth/proudauth/internal/organization"
 )
 
 // TestSCIMProvisioning covers PROV-001..PROV-009 and PROV-018: a connector

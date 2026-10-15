@@ -13,8 +13,8 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 
-	"github.com/proudbase/proudauth/internal/audit"
-	"github.com/proudbase/proudauth/internal/token"
+	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/token"
 )
 
 // TestOIDCRelyingPartyLibrary runs an independent, third-party OpenID Connect

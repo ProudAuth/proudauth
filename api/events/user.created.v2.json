@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/user.created.v2.json",
+  "$id": "https://proudauth.com/schemas/events/user.created.v2.json",
   "title": "user.created (v2)",
   "description": "A user account was created: self-service registration, administrator creation, invitation acceptance, just-in-time federation provisioning, or import. created_via names the path. org_id is never set; organization membership is reported separately by organization.membership.added.",
   "type": "object",

@@ -12,15 +12,15 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth/internal/application"
-	"github.com/proudbase/proudauth/internal/audit"
-	"github.com/proudbase/proudauth/internal/federation"
-	"github.com/proudbase/proudauth/internal/keys"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/platform/secret"
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/session"
-	"github.com/proudbase/proudauth/internal/token"
+	"github.com/proudauth/proudauth/internal/application"
+	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/federation"
+	"github.com/proudauth/proudauth/internal/keys"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/session"
+	"github.com/proudauth/proudauth/internal/token"
 )
 
 // Features enabled for discovery. Only implemented and enabled capabilities are

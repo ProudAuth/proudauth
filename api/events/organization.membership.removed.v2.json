@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/organization.membership.removed.v2.json",
+  "$id": "https://proudauth.com/schemas/events/organization.membership.removed.v2.json",
   "title": "organization.membership.removed (v2)",
   "description": "A membership was removed. Emitted when a membership is removed by an administrator, by the member leaving, or by connector-scoped deprovisioning. The member's role assignments and group memberships in the organization are deleted (without authorization.role.unassigned events), organization-bound grants and support grants are revoked and owned automation credentials scoped to the organization stop working. Not emitted when a membership expires or when the user account is deleted.",
   "type": "object",

@@ -2,7 +2,7 @@ package httpapi
 
 import (
 	"encoding/json"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 	"net/http"
 	"net/url"
 	"reflect"

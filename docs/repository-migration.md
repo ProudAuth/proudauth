@@ -1,8 +1,8 @@
 # Service repository migration gates
 
 The service repository is independently buildable as
-`github.com/proudbase/proudauth`. The source-ownership split uses separate public
-SDK and website repositories under `proudbase`; it keeps the service a modular
+`github.com/proudauth/proudauth`. The source-ownership split uses separate public
+SDK and website repositories under `ProudAuth`; it keeps the service a modular
 monolith with transactional security boundaries. Publication and release
 evidence comes from the repository's GitHub Actions and Releases pages, rather
 than from a local staging directory. Original private Git history is not exported.
@@ -14,7 +14,7 @@ contracts, service tests, portable deployment files, operational documentation,
 requirements and architecture decisions belong to the service. SDK packages and
 the website renderer have standalone owners and release lifecycles.
 
-The CLI imports the admin client from `github.com/proudbase/proudauth-sdk-go`;
+The CLI imports the admin client from `github.com/proudauth/proudauth-sdk-go`;
 service end-to-end tests import its admin, verifier and OIDC packages.
 `go.mod` pins `v0.0.0-20261013190527-116f9fa19d0b`, corresponding to public
 commit `116f9fa19d0b0174a0c270763e2ef6abf872233b`; `go.sum` verifies the module.
@@ -38,8 +38,8 @@ source revision, successful CI run, workflow bytes and shared-contract hashes.
    and supply-chain artifacts. `TestSDKRepositoryBoundaries` verifies the
    independently owned SDK checks, immutable revisions and matching JSON
    contracts; Node's dependency audit remains in the Node SDK pipeline.
-3. CODEOWNERS uses actual `proudbase/maintainers` and
-   `proudbase/security-reviewers` teams. Sensitive paths require the security
+3. CODEOWNERS uses actual `ProudAuth/maintainers` and
+   `ProudAuth/security-reviewers` teams. Sensitive paths require the security
    team alone. Both teams initially contain the owner; that does not establish
    a second independent reviewer. CONTRIBUTING states the remaining review
    policy limitation and the owner's initial-prerelease exception plainly.

@@ -8,13 +8,13 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/audit"
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/egress"
-	"github.com/proudbase/proudauth/internal/events"
-	"github.com/proudbase/proudauth/internal/keys"
-	"github.com/proudbase/proudauth/internal/platform/clock"
-	"github.com/proudbase/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/egress"
+	"github.com/proudauth/proudauth/internal/events"
+	"github.com/proudauth/proudauth/internal/keys"
+	"github.com/proudauth/proudauth/internal/platform/clock"
+	"github.com/proudauth/proudauth/internal/storage"
 )
 
 // Deps is the shared infrastructure.

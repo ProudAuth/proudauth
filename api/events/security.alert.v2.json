@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/security.alert.v2.json",
+  "$id": "https://proudauth.com/schemas/events/security.alert.v2.json",
   "title": "security.alert (v2)",
   "description": "An audit event carried an alertable security signal (AUD-012): refresh-token reuse, support-access activity or denial, cross-tenant denial, factor recovery, signing-key change, bootstrap, credential issuance or compromise, emergency action (every event in the emergency category), a sign-in by a protected account, a sign-in that a realm authentication_flow rule let proceed for review (authentication_review), an assignment of a privileged role (an owner role, a realm role, or a role carrying a permission the catalog marks privileged, directly or through a composed role; built-in member and admin organization roles are not privileged), or a security-relevant configuration change (realm.policy.updated, federation.provider.*, hook.created, hook.updated, webhook.created, audit.legal_hold.released). Published in the same transaction as the audit event it refers to, so it exists exactly when the evidence committed; audit events without a realm (operator CLI events) raise no alert. The alert carries identifiers only; read the audit event for details. The minimal payload form keeps every member: they are identifiers, types and the signal name, never personal data.",
   "type": "object",

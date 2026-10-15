@@ -6,8 +6,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/authorization"
-	"github.com/proudbase/proudauth/internal/provisioning"
+	"github.com/proudauth/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/provisioning"
 )
 
 func replicaSCIMRequest(n *Harness, token, method, path, tag string, body any) *Resp {

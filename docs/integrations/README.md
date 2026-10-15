@@ -37,7 +37,7 @@ Reference implementations in this repository:
 | `proudauth-sdk-node` | Node.js/TypeScript SDK (unpublished 0.2.0): verifier, introspection and `SupportGuard`, bounded-state verification, `MultiIssuerVerifier`, OIDC BFF client, admin client with `Secret`, Express/Connect, `node:http` and Fastify adapters; see interoperability.md for its test status |
 | `proudauth-sdk-dart` | Dart SDK (unpublished 0.2.0, no Flutter dependency): the same areas, with signature verification implemented in the package, `authorizeBearer` and a `dart:io` adapter |
 | `proudauth-sdk-php` | PHP 8.2+ SDK (unpublished 0.2.0, no Composer dependencies): the same areas, with a shared key-set store for PHP-FPM workers and `RequestAuthenticator` for plain PHP and PSR-15 |
-| `proudauth-sdk-dotnet` | .NET 8+ SDK (unpublished 0.2.0): the same areas, with ASP.NET Core authentication and middleware; [usage and test status](https://github.com/proudbase/proudauth-sdk-dotnet/blob/main/README.md) |
+| `proudauth-sdk-dotnet` | .NET 8+ SDK (unpublished 0.2.0): the same areas, with ASP.NET Core authentication and middleware; [usage and test status](https://github.com/proudauth/proudauth-sdk-dotnet/blob/main/README.md) |
 | `examples/protected-orders-api` | Strict-online API with support contract and policy decisions |
 | `examples/protected-billing-api` | Offline-verifying API |
 | `examples/backend-for-frontend` | BFF using `oidcclient` |

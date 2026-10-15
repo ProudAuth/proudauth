@@ -15,7 +15,7 @@ import (
 
 	"github.com/go-ldap/ldap/v3"
 
-	"github.com/proudbase/proudauth/internal/egress"
+	"github.com/proudauth/proudauth/internal/egress"
 )
 
 // transportError marks a failure that says nothing about credentials or

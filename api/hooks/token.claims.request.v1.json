@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/hooks/token.claims.request.v1.json",
+  "$id": "https://proudauth.com/schemas/hooks/token.claims.request.v1.json",
   "title": "token.claims hook request (contract v1)",
   "description": "Sent while an access token is minted. Fails closed unless the hook's failure_mode is skip.",
   "type": "object",

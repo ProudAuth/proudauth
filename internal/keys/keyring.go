@@ -26,7 +26,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/proudbase/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/platform/secret"
 )
 
 // Purpose separates derived keys.

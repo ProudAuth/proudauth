@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/directory"
-	"github.com/proudbase/proudauth/internal/directory/ldaptest"
-	"github.com/proudbase/proudauth/internal/jobs"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/directory"
+	"github.com/proudauth/proudauth/internal/directory/ldaptest"
+	"github.com/proudauth/proudauth/internal/jobs"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestDirectoryTransportScanConsistency covers PROV-007, PROV-012,

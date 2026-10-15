@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/proudbase/proudauth/internal/platform/clock"
-	"github.com/proudbase/proudauth/internal/runtime"
-	"github.com/proudbase/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/platform/clock"
+	"github.com/proudauth/proudauth/internal/runtime"
+	"github.com/proudauth/proudauth/internal/storage"
 )
 
 type unavailableGrantQuery struct{ storage.Querier }

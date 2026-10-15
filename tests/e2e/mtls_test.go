@@ -21,8 +21,8 @@ import (
 
 	"github.com/go-jose/go-jose/v4"
 
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // testCA issues certificates for mutual-TLS and X.509 tests.

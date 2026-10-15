@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/proudbase/proudauth-sdk-go/oidcclient"
+	"github.com/proudauth/proudauth-sdk-go/oidcclient"
 )
 
 // BFF is the example server.

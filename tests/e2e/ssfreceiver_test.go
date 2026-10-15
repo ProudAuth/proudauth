@@ -12,8 +12,8 @@ import (
 
 	"github.com/go-jose/go-jose/v4"
 
-	"github.com/proudbase/proudauth/internal/platform/ids"
-	"github.com/proudbase/proudauth/internal/ssf"
+	"github.com/proudauth/proudauth/internal/platform/ids"
+	"github.com/proudauth/proudauth/internal/ssf"
 )
 
 // TestSharedSignalsReceiver covers ADV-007: security events pushed by a

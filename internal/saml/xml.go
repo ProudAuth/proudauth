@@ -23,7 +23,7 @@ import (
 
 	"github.com/beevik/etree"
 
-	"github.com/proudbase/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/platform/secret"
 )
 
 // Namespaces.

@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/bench"
+	"github.com/proudauth/proudauth/internal/bench"
 )
 
 // NFR-005, NFR-008: verify main's real signal/exit path, rather than only a

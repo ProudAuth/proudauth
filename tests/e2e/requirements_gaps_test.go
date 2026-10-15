@@ -13,13 +13,13 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth/internal/audit"
-	"github.com/proudbase/proudauth/internal/authorization"
-	"github.com/proudbase/proudauth/internal/federation"
-	"github.com/proudbase/proudauth/internal/identity"
-	"github.com/proudbase/proudauth/internal/organization"
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/federation"
+	"github.com/proudauth/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/organization"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // gapSecretKeys are JSON member names that would carry secret material or

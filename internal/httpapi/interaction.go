@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/authentication"
-	"github.com/proudbase/proudauth/internal/oauth"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/platform/reqctx"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/authentication"
+	"github.com/proudauth/proudauth/internal/oauth"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/reqctx"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // proofFrom extracts continuation authority. Headless clients send the

@@ -5,8 +5,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth/internal/platform/canonical"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/canonical"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // AdminAddEmailTx adds an email address to an account on an administrator's

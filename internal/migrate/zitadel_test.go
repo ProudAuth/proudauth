@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/identity"
 )
 
 const ztFixture = "testdata/zitadel/export-v4.16.3.json"

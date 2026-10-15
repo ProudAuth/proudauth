@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/credential"
-	"github.com/proudbase/proudauth/internal/keys"
-	"github.com/proudbase/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/credential"
+	"github.com/proudauth/proudauth/internal/keys"
+	"github.com/proudauth/proudauth/internal/platform/secret"
 )
 
 // accountLogin is the self-service sign-in used by the credential lifecycle tests.

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/credential"
-	"github.com/proudbase/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/credential"
+	"github.com/proudauth/proudauth/internal/identity"
 )
 
 const kcFixture = "testdata/keycloak/demo-realm-26.8.0.json"

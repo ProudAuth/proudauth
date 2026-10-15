@@ -36,12 +36,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/authorization"
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/contracts"
-	"github.com/proudbase/proudauth/internal/hooks"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/webhooks"
+	"github.com/proudauth/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/contracts"
+	"github.com/proudauth/proudauth/internal/hooks"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/webhooks"
 )
 
 // SigningContext prefixes the signed bytes, so a plugin signature can never

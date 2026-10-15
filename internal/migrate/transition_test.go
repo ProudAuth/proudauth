@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/identity"
 )
 
 // TestPasskeysAreNotCopied covers MIG-008: a passkey is bound to the source's

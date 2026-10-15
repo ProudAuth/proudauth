@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/hooks/registration.eligibility.request.v1.json",
+  "$id": "https://proudauth.com/schemas/hooks/registration.eligibility.request.v1.json",
   "title": "registration.eligibility hook request (contract v1)",
   "description": "Sent before any account or message is created. Security decision: any refusal or failure denies (fail closed, EXT-012).",
   "type": "object",

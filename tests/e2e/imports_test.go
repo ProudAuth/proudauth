@@ -8,8 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth/internal/credential"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/credential"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestImportAuthorityAndHashBounds covers MIG-005 (imports cannot grant beyond

@@ -18,14 +18,14 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth/internal/application"
-	"github.com/proudbase/proudauth/internal/audit"
-	"github.com/proudbase/proudauth/internal/authorization"
-	"github.com/proudbase/proudauth/internal/platform/ids"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/runtime"
-	"github.com/proudbase/proudauth/internal/storage"
-	"github.com/proudbase/proudauth/internal/token"
+	"github.com/proudauth/proudauth/internal/application"
+	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/platform/ids"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/runtime"
+	"github.com/proudauth/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/token"
 )
 
 // Actions a rule can map.

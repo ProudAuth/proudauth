@@ -13,13 +13,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/httpapi"
-	"github.com/proudbase/proudauth/internal/keys"
-	"github.com/proudbase/proudauth/internal/observability"
-	"github.com/proudbase/proudauth/internal/runtime"
-	"github.com/proudbase/proudauth/internal/server"
-	"github.com/proudbase/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/httpapi"
+	"github.com/proudauth/proudauth/internal/keys"
+	"github.com/proudauth/proudauth/internal/observability"
+	"github.com/proudauth/proudauth/internal/runtime"
+	"github.com/proudauth/proudauth/internal/server"
+	"github.com/proudauth/proudauth/internal/storage"
 )
 
 // startPeerNode starts a second API node next to h, the way a multi-node

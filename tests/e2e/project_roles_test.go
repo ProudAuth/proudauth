@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/configuration"
 )
 
 // TestProjectScopedRoles covers AZ-002: a role assigned at project scope is

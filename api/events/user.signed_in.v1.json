@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/user.signed_in.v1.json",
+  "$id": "https://proudauth.com/schemas/events/user.signed_in.v1.json",
   "title": "user.signed_in (v1)",
   "description": "A user completed an interactive sign-in and a grant was issued to a client. Emitted when an authorization transaction (authorization code or device authorization flow) completes: a browser session was created or reused, an authorization grant was issued and the user's last-login time recorded. Emitted once per completed transaction, so single sign-on into a further client with an existing session emits it again. org_id is set when an organization was selected during sign-in.",
   "type": "object",

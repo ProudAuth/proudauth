@@ -11,8 +11,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth/internal/platform/ids"
-	"github.com/proudbase/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/platform/ids"
+	"github.com/proudauth/proudauth/internal/storage"
 )
 
 // Filter selects audit events. RealmID is mandatory and OrgID, when set by the

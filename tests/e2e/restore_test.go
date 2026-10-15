@@ -8,9 +8,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth/internal/restore"
-	"github.com/proudbase/proudauth/internal/storage"
-	"github.com/proudbase/proudauth/internal/testutil"
+	"github.com/proudauth/proudauth/internal/restore"
+	"github.com/proudauth/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/testutil"
 )
 
 // TestRestoreReconciliation covers OPS-014: after a backup is restored, the

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestIdentifierVerificationSendBudget covers REG-012: identifier

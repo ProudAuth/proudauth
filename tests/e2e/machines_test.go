@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/authorization"
 )
 
 // TestServicePrincipalLifecycle covers MCH-001: a service principal records

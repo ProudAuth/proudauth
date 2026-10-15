@@ -9,8 +9,8 @@ import (
 
 	"github.com/go-ldap/ldap/v3"
 
-	"github.com/proudbase/proudauth/internal/egress"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/egress"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // Connector kinds this module manages. Inbound SCIM connectors

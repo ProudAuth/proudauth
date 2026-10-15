@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/hooks/profile.validation.request.v1.json",
+  "$id": "https://proudauth.com/schemas/hooks/profile.validation.request.v1.json",
   "title": "profile.validation hook request (contract v1)",
   "description": "Sent before a profile change (self-service, registration, interaction steps) is stored. Security decision: fails closed.",
   "type": "object",

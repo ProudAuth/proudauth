@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestAdminIdentifierChangeGuards covers the refusals of the administrator's

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // gapTokenStrings collects every string value that looks like a bearer

@@ -5,7 +5,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/identity"
 )
 
 // Registration modes (REG-001).

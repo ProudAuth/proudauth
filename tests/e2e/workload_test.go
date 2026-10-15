@@ -14,7 +14,7 @@ import (
 	"github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestWorkloadFederation covers MCH-011..MCH-013 and ADV-004: a machine

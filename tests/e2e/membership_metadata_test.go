@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestMembershipMetadata covers USR-009's organization membership metadata:

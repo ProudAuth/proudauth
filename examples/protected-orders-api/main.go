@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/proudbase/proudauth/examples/protected-orders-api/ordersapi"
+	"github.com/proudauth/proudauth/examples/protected-orders-api/ordersapi"
 )
 
 func main() {

@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/platform/ids"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/platform/secret"
-	"github.com/proudbase/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/platform/ids"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/storage"
 )
 
 type captureWriter struct {

@@ -1,6 +1,6 @@
 package directory
 
-import "github.com/proudbase/proudauth/internal/observability"
+import "github.com/proudauth/proudauth/internal/observability"
 
 // metrics are the module's operational signals (PROV-018). Labels are
 // bounded enumerations: connector IDs, hosts and users never become label

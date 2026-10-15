@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/user.locked.v2.json",
+  "$id": "https://proudauth.com/schemas/events/user.locked.v2.json",
   "title": "user.locked (v2)",
   "description": "An administrator locked a user account. Emitted when an administrator sets the account state to \"locked\". All sessions and grants are revoked in the same transaction (session.revoked with reason \"account_locked\"). Automatic sign-in throttling does not change the account state and does not emit this event. Emitted by every successful call, even when the account was already in that state. org_id is never set.",
   "type": "object",

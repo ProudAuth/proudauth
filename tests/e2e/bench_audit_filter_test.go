@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/bench"
+	"github.com/proudauth/proudauth/internal/bench"
 )
 
 // TestBenchComplexAuditFilterLiveFixtures covers NFR-004, NFR-006 and

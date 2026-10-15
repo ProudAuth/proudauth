@@ -3,8 +3,8 @@ package identity
 import (
 	"context"
 
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/storage"
 )
 
 // UsersByID loads a realm-qualified, bounded set in two queries, including

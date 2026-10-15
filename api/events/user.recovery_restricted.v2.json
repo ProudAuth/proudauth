@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/user.recovery_restricted.v2.json",
+  "$id": "https://proudauth.com/schemas/events/user.recovery_restricted.v2.json",
   "title": "user.recovery_restricted (v2)",
   "description": "A user account became recovery-restricted (MFA-010, USR-003): an active account signed in with a recovery code and no other strong factor. Sessions are not revoked; the session that used the recovery code is itself restricted to enrolling a new factor and ending sessions. Audit reason RECOVERY_CODE_USED. Subscribable (webhooks.EventTypes). org_id is never set.",
   "type": "object",

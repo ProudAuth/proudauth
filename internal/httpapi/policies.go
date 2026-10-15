@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/proudbase/proudauth/internal/authorization"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // policyRoutes registers policy administration (AZ-013, AZ-015, AZ-017,

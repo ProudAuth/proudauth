@@ -19,16 +19,16 @@ and creates the first administrator through the local operator channel
 All three binaries are in the container image (`/usr/local/bin/`), built by the
 `Dockerfile` as static binaries on a distroless, non-root (UID 65532) base. The
 image works with a read-only root filesystem. The
-[v0.2.0-alpha.2 pre-release](https://github.com/proudbase/proudauth/releases/tag/v0.2.0-alpha.2)
+[v0.2.0-alpha.3 pre-release](https://github.com/proudauth/proudauth/releases/tag/v0.2.0-alpha.3)
 provides Linux/macOS binaries, checksums and source-free installation assets.
 For a single-machine installation, follow the
 [Docker Compose guide](docker-compose.md) and [complete `.env` reference](environment.md).
-Pull `ghcr.io/proudbase/proudauth:0.2.0-alpha.2` or the maintainer's Docker Hub
-mirror `mohamadalialghanem/proudauth:0.2.0-alpha.2`. The published registry image
+Pull `ghcr.io/proudauth/proudauth:0.2.0-alpha.3` or the maintainer's Docker Hub
+mirror `mohamadalialghanem/proudauth:0.2.0-alpha.3`. The published registry image
 supports Linux amd64 and arm64; the offline release image archive is amd64,
 with binaries supplied for both Linux architectures. This is pre-release
 software with no completed external security review or certification.
-To build locally, use `make image VERSION=0.2.0-alpha.2` or `go build ./cmd/...`.
+To build locally, use `make image VERSION=0.2.0-alpha.3` or `go build ./cmd/...`.
 
 ### Verifying a release
 
@@ -42,11 +42,11 @@ Before installing:
 
 ```sh
 sha256sum -c SHA256SUMS
-gh attestation verify identity-server_linux_amd64 --repo proudbase/proudauth
-gh attestation verify "oci://$(cat IMAGE_DIGEST)" --repo proudbase/proudauth
+gh attestation verify identity-server_linux_amd64 --repo proudauth/proudauth
+gh attestation verify "oci://$(cat IMAGE_DIGEST)" --repo proudauth/proudauth
 cosign verify "$(cat IMAGE_DIGEST)" \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp '^https://github.com/proudbase/proudauth/\.github/workflows/release\.yml@refs/tags/v'
+  --certificate-identity-regexp '^https://github.com/proudauth/proudauth/\.github/workflows/release\.yml@refs/tags/v'
 ```
 
 Deploy the image by its verified immutable digest (the content of `IMAGE_DIGEST`).

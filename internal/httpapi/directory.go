@@ -7,9 +7,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/proudbase/proudauth/internal/application"
-	"github.com/proudbase/proudauth/internal/directory"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/application"
+	"github.com/proudauth/proudauth/internal/directory"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // buildDirectory wires the directory integration module (PROV-010..PROV-018,

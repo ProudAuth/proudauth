@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/proudbase/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/storage"
 )
 
 // ArchiveHeader is the first line of an archived batch file (AUD-008).

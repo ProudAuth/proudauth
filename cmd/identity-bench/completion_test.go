@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/bench"
+	"github.com/proudauth/proudauth/internal/bench"
 )
 
 type completionScenario struct {

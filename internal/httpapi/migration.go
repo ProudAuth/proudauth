@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/proudbase/proudauth/internal/authorization"
-	"github.com/proudbase/proudauth/internal/identity"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // migrationRoutes serve the import formats (MIG-002) and the reconciliation

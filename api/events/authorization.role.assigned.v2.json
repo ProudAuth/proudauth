@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/authorization.role.assigned.v2.json",
+  "$id": "https://proudauth.com/schemas/events/authorization.role.assigned.v2.json",
   "title": "authorization.role.assigned (v2)",
   "description": "A role was assigned to a user, service principal or group. Emitted for every new role assignment: through the administration API and as a side effect of organization creation (owner role), adding a member, accepting an invitation, approving a join request, ownership transfer, provisioning connectors and import jobs. org_id is set when the assignment is scoped to an organization; realm- and project-scoped assignments carry no org_id. The scope itself and the subject type are not included (the subject type follows from the subject_id prefix).",
   "type": "object",

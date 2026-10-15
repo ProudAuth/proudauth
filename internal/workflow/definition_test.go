@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/contracts/schemacheck"
+	"github.com/proudauth/proudauth/internal/contracts/schemacheck"
 )
 
 // TestPublishedExamplesParse keeps the Go validator and the published

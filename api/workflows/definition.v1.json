@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/workflows/definition.v1.json",
+  "$id": "https://proudauth.com/schemas/workflows/definition.v1.json",
   "title": "Lifecycle workflow definition (schema_version 1)",
   "description": "A lifecycle workflow definition (EXT-015, EXT-016): 1..5 triggers and 1..20 steps from a bounded vocabulary that reuses existing services; no expressions and no code (EXT-013). The server validates it strictly (unknown members are refused, members must belong to their step type) and checks every reference and the publisher's authority when publishing.",
   "type": "object",

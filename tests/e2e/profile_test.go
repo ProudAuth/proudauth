@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/identity"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestProfileSchemaAndCompletion covers USR-007 (typed attribute schema with

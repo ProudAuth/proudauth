@@ -13,15 +13,15 @@ import (
 	"os/user"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/audit"
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/httpapi"
-	"github.com/proudbase/proudauth/internal/maintenance"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/platform/secret"
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/server"
-	"github.com/proudbase/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/httpapi"
+	"github.com/proudauth/proudauth/internal/maintenance"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/server"
+	"github.com/proudauth/proudauth/internal/storage"
 )
 
 func init() {

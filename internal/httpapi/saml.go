@@ -6,13 +6,13 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/proudbase/proudauth/internal/federation"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/platform/reqctx"
-	"github.com/proudbase/proudauth/internal/platform/secret"
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/saml"
-	samlidp "github.com/proudbase/proudauth/internal/saml/idp"
+	"github.com/proudauth/proudauth/internal/federation"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/reqctx"
+	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/saml"
+	samlidp "github.com/proudauth/proudauth/internal/saml/idp"
 )
 
 // cookieSAMLBinding binds a SAML sign-in to the browser that started it: the

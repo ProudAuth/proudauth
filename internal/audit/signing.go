@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/proudbase/proudauth/internal/keys"
+	"github.com/proudauth/proudauth/internal/keys"
 )
 
 // Batch signatures (AUD-008). Each sealed batch hash is signed with an Ed25519

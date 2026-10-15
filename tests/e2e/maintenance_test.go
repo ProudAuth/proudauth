@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/maintenance"
-	"github.com/proudbase/proudauth/internal/observability"
-	"github.com/proudbase/proudauth/internal/server"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/maintenance"
+	"github.com/proudauth/proudauth/internal/observability"
+	"github.com/proudauth/proudauth/internal/server"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestMaintenanceAndStatus covers OPS-015: maintenance modes refuse the right

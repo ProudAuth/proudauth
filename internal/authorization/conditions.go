@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // GrantConditions restrict when a role assignment applies (AZ-012). Time

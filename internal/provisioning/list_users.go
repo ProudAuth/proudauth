@@ -3,7 +3,7 @@ package provisioning
 import (
 	"context"
 
-	"github.com/proudbase/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/identity"
 )
 
 // loadUsers reads managed mappings, identities and memberships in fixed-size

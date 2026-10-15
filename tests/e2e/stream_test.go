@@ -10,8 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth-sdk-go/verifier"
-	"github.com/proudbase/proudauth/internal/events"
+	"github.com/proudauth/proudauth-sdk-go/verifier"
+	"github.com/proudauth/proudauth/internal/events"
 )
 
 // TestSessionEventStream covers SES-019: an authenticated, gap-free change

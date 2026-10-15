@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/identity"
 )
 
 // fakeAPI answers the requests the applier makes, like the realm API would.

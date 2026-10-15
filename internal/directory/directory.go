@@ -37,19 +37,19 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth/internal/audit"
-	"github.com/proudbase/proudauth/internal/authorization"
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/egress"
-	"github.com/proudbase/proudauth/internal/identity"
-	"github.com/proudbase/proudauth/internal/jobs"
-	"github.com/proudbase/proudauth/internal/keys"
-	"github.com/proudbase/proudauth/internal/observability"
-	"github.com/proudbase/proudauth/internal/organization"
-	"github.com/proudbase/proudauth/internal/platform/ids"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/runtime"
-	"github.com/proudbase/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/egress"
+	"github.com/proudauth/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/jobs"
+	"github.com/proudauth/proudauth/internal/keys"
+	"github.com/proudauth/proudauth/internal/observability"
+	"github.com/proudauth/proudauth/internal/organization"
+	"github.com/proudauth/proudauth/internal/platform/ids"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/runtime"
+	"github.com/proudauth/proudauth/internal/storage"
 )
 
 // Service is the directory integration module.

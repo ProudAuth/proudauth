@@ -34,7 +34,7 @@ All five SDKs run these cases in their test suites
 `proudauth-sdk-dart/test/fixtures_test.dart`, `proudauth-sdk-php/tests/FixturesTest.php`,
 `proudauth-sdk-dotnet/tests/ProudAuth.Sdk.Tests/Program.cs`).
 Regenerate them (new keys and tokens) from a checkout of
-[`proudauth-sdk-go`](https://github.com/proudbase/proudauth-sdk-go) with:
+[`proudauth-sdk-go`](https://github.com/proudauth/proudauth-sdk-go) with:
 
 ```bash
 PROUDAUTH_REGENERATE_FIXTURES=1 go test ./verifier -run TestFixtures

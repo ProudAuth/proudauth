@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/proudbase/proudauth/internal/provisioning"
+	"github.com/proudauth/proudauth/internal/provisioning"
 )
 
 // TestSCIMGroupListsBoundDatabaseRoundTrips covers PROV-002, PROV-008,

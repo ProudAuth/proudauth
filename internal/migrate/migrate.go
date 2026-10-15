@@ -24,8 +24,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/identity"
-	"github.com/proudbase/proudauth/internal/platform/canonical"
+	"github.com/proudauth/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/platform/canonical"
 )
 
 // Source products.

@@ -16,9 +16,9 @@ import (
 	"time"
 
 	jose "github.com/go-jose/go-jose/v4"
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/platform/clock"
-	"github.com/proudbase/proudauth/internal/runtime"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/platform/clock"
+	"github.com/proudauth/proudauth/internal/runtime"
 )
 
 func fetchBudgetService(t *testing.T, handler http.Handler) (*Service, *httptest.Server, *clock.Fake) {

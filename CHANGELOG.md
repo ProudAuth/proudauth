@@ -53,21 +53,33 @@ builds and are not guarantees for this release.
 
 ## [Unreleased]
 
+No changes recorded after 0.2.0-alpha.3.
+
+## [0.2.0-alpha.3] - 2026-10-15
+
+### Changed
+
+- The project moved to the ProudAuth GitHub organization: the Go module is
+  `github.com/proudauth/proudauth` (Go SDK `github.com/proudauth/proudauth-sdk-go`),
+  release images are `ghcr.io/proudauth/proudauth`, and JSON Schema `$id`s and
+  RFC 9457 problem types use `https://proudauth.com/`. Earlier images stay at
+  `ghcr.io/proudbase/proudauth`; GitHub redirects the old repository links.
+
 ### Added
 
 - `scripts/prepare-release.sh vX.Y.Z` prepares a release in one step: it moves
   every published version reference (the `deploy/prod/.env` image, install
   commands, guides) to the new version and turns the Unreleased notes into
   the version's CHANGELOG section (GOV-005).
-- After publishing, the release workflow asks proudauth.com and proudbase.com
-  to redeploy when a `WEBSITES_DISPATCH_TOKEN` secret exists; without it they
-  pick up the release within the hour.
+- After publishing, the release workflow asks proudauth.com to redeploy when a
+  `WEBSITES_DISPATCH_TOKEN` secret exists; without it, the site picks up the
+  release within the hour.
 
 ### Changed
 
 - The release workflow also refuses a tag that `docs/operations/docker-compose.md`
-  does not name: the websites publish that guide as their quickstart.
-- The install guide (the websites' Docker quickstart) shows `docker-compose.yaml`
+  does not name: the website publishes that guide as its quickstart.
+- The install guide (the website's Docker quickstart) shows `docker-compose.yaml`
   and `.env` in full to copy, then `docker compose pull` and `up -d`; a test
   keeps them identical to `deploy/prod`. The production files carry short
   comments, and the README is a short overview with a three-step install.

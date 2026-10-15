@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/audit"
-	"github.com/proudbase/proudauth/internal/platform/secret"
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/testutil"
+	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/testutil"
 )
 
 // TestSupportBundleIsSanitized covers OPS-010: support-bundle writes a

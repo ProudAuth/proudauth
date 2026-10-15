@@ -19,9 +19,9 @@ import (
 
 	jose "github.com/go-jose/go-jose/v4"
 
-	"github.com/proudbase/proudauth/internal/federation"
-	"github.com/proudbase/proudauth/internal/organization"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/federation"
+	"github.com/proudauth/proudauth/internal/organization"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // fakeIdP is an upstream OIDC provider plus a GitHub-style OAuth API for tests.

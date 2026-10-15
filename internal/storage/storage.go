@@ -20,7 +20,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/proudbase/proudauth/migrations"
+	"github.com/proudauth/proudauth/migrations"
 )
 
 // Querier is satisfied by both the pool and a transaction.

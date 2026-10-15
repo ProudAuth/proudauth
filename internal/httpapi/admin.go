@@ -12,19 +12,19 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth/internal/application"
-	"github.com/proudbase/proudauth/internal/audit"
-	"github.com/proudbase/proudauth/internal/authentication"
-	"github.com/proudbase/proudauth/internal/authorization"
-	"github.com/proudbase/proudauth/internal/identity"
-	"github.com/proudbase/proudauth/internal/impersonation"
-	"github.com/proudbase/proudauth/internal/jobs"
-	"github.com/proudbase/proudauth/internal/machine"
-	"github.com/proudbase/proudauth/internal/notification"
-	"github.com/proudbase/proudauth/internal/platform/ids"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/token"
+	"github.com/proudauth/proudauth/internal/application"
+	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/authentication"
+	"github.com/proudauth/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/impersonation"
+	"github.com/proudauth/proudauth/internal/jobs"
+	"github.com/proudauth/proudauth/internal/machine"
+	"github.com/proudauth/proudauth/internal/notification"
+	"github.com/proudauth/proudauth/internal/platform/ids"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/token"
 )
 
 type realmT = realm.Realm

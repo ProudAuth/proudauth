@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/organization.deleted.v1.json",
+  "$id": "https://proudauth.com/schemas/events/organization.deleted.v1.json",
   "title": "organization.deleted (v1)",
   "description": "Deletion of an organization started. Emitted when organization deletion begins: the organization enters the \"deleting\" state, its grants and tokens are revoked, pending invitations are revoked, provisioning connectors are disabled and automation credentials revoked, and the organization's service principals, webhook subscriptions and identity providers are disabled (TEN-024). Because its own webhook subscriptions are disabled in the same transaction, only realm-wide subscriptions receive this event. The remaining clean-up runs as a background job, which emits no further event. org_id equals data.organization_id.",
   "type": "object",

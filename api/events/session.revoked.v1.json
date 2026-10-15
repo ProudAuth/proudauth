@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/session.revoked.v1.json",
+  "$id": "https://proudauth.com/schemas/events/session.revoked.v1.json",
   "title": "session.revoked (v1)",
   "description": "An active browser session was revoked. Emitted when an active browser (SSO) session is revoked together with its grants, refresh families and opaque tokens (back-channel logout tokens are queued for registered clients). Bulk revocations emit one event per session. Not emitted for session expiry, for already inactive sessions, or for sessions revoked by backup-restore reconciliation. org_id is never set.",
   "type": "object",

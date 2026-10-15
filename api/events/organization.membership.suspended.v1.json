@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/organization.membership.suspended.v1.json",
+  "$id": "https://proudauth.com/schemas/events/organization.membership.suspended.v1.json",
   "title": "organization.membership.suspended (v1)",
   "description": "A membership was suspended. Emitted when an administrator suspends a membership. The member's grants bound to the organization and support grants targeting the membership are revoked; other memberships of the user are unaffected.",
   "type": "object",

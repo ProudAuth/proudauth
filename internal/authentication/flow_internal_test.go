@@ -3,8 +3,8 @@ package authentication
 import (
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/session"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/session"
 )
 
 // A require_mfa flow rule never weakens a phishing-resistant requirement

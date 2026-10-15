@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/webhooks"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/webhooks"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestContractVersions covers EXT-018: webhook event schemas, the hook

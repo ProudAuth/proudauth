@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/proudbase/proudauth-sdk-go/verifier"
+	"github.com/proudauth/proudauth-sdk-go/verifier"
 )
 
 // Invoice is an application record.

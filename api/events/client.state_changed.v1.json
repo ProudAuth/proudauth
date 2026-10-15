@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/client.state_changed.v1.json",
+  "$id": "https://proudauth.com/schemas/events/client.state_changed.v1.json",
   "title": "client.state_changed (v1)",
   "description": "An OAuth client was suspended, reactivated or decommissioned. Emitted when an administrator changes a client's state. Suspension and decommissioning revoke the client's refresh families, grants and opaque access tokens; decommissioning also revokes its credentials and is final. Emitted by every successful call, even when the state is unchanged. org_id is never set.",
   "type": "object",

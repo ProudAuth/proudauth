@@ -8,9 +8,9 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/proudbase/proudauth/internal/storage"
-	"github.com/proudbase/proudauth/internal/testutil"
-	"github.com/proudbase/proudauth/migrations"
+	"github.com/proudauth/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/testutil"
+	"github.com/proudauth/proudauth/migrations"
 )
 
 func TestMigrationsApplyAndAreIdempotent(t *testing.T) {

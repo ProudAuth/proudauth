@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/plugins/package.v1.json",
+  "$id": "https://proudauth.com/schemas/plugins/package.v1.json",
   "title": "Plugin package upload (POST /plugins)",
   "description": "Manifest and payload travel as base64 (standard alphabet) of their exact bytes, so the signature survives any JSON tooling. The manifest is at most 16 KiB and the payload at most 160 KiB; the payload is a JSON object with hooks (HookInput), webhooks (webhook subscription input, realm-wide) and workflows ({name, description, definition}), at most 20 of each, validated exactly like the corresponding APIs.",
   "type": "object",

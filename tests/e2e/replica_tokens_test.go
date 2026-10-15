@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/platform/secret"
 )
 
 type replicaRefreshGrant struct {

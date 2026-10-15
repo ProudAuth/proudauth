@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/proudbase/proudauth-sdk-go/verifier"
-	"github.com/proudbase/proudauth/examples/protected-billing-api/billingapi"
+	"github.com/proudauth/proudauth-sdk-go/verifier"
+	"github.com/proudauth/proudauth/examples/protected-billing-api/billingapi"
 )
 
 func main() {

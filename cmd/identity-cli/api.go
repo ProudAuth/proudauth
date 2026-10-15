@@ -20,8 +20,8 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/proudbase/proudauth-sdk-go/admin"
-	"github.com/proudbase/proudauth/internal/audit"
+	"github.com/proudauth/proudauth-sdk-go/admin"
+	"github.com/proudauth/proudauth/internal/audit"
 )
 
 func auditEvent(typ string) audit.Event {

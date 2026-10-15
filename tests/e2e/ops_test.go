@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"github.com/proudbase/proudauth/internal/jobs"
+	"github.com/proudauth/proudauth/internal/jobs"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -16,10 +16,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/audit"
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/webhooks"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/webhooks"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 func allowPrivate(c *configuration.Config) { c.Delivery.AllowPrivateWebhooks = true }

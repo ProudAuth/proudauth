@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/hooks/authorization.decision.request.v1.json",
+  "$id": "https://proudauth.com/schemas/hooks/authorization.decision.request.v1.json",
   "title": "authorization.decision hook request (contract v1)",
   "description": "Sent after RBAC and policies allowed a decision. Hooks can only deny or add obligations (EXT-011); failures deny.",
   "type": "object",

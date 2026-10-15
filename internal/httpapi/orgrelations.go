@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/application"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/application"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // orgRelationshipRoutes serve organization relationships (TEN-021) and

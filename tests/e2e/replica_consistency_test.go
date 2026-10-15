@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/keys"
-	"github.com/proudbase/proudauth/internal/platform/secret"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/keys"
+	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // replicaStressFixture uses three in-process HTTP servers, each with its own

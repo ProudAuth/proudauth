@@ -9,7 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"github.com/proudbase/proudauth/internal/platform/canonical"
+	"github.com/proudauth/proudauth/internal/platform/canonical"
 	"io"
 	mrand "math/rand/v2"
 	"net"
@@ -20,15 +20,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/keys"
-	"github.com/proudbase/proudauth/internal/maintenance"
-	"github.com/proudbase/proudauth/internal/observability"
-	"github.com/proudbase/proudauth/internal/platform/ids"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/platform/reqctx"
-	"github.com/proudbase/proudauth/internal/platform/secret"
-	"github.com/proudbase/proudauth/internal/platform/tracing"
-	"github.com/proudbase/proudauth/internal/token"
+	"github.com/proudauth/proudauth/internal/keys"
+	"github.com/proudauth/proudauth/internal/maintenance"
+	"github.com/proudauth/proudauth/internal/observability"
+	"github.com/proudauth/proudauth/internal/platform/ids"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/reqctx"
+	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/platform/tracing"
+	"github.com/proudauth/proudauth/internal/token"
 )
 
 type statusWriter struct {

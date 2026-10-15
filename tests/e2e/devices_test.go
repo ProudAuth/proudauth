@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestRememberedDevices covers AUT-013.

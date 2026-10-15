@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/plugins/manifest.v1.json",
+  "$id": "https://proudauth.com/schemas/plugins/manifest.v1.json",
   "title": "Plugin manifest (manifest_version 1)",
   "description": "Signed description of a plugin version (EXT-014). The publisher signs SigningContext (\"proudauth-plugin-v1\\n\") followed by the exact manifest bytes with an Ed25519 key the operator trusts (extensions.plugin_publishers); the manifest binds the payload by payload_sha256. The server refuses undeclared permissions, unknown permissions, contracts it does not support and missing dependencies.",
   "type": "object",

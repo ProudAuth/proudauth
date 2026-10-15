@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/organization.membership.reactivated.v1.json",
+  "$id": "https://proudauth.com/schemas/events/organization.membership.reactivated.v1.json",
   "title": "organization.membership.reactivated (v1)",
   "description": "A suspended membership was set back to active. Emitted when an administrator sets a membership back to \"active\". Previously revoked grants are not restored.",
   "type": "object",

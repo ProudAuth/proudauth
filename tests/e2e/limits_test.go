@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // limitsFixture is a realm with only the bootstrap administrator: the small

@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/proudbase/proudauth/internal/authorization"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/token"
+	"github.com/proudauth/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/token"
 )
 
 // relationRoutes serve relationship-based authorization (AZ-021..AZ-023,

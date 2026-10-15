@@ -8,7 +8,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/proudbase/proudauth/internal/bench"
+	"github.com/proudauth/proudauth/internal/bench"
 )
 
 type backendFlags []string

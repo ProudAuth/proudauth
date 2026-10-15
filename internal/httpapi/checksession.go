@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/platform/reqctx"
-	"github.com/proudbase/proudauth/internal/ratelimit"
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/session"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/reqctx"
+	"github.com/proudauth/proudauth/internal/ratelimit"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/session"
 )
 
 // cookieBrowserState holds the OP browser state that the check-session

@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/bench"
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/notification"
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/bench"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/notification"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestBenchSuiteSmoke runs every identity-bench scenario briefly against a

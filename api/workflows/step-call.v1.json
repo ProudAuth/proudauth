@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/workflows/step-call.v1.json",
+  "$id": "https://proudauth.com/schemas/workflows/step-call.v1.json",
   "title": "Lifecycle workflow step call (contract_version 1)",
   "description": "Body of the POST a call_webhook step sends to the destination of the step's webhook subscription. Headers: Webhook-Id (unique per attempt), Webhook-Timestamp and Webhook-Signature signed with the subscription's secret exactly like event deliveries, Idempotency-Key (identical for every attempt of the step, and <key>.compensate for its compensation call), User-Agent ProudAuth-Workflows/1. Answer 2xx to complete the step; 4xx other than 408/429 (and 410) fail the step permanently, anything else is retried under the step's retry policy. Deduplicate by Idempotency-Key: a retry after a crash carries the same key.",
   "type": "object",

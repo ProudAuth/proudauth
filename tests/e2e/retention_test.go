@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestOperationalRetention covers PRV-004/OPS-009: ended grants with their

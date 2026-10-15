@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth-sdk-go/admin"
+	"github.com/proudauth/proudauth-sdk-go/admin"
 )
 
 // Declarative configuration (SDK-012): export a realm's configuration as a

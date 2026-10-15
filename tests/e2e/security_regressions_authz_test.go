@@ -10,9 +10,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/identity"
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // Regression fixtures for security fixes (QA-008) in token scope policy,

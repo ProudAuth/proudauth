@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // ProtocolOptions are optional per-client protocol settings, stored together

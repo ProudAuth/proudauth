@@ -22,7 +22,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/proudbase/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/configuration"
 )
 
 func deployRead(t *testing.T, rel string) string {

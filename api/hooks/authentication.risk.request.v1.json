@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/hooks/authentication.risk.request.v1.json",
+  "$id": "https://proudauth.com/schemas/hooks/authentication.risk.request.v1.json",
   "title": "authentication.risk hook request (contract v1)",
   "description": "Sent during sign-in to supply a risk level to authentication flow rules (AUT-014). A failure leaves the signal missing.",
   "type": "object",

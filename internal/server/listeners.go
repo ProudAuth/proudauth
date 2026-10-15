@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/configuration"
 )
 
 // Connection bounds of the public listeners (NFR-001): headers must arrive

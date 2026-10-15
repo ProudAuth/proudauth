@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/user.reactivated.v2.json",
+  "$id": "https://proudauth.com/schemas/events/user.reactivated.v2.json",
   "title": "user.reactivated (v2)",
   "description": "A user account returned to active. Emitted when an administrator sets the account state to \"active\" (from suspended, locked, recovery_restricted, or pending_deletion, which cancels a scheduled deletion), and automatically (reason FACTOR_ASSURANCE_RESTORED) when a recovery-restricted account signs in with TOTP or a passkey or enrolls a new one. Previously revoked sessions and grants are not restored. A user cancelling their own pending deletion does not emit this event. org_id is never set.",
   "type": "object",

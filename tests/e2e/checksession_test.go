@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestCheckSessionIframe covers OIDC-014: OpenID Connect Session Management

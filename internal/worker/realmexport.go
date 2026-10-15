@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/proudbase/proudauth/internal/jobs"
+	"github.com/proudauth/proudauth/internal/jobs"
 )
 
 // RealmExportFormat names the portable realm export (OSS-008, MIG-014).

@@ -11,11 +11,11 @@ All five SDKs have independently buildable public repositories and their own CI:
 
 | Language | Source repository | Package identity |
 | --- | --- | --- |
-| Go | [proudauth-sdk-go](https://github.com/proudbase/proudauth-sdk-go) | `github.com/proudbase/proudauth-sdk-go` |
-| Node.js/TypeScript | [proudauth-sdk-node](https://github.com/proudbase/proudauth-sdk-node) | `@proudauth/sdk` |
-| Dart | [proudauth-sdk-dart](https://github.com/proudbase/proudauth-sdk-dart) | `proudauth_sdk` |
-| PHP | [proudauth-sdk-php](https://github.com/proudbase/proudauth-sdk-php) | `proudauth/sdk` |
-| .NET | [proudauth-sdk-dotnet](https://github.com/proudbase/proudauth-sdk-dotnet) | `ProudAuth.Sdk`, `ProudAuth.Sdk.AspNetCore` |
+| Go | [proudauth-sdk-go](https://github.com/proudauth/proudauth-sdk-go) | `github.com/proudauth/proudauth-sdk-go` |
+| Node.js/TypeScript | [proudauth-sdk-node](https://github.com/proudauth/proudauth-sdk-node) | `@proudauth/sdk` |
+| Dart | [proudauth-sdk-dart](https://github.com/proudauth/proudauth-sdk-dart) | `proudauth_sdk` |
+| PHP | [proudauth-sdk-php](https://github.com/proudauth/proudauth-sdk-php) | `proudauth/sdk` |
+| .NET | [proudauth-sdk-dotnet](https://github.com/proudauth/proudauth-sdk-dotnet) | `ProudAuth.Sdk`, `ProudAuth.Sdk.AspNetCore` |
 
 The source API version is **0.2.0**. npm, pub.dev, Packagist and NuGet packages
 have not been published; public source availability does not establish registry
@@ -35,11 +35,11 @@ local-check tables below retain their original snapshot scope and counts.
 
 | SDK | Requirement | Tested with |
 | --- | --- | --- |
-| Go: `verifier`, `oidcclient`, `admin` in `github.com/proudbase/proudauth-sdk-go` | Separate module; `go 1.27.1` is its minimum Go version | Independent SDK CI runs tests with the race detector and both verifier fuzz targets; [exact source and run](sdk-repositories.json). Earlier monorepo checks below retain their historical versions |
+| Go: `verifier`, `oidcclient`, `admin` in `github.com/proudauth/proudauth-sdk-go` | Separate module; `go 1.27.1` is its minimum Go version | Independent SDK CI runs tests with the race detector and both verifier fuzz targets; [exact source and run](sdk-repositories.json). Earlier monorepo checks below retain their historical versions |
 | Node.js: `@proudauth/sdk` (`proudauth-sdk-node`) | `engines: {"node": ">=20.10"}`; ESM only; no runtime dependencies (`node:crypto`, `node:http` and the global `fetch`) | Independent CI passes on Node.js 20.10, 22 and 24 ([pinned snapshot](sdk-repositories.json)); earlier local Node.js 25.9.0/npm 11.12.1/TypeScript 5.9.3 results below retain their scope |
 | Dart: `proudauth_sdk` (`proudauth-sdk-dart`) | `sdk: ^3.4.0`; runtime dependencies `crypto` and `http`; no Flutter dependency. Signature verification (RS256, PS256, ES256, EdDSA) is implemented in the package on `BigInt` (verification only, not constant-time: every input is public). Only `package:proudauth_sdk/io.dart` imports `dart:io` | Dart 3.13.3 locally ([results below](#local-sdk-checks--2026-10-13)) and configured in CI (job `dart-sdk`); 3.4 is declared, not tested. The development dependencies (`lints` 6.1, `test` 1.31) need Dart 3.8 or later to run the tests |
 | PHP: `proudauth/sdk` (`proudauth-sdk-php`) | `php: >=8.2` with `ext-curl`, `ext-json`, `ext-openssl` and `ext-sodium`; no Composer dependencies (`ext-mbstring` is suggested for non-ASCII operation names) | PHP 8.5.8 locally ([results below](#local-sdk-checks--2026-10-13)). CI is configured for PHP 8.2 and 8.5 (job `php-sdk`); this local check does not exercise 8.2, 8.3 or 8.4 |
-| .NET: `ProudAuth.Sdk`, `ProudAuth.Sdk.AspNetCore` (`proudauth-sdk-dotnet`) | `net8.0`; BouncyCastle.Cryptography 2.7.0 for Ed25519 and RSA-PSS. The ASP.NET package requires the ASP.NET Core shared framework; the core package does not | 344 tests pass in independent CI on Linux, macOS and Windows; [published validation](https://github.com/proudbase/proudauth-sdk-dotnet/blob/main/VALIDATION.md) |
+| .NET: `ProudAuth.Sdk`, `ProudAuth.Sdk.AspNetCore` (`proudauth-sdk-dotnet`) | `net8.0`; BouncyCastle.Cryptography 2.7.0 for Ed25519 and RSA-PSS. The ASP.NET package requires the ASP.NET Core shared framework; the core package does not | 344 tests pass in independent CI on Linux, macOS and Windows; [published validation](https://github.com/proudauth/proudauth-sdk-dotnet/blob/main/VALIDATION.md) |
 
 Other runtime versions may work but are not tested
 ([interoperability.md](interoperability.md#tested-profiles)).
@@ -235,7 +235,7 @@ fixture added with it (QA-008).
 | Dart SDK | Unit tests against local mock servers and mock HTTP clients only (`proudauth-sdk-dart/test`, CI job `dart-sdk`); **no test runs it against a ProudAuth server** |
 | PHP SDK | Unit tests with a fake transport, plus one suite against a `php -S` server on loopback (`proudauth-sdk-php/tests`, CI job `php-sdk`); **no test runs it against a ProudAuth server** |
 
-| .NET SDK | Shared fixtures and Go signature vectors, controlled HTTP clients, ASP.NET adapter tests and a loopback Kestrel redirect test; independent SDK CI on three operating systems ([published validation](https://github.com/proudbase/proudauth-sdk-dotnet/blob/main/VALIDATION.md)). This CI does not run against a ProudAuth server |
+| .NET SDK | Shared fixtures and Go signature vectors, controlled HTTP clients, ASP.NET adapter tests and a loopback Kestrel redirect test; independent SDK CI on three operating systems ([published validation](https://github.com/proudauth/proudauth-sdk-dotnet/blob/main/VALIDATION.md)). This CI does not run against a ProudAuth server |
 
 ## Framework adapters (SDK-011)
 

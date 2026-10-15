@@ -12,7 +12,7 @@ import (
 	"github.com/pquerna/otp"
 	"github.com/pquerna/otp/hotp"
 
-	"github.com/proudbase/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/platform/secret"
 )
 
 // TOTP parameters (RFC 6238). SHA-1/6 digits/30s is the interoperable default

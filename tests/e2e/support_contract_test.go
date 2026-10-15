@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/authorization"
 )
 
 // TestSupportRequestTargetValidation covers IMP-004 and IMP-005: every

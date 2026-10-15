@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/proudbase/proudauth-sdk-go/admin"
+	"github.com/proudauth/proudauth-sdk-go/admin"
 )
 
 // TestAdminSDKTypedOperations covers SDK-003 against a running server: the

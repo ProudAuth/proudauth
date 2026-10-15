@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/crypto/argon2"
 
-	"github.com/proudbase/proudauth-sdk-go/admin"
+	"github.com/proudauth/proudauth-sdk-go/admin"
 )
 
 // Typed administration commands (SDK-003): every command calls the public

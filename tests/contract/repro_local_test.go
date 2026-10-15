@@ -45,7 +45,7 @@ func TestLocalReproductionRefusesMismatches(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			write("go.mod", "module github.com/proudbase/proudauth\n\ngo 1.27.1\n")
+			write("go.mod", "module github.com/proudauth/proudauth\n\ngo 1.27.1\n")
 			write("go.sum", "fixture\n")
 			write("bin/go", `#!/bin/sh
 set -eu

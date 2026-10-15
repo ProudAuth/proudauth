@@ -3,7 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/worker"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,7 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/audit"
 )
 
 // TestAuditSignaturesAndRetention covers AUD-008 (signed, hash-linked batches

@@ -6,7 +6,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // Adapter carries one kind of upstream provider: its protocol and its identity

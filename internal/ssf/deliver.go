@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/egress"
-	"github.com/proudbase/proudauth/internal/keys"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/egress"
+	"github.com/proudauth/proudauth/internal/keys"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // Deliver pushes due events of push streams (RFC 8935). A 2xx answer

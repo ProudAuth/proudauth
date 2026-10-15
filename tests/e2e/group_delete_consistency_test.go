@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/provisioning"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/provisioning"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestGroupDeletionWaitsBeforeLockingMembers covers TEN-013, PROV-008,

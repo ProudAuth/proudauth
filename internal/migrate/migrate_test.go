@@ -29,8 +29,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/credential"
-	"github.com/proudbase/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/credential"
+	"github.com/proudauth/proudauth/internal/identity"
 )
 
 var fixedNow = func() time.Time { return time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC) }

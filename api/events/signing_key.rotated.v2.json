@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/signing_key.rotated.v2.json",
+  "$id": "https://proudauth.com/schemas/events/signing_key.rotated.v2.json",
   "title": "signing_key.rotated (v2)",
   "description": "The realm's token signing key was rotated. Emitted when a token signing key rotation starts. Planned rotation (administration API or the scheduled worker) creates a new key in the \"pending\" state that is published in JWKS ahead of use and activated later by the worker without a further event. Emergency rotation activates the new key immediately and marks the previous active key compromised: it is removed from JWKS and its tokens are rejected, so relying parties should refresh JWKS and drop any cached trust in previous_kid. org_id is never set.",
   "type": "object",

@@ -6,7 +6,7 @@ Machine-readable [JSON Schema draft 2020-12](https://json-schema.org/draft/2020-
 - `<kind>.response.v1.json`: the JSON body the hook must answer with (HTTP 200).
 - `common.v1.json`: shared definitions and the request headers (`x-headers`).
 
-Every schema's `$id` is `https://auth.proudbase.com/schemas/hooks/<file name>`; each one includes `examples`.
+Every schema's `$id` is `https://proudauth.com/schemas/hooks/<file name>`; each one includes `examples`.
 
 | Kind | Request member | Failure behaviour |
 | --- | --- | --- |

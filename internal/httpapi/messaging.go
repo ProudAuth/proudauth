@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/notification"
-	"github.com/proudbase/proudauth/internal/platform/canonical"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/webhooks"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/notification"
+	"github.com/proudauth/proudauth/internal/platform/canonical"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/webhooks"
 )
 
 // messagingRoutes covers notification preferences (MSG-010), provider

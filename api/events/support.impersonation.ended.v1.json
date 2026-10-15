@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/support.impersonation.ended.v1.json",
+  "$id": "https://proudauth.com/schemas/events/support.impersonation.ended.v1.json",
   "title": "support.impersonation.ended (v1)",
   "description": "A support impersonation grant was revoked. Emitted when the support actor, the impersonated customer or an administrator with support.impersonation.revoke revokes an active grant; its tokens and pending hand-offs are invalidated. Not emitted when a grant expires, when the customer opts out of support access, or when grants are revoked as a side effect (membership suspension/removal, organization suspension or deletion, session revocation, restore). org_id is always set.",
   "type": "object",

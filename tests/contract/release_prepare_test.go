@@ -29,7 +29,7 @@ func TestPrepareReleaseMovesEveryVersionReference(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	current := strings.TrimPrefix(deployEnvFile(t, "deploy/prod/.env")["PROUDAUTH_IMAGE"], "ghcr.io/proudbase/proudauth:")
+	current := strings.TrimPrefix(deployEnvFile(t, "deploy/prod/.env")["PROUDAUTH_IMAGE"], "ghcr.io/proudauth/proudauth:")
 	changelog := "# Changelog\n\n## [Unreleased]\n\n### Fixed\n\n- A fix worth releasing.\n\n## [" + current + "] - 2026-01-01\n\n- Earlier.\n"
 	write := func(body string) {
 		if err := os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte(body), 0o644); err != nil {
@@ -61,10 +61,10 @@ func TestPrepareReleaseMovesEveryVersionReference(t *testing.T) {
 		t.Fatalf("prepare-release: %v\n%s", err, out)
 	}
 	for rel, want := range map[string]string{
-		"deploy/prod/.env":                  "\nPROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:9.8.7\n",
-		"docs/operations/docker-compose.md": "\nPROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:9.8.7\n",
-		"README.md":                         "raw.githubusercontent.com/proudbase/proudauth/v9.8.7/deploy/prod/.env",
-		"deploy/README.md":                  "raw.githubusercontent.com/proudbase/proudauth/v9.8.7/deploy/prod/docker-compose.yaml",
+		"deploy/prod/.env":                  "\nPROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:9.8.7\n",
+		"docs/operations/docker-compose.md": "\nPROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:9.8.7\n",
+		"README.md":                         "raw.githubusercontent.com/proudauth/proudauth/v9.8.7/deploy/prod/.env",
+		"deploy/README.md":                  "raw.githubusercontent.com/proudauth/proudauth/v9.8.7/deploy/prod/docker-compose.yaml",
 		"scripts/package-deployment.sh":     "${1:-v9.8.7}",
 		"CHANGELOG.md":                      "## [Unreleased]\n\nNo changes recorded after 9.8.7.\n\n## [9.8.7] - 2030-01-02\n\n### Fixed\n\n- A fix worth releasing.\n\n## [" + current + "]",
 	} {
@@ -86,10 +86,10 @@ func TestPrepareReleaseMovesEveryVersionReference(t *testing.T) {
 
 	workflow := deployRead(t, ".github/workflows/release.yml")
 	for _, want := range []string{
-		`grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}" deploy/prod/.env`,
-		`grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}" docs/operations/docker-compose.md`,
+		`grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:${GITHUB_REF_NAME#v}" deploy/prod/.env`,
+		`grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:${GITHUB_REF_NAME#v}" docs/operations/docker-compose.md`,
 		`--annotation "index:org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}"`, "## Docker image",
-		"secrets.WEBSITES_DISPATCH_TOKEN", "repos/proudbase/${site}/dispatches", "event_type=proudauth-release",
+		"secrets.WEBSITES_DISPATCH_TOKEN", "repos/proudauth/${site}/dispatches", "event_type=proudauth-release",
 	} {
 		if !strings.Contains(workflow, want) {
 			t.Errorf("release.yml lacks %q", want)

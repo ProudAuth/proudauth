@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/storage"
 )
 
 // SessionEventTypes are the change notifications applications can follow to

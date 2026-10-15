@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestConfigDocumentPolicyMembers keeps the configuration-document schema's

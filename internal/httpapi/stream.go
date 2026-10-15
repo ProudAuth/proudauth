@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/events"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/events"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // sessionEventRoutes exposes the session and access change stream (SES-019).
