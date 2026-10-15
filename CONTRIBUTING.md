@@ -261,3 +261,13 @@ an acceptable answer, a silent omission is not.
 - Errors returned to clients use stable codes from `internal/platform/problem`
   (custom APIs) or the protocol's own error format (OAuth endpoints). Do not put
   secrets, tokens or stack traces in error details or logs.
+
+## Releasing
+
+1. Write the release notes under `## [Unreleased]` in `CHANGELOG.md`.
+2. Run `scripts/prepare-release.sh v0.3.0` (your version) and open a pull request.
+3. After it merges: `git tag -a v0.3.0 -m "ProudAuth v0.3.0" && git push origin v0.3.0`.
+
+The release workflow builds, signs and publishes the image and the release, and
+refuses a tag the prepared files do not match. proudauth.com and proudbase.com
+then show the new version and its install guide on their own.
