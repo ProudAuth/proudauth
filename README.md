@@ -1,84 +1,68 @@
 # ProudAuth
 
-**Identity infrastructure you can host and control.**
+**Your own identity server. Free, private and on your infrastructure.**
 
-ProudAuth is an Apache-2.0 identity provider written in Go, backed by PostgreSQL.
-It combines OAuth 2.0 and OpenID Connect, organizations, authentication,
-authorization and audit evidence in one service, with a background worker and an
-operator CLI. Applications provide their own sign-in interface and enforce their
-business permissions.
+ProudAuth is an open-source identity provider written in Go: sign-in with OAuth 2.0
+and OpenID Connect, passkeys and MFA, organizations, roles and audit evidence, in
+one Docker image. Your applications keep their own login screen.
 
-[Website](https://proudauth.com) · [Documentation](https://proudauth.com/docs/) ·
-[API contract](api/openapi/proudauth.yaml) · [Benchmarks](docs/operations/benchmarks.md#reference-results) ·
+[Quickstart](https://proudauth.com/docs/getting-started/quickstart/) ·
+[Documentation](https://proudauth.com/docs/) ·
+[Releases](https://github.com/proudbase/proudauth/releases) ·
+[Container image](https://github.com/orgs/proudbase/packages/container/package/proudauth) ·
 [Security](SECURITY.md)
 
-**Current release: `v0.2.0-alpha.2` (pre-release).**
-[Release assets](https://github.com/proudbase/proudauth/releases/tag/v0.2.0-alpha.2) ·
-[Container package](https://github.com/orgs/proudbase/packages/container/package/proudauth) ·
-[Docker Hub](https://hub.docker.com/r/mohamadalialghanem/proudauth)
+**Current release: `v0.2.0-alpha.2`** (pre-release; no external security review yet).
 
-## Why ProudAuth
+## Install
 
-| Capability | Service behavior |
-| --- | --- |
-| Standards | OAuth 2.0 / OpenID Connect, authorization code with mandatory PKCE, rotating refresh tokens, client credentials, discovery and JWKS |
-| Authentication | Headless transactions, passwords, passkeys, TOTP, recovery and authentication policies |
-| B2B identity | Realms, organizations, memberships, invitations, groups and delegated administration |
-| Authorization | Scoped roles, restrictive attribute policies, relationship decisions and controlled support impersonation |
-| Integration | OIDC/SAML federation, SCIM, directory integration, workload federation, signed webhooks and hooks |
-| Operations | Transactional audit evidence, backup/restore tooling, private metrics, migrations and resource budgets |
-
-The [capability inventory](docs/service-status.md) records implementation details
-and gaps. A configuration key or table alone is not a supported feature.
-No external security review or conformance certification has been completed.
-This pre-release software is not a production-hardening approval.
-
-## Install with Docker
-
-Pull the image, fill in `.env`, start. PostgreSQL, the HTTPS proxy and SMTP are yours.
+You need Docker, a PostgreSQL database, an email (SMTP) account and a domain with HTTPS.
 
 ```sh
 mkdir proudauth && cd proudauth
 curl -fsSLO https://raw.githubusercontent.com/proudbase/proudauth/v0.2.0-alpha.2/deploy/prod/docker-compose.yaml
 curl -fsSLO https://raw.githubusercontent.com/proudbase/proudauth/v0.2.0-alpha.2/deploy/prod/.env
-# Fill in .env: your HTTPS origin, PostgreSQL URL, a root key (openssl rand -hex 32) and SMTP.
+```
+
+Fill in the empty values in `.env`, then start:
+
+```sh
 docker compose pull
 docker compose up -d
 ```
 
-Migrations run and the `main` realm is created on start. The
-[Compose guide](docs/operations/docker-compose.md) covers the reverse proxy, the
-first administrator and upgrades; [every `.env` variable](docs/operations/environment.md)
-is documented. The image is `ghcr.io/proudbase/proudauth`, mirrored on Docker Hub as
-`mohamadalialghanem/proudauth`. This pre-release has no external security review
-or certification yet.
+The [quickstart](https://proudauth.com/docs/getting-started/quickstart/) shows both
+files to copy and creates your first administrator.
 
-## Develop from source
+## What you get
 
-Requires the Go version in [go.mod](go.mod) and Docker with Compose v2.
-`deploy/dev/` runs the same image from this checkout with PostgreSQL, a Mailpit
-mail catcher and Swagger UI; its `.env` needs no editing.
+- **Sign-in:** OAuth 2.0 / OpenID Connect with PKCE, passwords, passkeys, TOTP and a
+  headless API for your own login UI.
+- **Organizations:** realms, organizations, invitations, groups, roles and permissions.
+- **Integrations:** OIDC and SAML federation, SCIM, signed webhooks and hooks.
+- **Operations:** audit evidence, backups, migrations and private metrics.
+- **SDKs:** [Go](https://github.com/proudbase/proudauth-sdk-go),
+  [Node.js](https://github.com/proudbase/proudauth-sdk-node),
+  [Dart](https://github.com/proudbase/proudauth-sdk-dart),
+  [PHP](https://github.com/proudbase/proudauth-sdk-php) and
+  [.NET](https://github.com/proudbase/proudauth-sdk-dotnet).
+
+The [capability inventory](docs/service-status.md) lists what is implemented and
+what is not; [benchmarks](docs/operations/benchmarks.md#reference-results) are
+measured on one laptop and are not guarantees.
+
+## Develop
 
 ```sh
-git clone https://github.com/proudbase/proudauth.git
-cd proudauth/deploy/dev
-docker compose up -d --build --wait     # or, from the repository root: make dev
-docker compose exec server identity-cli bootstrap -realm main -email admin@example.test -username root-admin
-docker compose exec server identity-cli setup-account --url http://localhost:8080 --realm main
-docker compose exec server identity-cli login --url http://localhost:8080 --realm main
+git clone https://github.com/proudbase/proudauth.git && cd proudauth
+make dev          # PostgreSQL, Mailpit and Swagger UI, image built from source
+make test-unit
 ```
 
-Keep the one-time setup token private. The first administrator sign-in enrolls
-TOTP and verifies the email address; the code arrives in Mailpit.
-
-- API: `http://localhost:8080`
-- Discovery: `http://localhost:8080/realms/main/.well-known/openid-configuration`
-- Email: `http://localhost:8025`
-- Swagger UI: `http://localhost:8081`
-
-Browser sign-in requires your application's login UI;
-[the headless API guide](docs/protocols/headless-authentication.md) explains the
-flow. See [deploy/](deploy/README.md) for every deployment folder.
+`deploy/dev` serves the API on `http://localhost:8080`, email on
+`http://localhost:8025` and Swagger UI on `http://localhost:8081`. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) (DCO sign-off required) and the
+[architecture decisions](docs/architecture-decisions/).
 
 ## Build a Docker image
 
@@ -94,71 +78,6 @@ runtime images. Building locally does not publish a release. The release
 workflow gates publication on CI, then produces checksums, SBOMs, image
 signatures and provenance. Use the published immutable digest and verification
 assets for deployment; a locally built image is not a signed release image.
-
-## Measured reference results
-
-The original 60-second runs used concurrency 32, 10,000 users, 500 small
-organizations, one 5,000-member organization, 20 clients and 1,000 group members.
-Latencies are histogram estimates in milliseconds.
-
-| Scenario | Operations/s | p50 | p99 | p99.9 | Outcome |
-| --- | ---: | ---: | ---: | ---: | --- |
-| Client credentials | 1,036.6 | 30.72 | 38.91 | 47.10 | Pass |
-| Introspection | 2,038.1 | 15.87 | 21.50 | 36.86 | Pass |
-| Password login | 47.1 | 688.13 | 851.97 | 1,179.65 | Pass |
-| Refresh | 815.2 | 38.91 | 55.30 | 73.73 | Pass |
-| Policy | 736.9 | 43.01 | 57.34 | 102.40 | Pass |
-| Mixed | 553.8 | 34.82 | 409.60 | 458.75 | Pass |
-
-Environment: Apple M4 Pro / Mac16,8, 12 CPUs, 24 GiB, macOS 27.0.1,
-Go 1.27.1 and PostgreSQL 18.6. Server, worker, database and generator shared one
-laptop. These numbers refer to the recorded original development builds, not
-this migration snapshot. They are **not guarantees or sizing advice**.
-
-The [full report](docs/operations/benchmarks.md) includes all workload,
-adversarial and extended scenarios, outcomes, criteria, configuration, soaks
-and initial failures with corrections. [Raw artifacts](docs/operations/bench-results/)
-retain numeric results and build hashes. Local paths in exported copies are
-redacted with [provenance](docs/operations/bench-results/export-provenance.json).
-
-```sh
-# Temporary database/processes; cached images/modules, Docker, Go, curl,
-# jq and python3 required. The runner disables downloads.
-make bench-local
-```
-
-Read [capacity notes](docs/operations/capacity.md) before choosing a deployment
-size. Benchmarks implement the NFR-003..NFR-008 measurement requirements.
-
-## SDK ecosystem
-
-SDKs are maintained in independent repositories:
-
-| Language | Repository |
-| --- | --- |
-| Go | [proudauth-sdk-go](https://github.com/proudbase/proudauth-sdk-go) |
-| Node.js / TypeScript | [proudauth-sdk-node](https://github.com/proudbase/proudauth-sdk-node) |
-| Dart | [proudauth-sdk-dart](https://github.com/proudbase/proudauth-sdk-dart) |
-| PHP | [proudauth-sdk-php](https://github.com/proudbase/proudauth-sdk-php) |
-| .NET | [proudauth-sdk-dotnet](https://github.com/proudbase/proudauth-sdk-dotnet) |
-
-The landing page and documentation renderer are maintained in
-[proudauth-website](https://github.com/proudbase/proudauth-website).
-
-## Develop and contribute
-
-```sh
-make build
-make test-unit
-make test-e2e   # requires PROUDAUTH_TEST_DATABASE_URL
-make lint
-```
-
-Database tests skip without `PROUDAUTH_TEST_DATABASE_URL`; a fast successful run
-is not full end-to-end validation. Repository ownership and SDK contracts are
-recorded in [repository-migration.md](docs/repository-migration.md).
-Read [CONTRIBUTING.md](CONTRIBUTING.md), [architecture decisions](docs/architecture-decisions/README.md)
-and [security reporting](SECURITY.md). Contributions require DCO sign-off.
 
 ## License
 

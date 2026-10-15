@@ -67,8 +67,13 @@ builds and are not guarantees for this release.
 
 - The release workflow also refuses a tag that `docs/operations/docker-compose.md`
   does not name: the websites publish that guide as their quickstart.
-- The Compose installation guide covers production only; the development
-  stack is described in `deploy/README.md`.
+- The install guide (the websites' Docker quickstart) shows `docker-compose.yaml`
+  and `.env` in full to copy, then `docker compose pull` and `up -d`; a test
+  keeps them identical to `deploy/prod`. The production files carry short
+  comments, and the README is a short overview with a three-step install.
+- Release images carry `org.opencontainers.image.*` annotations on the
+  multi-architecture index, so GitHub links the container package to this
+  repository, and release notes end with the `docker pull` command and digest.
 
 ## [0.2.0-alpha.2] - 2026-10-15
 

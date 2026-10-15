@@ -72,8 +72,8 @@ jobs:
           grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}" deploy/prod/.env ||
             { echo "deploy/prod/.env must set PROUDAUTH_IMAGE to ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}"; exit 1; }
           # The websites publish this guide as their quickstart; scripts/prepare-release.sh sets it.
-          grep -qx "VERSION=${GITHUB_REF_NAME}" docs/operations/docker-compose.md ||
-            { echo "docs/operations/docker-compose.md must set VERSION=${GITHUB_REF_NAME}; run scripts/prepare-release.sh"; exit 1; }
+          grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}" docs/operations/docker-compose.md ||
+            { echo "docs/operations/docker-compose.md must show PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}; run scripts/prepare-release.sh"; exit 1; }
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           # The exact toolchain of the Dockerfile's build stage, so release
@@ -120,6 +120,10 @@ jobs:
           docker buildx build --platform linux/amd64,linux/arm64 \
             --build-arg VERSION="$GITHUB_REF_NAME" --build-arg VCS_REF="$(git rev-parse HEAD)" \
             --provenance=false --sbom=false --metadata-file image-metadata.json \
+            --annotation "index:org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --annotation "index:org.opencontainers.image.description=ProudAuth identity server: one image configured by environment variables" \
+            --annotation "index:org.opencontainers.image.licenses=Apache-2.0" \
+            --annotation "index:org.opencontainers.image.version=${GITHUB_REF_NAME}" \
             -t "${IMAGE}:${VERSION}" -t "${IMAGE}:${GITHUB_REF_NAME}" --push .
           # The immutable reference is the digest; tags are only labels (DEP-003).
           DIGEST=$(jq -er '."containerimage.digest"' image-metadata.json)
@@ -175,6 +179,11 @@ jobs:
           # Only this version's CHANGELOG section, not the whole file (GOV-005).
           awk -v v="${GITHUB_REF_NAME#v}" '$0 ~ "^## \\[?"v"\\]?" {p=1; print; next} p && /^## / {exit} p {print}' CHANGELOG.md > dist/RELEASE_NOTES.md
           [ -s dist/RELEASE_NOTES.md ] || { echo "CHANGELOG.md has no section for ${GITHUB_REF_NAME}"; exit 1; }
+          # Every release names its image, so the package and the install are one click away.
+          {
+            printf '\n## Docker image\n\n```sh\ndocker pull %s:%s\n```\n\n' "${{ steps.image.outputs.name }}" "${GITHUB_REF_NAME#v}"
+            printf 'Digest: `%s` · Install: [Docker quickstart](https://proudauth.com/docs/getting-started/quickstart/)\n' "$(cat dist/IMAGE_DIGEST)"
+          } >> dist/RELEASE_NOTES.md
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
