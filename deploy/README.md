@@ -14,12 +14,12 @@ same variables; only the values differ.
 
 ```sh
 cd deploy/dev
-docker compose up -d --build --wait
+docker compose up -d --wait
 ```
 
-Nothing to fill in (`make dev` from the repository root does the same, and CI
-runs `make smoke` against it). `--build` builds the image from this checkout; set
-`PROUDAUTH_IMAGE` in `.env` to a release tag to run a published image instead.
+Nothing to fill in: it runs the released image named in `.env`. `make dev` from
+the repository root builds this checkout as `proudauth:dev` and runs the same
+stack on it; CI runs `make smoke` against the image it builds.
 
 | URL | Purpose |
 | --- | --- |
@@ -62,7 +62,7 @@ Every start runs migrations and creates the `main` realm if it is missing; the
 second start changes nothing. Create the first administrator once:
 
 ```sh
-docker compose exec server identity-cli bootstrap -realm main -email you@example.com -username admin
+docker compose exec server identity-cli bootstrap -realm main -email you@example.com -username owner
 docker compose exec server identity-cli setup-account --url <PROUDAUTH_PUBLIC_ORIGIN> --realm main
 docker compose exec server identity-cli login --url <PROUDAUTH_PUBLIC_ORIGIN> --realm main
 ```

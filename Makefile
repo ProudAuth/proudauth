@@ -23,8 +23,10 @@ sbom:
 	$(GO) run github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0 mod -licenses -json -output sbom.cdx.json
 image:
 	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE_NAME):$(VERSION) .
+# The development stack on an image built from this checkout.
 dev:
-	docker compose -f deploy/dev/docker-compose.yaml up --build
+	docker build --build-arg VERSION=dev -t proudauth:dev .
+	PROUDAUTH_IMAGE=proudauth:dev docker compose -f deploy/dev/docker-compose.yaml up
 smoke:
 	./scripts/smoke-test.sh
 # Disaster-recovery drill (DEP-019, OPS-007): standby promotion and

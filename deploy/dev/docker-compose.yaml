@@ -1,19 +1,12 @@
-# ProudAuth for local development: the production image and the same .env
-# variables, plus everything it needs on one machine: PostgreSQL, a fake mail
-# server (Mailpit) and Swagger UI. Not for production.
-#
-#   docker compose up -d --build --wait
+# ProudAuth for development: the ProudAuth image plus everything it needs on
+# one machine: PostgreSQL, a fake mail server (Mailpit) and Swagger UI.
+# Not for production. Start: docker compose up -d
 #
 # API http://localhost:8080 · mail http://localhost:8025 · Swagger http://localhost:8081
 name: ${COMPOSE_PROJECT_NAME:-proudauth-local}
 
 x-proudauth: &proudauth
   image: ${PROUDAUTH_IMAGE:?Set PROUDAUTH_IMAGE in .env}
-  # Builds this checkout when PROUDAUTH_IMAGE is a local tag; a published
-  # release tag is pulled instead.
-  build:
-    context: ../..
-    args: {VERSION: dev}
   read_only: true
   tmpfs: ["/tmp:size=64m,mode=1777"]
   cap_drop: [ALL]
@@ -117,14 +110,14 @@ services:
     restart: unless-stopped
     ports: ["127.0.0.1:${SWAGGER_PORT:-8081}:8080"]
     environment:
-      SWAGGER_JSON: /spec/proudauth.yaml
+      # The API contract of the latest release, as published on proudauth.com.
+      URL: https://proudauth.com/docs/api/openapi.yaml
       VALIDATOR_URL: none
       # One clean page: no URL bar, groups collapsed, a filter, no schema dump.
       LAYOUT: BaseLayout
       DOC_EXPANSION: none
       FILTER: "true"
       DEFAULT_MODELS_EXPAND_DEPTH: "-1"
-    volumes: ["../../api/openapi:/spec:ro"]
 
 volumes:
   pgdata: {}

@@ -190,8 +190,8 @@ func TestDeployComposeStack(t *testing.T) {
 	}
 	makefile := deployRead(t, "Makefile")
 	if !regexp.MustCompile(`(?m)^smoke:\s*\n\t\./scripts/smoke-test\.sh`).MatchString(makefile) ||
-		!regexp.MustCompile(`(?m)^dev:\s*\n\tdocker compose -f deploy/dev/docker-compose\.yaml up --build`).MatchString(makefile) {
-		t.Error("Makefile must offer `make dev` (deploy/dev compose up) and `make smoke`")
+		!regexp.MustCompile(`(?m)^dev:\s*\n\tdocker build .*-t proudauth:dev \.\n\tPROUDAUTH_IMAGE=proudauth:dev docker compose -f deploy/dev/docker-compose\.yaml up`).MatchString(makefile) {
+		t.Error("Makefile must offer `make dev` (deploy/dev on an image built from the checkout) and `make smoke`")
 	}
 	if !strings.Contains(smoke, "deploy/dev/docker-compose.yaml") {
 		t.Error("smoke-test.sh must address the deploy/dev stack")

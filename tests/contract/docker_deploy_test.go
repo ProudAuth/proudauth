@@ -103,6 +103,16 @@ func TestDeployDevAndProd(t *testing.T) {
 			}
 			for _, name := range names {
 				svc := services[name]
+				// Both files are copied alone from the install guide: nothing
+				// may point into a source checkout.
+				if deployDig(svc, "build") != nil {
+					t.Errorf("%s must run a published image, not a source build", name)
+				}
+				for _, volume := range deployStrings(deployDig(svc, "volumes")) {
+					if strings.HasPrefix(volume, ".") || strings.HasPrefix(volume, "/") {
+						t.Errorf("%s mounts %q, which needs files besides docker-compose.yaml and .env", name, volume)
+					}
+				}
 				img, _ := deployDig(svc, "image").(string)
 				ours := strings.HasPrefix(img, "${PROUDAUTH_IMAGE")
 				if !ours {
@@ -122,9 +132,6 @@ func TestDeployDevAndProd(t *testing.T) {
 					if strings.HasSuffix(port, ":9090") && (profile.dir == "prod" || !strings.HasPrefix(port, "127.0.0.1:")) {
 						t.Errorf("%s publishes the operator listener as %q; it stays private (loopback in dev, unpublished in prod)", name, port)
 					}
-				}
-				if profile.dir == "prod" && deployDig(svc, "build") != nil {
-					t.Errorf("prod service %s must use the published image, not a source build", name)
 				}
 				if strings.Join(deployStrings(deployDig(svc, "entrypoint")), " ") == "/usr/local/bin/identity-cli realm-create" {
 					t.Errorf("%s must use realm-create -if-missing to survive restarts", name)
@@ -181,20 +188,36 @@ func TestDeployDevAndProd(t *testing.T) {
 	}
 }
 
-// TestInstallGuideShowsTheProductionFiles (DEP-002): the install guide, which
-// the websites publish as their quickstart, shows deploy/prod's
-// docker-compose.yaml and .env byte for byte, so copying them is installing
-// exactly the release.
-func TestInstallGuideShowsTheProductionFiles(t *testing.T) {
+// TestInstallGuideShowsTheDeployFiles (DEP-002): the install guide, which the
+// websites publish as their quickstart, shows deploy/dev's and deploy/prod's
+// docker-compose.yaml and .env byte for byte, development first, so copying
+// them is running exactly what the release ships.
+func TestInstallGuideShowsTheDeployFiles(t *testing.T) {
 	guide := deployRead(t, "docs/operations/docker-compose.md")
-	for lang, rel := range map[string]string{"yaml": "deploy/prod/docker-compose.yaml", "dotenv": "deploy/prod/.env"} {
-		if !strings.Contains(guide, "```"+lang+"\n"+deployRead(t, rel)+"```\n") {
-			t.Errorf("docs/operations/docker-compose.md must show %s exactly, in a ```%s block", rel, lang)
+	devAt, prodAt := strings.Index(guide, "\n## Development\n"), strings.Index(guide, "\n## Production\n")
+	if devAt < 0 || prodAt < devAt {
+		t.Fatal("the install guide needs a Development section followed by a Production section")
+	}
+	for section, text := range map[string]string{"dev": guide[devAt:prodAt], "prod": guide[prodAt:]} {
+		for lang, file := range map[string]string{"yaml": "docker-compose.yaml", "dotenv": ".env"} {
+			rel := "deploy/" + section + "/" + file
+			if !strings.Contains(text, "```"+lang+"\n"+deployRead(t, rel)+"```\n") {
+				t.Errorf("the install guide's %s section must show %s exactly, in a ```%s block", section, rel, lang)
+			}
 		}
 	}
-	for _, command := range []string{"docker compose pull\ndocker compose up -d\n", "identity-cli bootstrap"} {
-		if !strings.Contains(guide, command) {
-			t.Errorf("the install guide lacks %q", command)
+	for section, commands := range map[string][]string{
+		"dev":  {"docker compose up -d\n", "identity-cli bootstrap", "http://localhost:8025"},
+		"prod": {"docker compose pull\ndocker compose up -d\n", "identity-cli bootstrap"},
+	} {
+		text := guide[prodAt:]
+		if section == "dev" {
+			text = guide[devAt:prodAt]
+		}
+		for _, command := range commands {
+			if !strings.Contains(text, command) {
+				t.Errorf("the install guide's %s section lacks %q", section, command)
+			}
 		}
 	}
 }
