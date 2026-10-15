@@ -119,21 +119,6 @@ docker compose down
 Your data stays in your PostgreSQL. Do not copy credentials or logs with
 sensitive operational data into issue reports.
 
-## Development stack
-
-`deploy/dev/` in the source repository has the same two files with development
-values, plus PostgreSQL, a Mailpit mail catcher and Swagger UI. Nothing needs to
-be filled in:
-
-```sh
-cd deploy/dev
-docker compose up -d --build --wait
-```
-
-The API is at `http://localhost:8080`, every email at `http://localhost:8025`,
-Swagger UI at `http://localhost:8081` and the operator listener at
-`http://127.0.0.1:9090/status`. `docker compose down -v` deletes its data.
-
 ## Limits of this installer
 
 - Secrets placed directly in `.env` reach the containers as environment

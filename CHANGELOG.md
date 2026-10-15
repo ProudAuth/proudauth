@@ -53,7 +53,22 @@ builds and are not guarantees for this release.
 
 ## [Unreleased]
 
-No changes recorded after 0.2.0-alpha.2.
+### Added
+
+- `scripts/prepare-release.sh vX.Y.Z` prepares a release in one step: it moves
+  every published version reference (the `deploy/prod/.env` image, install
+  commands, guides) to the new version and turns the Unreleased notes into
+  the version's CHANGELOG section (GOV-005).
+- After publishing, the release workflow asks proudauth.com and proudbase.com
+  to redeploy when a `WEBSITES_DISPATCH_TOKEN` secret exists; without it they
+  pick up the release within the hour.
+
+### Changed
+
+- The release workflow also refuses a tag that `docs/operations/docker-compose.md`
+  does not name: the websites publish that guide as their quickstart.
+- The Compose installation guide covers production only; the development
+  stack is described in `deploy/README.md`.
 
 ## [0.2.0-alpha.2] - 2026-10-15
 
