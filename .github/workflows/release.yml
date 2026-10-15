@@ -71,7 +71,7 @@ jobs:
           # Installers download deploy/prod from this tag: its .env must pin this release.
           grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}" deploy/prod/.env ||
             { echo "deploy/prod/.env must set PROUDAUTH_IMAGE to ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}"; exit 1; }
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           # The exact toolchain of the Dockerfile's build stage, so release
           # binaries and the image are built alike (DEP-003); raise both
