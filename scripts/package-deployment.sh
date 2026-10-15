@@ -6,7 +6,7 @@ set -eu
 cd "$(dirname "$0")/.."
 [ "$#" -le 1 ] || { printf '%s\n' 'usage: package-deployment.sh [vVERSION]' >&2; exit 2; }
 command -v python3 >/dev/null 2>&1 || { printf '%s\n' 'python3 is required.' >&2; exit 1; }
-exec python3 - "${1:-v0.2.0-alpha.2}" "${DEPLOYMENT_OUT:-dist}" <<'PY'
+exec python3 - "${1:-v0.2.0-alpha.3}" "${DEPLOYMENT_OUT:-dist}" <<'PY'
 import gzip
 import hashlib
 import io

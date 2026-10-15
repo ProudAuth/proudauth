@@ -12,7 +12,7 @@ one Docker image. Your applications keep their own login screen.
 [Container image](https://github.com/orgs/proudauth/packages/container/package/proudauth) ·
 [Security](SECURITY.md)
 
-**Current release: `v0.2.0-alpha.2`** (pre-release; no external security review yet).
+**Current release: `v0.2.0-alpha.3`** (pre-release; no external security review yet).
 
 ## Install
 
@@ -20,8 +20,8 @@ You need Docker, a PostgreSQL database, an email (SMTP) account and a domain wit
 
 ```sh
 mkdir proudauth && cd proudauth
-curl -fsSLO https://raw.githubusercontent.com/proudauth/proudauth/v0.2.0-alpha.2/deploy/prod/docker-compose.yaml
-curl -fsSLO https://raw.githubusercontent.com/proudauth/proudauth/v0.2.0-alpha.2/deploy/prod/.env
+curl -fsSLO https://raw.githubusercontent.com/proudauth/proudauth/v0.2.0-alpha.3/deploy/prod/docker-compose.yaml
+curl -fsSLO https://raw.githubusercontent.com/proudauth/proudauth/v0.2.0-alpha.3/deploy/prod/.env
 ```
 
 Fill in the empty values in `.env`, then start:
@@ -67,9 +67,9 @@ make test-unit
 ## Build a Docker image
 
 ```sh
-make image VERSION=0.2.0-alpha.2
+make image VERSION=0.2.0-alpha.3
 # Equivalent:
-docker build --build-arg VERSION=0.2.0-alpha.2 -t proudauth:0.2.0-alpha.2 .
+docker build --build-arg VERSION=0.2.0-alpha.3 -t proudauth:0.2.0-alpha.3 .
 ```
 
 The image includes `identity-server`, `identity-worker` and `identity-cli`.

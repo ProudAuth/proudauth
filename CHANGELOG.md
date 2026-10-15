@@ -53,6 +53,10 @@ builds and are not guarantees for this release.
 
 ## [Unreleased]
 
+No changes recorded after 0.2.0-alpha.3.
+
+## [0.2.0-alpha.3] - 2026-10-15
+
 ### Changed
 
 - The project moved to the ProudAuth GitHub organization: the Go module is
