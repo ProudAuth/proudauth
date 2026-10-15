@@ -23,7 +23,7 @@ jobs:
       verified: ${{ steps.existing.outputs.verified }}
       head_sha: ${{ steps.existing.outputs.head_sha }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check CI for the exact tagged commit
         id: existing
         env:
@@ -60,7 +60,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate release version and commit
         env:
           VERIFIED_SHA: ${{ needs.ci-status.outputs.head_sha }}
@@ -71,7 +71,7 @@ jobs:
           # Installers download deploy/prod from this tag: its .env must pin this release.
           grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}" deploy/prod/.env ||
             { echo "deploy/prod/.env must set PROUDAUTH_IMAGE to ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}"; exit 1; }
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           # The exact toolchain of the Dockerfile's build stage, so release
           # binaries and the image are built alike (DEP-003); raise both

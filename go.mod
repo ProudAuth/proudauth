@@ -3,9 +3,9 @@ module github.com/proudbase/proudauth
 go 1.27.1
 
 require (
-	github.com/beevik/etree v1.7.0
-	github.com/coreos/go-oidc/v3 v3.18.0
-	github.com/fxamacker/cbor/v2 v2.9.4
+	github.com/beevik/etree v1.8.1
+	github.com/coreos/go-oidc/v3 v3.21.0
+	github.com/fxamacker/cbor/v2 v2.9.6
 	github.com/go-asn1-ber/asn1-ber v1.5.8
 	github.com/go-jose/go-jose/v4 v4.1.5
 	github.com/go-ldap/ldap/v3 v3.4.15
