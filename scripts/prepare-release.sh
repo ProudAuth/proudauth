@@ -23,9 +23,9 @@ if not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.-]+)?', new):
     raise SystemExit('Version must be vMAJOR.MINOR.PATCH, optionally with a prerelease suffix')
 if not re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', date):
     raise SystemExit('RELEASE_DATE must be YYYY-MM-DD')
-image = re.search(r'^PROUDAUTH_IMAGE=ghcr\.io/proudbase/proudauth:(\S+)$', Path('deploy/prod/.env').read_text(), re.M)
+image = re.search(r'^PROUDAUTH_IMAGE=ghcr\.io/proudauth/proudauth:(\S+)$', Path('deploy/prod/.env').read_text(), re.M)
 if not image:
-    raise SystemExit('deploy/prod/.env does not pin ghcr.io/proudbase/proudauth')
+    raise SystemExit('deploy/prod/.env does not pin ghcr.io/proudauth/proudauth')
 old = image.group(1)
 if old == new[1:]:
     raise SystemExit(f'{new} is already the current version')

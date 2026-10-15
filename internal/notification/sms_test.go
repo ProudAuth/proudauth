@@ -11,7 +11,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/egress"
+	"github.com/proudauth/proudauth/internal/egress"
 )
 
 func TestWebhookSMSSenderSignsRequests(t *testing.T) {

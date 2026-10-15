@@ -10,8 +10,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/proudbase/proudauth-sdk-go/oidcclient"
-	"github.com/proudbase/proudauth/examples/backend-for-frontend/bff"
+	"github.com/proudauth/proudauth-sdk-go/oidcclient"
+	"github.com/proudauth/proudauth/examples/backend-for-frontend/bff"
 )
 
 func main() {

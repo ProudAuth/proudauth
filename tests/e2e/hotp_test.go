@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/credential"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/credential"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestHOTP covers MFA-013: counter-based codes are opt-in realm policy

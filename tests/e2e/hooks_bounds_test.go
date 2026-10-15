@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/token"
+	"github.com/proudauth/proudauth/internal/token"
 )
 
 // TestHookBounds covers TEST-053 (EXT-009, EXT-011, EXT-012, EXT-017): a

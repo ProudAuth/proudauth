@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestNoSecurityQuestionsInPolicy covers MFA-011 through the administration

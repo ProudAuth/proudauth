@@ -1,8 +1,8 @@
 package authentication
 
 import (
-	"github.com/proudbase/proudauth/internal/identity"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // errUnverifiedRecoveryContact refuses an assisted recovery whose setup link

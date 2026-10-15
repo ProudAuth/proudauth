@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth-sdk-go/admin"
+	"github.com/proudauth/proudauth-sdk-go/admin"
 )
 
 // TestAdminSDKInterop covers SDK-007 and SDK-010 against a running server:

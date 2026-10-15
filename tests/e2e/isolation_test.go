@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/proudbase/proudauth/examples/protected-billing-api/billingapi"
-	"github.com/proudbase/proudauth/examples/protected-orders-api/ordersapi"
+	"github.com/proudauth/proudauth/examples/protected-billing-api/billingapi"
+	"github.com/proudauth/proudauth/examples/protected-orders-api/ordersapi"
 )
 
 // Services starts the two example resource servers.

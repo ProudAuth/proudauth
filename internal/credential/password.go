@@ -22,8 +22,8 @@ import (
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/text/unicode/norm"
 
-	"github.com/proudbase/proudauth/internal/keys"
-	"github.com/proudbase/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/keys"
+	"github.com/proudauth/proudauth/internal/platform/secret"
 )
 
 // Params are versioned Argon2id parameters (CRED-001).

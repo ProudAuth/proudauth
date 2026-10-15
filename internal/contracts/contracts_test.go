@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/contracts"
-	"github.com/proudbase/proudauth/internal/contracts/schemacheck"
-	"github.com/proudbase/proudauth/internal/webhooks"
+	"github.com/proudauth/proudauth/internal/contracts"
+	"github.com/proudauth/proudauth/internal/contracts/schemacheck"
+	"github.com/proudauth/proudauth/internal/webhooks"
 )
 
 const apiDir = "../../api"
@@ -159,7 +159,7 @@ func TestContractRegistry(t *testing.T) {
 }
 
 // TestSchemaFilesDeclareDraft: new schema directories follow the api/events
-// conventions ($schema, $id under auth.proudbase.com, examples that validate).
+// conventions ($schema, $id under proudauth.com, examples that validate).
 func TestSchemaFilesDeclareDraft(t *testing.T) {
 	for _, dir := range []string{"hooks", "plugins", "workflows"} {
 		set, err := schemacheck.Load(filepath.Join(apiDir, dir))
@@ -174,7 +174,7 @@ func TestSchemaFilesDeclareDraft(t *testing.T) {
 			if doc["$schema"] != "https://json-schema.org/draft/2020-12/schema" {
 				t.Errorf("%s: $schema", f)
 			}
-			if id, _ := doc["$id"].(string); !strings.HasPrefix(id, "https://auth.proudbase.com/schemas/"+dir+"/") || !strings.HasSuffix(id, "/"+f) {
+			if id, _ := doc["$id"].(string); !strings.HasPrefix(id, "https://proudauth.com/schemas/"+dir+"/") || !strings.HasSuffix(id, "/"+f) {
 				t.Errorf("%s: $id %q", f, id)
 			}
 			exs, _ := doc["examples"].([]any)

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/authorization.role.unassigned.v1.json",
+  "$id": "https://proudauth.com/schemas/events/authorization.role.unassigned.v1.json",
   "title": "authorization.role.unassigned (v1)",
   "description": "A role assignment was removed. Emitted when a role assignment is removed through the administration API, when ownership transfer releases the previous owner's role, or when the worker removes an expired time-bound assignment. Not emitted for assignments deleted as a side effect of membership removal, service principal deletion or user deletion. org_id is set for organization-scoped assignments. The assignment identifier is not included.",
   "type": "object",

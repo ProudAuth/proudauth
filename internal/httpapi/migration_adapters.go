@@ -9,10 +9,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/proudbase/proudauth/internal/identity"
-	"github.com/proudbase/proudauth/internal/migrate"
-	"github.com/proudbase/proudauth/internal/platform/canonical"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/migrate"
+	"github.com/proudauth/proudauth/internal/platform/canonical"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // migrationAdapterRoutes serve the first-party migration adapters (MIG-018):

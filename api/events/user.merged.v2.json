@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/user.merged.v2.json",
+  "$id": "https://proudauth.com/schemas/events/user.merged.v2.json",
   "title": "user.merged (v2)",
   "description": "Two accounts were merged after both owners confirmed and an administrator executed the reviewed plan (USR-011). merged_user_id no longer exists; applications should remap data keyed by it to user_id. GET /subject-aliases/{id} resolves the alias later.",
   "type": "object",

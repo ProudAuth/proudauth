@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"slices"
 
-	"github.com/proudbase/proudauth/internal/session"
+	"github.com/proudauth/proudauth/internal/session"
 )
 
 // Claims parameter profile (OIDC-008). The parameter is accepted and validated,

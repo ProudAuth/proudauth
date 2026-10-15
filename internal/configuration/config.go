@@ -24,7 +24,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/proudbase/proudauth/internal/egress"
+	"github.com/proudauth/proudauth/internal/egress"
 )
 
 // Mode is the deployment mode. Production rejects development shortcuts (QA-007).

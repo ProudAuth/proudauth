@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/organization.archived.v1.json",
+  "$id": "https://proudauth.com/schemas/events/organization.archived.v1.json",
   "title": "organization.archived (v1)",
   "description": "An organization was archived. Emitted when an administrator archives an organization. Grants bound to the organization are revoked as for suspension. Emitted by every successful call, even when the organization was already in that state. org_id equals data.organization_id.",
   "type": "object",

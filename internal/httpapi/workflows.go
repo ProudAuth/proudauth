@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/contracts"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/workflow"
+	"github.com/proudauth/proudauth/internal/contracts"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/workflow"
 )
 
 // extensibilityRoutes registers lifecycle workflows (EXT-015, EXT-016),

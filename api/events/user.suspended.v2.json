@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/user.suspended.v2.json",
+  "$id": "https://proudauth.com/schemas/events/user.suspended.v2.json",
   "title": "user.suspended (v2)",
   "description": "An account was suspended. Emitted whenever the account state becomes \"suspended\": an administrator (PATCH user state or POST /users/{user}/suspend), a bulk user operation (user.bulk job), the lifecycle job (scheduled deactivation or dormant accounts under lifecycle.dormant_action=suspend), or a denied registration review. All of the user's sessions and grants, including offline grants, are revoked in the same transaction (one session.revoked event with reason \"account_suspended\" per active session).",
   "type": "object",

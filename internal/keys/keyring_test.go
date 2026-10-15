@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/platform/secret"
 )
 
 // TestEncryptRoundTripAndBinding covers SEC-010: recoverable secrets are

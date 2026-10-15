@@ -51,7 +51,7 @@ func newBundleFixture(t *testing.T) bundleFixture {
 		write(path, "public fixture: "+path+"\n", 0o600)
 	}
 	write("deploy/prod/.env", "# template\nPROUDAUTH_ROOT_KEY=must-not-enter-the-bundle\nPROUDAUTH_DATABASE_URL=postgres://u:must-not-enter-the-bundle@db/pa\nPROUDAUTH_LOG_LEVEL=info\n", 0o600)
-	write("go.mod", "module github.com/proudbase/proudauth\n\ngo 1.27.1\n", 0o600)
+	write("go.mod", "module github.com/proudauth/proudauth\n\ngo 1.27.1\n", 0o600)
 	write("test-bin/go", `#!/bin/sh
 set -eu
 case "$1" in
@@ -66,7 +66,7 @@ case "$1" in
   mkdir -p "$(dirname "$2")"
   printf 'test-only %s binary\n' "$GOARCH" >"$2"
   ;;
- list) printf 'github.com/proudbase/proudauth\n' ;;
+ list) printf 'github.com/proudauth/proudauth\n' ;;
  version) printf 'go version test-only linux/arm64\n' ;;
  *) exit 42 ;;
 esac

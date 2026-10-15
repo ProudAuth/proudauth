@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestExternalPolicyEngine covers AZ-026: a realm delegates decisions to an

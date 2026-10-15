@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/platform/secret"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestReplicaSharedSSORevocationStress covers ARC-005, ARC-006, SES-005,

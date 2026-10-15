@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/proudbase/proudauth-sdk-go/verifier"
+	"github.com/proudauth/proudauth-sdk-go/verifier"
 )
 
 // Order is an application-owned record. Ownership is an application fact (§15.2).

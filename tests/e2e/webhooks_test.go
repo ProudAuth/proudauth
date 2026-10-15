@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/webhooks"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/webhooks"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestWebhookSubscriptionLifecycle covers EXT-001 (a subscription records its

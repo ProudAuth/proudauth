@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/organization.reactivated.v1.json",
+  "$id": "https://proudauth.com/schemas/events/organization.reactivated.v1.json",
   "title": "organization.reactivated (v1)",
   "description": "An organization was set back to active. Emitted when an administrator sets an organization (suspended or archived) back to \"active\". Previously revoked grants are not restored. Emitted by every successful call, even when the organization was already in that state. org_id equals data.organization_id.",
   "type": "object",

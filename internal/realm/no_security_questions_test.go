@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // TestNoSecurityQuestions covers MFA-011: knowledge-based personal questions

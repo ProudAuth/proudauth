@@ -22,7 +22,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/proudbase/proudauth/internal/webhooks"
+	"github.com/proudauth/proudauth/internal/webhooks"
 )
 
 const (

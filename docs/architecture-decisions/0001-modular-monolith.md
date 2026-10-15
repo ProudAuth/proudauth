@@ -13,7 +13,7 @@ justifies it (ARC-010).
 
 ## Decision
 
-Ship three binaries built from one module (`github.com/proudbase/proudauth`):
+Ship three binaries built from one module (`github.com/proudauth/proudauth`):
 
 - `identity-server` (`cmd/identity-server`): one public HTTP listener
   (`server.public_listen`) serving protocol endpoints (`/realms/{realm}/...`),

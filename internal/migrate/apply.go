@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/identity"
 )
 
 // Caller performs one authenticated request against the realm API

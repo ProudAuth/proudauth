@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-webauthn/webauthn/protocol"
 
-	"github.com/proudbase/proudauth/internal/passkey"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/passkey"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // webauthnTrustRoutes serve passkey attestation trust (PASS-009) and the

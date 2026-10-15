@@ -2,7 +2,7 @@ package application
 
 import (
 	"fmt"
-	"github.com/proudbase/proudauth/internal/platform/canonical"
+	"github.com/proudauth/proudauth/internal/platform/canonical"
 	"strings"
 )
 

@@ -59,7 +59,7 @@ func TestOfflineBundleExcludesInstalledReleaseState(t *testing.T) {
 	f := newBundleFixture(t)
 	private := "fixture-private-release-state-must-never-be-published"
 	// A production .env filled in the packaging checkout.
-	filled := "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:0.2.0-alpha.2\nPROUDAUTH_ROOT_KEY=" + private +
+	filled := "PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:0.2.0-alpha.2\nPROUDAUTH_ROOT_KEY=" + private +
 		"\nPROUDAUTH_DATABASE_URL=postgres://proudauth:" + private + "@db.example.test/proudauth\nPROUDAUTH_SMTP_PASSWORD=" + private + "\n"
 	path := filepath.Join(f.root, "deploy/prod/.env")
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {

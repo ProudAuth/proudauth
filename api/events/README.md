@@ -5,7 +5,7 @@ Machine-readable [JSON Schema draft 2020-12](https://json-schema.org/draft/2020-
 - `envelope.v1.json`: the JSON body of every webhook delivery. It also documents the signature headers (`x-headers`, `x-signature`, including a test vector).
 - `<event_type>.v1.json`: one schema per event type, for example `organization.membership.removed.v1.json`. Each one is the envelope (`allOf: [{"$ref": "envelope.v1.json"}]`) narrowed to one `event_type` and its exact `data` shape.
 
-Every schema's `$id` is `https://auth.proudbase.com/schemas/events/<file name>`. Each one includes `examples`: the standard payload form first, then the minimal form when the two differ.
+Every schema's `$id` is `https://proudauth.com/schemas/events/<file name>`. Each one includes `examples`: the standard payload form first, then the minimal form when the two differ.
 
 The schemas are derived from the server code (`internal/events`, `internal/webhooks` and the `Outbox.Publish` call sites). Each event schema names its emitting function or functions in `x-emitted-by`.
 
@@ -273,7 +273,7 @@ A version stays supported (deliverable and selectable) for at least **12 months*
 
 ## Using the schemas
 
-- Register every file under its `$id` (base `https://auth.proudbase.com/schemas/events/`) so that the relative `$ref`s (`envelope.v1.json`, `envelope.v2.json#/$defs/...`) resolve offline.
+- Register every file under its `$id` (base `https://proudauth.com/schemas/events/`) so that the relative `$ref`s (`envelope.v1.json`, `envelope.v2.json#/$defs/...`) resolve offline.
 - Enable `format` assertion if you want `date-time` checked; it is an annotation only by default.
 - The schemas carry annotation keywords prefixed with `x-`: `x-headers`, `x-signature`, `x-event-type`, `x-subscribable`, `x-emitted-by`, `x-org-scoped` and `x-payload-form`. Standard validators ignore them. Ajv in strict mode rejects unknown keywords, so use `strict: false` or `ajv.addVocabulary([...])` with these names.
 - All files compile as draft 2020-12, and every embedded example validates against its schema and against the envelope.

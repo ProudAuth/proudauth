@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/configuration"
 )
 
 // TestPublicServerBounds covers NFR-001 at the connection level: the public

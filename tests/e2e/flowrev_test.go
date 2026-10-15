@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestAuthenticationFlowRevisions covers AUT-019: flow definitions are

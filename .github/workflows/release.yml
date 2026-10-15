@@ -69,11 +69,11 @@ jobs:
           test "$(git rev-parse HEAD)" = "$VERIFIED_SHA"
           [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]
           # Installers download deploy/prod from this tag: its .env must pin this release.
-          grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}" deploy/prod/.env ||
-            { echo "deploy/prod/.env must set PROUDAUTH_IMAGE to ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}"; exit 1; }
+          grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:${GITHUB_REF_NAME#v}" deploy/prod/.env ||
+            { echo "deploy/prod/.env must set PROUDAUTH_IMAGE to ghcr.io/proudauth/proudauth:${GITHUB_REF_NAME#v}"; exit 1; }
           # The websites publish this guide as their quickstart; scripts/prepare-release.sh sets it.
-          grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}" docs/operations/docker-compose.md ||
-            { echo "docs/operations/docker-compose.md must show PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}; run scripts/prepare-release.sh"; exit 1; }
+          grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:${GITHUB_REF_NAME#v}" docs/operations/docker-compose.md ||
+            { echo "docs/operations/docker-compose.md must show PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:${GITHUB_REF_NAME#v}; run scripts/prepare-release.sh"; exit 1; }
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           # The exact toolchain of the Dockerfile's build stage, so release
@@ -195,16 +195,16 @@ jobs:
             --title "ProudAuth ${GITHUB_REF_NAME}" --notes-file dist/RELEASE_NOTES.md --verify-tag "${options[@]}"
           # Docker Hub mirroring is a separately verified maintainer operation;
           # no Hub credentials are stored in this GitHub repository/workflow.
-      - name: Update the websites now
-        # proudauth.com and proudbase.com sync from the latest release every
+      - name: Update the website now
+        # proudauth.com syncs from the latest release every
         # hour; with a WEBSITES_DISPATCH_TOKEN secret (a fine-grained token with
-        # Contents read/write on both website repositories) they redeploy now.
+        # Contents read/write on ProudAuth/proudauth-website) it redeploys now.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.WEBSITES_DISPATCH_TOKEN }}
         run: |
-          [ -n "$GH_TOKEN" ] || { echo "No WEBSITES_DISPATCH_TOKEN: the websites pick up ${GITHUB_REF_NAME} within the hour."; exit 0; }
-          for site in proudauth-website proudbase-website; do
-            gh api "repos/proudbase/${site}/dispatches" -f event_type=proudauth-release -f "client_payload[tag]=${GITHUB_REF_NAME}"
+          [ -n "$GH_TOKEN" ] || { echo "No WEBSITES_DISPATCH_TOKEN: the website picks up ${GITHUB_REF_NAME} within the hour."; exit 0; }
+          for site in proudauth-website; do
+            gh api "repos/proudauth/${site}/dispatches" -f event_type=proudauth-release -f "client_payload[tag]=${GITHUB_REF_NAME}"
             echo "Requested ${site} deployment for ${GITHUB_REF_NAME}"
           done

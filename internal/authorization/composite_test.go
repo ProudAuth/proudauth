@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // TestCompositeRoleGraphChecks covers AZ-011 and TEST-014 for composite

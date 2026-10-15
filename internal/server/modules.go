@@ -1,6 +1,6 @@
 package server
 
-import "github.com/proudbase/proudauth/internal/httpapi"
+import "github.com/proudauth/proudauth/internal/httpapi"
 
 // RegisterModules wires optional modules (policies, webhooks, federation,
 // passkeys, SCIM, ...) into the application. Each module registers only the routes

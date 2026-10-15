@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/configuration"
 )
 
 // TestConfigSchemaMatchesStructs keeps api/schemas/config.schema.json in step

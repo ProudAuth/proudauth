@@ -84,7 +84,7 @@ operations are well formed, that the JSON Schemas under `api/` parse, and that
 every event type has a schema. **A new or changed route or event must update
 `api/` in the same pull request.**
 
-Language SDK changes belong in their standalone repositories under `proudbase`.
+Language SDK changes belong in their standalone repositories under `ProudAuth`.
 The CLI and protocol compatibility tests import a version-pinned Go SDK module;
 shared synthetic contracts live in `tests/fixtures/sdk-contracts`. Each SDK owns
 its language tests, dependency checks and release lifecycle. See
@@ -144,8 +144,8 @@ gofmt -l .   # must print nothing (CI fails otherwise)
 ### Security-sensitive areas
 
 The release review policy requires **two maintainer approvals, including a
-designated security reviewer**. The organization has separate `@proudbase/maintainers`
-and `@proudbase/security-reviewers` teams; [CODEOWNERS](.github/CODEOWNERS)
+designated security reviewer**. The organization has separate `@ProudAuth/maintainers`
+and `@ProudAuth/security-reviewers` teams; [CODEOWNERS](.github/CODEOWNERS)
 requires the security team on sensitive paths. Both teams initially contain the
 owner, so team separation does not establish a second independent reviewer.
 A second qualified reviewer is still needed to fulfill that policy. The owner
@@ -269,5 +269,5 @@ an acceptable answer, a silent omission is not.
 3. After it merges: `git tag -a v0.3.0 -m "ProudAuth v0.3.0" && git push origin v0.3.0`.
 
 The release workflow builds, signs and publishes the image and the release, and
-refuses a tag the prepared files do not match. proudauth.com and proudbase.com
-then show the new version and its install guide on their own.
+refuses a tag the prepared files do not match. proudauth.com
+then shows the new version and its install guide on their own.

@@ -20,9 +20,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/proudbase/proudauth/internal/observability"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/storage"
+	"github.com/proudauth/proudauth/internal/observability"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/storage"
 )
 
 // Modes.

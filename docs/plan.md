@@ -1937,7 +1937,7 @@ environment, release provenance or the independent security review.
 
 The following is an illustrative Go-oriented modular-monolith layout. Module boundaries matter more than exact directory names; another implementation language can preserve the same architecture.
 
-The service now lives in `proudbase/proudauth`; each SDK and the website has an
+The service now lives in `ProudAuth/proudauth`; each SDK and the website has an
 independently buildable public repository. This source-ownership split preserves
 the transactional modular monolith and OSS-004's complete-source requirement;
 it does not split identity domains into distributed services. The CLI imports a

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // Policies are typed, bounded, side-effect-free restrictions evaluated after

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/identity"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // privacyRoutes report how an account deletion has propagated (PRV-005).

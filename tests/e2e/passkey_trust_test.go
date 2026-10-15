@@ -22,9 +22,9 @@ import (
 
 	"github.com/fxamacker/cbor/v2"
 
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/passkey"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/passkey"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // attester is a test authenticator vendor: a root CA and a packed

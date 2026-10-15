@@ -1,4 +1,4 @@
-module github.com/proudbase/proudauth
+module github.com/proudauth/proudauth
 
 go 1.27.1
 
@@ -14,7 +14,7 @@ require (
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/oklog/ulid/v2 v2.1.2
 	github.com/pquerna/otp v1.5.0
-	github.com/proudbase/proudauth-sdk-go v0.0.0-20261013190527-116f9fa19d0b
+	github.com/proudauth/proudauth-sdk-go v0.0.0-20261015160744-4c3faf77751b
 	github.com/russellhaering/goxmldsig v1.6.1
 	golang.org/x/crypto v0.58.0
 	golang.org/x/net v0.61.0

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/organization.membership.added.v1.json",
+  "$id": "https://proudauth.com/schemas/events/organization.membership.added.v1.json",
   "title": "organization.membership.added (v1)",
   "description": "A user became an active member of an organization. Emitted when an administrator adds an existing user to an organization, or when a user accepts an invitation (also when an existing active member accepts a further invitation; membership_id is then the existing membership). Not emitted for the creator's membership at organization creation, for approved join requests, or for memberships created by import jobs.",
   "type": "object",

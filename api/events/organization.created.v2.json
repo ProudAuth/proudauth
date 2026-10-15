@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/organization.created.v2.json",
+  "$id": "https://proudauth.com/schemas/events/organization.created.v2.json",
   "title": "organization.created (v2)",
   "description": "An organization was created. Emitted when an organization is created. When it was created on behalf of a user, the creator's membership and owner role assignment are created in the same transaction; those emit authorization.role.assigned but not organization.membership.added. org_id equals data.organization_id.",
   "type": "object",

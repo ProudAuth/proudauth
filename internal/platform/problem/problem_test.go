@@ -29,7 +29,7 @@ func TestProblemDetailsContract(t *testing.T) {
 	if rec.Code != 422 || rec.Header().Get("Content-Type") != "application/problem+json" || rec.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("status %d headers %v", rec.Code, rec.Header())
 	}
-	if body["code"] != "validation_failed" || body["status"] != float64(422) || body["type"] != "https://auth.proudbase.com/problems/validation_failed" ||
+	if body["code"] != "validation_failed" || body["status"] != float64(422) || body["type"] != "https://proudauth.com/problems/validation_failed" ||
 		body["title"] == "" || body["request_id"] != "req-123" {
 		t.Fatalf("problem members: %v", body)
 	}

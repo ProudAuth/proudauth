@@ -3,7 +3,7 @@ package httpapi
 import (
 	"net/http"
 
-	"github.com/proudbase/proudauth/internal/workload"
+	"github.com/proudauth/proudauth/internal/workload"
 )
 
 // workloadRoutes manages workload federation trusts (MCH-011..MCH-013): who,

@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"net/url"
 
-	"github.com/proudbase/proudauth/internal/keys"
-	"github.com/proudbase/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/keys"
+	"github.com/proudauth/proudauth/internal/platform/secret"
 )
 
 // BrowserState is the OP browser state of OpenID Connect Session Management

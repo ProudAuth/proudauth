@@ -10,7 +10,7 @@ see [README.md](README.md#why-proudauth).
 chat.** The public issue templates are for bugs and features only.
 
 Use **GitHub private vulnerability reporting** through the repository's
-[security advisory form](https://github.com/proudbase/proudauth/security/advisories/new)
+[security advisory form](https://github.com/proudauth/proudauth/security/advisories/new)
 (Security tab, "Report a vulnerability"). Reports are private to the reporter
 and maintainers. There is no monitored project security mailbox advertised here.
 

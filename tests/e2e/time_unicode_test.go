@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/testutil"
+	"github.com/proudauth/proudauth/internal/testutil"
 )
 
 // TestTimeAndUnicodeInvariants covers NFR-010: lifetimes are computed in

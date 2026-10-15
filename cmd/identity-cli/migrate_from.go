@@ -13,8 +13,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/proudbase/proudauth-sdk-go/admin"
-	"github.com/proudbase/proudauth/internal/migrate"
+	"github.com/proudauth/proudauth-sdk-go/admin"
+	"github.com/proudauth/proudauth/internal/migrate"
 )
 
 // migrate-from converts a Keycloak, ZITADEL or SuperTokens export into

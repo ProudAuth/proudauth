@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestTenantCrossingMatrix covers SEC-017: for every organization-scoped

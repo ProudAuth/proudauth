@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/organization.join_request.created.v1.json",
+  "$id": "https://proudauth.com/schemas/events/organization.join_request.created.v1.json",
   "title": "organization.join_request.created (v1)",
   "description": "A user asked to join an organization. Emitted when a user submits a request to join an organization. Approval or denial of the request emits no event of its own (an approval produces authorization.role.assigned but not organization.membership.added).",
   "type": "object",

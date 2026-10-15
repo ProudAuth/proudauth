@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/hooks/common.v1.json",
+  "$id": "https://proudauth.com/schemas/hooks/common.v1.json",
   "title": "Pre-action hook contract v1: shared definitions",
   "description": "Definitions shared by the hook request and response schemas of contract version 1.",
   "$defs": {

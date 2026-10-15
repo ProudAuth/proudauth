@@ -3,8 +3,8 @@ package httpapi
 import (
 	"net/http"
 
-	"github.com/proudbase/proudauth/internal/certauth"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/certauth"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // certificateRoutes manage realm certificate trust anchors (MCH-014,

@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/migrate"
+	"github.com/proudauth/proudauth/internal/migrate"
 )
 
 // TestMigrateFromOffline plans a Keycloak export without a server: the

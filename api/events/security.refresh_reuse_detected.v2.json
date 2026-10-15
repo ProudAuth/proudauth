@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/security.refresh_reuse_detected.v2.json",
+  "$id": "https://proudauth.com/schemas/events/security.refresh_reuse_detected.v2.json",
   "title": "security.refresh_reuse_detected (v2)",
   "description": "A rotated refresh token was presented again (possible token theft). Emitted the first time an already-rotated refresh token is presented by the client it was issued to. The refresh family is marked compromised, the grant is revoked and, for session-bound online grants, the session is revoked as well (session.revoked with reason \"refresh_reuse\"). org_id is set when the grant was bound to an organization. The worker also logs and counts every security.* event as an alertable signal.",
   "type": "object",

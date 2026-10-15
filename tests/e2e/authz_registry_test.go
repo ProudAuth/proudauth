@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/authorization"
 )
 
 // permissionsOf lists every registered permission, following cursors.

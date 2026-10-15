@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/provisioning"
+	"github.com/proudauth/proudauth/internal/provisioning"
 )
 
 func TestBenchFilterExpressionsReachDeclaredBounds(t *testing.T) {

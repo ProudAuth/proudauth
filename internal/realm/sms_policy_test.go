@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // TestSMSSignInNeedsRiskAcceptance covers PWDLESS-005: SMS sign-in stays off

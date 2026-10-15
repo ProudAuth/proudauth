@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/bench"
+	"github.com/proudauth/proudauth/internal/bench"
 )
 
 func main() {

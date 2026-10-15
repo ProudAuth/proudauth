@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/contracts/schemacheck"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/contracts/schemacheck"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // capturedCall is one request an extension endpoint received.

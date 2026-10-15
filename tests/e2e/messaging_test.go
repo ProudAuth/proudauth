@@ -3,13 +3,13 @@ package e2e
 import (
 	"context"
 	"encoding/json"
-	"github.com/proudbase/proudauth/internal/keys"
+	"github.com/proudauth/proudauth/internal/keys"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/webhooks"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/webhooks"
 )
 
 // TestMessagingControls covers MSG-005 (approved sender domains), MSG-007

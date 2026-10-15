@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestImportVerificationTrust covers MIG-009: an imported email keeps its

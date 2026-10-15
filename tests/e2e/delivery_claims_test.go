@@ -13,8 +13,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth/internal/webhooks"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/webhooks"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // raceClaims runs workers on the given nodes (several per node, as in

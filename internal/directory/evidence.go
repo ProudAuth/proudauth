@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/proudbase/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/audit"
 )
 
 // endpointHealth is what a node observed of one endpoint.

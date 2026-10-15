@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/contracts"
-	"github.com/proudbase/proudauth/internal/platform/ids"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/contracts"
+	"github.com/proudauth/proudauth/internal/platform/ids"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // Step types: a bounded vocabulary that reuses existing services and their

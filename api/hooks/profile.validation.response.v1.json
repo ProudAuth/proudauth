@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/hooks/profile.validation.response.v1.json",
+  "$id": "https://proudauth.com/schemas/hooks/profile.validation.response.v1.json",
   "title": "profile.validation hook response (contract v1)",
   "description": "Answer with HTTP 200 and this body.",
   "x-hook-kind": "profile.validation",

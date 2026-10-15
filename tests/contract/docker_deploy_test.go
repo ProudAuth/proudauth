@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/configuration"
 )
 
 // composeVar matches ${NAME}, ${NAME:-default} and ${NAME:?message}.

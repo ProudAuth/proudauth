@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/authorization"
-	"github.com/proudbase/proudauth/internal/organization"
+	"github.com/proudauth/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/organization"
 )
 
 // emailCode returns the newest verification code mailed to addr.

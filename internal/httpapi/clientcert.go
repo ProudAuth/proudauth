@@ -4,7 +4,7 @@ import (
 	"crypto/x509"
 	"net/http"
 
-	"github.com/proudbase/proudauth/internal/certauth"
+	"github.com/proudauth/proudauth/internal/certauth"
 )
 
 // peerCertificate returns the client certificate of a request and any

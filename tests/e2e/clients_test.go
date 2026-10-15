@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestRedirectRegistrationRules covers APP-004: redirect and post-logout

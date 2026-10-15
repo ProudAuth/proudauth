@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/organization.suspended.v1.json",
+  "$id": "https://proudauth.com/schemas/events/organization.suspended.v1.json",
   "title": "organization.suspended (v1)",
   "description": "An organization was suspended. Emitted when an administrator suspends an organization. Every grant, refresh family, opaque token and support grant bound to the organization is revoked in the same transaction (no per-session events are emitted for this). Emitted by every successful call, even when the organization was already in that state. org_id equals data.organization_id.",
   "type": "object",

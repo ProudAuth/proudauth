@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/envelope.v2.json",
+  "$id": "https://proudauth.com/schemas/events/envelope.v2.json",
   "title": "ProudAuth webhook event envelope (v2)",
   "description": "JSON body of a webhook delivery for subscriptions with event_version 2 (EXT-008, EXT-018). Version 2 differs from version 1 in the envelope only; every event type's data members are identical in both versions: (1) the organization member is named organization_id (v1: org_id), the name every data member, the session change stream and the REST API use; (2) payload_form (minimal or standard) states which payload form data is in, so a consumer can tell a member that does not apply from one the minimal form removed; (3) event_version is 2. Delivery, retries, signature headers and the signature scheme are unchanged: the signature scheme is versioned separately (the \"v1,\" prefix of Webhook-Signature) and applies to every event schema version; see envelope.v1.json x-signature for the algorithm and a test vector. Each subscription chooses its event_version (default 1); deliveries are rendered from the stored event by contracts.RenderEvent.",
   "type": "object",

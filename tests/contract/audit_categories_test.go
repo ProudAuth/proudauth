@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/configuration"
 )
 
 // TestAuditCategoriesKnown keeps privacy.audit_retention_by_category honest:

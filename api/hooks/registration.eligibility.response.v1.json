@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/hooks/registration.eligibility.response.v1.json",
+  "$id": "https://proudauth.com/schemas/hooks/registration.eligibility.response.v1.json",
   "title": "registration.eligibility hook response (contract v1)",
   "description": "Answer with HTTP 200 and this body. Unknown members make the response malformed (the call fails closed).",
   "x-hook-kind": "registration.eligibility",

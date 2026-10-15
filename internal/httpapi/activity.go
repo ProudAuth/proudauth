@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/authorization"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // signInTypes are the audit event types reported as sign-in activity.

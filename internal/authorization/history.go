@@ -7,8 +7,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/audit"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // Historical entitlement evidence (ADV-011): what a subject was entitled to

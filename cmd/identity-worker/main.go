@@ -15,12 +15,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/httpapi"
-	"github.com/proudbase/proudauth/internal/platform/secret"
-	"github.com/proudbase/proudauth/internal/platform/tracing"
-	"github.com/proudbase/proudauth/internal/restore"
-	"github.com/proudbase/proudauth/internal/server"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/httpapi"
+	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/platform/tracing"
+	"github.com/proudauth/proudauth/internal/restore"
+	"github.com/proudauth/proudauth/internal/server"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 func main() {

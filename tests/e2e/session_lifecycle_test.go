@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth-sdk-go/verifier"
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/platform/secret"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth-sdk-go/verifier"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // sidOf returns the session ID (sid claim) a JWT carries.

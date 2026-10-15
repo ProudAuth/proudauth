@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/organization.invitation.created.v1.json",
+  "$id": "https://proudauth.com/schemas/events/organization.invitation.created.v1.json",
   "title": "organization.invitation.created (v1)",
   "description": "An organization invitation was created. Emitted when an invitation to an organization is created (e-mail, existing-user or shared-link invitation). The recipient and the invitation secret are deliberately not included; fetch the invitation through the API if needed.",
   "type": "object",

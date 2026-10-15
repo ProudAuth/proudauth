@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/egress"
-	"github.com/proudbase/proudauth/internal/token"
+	"github.com/proudauth/proudauth/internal/egress"
+	"github.com/proudauth/proudauth/internal/token"
 )
 
 // TestClaimsAnswerBounds covers TEST-053 and EXT-011 at the unit level: a

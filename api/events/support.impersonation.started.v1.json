@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/support.impersonation.started.v1.json",
+  "$id": "https://proudauth.com/schemas/events/support.impersonation.started.v1.json",
   "title": "support.impersonation.started (v1)",
   "description": "A support impersonation grant was issued. Emitted when an approved support access request is turned into an active impersonation grant and the support actor's impersonation access token is issued. org_id is always set (support grants are organization-scoped).",
   "type": "object",

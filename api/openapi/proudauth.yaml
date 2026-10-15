@@ -40110,7 +40110,7 @@ components:
         type:
           type: string
           format: uri
-          description: "https://auth.proudbase.com/problems/{code}"
+          description: "https://proudauth.com/problems/{code}"
         title:
           type: string
         status:

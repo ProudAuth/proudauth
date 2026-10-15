@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth-sdk-go/oidcclient"
-	"github.com/proudbase/proudauth/examples/backend-for-frontend/bff"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth-sdk-go/oidcclient"
+	"github.com/proudauth/proudauth/examples/backend-for-frontend/bff"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestBackendForFrontendExample covers SDK-004: the runnable

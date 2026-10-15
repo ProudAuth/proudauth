@@ -14,10 +14,10 @@ import (
 	"time"
 
 	"github.com/go-jose/go-jose/v4"
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/egress"
-	"github.com/proudbase/proudauth/internal/platform/clock"
-	"github.com/proudbase/proudauth/internal/runtime"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/egress"
+	"github.com/proudauth/proudauth/internal/platform/clock"
+	"github.com/proudauth/proudauth/internal/runtime"
 )
 
 // MCH-011, ADV-004, NFR-006: cold/unknown/error bursts share one fetch,

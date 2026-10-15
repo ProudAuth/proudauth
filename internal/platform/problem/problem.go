@@ -176,7 +176,7 @@ func Write(w http.ResponseWriter, requestID string, err error) {
 		pe = ErrInternal
 	}
 	body := map[string]any{
-		"type":   "https://auth.proudbase.com/problems/" + pe.Code,
+		"type":   "https://proudauth.com/problems/" + pe.Code,
 		"title":  pe.Title,
 		"status": pe.Status,
 		"code":   pe.Code,

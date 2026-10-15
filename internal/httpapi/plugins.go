@@ -3,8 +3,8 @@ package httpapi
 import (
 	"net/http"
 
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/plugin"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/plugin"
 )
 
 // pluginRoutes administers plugin packages (EXT-014): upload, second-

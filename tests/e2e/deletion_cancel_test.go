@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // deletionLogin starts an account-console sign-in for user and returns the

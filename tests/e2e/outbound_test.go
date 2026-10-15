@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // fakeSCIM is a downstream SCIM 2.0 service recording what it receives.

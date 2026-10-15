@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/proudbase/proudauth/internal/platform/canonical"
+	"github.com/proudauth/proudauth/internal/platform/canonical"
 	"io"
 	"net/http"
 	"net/url"
@@ -18,9 +18,9 @@ import (
 
 	jose "github.com/go-jose/go-jose/v4"
 
-	"github.com/proudbase/proudauth/internal/egress"
-	"github.com/proudbase/proudauth/internal/platform/problem"
-	"github.com/proudbase/proudauth/internal/token"
+	"github.com/proudauth/proudauth/internal/egress"
+	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/token"
 )
 
 var allowedAlgs = []string{"RS256", "PS256", "ES256", "EdDSA"}

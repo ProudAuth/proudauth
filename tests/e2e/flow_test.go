@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/authentication"
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/authentication"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestAuthenticationFlowPolicy covers AUT-012 (an ordered, bounded flow

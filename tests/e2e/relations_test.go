@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestRelationshipAuthorization covers AZ-021, AZ-022, AZ-023 and AZ-027:

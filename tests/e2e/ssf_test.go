@@ -13,8 +13,8 @@ import (
 
 	"github.com/go-jose/go-jose/v4"
 
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/ssf"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/ssf"
 )
 
 // TestSharedSignalsTransmitter covers AUD-016: a declared Shared Signals

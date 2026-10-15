@@ -229,6 +229,6 @@ These are known gaps, not accepted exceptions:
   and an initial prerelease. Every published version must pass the complete
   configured workflow; its actual binaries, images, SBOMs, signatures and
   hosted attestations are checked on the service's
-  [Releases page](https://github.com/proudbase/proudauth/releases). SDK source
+  [Releases page](https://github.com/proudauth/proudauth/releases). SDK source
   publication and successful independent CI do not establish a package
   registry release or replace service release evidence.

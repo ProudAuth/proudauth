@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/bench"
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/bench"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestBenchOTPGuessesShareAccountBudget exercises NFR-006: 32 concurrent

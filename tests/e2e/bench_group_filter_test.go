@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/bench"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/bench"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestBenchComplexGroupFilterLiveFixtures covers NFR-004, NFR-006 and

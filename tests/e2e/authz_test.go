@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/authorization"
 )
 
 // TestInactiveSubjectsHoldNoPermissions covers AZ-007 with USR-003: a

@@ -80,7 +80,7 @@ func TestReleaseDeploymentBundleDeterministic(t *testing.T) {
 	if !bytes.Equal(files["docker-compose.yaml"], []byte(deployRead(t, "deploy/prod/docker-compose.yaml"))) {
 		t.Error("the bundled docker-compose.yaml must be deploy/prod's")
 	}
-	if !bytes.Contains(files[".env"], []byte("\nPROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:0.2.0-alpha.2\n")) {
+	if !bytes.Contains(files[".env"], []byte("\nPROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:0.2.0-alpha.2\n")) {
 		t.Error("the bundled .env must pin the image to the packaged version")
 	}
 	if modes[".env"] != 0o600 {
@@ -91,7 +91,7 @@ func TestReleaseDeploymentBundleDeterministic(t *testing.T) {
 			t.Errorf("SHA256SUMS lists a file the archive lacks: %s", line)
 		}
 	}
-	if _, other, _ := releaseBundle(t, repoRoot, "v1.0.0"); !bytes.Contains(other[".env"], []byte("\nPROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:1.0.0\n")) {
+	if _, other, _ := releaseBundle(t, repoRoot, "v1.0.0"); !bytes.Contains(other[".env"], []byte("\nPROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:1.0.0\n")) {
 		t.Error("each release pins its own image version")
 	}
 }

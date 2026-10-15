@@ -11,7 +11,7 @@ import (
 
 	"github.com/beevik/etree"
 
-	"github.com/proudbase/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 const (

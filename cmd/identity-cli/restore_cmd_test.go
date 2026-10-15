@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/platform/secret"
-	"github.com/proudbase/proudauth/internal/restore"
-	"github.com/proudbase/proudauth/internal/testutil"
+	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/restore"
+	"github.com/proudauth/proudauth/internal/testutil"
 )
 
 // TestRestoreBeginAndReconcileCommands covers TEST-060 and OPS-013 for the

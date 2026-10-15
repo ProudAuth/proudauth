@@ -3,8 +3,8 @@ package authentication
 import (
 	"testing"
 
-	"github.com/proudbase/proudauth/internal/federation"
-	"github.com/proudbase/proudauth/internal/session"
+	"github.com/proudauth/proudauth/internal/federation"
+	"github.com/proudauth/proudauth/internal/session"
 )
 
 // TestLinkProofRequiresLinkBoundEmailProof covers PWDLESS-008 (and

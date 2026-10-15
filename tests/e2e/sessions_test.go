@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/realm"
-	"github.com/proudbase/proudauth/internal/worker"
+	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/worker"
 )
 
 // TestSessionLimitsAndAdminRevocation covers SES-002 (realm concurrency limit),

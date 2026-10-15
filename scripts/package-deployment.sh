@@ -40,7 +40,7 @@ def read(relative):
 # and non-deployment defaults keep their values.
 deployment = re.compile(rb'^(PROUDAUTH_(?:PUBLIC_ORIGIN|TRUSTED_PROXIES|DATABASE_URL|ROOT_KEY|SMTP_HOST|SMTP_USERNAME|SMTP_PASSWORD|EMAIL_FROM))=.*$', re.M)
 env = deployment.sub(rb'\1=', read('deploy/prod/.env'))
-env, pinned = re.subn(rb'^PROUDAUTH_IMAGE=.*$', b'PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:' + version[1:].encode(), env, flags=re.M)
+env, pinned = re.subn(rb'^PROUDAUTH_IMAGE=.*$', b'PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:' + version[1:].encode(), env, flags=re.M)
 if pinned != 1:
     raise SystemExit('deploy/prod/.env must set PROUDAUTH_IMAGE exactly once')
 files = {'docker-compose.yaml': read('deploy/prod/docker-compose.yaml'), '.env': env,

@@ -13,7 +13,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/proudbase/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/configuration"
 )
 
 // Static checks of the repository's quality and governance controls: what CI
@@ -251,7 +251,7 @@ func TestCodeOwnersReviewBoundaries(t *testing.T) {
 	if len(rules) == 0 || rules[0].pattern != "*" {
 		t.Fatal("CODEOWNERS must start with a default rule so no path is unowned")
 	}
-	security := []string{"@proudbase/security-reviewers"}
+	security := []string{"@ProudAuth/security-reviewers"}
 	for area, paths := range map[string][]string{
 		"authentication": {"internal/authentication/", "internal/session/", "internal/credential/", "internal/passkey/", "internal/federation/",
 			"internal/oauth/", "internal/token/", "internal/saml/", "internal/certauth/", "internal/application/", "internal/httpapi/auth.go",

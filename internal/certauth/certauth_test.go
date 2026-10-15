@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/platform/clock"
-	"github.com/proudbase/proudauth/internal/runtime"
+	"github.com/proudauth/proudauth/internal/platform/clock"
+	"github.com/proudauth/proudauth/internal/runtime"
 )
 
 type testCA struct {

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/proudbase/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/audit"
 )
 
 // TestAuditTypePrefixIsLiteral covers AUD-011: a prefix is literal even

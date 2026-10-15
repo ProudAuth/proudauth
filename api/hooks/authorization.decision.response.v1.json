@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/hooks/authorization.decision.response.v1.json",
+  "$id": "https://proudauth.com/schemas/hooks/authorization.decision.response.v1.json",
   "title": "authorization.decision hook response (contract v1)",
   "description": "Answer with HTTP 200 and this body. More than five obligations deny.",
   "x-hook-kind": "authorization.decision",

@@ -33,17 +33,17 @@ func TestSDKRepositoryBoundaries(t *testing.T) {
 		t.Fatal("SDK implementations must be owned by their standalone repositories")
 	}
 	gomod := readRepoFile(t, "go.mod")
-	if !strings.HasPrefix(gomod, "module github.com/proudbase/proudauth\n") {
+	if !strings.HasPrefix(gomod, "module github.com/proudauth/proudauth\n") {
 		t.Error("service module must use its independently cloneable public path")
 	}
 	if strings.Contains(gomod, "replace ") || strings.Contains(gomod, "replace (") {
 		t.Error("published service must consume normal pinned modules without local replacements")
 	}
-	const sdkVersion = "v0.0.0-20261013190527-116f9fa19d0b"
-	if !strings.Contains(gomod, "github.com/proudbase/proudauth-sdk-go "+sdkVersion) {
+	const sdkVersion = "v0.0.0-20261015160744-4c3faf77751b"
+	if !strings.Contains(gomod, "github.com/proudauth/proudauth-sdk-go "+sdkVersion) {
 		t.Error("service Go SDK dependency must identify the verified public source")
 	}
-	if !strings.Contains(readRepoFile(t, "go.sum"), "github.com/proudbase/proudauth-sdk-go "+sdkVersion+" h1:") {
+	if !strings.Contains(readRepoFile(t, "go.sum"), "github.com/proudauth/proudauth-sdk-go "+sdkVersion+" h1:") {
 		t.Error("service Go SDK dependency needs a verified module checksum")
 	}
 	var snapshot struct {
@@ -70,10 +70,10 @@ func TestSDKRepositoryBoundaries(t *testing.T) {
 			continue
 		}
 		seen[sdk.Language] = true
-		if sdk.Repository != "proudbase/proudauth-sdk-"+sdk.Language || !regexp.MustCompile(`^[a-f0-9]{40}$`).MatchString(sdk.Revision) {
+		if sdk.Repository != "proudauth/proudauth-sdk-"+sdk.Language || !regexp.MustCompile(`^[a-f0-9]{40}$`).MatchString(sdk.Revision) {
 			t.Errorf("%s must name the public owner and immutable source revision", sdk.Language)
 		}
-		if sdk.Language == "go" && !strings.HasPrefix(sdk.Revision, "116f9fa19d0b") {
+		if sdk.Language == "go" && !strings.HasPrefix(sdk.Revision, "4c3faf77751b") {
 			t.Error("Go SDK snapshot revision differs from the service dependency")
 		}
 		if sdk.WorkflowPath != ".github/workflows/ci.yml" || sdk.CIConclusion != "success" ||

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://auth.proudbase.com/schemas/events/service_principal.state_changed.v2.json",
+  "$id": "https://proudauth.com/schemas/events/service_principal.state_changed.v2.json",
   "title": "service_principal.state_changed (v2)",
   "description": "A service principal was disabled, re-enabled or deleted. Emitted when an administrator changes a service principal's state, when an emergency control disables or re-enables it, and when the owner-departure job disables it (realm policy machine.owner_departure=disable, reason owner_departed). Disabling or deleting revokes its automation credentials and opaque access tokens; deletion also removes its role assignments (without authorization.role.unassigned events) and is final. org_id is never set.",
   "type": "object",

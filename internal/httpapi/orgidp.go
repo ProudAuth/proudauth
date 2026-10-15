@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/proudbase/proudauth/internal/federation"
-	"github.com/proudbase/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/federation"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // orgIdentityProviderRoutes lets organization administrators manage their own

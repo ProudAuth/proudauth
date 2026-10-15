@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-jose/go-jose/v4"
 
-	"github.com/proudbase/proudauth/internal/application"
+	"github.com/proudauth/proudauth/internal/application"
 )
 
 // ErrNoEncryptionKey means a client asked for encrypted responses but has no

@@ -1,6 +1,6 @@
 package realm
 
-import "github.com/proudbase/proudauth/internal/platform/problem"
+import "github.com/proudauth/proudauth/internal/platform/problem"
 
 // Plugin review modes (EXT-014).
 const (

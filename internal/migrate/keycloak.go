@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/proudbase/proudauth/internal/credential"
-	"github.com/proudbase/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/credential"
+	"github.com/proudauth/proudauth/internal/identity"
 )
 
 // Keycloak realm export (kc.sh export; RealmRepresentation). Only the members

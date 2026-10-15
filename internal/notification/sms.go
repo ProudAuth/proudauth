@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/proudbase/proudauth/internal/configuration"
-	"github.com/proudbase/proudauth/internal/egress"
-	"github.com/proudbase/proudauth/internal/platform/ids"
+	"github.com/proudauth/proudauth/internal/configuration"
+	"github.com/proudauth/proudauth/internal/egress"
+	"github.com/proudauth/proudauth/internal/platform/ids"
 )
 
 // WebhookSMSSender delivers SMS through an operator-run gateway (MSG-008,
