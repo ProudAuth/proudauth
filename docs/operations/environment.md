@@ -1,101 +1,68 @@
-# Docker Compose environment and secrets
+# Docker Compose environment
 
-The source-free release installer reads `.env` **next to
-`docker-compose.yaml`** in `deploy/release/` or in the extracted release
-archive. Copy `.env.example` for production, or run `./init.sh demo` for local
-evaluation. Python 3.9+ safely parses the file; it never executes it as shell
-code. Values are literal `NAME=value`, with optional matching quotes. Do not
-use shell commands, variable interpolation or multiline values. Duplicate and
-unknown variables are refused. Keep the supplied complete example when editing
-it: `PROUDAUTH_IMAGE` must be present in `.env` for Compose. The initializer
-uses defaults while generating configuration; it does not fill missing fields
-back into `.env` for Compose.
+`deploy/prod/` (the release installer) and `deploy/dev/` each read one `.env`
+file **next to `docker-compose.yaml`**. Both files list the same `PROUDAUTH_*`
+variables; only the values differ. Values are literal `NAME=value` lines without
+quotes, shell commands or `${...}` interpolation.
 
-`.env` has mode 0600. It contains deployment settings and SMTP account names,
-but no root key, database password, SMTP password, administrator password or
-token. The examples contain placeholders, not credentials. Production
-initialization refuses the example public origin, SMTP host and sender.
+`docker-compose.yaml` passes the `PROUDAUTH_*` values to the image unchanged, so
+the same names work with `docker run --env`, Kubernetes or systemd. The
+[configuration reference](configuration.md#environment-overrides) maps each one
+to its configuration key.
 
 ## Every `.env` variable
 
-| Variable | Production default | Required / behavior |
+| Variable | Production (`deploy/prod`) | Development (`deploy/dev`) |
 | --- | --- | --- |
-| `COMPOSE_PROJECT_NAME` | `proudauth` | Compose resource prefix; choose a unique lowercase name for independent installations. Changing it selects a different volume, not a migration. Demo defaults to `proudauth-demo`. |
-| `PROUDAUTH_IMAGE` | `ghcr.io/proudbase/proudauth:0.2.0-alpha.1` | **Required in `.env`.** Explicit published image tag or verified digest. The Docker Hub mirror is `docker.io/mohamadalialghanem/proudauth:0.2.0-alpha.1`; check the release page for its published digest. Avoid `latest`; multi-architecture images select the host automatically. |
-| `POSTGRES_IMAGE` | `postgres:18.6` | Explicit PostgreSQL image version or digest. Do not change major versions on an existing volume without a supported database upgrade. |
-| `DEPLOYMENT_PROFILE` | `production` | `production` enables HTTPS/SMTP; `demo` enables the loopback-only development email sink and development cookies. |
-| `PROUDAUTH_PUBLIC_ORIGIN` | `https://identity.example.com` | **Replace for production.** Your canonical HTTPS origin without a path, query or credentials. Demo uses `http://localhost:8080`. Stored realm issuers do not change when this setting changes. |
-| `PROUDAUTH_REALM` | `main` | Default realm name; use it consistently in `realm-create`, `bootstrap`, CLI URLs and application configuration. The initializer does not automatically create it. |
-| `PROUDAUTH_TRUSTED_PROXIES` | empty | Optional comma-separated trusted IPs/CIDRs. Set only to your exact proxy peers when forwarding headers are needed; empty trusts none. |
-| `PUBLIC_BIND` | `127.0.0.1` | Host address for the public API port. Demo requires loopback. For a remote production proxy, use a private interface plus firewall rules. |
-| `PUBLIC_PORT` | `8080` | Host public API port; container port remains 8080. For demo, update the public origin when changing this port. |
-| `OPERATOR_PORT` | `9090` | Host operator port, always bound to `127.0.0.1`. Must differ from the public port; never tunnel or publish it. |
-| `POSTGRES_MAX_CONNECTIONS` | `100` | PostgreSQL connection ceiling, accepted range 30–1000. Leave capacity for all pools and operator connections. |
-| `POSTGRES_SHARED_BUFFERS` | `128MB` | Positive PostgreSQL memory size such as `128MB`; set according to available memory. |
-| `POOL_MAX_CONNECTIONS` | `20` | Maximum database pool connections **per process**, range 2–200; the service's default minimum is two. Initializer requires `POSTGRES_MAX_CONNECTIONS >= 3 × POOL_MAX_CONNECTIONS + 10`. |
-| `SMTP_HOST` | `smtp.example.com` | **Replace for production.** Reachable SMTP relay hostname; demo ignores email relay settings. |
-| `SMTP_PORT` | `587` | SMTP port, 1–65535. Commonly 587 for STARTTLS or 465 for implicit TLS. |
-| `SMTP_TLS` | `starttls` | `starttls` or `implicit`; unencrypted SMTP is not supported by this installer. |
-| `SMTP_USERNAME` | `proudauth` | SMTP account name. With a nonempty name, production initialization requires a nonempty `secrets/smtp_password`. Empty is for an explicitly unauthenticated trusted relay. |
-| `EMAIL_FROM` | `no-reply@example.com` | **Replace for production.** Sender address authorized by your relay; verify its delivery policy/DNS. |
-| `LOG_LEVEL` | `info` | `info`, `warn` or `error`; production debug logging is deliberately unavailable through this installer. |
+| `PROUDAUTH_IMAGE` | Release image, pinned to the archive's version, for example `ghcr.io/proudbase/proudauth:0.2.0-alpha.2`. Use a digest for a controlled deployment. The Docker Hub mirror is `docker.io/mohamadalialghanem/proudauth`. | `proudauth:dev`, built from the checkout by `--build`; a release tag runs a published image. |
+| `PROUDAUTH_PUBLIC_ORIGIN` | **Required.** Your HTTPS origin without a path. It becomes a realm's issuer when the realm is created; changing it later does not move an existing realm. | `http://localhost:8080`; change it together with `PUBLIC_PORT`. |
+| `PROUDAUTH_TRUSTED_PROXIES` | Comma-separated IPs/CIDRs of your reverse proxy as the container sees it. Empty trusts no forwarding headers. | Empty. |
+| `PROUDAUTH_DATABASE_URL` | **Required.** `postgres://USER:PASSWORD@HOST:5432/DB?sslmode=require`; the user owns the database. `host.docker.internal` reaches the Docker host. | The bundled PostgreSQL container. |
+| `PROUDAUTH_ROOT_KEY` | **Required.** 64 hexadecimal digits from `openssl rand -hex 32`. Back it up with the database. | A fixed, public development key. |
+| `PROUDAUTH_SMTP_HOST` | **Required.** Your SMTP relay. | `mailpit`. |
+| `PROUDAUTH_SMTP_PORT` | `587` for STARTTLS, `465` for implicit TLS. | `1025`. |
+| `PROUDAUTH_SMTP_TLS` | `starttls` or `implicit`; `none` is refused in production. | `none`. |
+| `PROUDAUTH_SMTP_USERNAME` | SMTP account; empty for an unauthenticated trusted relay. | Empty. |
+| `PROUDAUTH_SMTP_PASSWORD` | SMTP password. | Empty. |
+| `PROUDAUTH_EMAIL_FROM` | **Required.** A sender address your relay accepts; check its SPF/DKIM policy. | `no-reply@proudauth.localhost`. |
+| `PROUDAUTH_LOG_LEVEL` | `info`, `warn` or `error`; `debug` is refused in production. | `info`. |
+| `PUBLIC_BIND` | Host address the reverse proxy connects to; default `127.0.0.1`. | Always `127.0.0.1`. |
+| `PUBLIC_PORT` | Host port of the identity API; default `8080`. | `8080`. |
+| `OPERATOR_PORT` | Not published. | `9090`: `/status` and `/metrics` on `127.0.0.1`. |
+| `MAIL_PORT` | — | `8025`: the Mailpit inbox. |
+| `SWAGGER_PORT` | — | `8081`: Swagger UI for `api/openapi/`. |
 
-Example production overrides, beside your Compose file:
+Each `docker-compose.yaml` fixes what must not vary by installation:
+`PROUDAUTH_MODE` (`production` or `development`), the email adapter (`smtp`),
+and in production `PROUDAUTH_HOST_POLICY=strict`; in development it adds
+`PROUDAUTH_COOKIE_INSECURE_DEV=true` and publishes the operator listener.
 
-```dotenv
-COMPOSE_PROJECT_NAME=my-identity
-PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:0.2.0-alpha.1
-DEPLOYMENT_PROFILE=production
-PROUDAUTH_PUBLIC_ORIGIN=https://identity.your-domain.com
-SMTP_HOST=smtp.your-provider.com
-SMTP_PORT=587
-SMTP_TLS=starttls
-SMTP_USERNAME=your-smtp-account
-EMAIL_FROM=no-reply@your-domain.com
-```
+## Secrets
 
-Copy the complete `.env.example` first, then replace its values. Run `./init.sh`
-after changing settings and recreate the affected containers; editing `.env`
-alone does not change generated `config.yaml`. Never change a persisted realm's
-issuer as an ordinary configuration edit: plan a client/issuer transition.
+`PROUDAUTH_DATABASE_URL`, `PROUDAUTH_ROOT_KEY` and `PROUDAUTH_SMTP_PASSWORD` may
+hold the secret itself. The image then treats it as the reference
+`env:<variable>`: production accepts it, and configuration exports and support
+bundles show the variable name, never the value. A value starting with `file:`
+(or another secret reference) is used as given, for secrets mounted as files.
 
-## Generated and operator-owned secret files
-
-| File under `secrets/` | Owner / use |
-| --- | --- |
-| `root_key` | Generated 32-byte random hex root encryption key; server, worker and operator/migration commands. Keep with your separately protected backups. |
-| `postgres_password` | Generated PostgreSQL superuser password; only the PostgreSQL container receives it. |
-| `owner_password` | Generated `proudauth_owner` password; PostgreSQL uses it only during first initialization. |
-| `app_password` | Generated `proudauth_app` password; PostgreSQL uses it only during first initialization. |
-| `database_url` | Generated runtime-role connection string; only runtime processes receive this DSN. |
-| `owner_database_url` | Generated schema-owner connection string; only the migration service receives this DSN. |
-| `metrics_token` | Generated 32-byte random hex bearer token protecting `/metrics` and `/status`; not an administrator API token. |
-| `smtp_password` | Operator-supplied SMTP password; created empty initially. Required with authenticated SMTP in production; unused in the demo. Write its exact bytes without a trailing newline. |
-
-The host secret directory is mode **0700**. Individual file-backed secrets are
-mode **0444** so the non-root container UID 65532 can read its separate read-only
-mount on native Linux. The private parent directory protects access on the host;
-do not make the directory broadly accessible. Generated secret contents never
-appear in `.env`, config output, image layers or the published release bundle.
-This is local file custody, not an external secret manager.
-
-`init.sh` is idempotent: it preserves secret values and existing mounted inodes
-when their content is unchanged. It repairs permissions and refuses an existing
-malformed secret or inconsistent DSN. It does **not** rotate database passwords,
-root keys or SMTP credentials automatically.
+Keep the filled `.env` at mode `0600`, outside any Git checkout, and back it up
+with the database: changing `PROUDAUTH_ROOT_KEY` makes stored keys unreadable,
+and generating a new key is not recovery. Changing `.env` does not rotate a
+PostgreSQL password. The committed `deploy/prod/.env` stays an empty template
+(`TestDeployDevAndProd`), and the release and offline archives empty every
+deployment value even when the packaging checkout holds a filled copy.
 
 ## Advanced settings
 
-The complete configuration schema is documented in
-[configuration.md](configuration.md). The starter installer deliberately covers
-the settings above. To manage additional settings (password blocklists, external
-secrets/KMS, egress policy, TLS inside the server, additional root-key versions,
-retention or pool minima), take ownership of `config.yaml` and keep it outside
-initializer regeneration, or extend and review the deployment templates.
-Mount any required files explicitly. The server rejects unknown YAML keys and
-invalid production settings; `identity-cli doctor` validates the configuration,
-database, schema and root-key access.
+The complete configuration schema is in [configuration.md](configuration.md).
+Settings without an environment variable (password blocklists, KMS, egress
+allowlists, TLS inside the server, separate schema-owner and runtime database
+roles, retention) need a YAML file: mount it and set `PROUDAUTH_CONFIG` to its
+path in `docker-compose.yaml`; environment variables still override it. The
+server rejects unknown YAML keys and invalid production settings, and
+`identity-cli doctor` validates the configuration, database, schema and
+root-key access.
 
-See [Docker Compose installation](docker-compose.md),
-[key custody](keys.md), [backup/restore](backup-restore.md) and
-[upgrades](upgrades.md). These implement DEP-002, DEP-004, DEP-006 and OPS-013.
+See [Docker Compose installation](docker-compose.md), [key custody](keys.md),
+[backup/restore](backup-restore.md) and [upgrades](upgrades.md). These
+implement DEP-002, DEP-004 and DEP-006.

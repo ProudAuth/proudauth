@@ -33,8 +33,6 @@ support-bundle.json
 #   identity-cli revocation-log --out (conventional names)
 revocation-log*.jsonl
 revocation-log*.json
-#   deploy/compose/init-secrets.sh (root key, database password)
-deploy/compose/secrets/
 .DS_Store
 
 /repro-results/

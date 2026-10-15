@@ -1,12 +1,17 @@
 # ProudAuth for production: only the ProudAuth image. PostgreSQL, the HTTPS
 # reverse proxy and SMTP are yours; .env says where they are.
 #
-#   1. Fill every empty value in .env
+#   1. Fill every empty value in .env, then: chmod 600 .env
 #   2. docker compose up -d --wait
+#   3. Once, create the first administrator and sign in (TOTP + email code):
+#        docker compose exec server identity-cli bootstrap -realm main -email you@example.com -username admin
+#        docker compose exec server identity-cli setup-account --url <PROUDAUTH_PUBLIC_ORIGIN> --realm main
+#        docker compose exec server identity-cli login --url <PROUDAUTH_PUBLIC_ORIGIN> --realm main
 #
 # Compose refuses to start while a required value is missing. Migrations and
 # the default realm run as one-shot containers on every start; both are
-# no-ops once done.
+# no-ops once done. Upgrade: change PROUDAUTH_IMAGE, then step 2 again.
+# Guide: https://proudauth.com/docs/operations/docker-compose/
 name: ${COMPOSE_PROJECT_NAME:-proudauth}
 
 x-proudauth: &proudauth

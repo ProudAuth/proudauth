@@ -47,10 +47,9 @@ func newBundleFixture(t *testing.T) bundleFixture {
 		t.Fatal(err)
 	}
 	write("scripts/offline-bundle.sh", string(script), 0o700)
-	for _, path := range []string{"migrations/0001.sql", "migrations/embed.go", "api/openapi/identity.yaml", "deploy/compose/compose.yaml", "docs/operations/installation.md", "docs/operations/space name.md", "LICENSE", "NOTICE", "README.md", "SECURITY.md", "CHANGELOG.md"} {
+	for _, path := range []string{"migrations/0001.sql", "migrations/embed.go", "api/openapi/identity.yaml", "deploy/dev/docker-compose.yaml", "docs/operations/installation.md", "docs/operations/space name.md", "LICENSE", "NOTICE", "README.md", "SECURITY.md", "CHANGELOG.md"} {
 		write(path, "public fixture: "+path+"\n", 0o600)
 	}
-	write("deploy/compose/secrets/private-fixture", "must-not-enter-the-bundle", 0o600)
 	write("deploy/prod/.env", "# template\nPROUDAUTH_ROOT_KEY=must-not-enter-the-bundle\nPROUDAUTH_DATABASE_URL=postgres://u:must-not-enter-the-bundle@db/pa\nPROUDAUTH_LOG_LEVEL=info\n", 0o600)
 	write("go.mod", "module github.com/proudbase/proudauth\n\ngo 1.27.1\n", 0o600)
 	write("test-bin/go", `#!/bin/sh
@@ -231,7 +230,7 @@ func TestOfflineBundleContentsAndChecksums(t *testing.T) {
 		}
 	}
 	for name, body := range files {
-		if strings.Contains(name, "compose/secrets") || name == "migrations/embed.go" || bytes.Contains(body, []byte("must-not-enter-the-bundle")) {
+		if name == "migrations/embed.go" || bytes.Contains(body, []byte("must-not-enter-the-bundle")) {
 			t.Fatal("private/development file shipped", name)
 		}
 	}

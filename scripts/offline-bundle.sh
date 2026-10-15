@@ -75,12 +75,6 @@ done
 for f in LICENSE NOTICE README.md SECURITY.md CHANGELOG.md; do
   [ -f "$f" ] && cp "$f" "$OUT/"
 done
-# Never ship local development secrets.
-rm -rf "$OUT/deploy/compose/secrets"
-# Release-installer state is generated on the operator's machine and never
-# belongs in an archive, even when this checkout was used for an installation.
-rm -rf "$OUT/deploy/release/secrets" "$OUT/deploy/release/.configure.lock"
-rm -f "$OUT/deploy/release/.env" "$OUT/deploy/release/config.yaml"
 # A production .env filled in this checkout never leaves it: the bundle keeps
 # the template with every deployment value emptied.
 if [ -f "$OUT/deploy/prod/.env" ]; then

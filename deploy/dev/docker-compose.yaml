@@ -119,6 +119,11 @@ services:
     environment:
       SWAGGER_JSON: /spec/proudauth.yaml
       VALIDATOR_URL: none
+      # One clean page: no URL bar, groups collapsed, a filter, no schema dump.
+      LAYOUT: BaseLayout
+      DOC_EXPANSION: none
+      FILTER: "true"
+      DEFAULT_MODELS_EXPAND_DEPTH: "-1"
     volumes: ["../../api/openapi:/spec:ro"]
 
 volumes:

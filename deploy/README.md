@@ -7,11 +7,8 @@ same variables; only the values differ.
 | Folder | Contains | For |
 | --- | --- | --- |
 | [`dev/`](dev/) | ProudAuth, PostgreSQL, Mailpit (fake mail) and Swagger UI | Your machine |
-| [`prod/`](prod/) | ProudAuth only | A server with your PostgreSQL, HTTPS proxy and SMTP |
-| [`release/`](release/) | The installer packaged with each GitHub release, PostgreSQL included | Release downloads |
+| [`prod/`](prod/) | ProudAuth only; packaged as each release's Compose installer | A server with your PostgreSQL, HTTPS proxy and SMTP |
 | [`kubernetes/`](kubernetes/) | Kustomize base and example overlay | Kubernetes |
-| [`compose/`](compose/) | Source build used by CI and `make dev` | Contributors |
-| [`config/`](config/) | Example YAML configuration | Operators who prefer a file to variables |
 
 ## Development
 
@@ -20,7 +17,8 @@ cd deploy/dev
 docker compose up -d --build --wait
 ```
 
-Nothing to fill in. `--build` builds the image from this checkout; set
+Nothing to fill in (`make dev` from the repository root does the same, and CI
+runs `make smoke` against it). `--build` builds the image from this checkout; set
 `PROUDAUTH_IMAGE` in `.env` to a release tag to run a published image instead.
 
 | URL | Purpose |

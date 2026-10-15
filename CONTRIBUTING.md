@@ -125,7 +125,7 @@ gofmt -l .   # must print nothing (CI fails otherwise)
 
 - `scripts/check-secrets.sh` fails on likely committed secrets (private keys,
   `pa_*` bearer prefixes, `whsec_` webhook secrets, cloud and chat tokens). Paths
-  under `tests/`, `docs/`, `*_test.go` and `deploy/compose/secrets/` are excluded;
+  under `tests/`, `docs/` and `*_test.go` are excluded;
   use obviously fake values there anyway.
 - `scripts/check-licenses.sh` fails on dependencies whose license is not one of
   Apache-2.0, MIT, BSD-2-Clause, BSD-3-Clause, ISC or MPL-2.0. New dependencies

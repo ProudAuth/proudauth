@@ -149,14 +149,15 @@ jobs:
             go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 -mode=binary "$b"
           done
       - name: Start the development stack
-        run: |
-          deploy/compose/init-secrets.sh
-          docker compose -f deploy/compose/compose.yaml up -d --build --wait --wait-timeout 180
+        # The image just built and scanned, with the stack's own .env.
+        env:
+          PROUDAUTH_IMAGE: proudauth:ci
+        run: docker compose -f deploy/dev/docker-compose.yaml up -d --wait --wait-timeout 300
       - name: Compose smoke test
         run: make smoke
       - name: Stack logs
         if: failure()
-        run: docker compose -f deploy/compose/compose.yaml logs --no-color
+        run: docker compose -f deploy/dev/docker-compose.yaml logs --no-color
       - name: Stop the stack
         if: always()
-        run: docker compose -f deploy/compose/compose.yaml down -v
+        run: docker compose -f deploy/dev/docker-compose.yaml down -v

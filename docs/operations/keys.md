@@ -22,7 +22,7 @@ while it runs. No operation (signing, decryption) happens inside an HSM.
 ## Custody rules
 
 - Keep root, pepper and wrap keys **out of database backups** and out of the
-  container image (`.dockerignore` excludes `deploy/compose/secrets`). Back them up
+  container image (`.dockerignore` excludes `.env`, `*.key` and `*.pem` files). Back them up
   to separate, access-controlled storage; a database backup without its keys is
   only partially restorable (OPS-005).
 - Use `file:` references with mode `0600` files owned by the service user,

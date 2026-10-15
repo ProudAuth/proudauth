@@ -96,6 +96,11 @@ func TestDeployDevAndProd(t *testing.T) {
 				env["PROUDAUTH_SMTP_PASSWORD"] = "example-smtp-password"
 				env["PROUDAUTH_EMAIL_FROM"] = "no-reply@example.test"
 			}
+			for after, before := range map[string]string{"realm": "migrate", "server": "realm"} {
+				if deployDig(services[after], "depends_on", before, "condition") != "service_completed_successfully" {
+					t.Errorf("%s must wait for the successful one-shot %s", after, before)
+				}
+			}
 			for _, name := range names {
 				svc := services[name]
 				img, _ := deployDig(svc, "image").(string)
@@ -106,8 +111,17 @@ func TestDeployDevAndProd(t *testing.T) {
 					}
 					continue
 				}
-				if deployDig(svc, "read_only") != true || !slices.Contains(deployStrings(deployDig(svc, "cap_drop")), "ALL") {
-					t.Errorf("%s must run read-only with every capability dropped", name)
+				if deployDig(svc, "read_only") != true || !slices.Contains(deployStrings(deployDig(svc, "cap_drop")), "ALL") ||
+					!slices.Contains(deployStrings(deployDig(svc, "security_opt")), "no-new-privileges:true") {
+					t.Errorf("%s must run read-only, without capabilities and without privilege escalation", name)
+				}
+				if tmpfs := deployStrings(deployDig(svc, "tmpfs")); !slices.Equal(tmpfs, []string{"/tmp:size=64m,mode=1777"}) {
+					t.Errorf("%s must use one bounded writable tmpfs mount, got %v", name, tmpfs)
+				}
+				for _, port := range deployStrings(deployDig(svc, "ports")) {
+					if strings.HasSuffix(port, ":9090") && (profile.dir == "prod" || !strings.HasPrefix(port, "127.0.0.1:")) {
+						t.Errorf("%s publishes the operator listener as %q; it stays private (loopback in dev, unpublished in prod)", name, port)
+					}
 				}
 				if profile.dir == "prod" && deployDig(svc, "build") != nil {
 					t.Errorf("prod service %s must use the published image, not a source build", name)
@@ -153,6 +167,14 @@ func TestDeployDevAndProd(t *testing.T) {
 		}
 		slices.Sort(keys)
 		return keys
+	}
+	reference := deployRead(t, "docs/operations/environment.md")
+	for _, env := range []map[string]string{dev, prod} {
+		for k := range env {
+			if !strings.Contains(reference, "| `"+k+"` |") {
+				t.Errorf("docs/operations/environment.md does not document %s", k)
+			}
+		}
 	}
 	if !slices.Equal(image(dev), image(prod)) {
 		t.Errorf("dev and prod .env must define the same PROUDAUTH_* variables:\n dev  %v\n prod %v", image(dev), image(prod))

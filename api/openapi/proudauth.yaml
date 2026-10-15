@@ -2,50 +2,34 @@
 # Derived from internal/httpapi; tests/contract verifies that every route the server registers is documented
 # here and that nothing undocumented is listed. Edit together with the server code.
 openapi: "3.1.0"
-jsonSchemaDialect: "https://spec.openapis.org/oas/3.1/dialect/base"
+# Conventions shared by every operation: docs/protocols/api-conventions.md.
 info:
   title: ProudAuth API
   version: "1.0.0"
-  summary: "Self-hosted identity provider: protocol, interaction, self-service, tenant and administration APIs."
-  description: |
-    Contract for the ProudAuth custom HTTP API (`/api/v1/realms/{realm}/...`) and the protocol endpoints served under the path-based issuer (`/realms/{realm}`). Generated from the server code (internal/httpapi) and kept in sync by tests/contract.
-
-    Conventions (docs/plan.md section 25):
-
-    * **Errors.** Custom APIs return RFC 9457 problem details (`application/problem+json`, schema `Problem`) with a stable `code` and the `request_id`. OAuth/OIDC endpoints return standard OAuth errors (`OAuthError`).
-    * **Strict JSON.** Request bodies must be `application/json`, are size-bounded, and are rejected when they contain duplicate or unknown members (`additionalProperties: false`).
-    * **Authentication.** Bearer tokens only in the `Authorization` header (never query strings). 401 for missing/invalid credentials, 403 for authenticated-but-disallowed, 404 where existence is concealed.
-    * **Idempotency.** Every authenticated POST accepts `Idempotency-Key` (24 hours, actor/realm/route-bound, matched on the exact path and body). Only successful responses are recorded, and responses that carried one-time secrets are never replayed.
-    * **One-time secrets.** Fields marked `x-secret: true` (client secrets, API keys, personal tokens, setup tokens, recovery codes, signing secrets, handoff codes, download tokens, continuation tokens) are returned exactly once.
-    * **Concurrency.** Editable resources return a weak `ETag` (`W/"v{version}"`); send it in `If-Match`. Stale versions return 412; where `If-Match` is required, omitting it returns 428.
-    * **Pagination.** Cursor-paginated lists accept `cursor` and `limit` and return `next_cursor` (empty string on the last page).
-    * **Correlation.** `X-Request-Id` is accepted (printable ASCII, at most 64 characters) or generated, and echoed on every response.
-    * **Throttling.** 429 and 503 responses include `Retry-After`.
-    * **Trust classes and permissions.** `x-trust-class` records the section 25.2 trust class of each operation; `x-permissions` lists the permissions the server checks (any one suffices unless noted). Organization-scoped `org.*` permissions are evaluated in the organization named by the path, whose existence is concealed (404) from callers without any permission in it.
+  description: Identity, sign-in and administration APIs of a ProudAuth server.
   license:
-    name: See LICENSE
-    url: "https://auth.proudbase.com/license"
+    name: Apache-2.0
+    identifier: Apache-2.0
 servers:
   - url: "{origin}"
-    description: The configured public origin (server.public_origin).
     variables:
       origin:
-        default: "https://identity.example.com"
+        default: "http://localhost:8080"
 tags:
   - name: Extensions
-    description: "Lifecycle workflows, signed plugins and extension contract versions (EXT-013..EXT-018)."
+    description: "Lifecycle workflows, signed plugins and extension contract versions."
   - name: Registry
-    description: "Container-registry token bridge (ADV-010)."
+    description: "Container-registry token bridge."
   - name: Passkeys
-    description: "Passkey attestation trust and WebAuthn Level 3 related origins (PASS-009, PASS-010)."
+    description: "Passkey attestation trust and WebAuthn Level 3 related origins."
   - name: SAML
     description: "SAML 2.0 identity provider (SAML applications) and broker (SAML connections), their metadata and signing keys."
   - name: Authentication flows
-    description: "Versioned authentication-flow definitions: analysis, simulation, publication and rollback (AUT-019)."
+    description: "Versioned authentication-flow definitions: analysis, simulation, publication and rollback."
   - name: Shared signals
-    description: "Shared Signals Framework transmitter: CAEP and RISC security events by push or poll (AUD-016)."
+    description: "Shared Signals Framework transmitter: CAEP and RISC security events by push or poll."
   - name: Directory
-    description: "LDAP/Active Directory federation and synchronization, outbound SCIM provisioning, reconciliation and connector evidence (PROV-010..PROV-014, PROV-017, PROV-018, FED-015, USR-022)."
+    description: "LDAP/Active Directory federation and synchronization, outbound SCIM provisioning, reconciliation and connector evidence."
   - name: Discovery
     description: "Public metadata: OpenID configuration, RFC 8414 metadata and JWKS."
   - name: OAuth
@@ -81,7 +65,7 @@ tags:
   - name: Jobs
     description: Asynchronous jobs and protected result downloads.
   - name: Provisioning
-    description: Inbound SCIM 2.0 provisioning and connector management (PROV-001..PROV-009, PROV-018).
+    description: Inbound SCIM 2.0 provisioning and connector management.
   - name: Federation
     description: "Upstream identity providers (OIDC and social), federated sign-in callbacks and linked identities."
   - name: Support access

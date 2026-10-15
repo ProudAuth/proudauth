@@ -66,6 +66,19 @@ builds and are not guarantees for this release.
 
 ### Changed
 
+- The release's Compose installer (`proudauth-<version>-compose.tar.gz`) is now
+  `deploy/prod`: `docker-compose.yaml` and `.env` with the image pinned to the
+  release, for your own PostgreSQL, HTTPS proxy and SMTP. Fill `.env`, then
+  `docker compose up -d --wait`; no Python initializer or generated secret
+  files. Separate schema-owner and runtime database roles (OPS-013) now need
+  the YAML configuration (DEP-002, DEP-006).
+- `make dev`, CI and `scripts/smoke-test.sh` use `deploy/dev`; CI runs the
+  stack on the image it just built and scanned.
+- The OpenAPI document opens with a one-line description; the shared API
+  conventions moved to `docs/protocols/api-conventions.md`, the license is
+  `Apache-2.0`, the server variable defaults to `http://localhost:8080` and tag
+  descriptions no longer carry requirement IDs. Swagger UI in `deploy/dev`
+  shows one page without the URL bar or schema list.
 - A secret given directly in `PROUDAUTH_DATABASE_URL`, `PROUDAUTH_ROOT_KEY`
   or `PROUDAUTH_SMTP_PASSWORD` becomes the reference `env:<variable>`, so
   production accepts environment-only configuration while literal secrets in
@@ -74,6 +87,14 @@ builds and are not guarantees for this release.
 
 ### Removed
 
+- `deploy/release/` (`init.sh`, `configure.py`, `init-database.sh`, the demo
+  profile and its bundled PostgreSQL) and `deploy/compose/` (`init-secrets.sh`,
+  `config.dev.yaml`), replaced by `deploy/prod/` and `deploy/dev/`.
+- `deploy/config/production.example.yaml`. Environment variables configure
+  the image; for settings that need YAML, the installation runbook points to
+  `deploy/kubernetes/overlays/example/config.yaml` and the configuration
+  reference.
+- `PHASE1_VALIDATION.md`, an internal note from the repository migration.
 - The `docker-deploy/` folder and its offline local-image profile
   (`init-env.sh`, `prepare-secrets.sh`, `start.sh`, `load-images.sh`,
   `config.yaml`, `config.tunnel.yaml`, its Compose file and the copied OpenAPI

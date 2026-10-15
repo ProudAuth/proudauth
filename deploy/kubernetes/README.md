@@ -1,7 +1,7 @@
 # Kubernetes manifests
 
 Kustomize manifests for running ProudAuth on Kubernetes (DEP-013). Kubernetes is
-optional; the same image runs under Docker Compose (`deploy/compose`) or systemd.
+optional; the same image runs under Docker Compose (`deploy/dev`, `deploy/prod`) or systemd.
 
 ```
 deploy/kubernetes/
