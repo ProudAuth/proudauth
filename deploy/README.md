@@ -1,18 +1,22 @@
-# Run ProudAuth with Docker Compose
+# Deploy ProudAuth
 
-One image, configured only by environment variables. Each folder has two
-files: `docker-compose.yaml` and `.env`. Both `.env` files have the same
-variables; only the values differ.
+One image, configured only by environment variables. `dev/` and `prod/` each
+have two files: `docker-compose.yaml` and `.env`. Both `.env` files have the
+same variables; only the values differ.
 
 | Folder | Contains | For |
 | --- | --- | --- |
 | [`dev/`](dev/) | ProudAuth, PostgreSQL, Mailpit (fake mail) and Swagger UI | Your machine |
 | [`prod/`](prod/) | ProudAuth only | A server with your PostgreSQL, HTTPS proxy and SMTP |
+| [`release/`](release/) | The installer packaged with each GitHub release, PostgreSQL included | Release downloads |
+| [`kubernetes/`](kubernetes/) | Kustomize base and example overlay | Kubernetes |
+| [`compose/`](compose/) | Source build used by CI and `make dev` | Contributors |
+| [`config/`](config/) | Example YAML configuration | Operators who prefer a file to variables |
 
 ## Development
 
 ```sh
-cd docker-deploy/dev
+cd deploy/dev
 docker compose up -d --build --wait
 ```
 
@@ -32,7 +36,8 @@ deletes the data.
 
 ## Production
 
-1. Copy `prod/` to the server, outside any Git checkout.
+1. Copy `prod/` to the server, outside any Git checkout. The committed
+   `prod/.env` stays an empty template (`TestDeployDevAndProd`).
 2. Fill every empty value in `.env` (`chmod 600 .env`). The root key is
    `openssl rand -hex 32`.
 3. `docker compose up -d --wait`

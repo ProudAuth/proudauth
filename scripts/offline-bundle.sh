@@ -81,6 +81,13 @@ rm -rf "$OUT/deploy/compose/secrets"
 # belongs in an archive, even when this checkout was used for an installation.
 rm -rf "$OUT/deploy/release/secrets" "$OUT/deploy/release/.configure.lock"
 rm -f "$OUT/deploy/release/.env" "$OUT/deploy/release/config.yaml"
+# A production .env filled in this checkout never leaves it: the bundle keeps
+# the template with every deployment value emptied.
+if [ -f "$OUT/deploy/prod/.env" ]; then
+  sed -E 's/^(PROUDAUTH_(PUBLIC_ORIGIN|TRUSTED_PROXIES|DATABASE_URL|ROOT_KEY|SMTP_HOST|SMTP_USERNAME|SMTP_PASSWORD|EMAIL_FROM))=.*/\1=/' \
+    "$OUT/deploy/prod/.env" > "$OUT/deploy/prod/.env.template"
+  mv -f "$OUT/deploy/prod/.env.template" "$OUT/deploy/prod/.env"
+fi
 
 # Record the exact module set the binaries were built from (license review and
 # vulnerability triage without network access).

@@ -126,7 +126,7 @@ instead of silently turning a protection off. Empty variables are ignored.
 
 These variables alone configure every binary, without a YAML file
 (`TestProductionFromEnvironmentOnly`). The Compose files in
-[docker-deploy/](../../docker-deploy/README.md) run the same image this way for
+[deploy/dev and deploy/prod](../../deploy/README.md) run the same image this way for
 development and production. A secret placed directly in a variable stays in the
 container's environment, which `docker inspect` shows to anyone with Docker
 access; prefer `file:` references to mounted secrets where that matters.

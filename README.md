@@ -120,7 +120,7 @@ private operator listener at `127.0.0.1:9090`.
 
 Browser sign-in requires your application's login UI;
 [the headless API guide](docs/protocols/headless-authentication.md) explains the
-flow. [docker-deploy/](docker-deploy/README.md) runs the same image from a `.env` file:
+flow. [deploy/](deploy/README.md) runs the same image from a `.env` file:
 `dev/` with every local dependency, `prod/` with only ProudAuth.
 Production requires HTTPS, SMTP, separated database roles and the
 [installation runbook](docs/operations/installation.md).

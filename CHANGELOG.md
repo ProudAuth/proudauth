@@ -55,8 +55,8 @@ builds and are not guarantees for this release.
 
 ### Added
 
-- `docker-deploy/` runs the same image from a `.env` file alone: `dev/` with
-  PostgreSQL, a Mailpit mail catcher and Swagger UI, `prod/` with only the
+- `deploy/dev/` and `deploy/prod/` run the same image from a `.env` file
+  alone: `dev/` with PostgreSQL, a Mailpit mail catcher and Swagger UI, `prod/` with only the
   ProudAuth image for an existing PostgreSQL, HTTPS proxy and SMTP relay. Both
   apply migrations and create the default realm on every start (DEP-002).
 - `PROUDAUTH_SMTP_USERNAME`, `PROUDAUTH_SMTP_PASSWORD` and
@@ -74,10 +74,11 @@ builds and are not guarantees for this release.
 
 ### Removed
 
-- The previous `docker-deploy/` offline local-image profile: `init-env.sh`,
-  `prepare-secrets.sh`, `start.sh`, `load-images.sh`, `config.yaml`,
-  `config.tunnel.yaml`, its Compose file and the copied OpenAPI file. Use
-  `docker-deploy/dev/` instead; Swagger UI there reads `api/openapi/` directly.
+- The `docker-deploy/` folder and its offline local-image profile
+  (`init-env.sh`, `prepare-secrets.sh`, `start.sh`, `load-images.sh`,
+  `config.yaml`, `config.tunnel.yaml`, its Compose file and the copied OpenAPI
+  file). Use `deploy/dev/` instead; Swagger UI there reads `api/openapi/`
+  directly.
 
 ## Historical development before 0.2.0-alpha.1
 

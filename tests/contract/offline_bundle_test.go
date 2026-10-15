@@ -51,6 +51,7 @@ func newBundleFixture(t *testing.T) bundleFixture {
 		write(path, "public fixture: "+path+"\n", 0o600)
 	}
 	write("deploy/compose/secrets/private-fixture", "must-not-enter-the-bundle", 0o600)
+	write("deploy/prod/.env", "# template\nPROUDAUTH_ROOT_KEY=must-not-enter-the-bundle\nPROUDAUTH_DATABASE_URL=postgres://u:must-not-enter-the-bundle@db/pa\nPROUDAUTH_LOG_LEVEL=info\n", 0o600)
 	write("go.mod", "module github.com/proudbase/proudauth\n\ngo 1.27.1\n", 0o600)
 	write("test-bin/go", `#!/bin/sh
 set -eu
@@ -233,6 +234,9 @@ func TestOfflineBundleContentsAndChecksums(t *testing.T) {
 		if strings.Contains(name, "compose/secrets") || name == "migrations/embed.go" || bytes.Contains(body, []byte("must-not-enter-the-bundle")) {
 			t.Fatal("private/development file shipped", name)
 		}
+	}
+	if prod := string(files["deploy/prod/.env"]); !strings.Contains(prod, "PROUDAUTH_ROOT_KEY=\n") || !strings.Contains(prod, "PROUDAUTH_LOG_LEVEL=info\n") {
+		t.Fatalf("the bundle must keep deploy/prod/.env as an emptied template, got %q", prod)
 	}
 	manifest := strings.TrimSpace(string(files["SHA256SUMS"]))
 	seen := map[string]bool{}

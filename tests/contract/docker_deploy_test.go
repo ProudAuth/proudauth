@@ -52,7 +52,7 @@ func deployInterpolate(s string, env map[string]string) (string, error) {
 	return out, missing
 }
 
-// TestDeployDevAndProd: docker-deploy runs one image from environment
+// TestDeployDevAndProd: deploy/dev and deploy/prod run one image from environment
 // variables alone (DEP-002, DEP-006). dev/ brings every local dependency;
 // prod/ is the ProudAuth image only, fixed to production, with an empty,
 // uncommitted-secret .env. ProudAuth containers run read-only without
@@ -68,7 +68,7 @@ func TestDeployDevAndProd(t *testing.T) {
 		{"prod", "production", []string{"migrate", "realm", "server", "worker"}},
 	} {
 		t.Run(profile.dir, func(t *testing.T) {
-			compose := deployDocs(t, "docker-deploy/"+profile.dir+"/docker-compose.yaml")[0]
+			compose := deployDocs(t, "deploy/"+profile.dir+"/docker-compose.yaml")[0]
 			services, _ := compose["services"].(map[string]any)
 			var names []string
 			for name := range services {
@@ -79,7 +79,7 @@ func TestDeployDevAndProd(t *testing.T) {
 			if !slices.Equal(names, want) {
 				t.Fatalf("services %v, want %v", names, want)
 			}
-			env := deployEnvFile(t, "docker-deploy/"+profile.dir+"/.env")
+			env := deployEnvFile(t, "deploy/"+profile.dir+"/.env")
 			if profile.dir == "prod" {
 				// The committed template holds no deployment values; a filled
 				// copy must never be committed (DEP-006).
@@ -143,7 +143,7 @@ func TestDeployDevAndProd(t *testing.T) {
 			}
 		})
 	}
-	dev, prod := deployEnvFile(t, "docker-deploy/dev/.env"), deployEnvFile(t, "docker-deploy/prod/.env")
+	dev, prod := deployEnvFile(t, "deploy/dev/.env"), deployEnvFile(t, "deploy/prod/.env")
 	image := func(env map[string]string) []string {
 		var keys []string
 		for k := range env {
