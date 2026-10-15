@@ -17,21 +17,19 @@ The image selects `linux/amd64` or `linux/arm64` automatically. This is a
 pre-release; no external security review or conformance certification has been
 completed.
 
-## Download and verify
+## Download
 
 ```sh
 VERSION=v0.2.0-alpha.2
-gh release download "$VERSION" --repo proudbase/proudauth \
-  --pattern "proudauth-$VERSION-compose.tar.gz" --pattern SHA256SUMS
-grep " proudauth-$VERSION-compose.tar.gz\$" SHA256SUMS | sha256sum -c -   # macOS: shasum -a 256 -c -
-tar -xzf "proudauth-$VERSION-compose.tar.gz"
-cd "proudauth-$VERSION-compose"
+mkdir proudauth && cd proudauth
+curl -fsSLO https://raw.githubusercontent.com/proudbase/proudauth/$VERSION/deploy/prod/docker-compose.yaml
+curl -fsSLO https://raw.githubusercontent.com/proudbase/proudauth/$VERSION/deploy/prod/.env
 ```
 
-The archive holds `docker-compose.yaml`, `.env` (with the image already pinned
-to this release), `LICENSE`, `NOTICE` and their `SHA256SUMS`. It is the
-`deploy/prod/` folder of the source repository. Release provenance is described
-in the [installation runbook](installation.md).
+These are the `deploy/prod/` files of that release tag; `.env` already pins the
+image to it. Each GitHub release also attaches them as
+`proudauth-<version>-compose.tar.gz` with `SHA256SUMS` and build provenance, for
+installations that verify downloads ([installation runbook](installation.md)).
 
 ## Configure
 
@@ -55,7 +53,8 @@ production: plain HTTP origins, unencrypted SMTP, insecure cookies or debug logs
 ## Start
 
 ```sh
-docker compose up -d --wait
+docker compose pull
+docker compose up -d
 docker compose ps
 ```
 
