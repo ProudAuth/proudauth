@@ -23,7 +23,7 @@ jobs:
       verified: ${{ steps.existing.outputs.verified }}
       head_sha: ${{ steps.existing.outputs.head_sha }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check CI for the exact tagged commit
         id: existing
         env:
@@ -60,7 +60,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Validate release version and commit
         env:
           VERIFIED_SHA: ${{ needs.ci-status.outputs.head_sha }}
