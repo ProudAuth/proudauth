@@ -17,6 +17,7 @@ import (
 	"github.com/proudbase/proudauth/internal/configuration"
 	"github.com/proudbase/proudauth/internal/httpapi"
 	"github.com/proudbase/proudauth/internal/maintenance"
+	"github.com/proudbase/proudauth/internal/platform/problem"
 	"github.com/proudbase/proudauth/internal/platform/secret"
 	"github.com/proudbase/proudauth/internal/realm"
 	"github.com/proudbase/proudauth/internal/server"
@@ -103,6 +104,7 @@ func init() {
 		name := fs.String("name", "", "realm name (path segment; default identity.default_realm)")
 		display := fs.String("display-name", "Main", "display name")
 		loginUI := fs.String("login-ui-url", "", "URL of the application-provided login interface")
+		ifMissing := fs.Bool("if-missing", false, "succeed without changes when the realm already exists (unattended setup)")
 		_ = fs.Parse(args)
 		app, env, err := localApp(*cfg)
 		if err != nil {
@@ -111,6 +113,16 @@ func init() {
 		defer env.DB.Close()
 		if *name == "" {
 			*name = env.Cfg.Identity.DefaultRealm
+		}
+		if *ifMissing {
+			// A one-shot container repeats this on every start; an existing
+			// realm is left exactly as it is, issuer included.
+			if r, err := app.Realms.ByName(context.Background(), *name); err == nil {
+				fmt.Printf("realm %s exists\nissuer: %s\n", r.Name, r.Issuer)
+				return nil
+			} else if !errors.Is(err, problem.ErrNotFound) {
+				return err
+			}
 		}
 		p := realm.DefaultPolicy()
 		p.Interaction.LoginUIURL = *loginUI

@@ -1,0 +1,130 @@
+# ProudAuth for local development: the production image and the same .env
+# variables, plus everything it needs on one machine: PostgreSQL, a fake mail
+# server (Mailpit) and Swagger UI. Not for production.
+#
+#   docker compose up -d --build --wait
+#
+# API http://localhost:8080 · mail http://localhost:8025 · Swagger http://localhost:8081
+name: ${COMPOSE_PROJECT_NAME:-proudauth-local}
+
+x-proudauth: &proudauth
+  image: ${PROUDAUTH_IMAGE:?Set PROUDAUTH_IMAGE in .env}
+  # Builds this checkout when PROUDAUTH_IMAGE is a local tag; a published
+  # release tag is pulled instead.
+  build:
+    context: ../..
+    args: {VERSION: dev}
+  read_only: true
+  tmpfs: ["/tmp:size=64m,mode=1777"]
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  stop_grace_period: 35s
+  environment:
+    PROUDAUTH_MODE: development
+    PROUDAUTH_COOKIE_INSECURE_DEV: "true"
+    # The operator listener (/status, /metrics) is published to 127.0.0.1 only.
+    PROUDAUTH_INTERNAL_LISTEN: ":9090"
+    PROUDAUTH_PUBLIC_ORIGIN: ${PROUDAUTH_PUBLIC_ORIGIN:?Set PROUDAUTH_PUBLIC_ORIGIN in .env}
+    PROUDAUTH_TRUSTED_PROXIES: ${PROUDAUTH_TRUSTED_PROXIES:-}
+    PROUDAUTH_DATABASE_URL: ${PROUDAUTH_DATABASE_URL:?Set PROUDAUTH_DATABASE_URL in .env}
+    PROUDAUTH_ROOT_KEY: ${PROUDAUTH_ROOT_KEY:?Set PROUDAUTH_ROOT_KEY in .env}
+    PROUDAUTH_EMAIL_ADAPTER: smtp
+    PROUDAUTH_SMTP_HOST: ${PROUDAUTH_SMTP_HOST:?Set PROUDAUTH_SMTP_HOST in .env}
+    PROUDAUTH_SMTP_PORT: ${PROUDAUTH_SMTP_PORT:-1025}
+    PROUDAUTH_SMTP_TLS: ${PROUDAUTH_SMTP_TLS:-none}
+    PROUDAUTH_SMTP_USERNAME: ${PROUDAUTH_SMTP_USERNAME:-}
+    PROUDAUTH_SMTP_PASSWORD: ${PROUDAUTH_SMTP_PASSWORD:-}
+    PROUDAUTH_EMAIL_FROM: ${PROUDAUTH_EMAIL_FROM:?Set PROUDAUTH_EMAIL_FROM in .env}
+    PROUDAUTH_LOG_LEVEL: ${PROUDAUTH_LOG_LEVEL:-info}
+    XDG_CONFIG_HOME: /tmp/proudauth-cli
+
+services:
+  postgres:
+    image: postgres:18.6
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      POSTGRES_USER: proudauth
+      POSTGRES_PASSWORD: proudauth
+      POSTGRES_DB: proudauth
+    volumes:
+      # PostgreSQL 18 keeps PGDATA below this version-aware volume root.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U proudauth -d proudauth"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  mailpit:
+    # Catches every email (verification codes, invitations) without sending it.
+    image: axllent/mailpit:v1.31.4
+    restart: unless-stopped
+    ports: ["127.0.0.1:${MAIL_PORT:-8025}:8025"]
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  migrate:
+    <<: *proudauth
+    restart: "no"
+    entrypoint: ["/usr/local/bin/identity-cli", "migrate"]
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  realm:
+    # Creates the default realm on the first start; later starts keep it.
+    <<: *proudauth
+    restart: "no"
+    entrypoint: ["/usr/local/bin/identity-cli", "realm-create", "-if-missing"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+
+  server:
+    <<: *proudauth
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PUBLIC_PORT:-8080}:8080"
+      - "127.0.0.1:${OPERATOR_PORT:-9090}:9090"
+    depends_on:
+      realm: {condition: service_completed_successfully}
+      mailpit: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/identity-cli", "doctor"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 10s
+
+  worker:
+    <<: *proudauth
+    restart: unless-stopped
+    entrypoint: ["/usr/local/bin/identity-worker"]
+    depends_on:
+      server: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/identity-cli", "doctor"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 10s
+
+  swagger:
+    image: swaggerapi/swagger-ui:v5.30.0
+    restart: unless-stopped
+    ports: ["127.0.0.1:${SWAGGER_PORT:-8081}:8080"]
+    environment:
+      SWAGGER_JSON: /spec/proudauth.yaml
+      VALIDATOR_URL: none
+      # One clean page: no URL bar, groups collapsed, a filter, no schema dump.
+      LAYOUT: BaseLayout
+      DOC_EXPANSION: none
+      FILTER: "true"
+      DEFAULT_MODELS_EXPAND_DEPTH: "-1"
+    volumes: ["../../api/openapi:/spec:ro"]
+
+volumes:
+  pgdata: {}

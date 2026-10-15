@@ -1,11 +1,12 @@
 #!/bin/sh
 # DEP-002, DEP-003, DEP-006: deterministic, source-free Compose release bundle.
-# An explicit allowlist excludes every generated .env, secret, config and state file.
+# It is deploy/prod: docker-compose.yaml and .env, with the image pinned to the
+# packaged version and every deployment value emptied, plus LICENSE and NOTICE.
 set -eu
 cd "$(dirname "$0")/.."
 [ "$#" -le 1 ] || { printf '%s\n' 'usage: package-deployment.sh [vVERSION]' >&2; exit 2; }
 command -v python3 >/dev/null 2>&1 || { printf '%s\n' 'python3 is required.' >&2; exit 1; }
-exec python3 - "${1:-v0.2.0-alpha.1}" "${DEPLOYMENT_OUT:-dist}" <<'PY'
+exec python3 - "${1:-v0.2.0-alpha.2}" "${DEPLOYMENT_OUT:-dist}" <<'PY'
 import gzip
 import hashlib
 import io
@@ -28,29 +29,22 @@ checksum = destination / (name + '.tar.gz.sha256')
 for path in (archive, checksum):
     if path.is_symlink() or (path.exists() and not path.is_file()):
         raise SystemExit('Bundle output must be a regular file')
-files = {}
-for filename in ('docker-compose.yaml', '.env.example', '.env.demo.example', '.gitignore',
-                 'init.sh', 'init-database.sh', 'configure.py', 'README.md'):
-    source = root / 'deploy/release' / filename
+
+def read(relative):
+    source = root / relative
     if source.is_symlink() or not source.is_file():
-        raise SystemExit('Missing or unsafe allowlisted deployment source: ' + filename)
-    files[filename] = source.read_bytes()
-for filename in ('LICENSE', 'NOTICE'):
-    source = root / filename
-    if source.is_symlink() or not source.is_file():
-        raise SystemExit('Missing or unsafe license source: ' + filename)
-    files[filename] = source.read_bytes()
-environment = (root / 'docs/operations/environment.md').read_text()
-for doc in ('configuration', 'keys', 'backup-restore', 'upgrades'):
-    environment = environment.replace('](' + doc + '.md)',
-        '](https://github.com/proudbase/proudauth/blob/main/docs/operations/' + doc + '.md)')
-environment = environment.replace('](docker-compose.md)', '](README.md)')
-files['ENVIRONMENT.md'] = environment.encode()
-# The examples and README must describe the version being packaged.
-for filename, data in list(files.items()):
-    if filename.endswith(('.md', '.example')):
-        files[filename] = data.replace(b'v0.2.0-alpha.1', version.encode()).replace(
-            b':0.2.0-alpha.1', (':' + version[1:]).encode())
+        raise SystemExit('Missing or unsafe bundle source: ' + relative)
+    return source.read_bytes()
+
+# A production .env filled in this checkout never leaves it: only the image
+# and non-deployment defaults keep their values.
+deployment = re.compile(rb'^(PROUDAUTH_(?:PUBLIC_ORIGIN|TRUSTED_PROXIES|DATABASE_URL|ROOT_KEY|SMTP_HOST|SMTP_USERNAME|SMTP_PASSWORD|EMAIL_FROM))=.*$', re.M)
+env = deployment.sub(rb'\1=', read('deploy/prod/.env'))
+env, pinned = re.subn(rb'^PROUDAUTH_IMAGE=.*$', b'PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:' + version[1:].encode(), env, flags=re.M)
+if pinned != 1:
+    raise SystemExit('deploy/prod/.env must set PROUDAUTH_IMAGE exactly once')
+files = {'docker-compose.yaml': read('deploy/prod/docker-compose.yaml'), '.env': env,
+         'LICENSE': read('LICENSE'), 'NOTICE': read('NOTICE')}
 files['SHA256SUMS'] = ''.join(hashlib.sha256(data).hexdigest() + '  ' + filename + '\n'
                              for filename, data in sorted(files.items())).encode()
 buffer = io.BytesIO()
@@ -63,7 +57,8 @@ with gzip.GzipFile(filename='', mode='wb', fileobj=buffer, mtime=0) as compresse
         for filename, data in sorted(files.items()):
             info = tarfile.TarInfo(name + '/' + filename)
             info.size = len(data)
-            info.mode = 0o755 if filename.endswith('.sh') else 0o644
+            # .env receives the operator's secrets once filled in.
+            info.mode = 0o600 if filename == '.env' else 0o644
             info.uid = info.gid = info.mtime = 0
             tar.addfile(info, io.BytesIO(data))
 contents = buffer.getvalue()

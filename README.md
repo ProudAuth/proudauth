@@ -35,94 +35,56 @@ This pre-release software is not a production-hardening approval.
 
 ## Install the release with Docker Compose
 
-Requires Docker/Compose v2, POSIX `sh` and Python 3.9+. No Go compiler or source
-checkout is needed. Pull the versioned image from either registry:
+The release installer is two files: `docker-compose.yaml` and `.env`. They run
+the published image; PostgreSQL, the HTTPS proxy and SMTP are yours.
 
 ```sh
-docker pull ghcr.io/proudbase/proudauth:0.2.0-alpha.1
-# Docker Hub mirror:
-docker pull mohamadalialghanem/proudauth:0.2.0-alpha.1
-```
-
-Download `proudauth-v0.2.0-alpha.1-compose.tar.gz` and `SHA256SUMS` from the
-[release](https://github.com/proudbase/proudauth/releases/tag/v0.2.0-alpha.1),
-verify the archive's checksum, extract it and enter its directory. It contains
-the maintained `docker-compose.yaml`, adjacent `.env` examples and initializer:
-
-```sh
-tar -xzf proudauth-v0.2.0-alpha.1-compose.tar.gz
-cd proudauth-v0.2.0-alpha.1-compose
-./init.sh demo
-# This quickstart uses the default host ports 8080 and 9090.
-docker compose config --quiet
-docker compose pull
+VERSION=v0.2.0-alpha.2
+gh release download "$VERSION" --repo proudbase/proudauth \
+  --pattern "proudauth-$VERSION-compose.tar.gz" --pattern SHA256SUMS
+grep " proudauth-$VERSION-compose.tar.gz\$" SHA256SUMS | sha256sum -c -
+tar -xzf "proudauth-$VERSION-compose.tar.gz" && cd "proudauth-$VERSION-compose"
+# Fill every empty value in .env (the root key: openssl rand -hex 32), then:
+chmod 600 .env
 docker compose up -d --wait
-curl --fail http://localhost:8080/health/ready
-docker compose exec server /usr/local/bin/identity-cli realm-create -name main
-docker compose exec server /usr/local/bin/identity-cli bootstrap \
-  -realm main -email admin@example.test -username root-admin
-docker compose exec server /usr/local/bin/identity-cli setup-account \
-  --url http://localhost:8080 --realm main
-docker compose exec server /usr/local/bin/identity-cli login \
-  --url http://localhost:8080 --realm main
 ```
 
-The demo uses loopback HTTP and a private email sink. At the first login prompt,
-use the bootstrap username `root-admin`; its email is not a sign-in identifier
-until verified.
-If you change the demo public port, complete setup/login with the
-[released host CLI](deploy/release/README.md#nondefault-local-ports) using the
-exact configured origin; container-local port 8080 is not a substitute issuer.
-
-For production, copy
-`.env.example` to `.env`, set **your** HTTPS issuer and real SMTP settings, store
-your SMTP password in the private file and run `./init.sh production`.
-The production profile uses Secure cookies, file-backed secrets and separate
-schema-owner/runtime database roles. PostgreSQL has no host port; the operator
-listener always binds to host loopback.
-
-Follow the [complete Compose installation](deploy/release/README.md) for
-verification, first administrator TOTP/email enrollment, proxying, persistence
-and upgrades. [Every `.env` variable and secret file](docs/operations/environment.md)
-is documented. Applications supply their own sign-in UI; `proudauth.com` hosts
-project information and documentation. The pre-release does not establish
-production hardening, external security review or certification.
+Every start applies migrations and creates the `main` realm when it is missing.
+The image is also available as `ghcr.io/proudbase/proudauth` and on Docker Hub
+as `mohamadalialghanem/proudauth`. Follow the
+[Compose installation guide](docs/operations/docker-compose.md) for the reverse
+proxy, the first administrator, upgrades and limits;
+[every `.env` variable](docs/operations/environment.md) is documented.
+Applications supply their own sign-in UI; `proudauth.com` hosts project
+information and documentation. The pre-release does not establish production
+hardening, external security review or certification.
 
 ## Develop from source
 
-Requires the Go version in [go.mod](go.mod), Docker with Compose v2 and available
-host ports. The default development stack uses HTTP and a private email sink.
-Building from source may download dependencies or images.
+Requires the Go version in [go.mod](go.mod) and Docker with Compose v2.
+`deploy/dev/` runs the same image from this checkout with PostgreSQL, a Mailpit
+mail catcher and Swagger UI; its `.env` needs no editing.
 
 ```sh
 git clone https://github.com/proudbase/proudauth.git
-cd proudauth
-make dev
+cd proudauth/deploy/dev
+docker compose up -d --build --wait     # or, from the repository root: make dev
+docker compose exec server identity-cli bootstrap -realm main -email admin@example.test -username root-admin
+docker compose exec server identity-cli setup-account --url http://localhost:8080 --realm main
+docker compose exec server identity-cli login --url http://localhost:8080 --realm main
 ```
 
-In another terminal:
-
-```sh
-docker compose -f deploy/compose/compose.yaml exec server /usr/local/bin/identity-cli realm-create -config /etc/proudauth/config.yaml -name main
-docker compose -f deploy/compose/compose.yaml exec server /usr/local/bin/identity-cli bootstrap -config /etc/proudauth/config.yaml -realm main -email admin@example.test -username root-admin
-go build -o bin/identity-cli ./cmd/identity-cli
-./bin/identity-cli setup-account --url http://localhost:8080 --realm main
-./bin/identity-cli login --url http://localhost:8080 --realm main
-```
-
-Keep the one-time setup token private. First administrator sign-in requires email
-verification and TOTP enrollment. Development email is available only on the
-private operator listener at `127.0.0.1:9090`.
+Keep the one-time setup token private. The first administrator sign-in enrolls
+TOTP and verifies the email address; the code arrives in Mailpit.
 
 - API: `http://localhost:8080`
-- Readiness: `http://localhost:8080/health/ready`
 - Discovery: `http://localhost:8080/realms/main/.well-known/openid-configuration`
+- Email: `http://localhost:8025`
+- Swagger UI: `http://localhost:8081`
 
 Browser sign-in requires your application's login UI;
 [the headless API guide](docs/protocols/headless-authentication.md) explains the
-flow. The offline local-image demonstration is in [docker-deploy/](docker-deploy/README.md).
-Production requires HTTPS, SMTP, separated database roles and the
-[installation runbook](docs/operations/installation.md).
+flow. See [deploy/](deploy/README.md) for every deployment folder.
 
 ## Build a Docker image
 

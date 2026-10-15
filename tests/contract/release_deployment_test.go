@@ -1,7 +1,8 @@
 package contract
 
-// DEP-002, DEP-003, DEP-004, DEP-006 and OPS-013: the release installer is
-// source-free, stable on repeated initialization, secret-safe and role-separated.
+// DEP-002, DEP-003, DEP-004 and DEP-006: the release installer is deploy/prod,
+// source-free and deterministic: docker-compose.yaml and .env with the image
+// pinned to the release and no deployment value, even from a filled checkout.
 
 import (
 	"archive/tar"
@@ -14,259 +15,118 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/proudbase/proudauth/internal/configuration"
 )
 
-func releaseInstallerCopy(t *testing.T) string {
+// releaseBundle packages version from root and returns the archive's files.
+func releaseBundle(t *testing.T, root, version string) ([]byte, map[string][]byte, map[string]int64) {
 	t.Helper()
 	if _, err := exec.LookPath("python3"); err != nil {
-		t.Fatal("python3 is required to verify the portable release installer")
+		t.Fatal("python3 is required to package the release installer")
 	}
-	dir := t.TempDir()
-	for _, name := range []string{"init.sh", "configure.py", ".env.example", ".env.demo.example"} {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(deployRead(t, "deploy/release/"+name)), 0o600); err != nil {
-			t.Fatal(err)
-		}
+	out := t.TempDir()
+	cmd := exec.Command("sh", filepath.Join(root, "scripts/package-deployment.sh"), version)
+	cmd.Env = append(os.Environ(), "DEPLOYMENT_OUT="+out)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("packaging: %v\n%s", err, output)
 	}
-	return dir
-}
-
-func releaseInit(t *testing.T, dir string, args ...string) ([]byte, error) {
-	t.Helper()
-	cmd := exec.Command("sh", append([]string{filepath.Join(dir, "init.sh")}, args...)...)
-	return cmd.CombinedOutput()
-}
-
-func releaseEnvReplace(t *testing.T, dir, name, value string) {
-	t.Helper()
-	path := filepath.Join(dir, ".env")
-	data, err := os.ReadFile(path)
+	archive, err := os.ReadFile(filepath.Join(out, "proudauth-"+version+"-compose.tar.gz"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	lines := strings.Split(string(data), "\n")
-	for i, line := range lines {
-		if strings.HasPrefix(line, name+"=") {
-			lines[i] = name + "=" + value
-		}
-	}
-	if err := os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o600); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestReleaseComposeIsolation(t *testing.T) {
-	compose := deployDocs(t, "deploy/release/docker-compose.yaml")[0]
-	services, _ := compose["services"].(map[string]any)
-	if deployDig(services["postgres"], "ports") != nil {
-		t.Error("release PostgreSQL must have no host port")
-	}
-	if image, _ := deployDig(services["postgres"], "image").(string); image != "${POSTGRES_IMAGE:-postgres:18.6}" {
-		t.Error("release PostgreSQL must default to the measured 18.6 version")
-	}
-	if !slices.Contains(deployStrings(deployDig(services["postgres"], "volumes")), "pgdata:/var/lib/postgresql") {
-		t.Error("release PostgreSQL must use the version-aware PostgreSQL 18 volume root")
-	}
-	for _, name := range []string{"server", "worker", "migrate"} {
-		service := services[name]
-		if deployDig(service, "read_only") != true || !slices.Contains(deployStrings(deployDig(service, "cap_drop")), "ALL") {
-			t.Errorf("%s must have a read-only filesystem and no capabilities", name)
-		}
-		if !slices.Contains(deployStrings(deployDig(service, "security_opt")), "no-new-privileges:true") {
-			t.Errorf("%s must prohibit gaining privileges", name)
-		}
-		if tmpfs := deployStrings(deployDig(service, "tmpfs")); !slices.Equal(tmpfs, []string{"/tmp:size=64m,mode=1777"}) {
-			t.Errorf("%s must use one correctly quoted bounded writable tmpfs mount", name)
-		}
-		secrets := deployStrings(deployDig(service, "secrets"))
-		if name == "migrate" {
-			if !slices.Contains(secrets, "owner_database_url") || slices.Contains(secrets, "database_url") {
-				t.Error("migration service must receive only the owner DSN")
-			}
-		} else if !slices.Contains(secrets, "database_url") || slices.Contains(secrets, "owner_database_url") {
-			t.Errorf("%s must receive only the runtime DSN", name)
-		}
-	}
-	if !slices.Contains(deployStrings(deployDig(services["server"], "ports")), "127.0.0.1:${OPERATOR_PORT:-9090}:9090") {
-		t.Error("operator port must always bind to loopback")
-	}
-	if deployDig(services["server"], "depends_on", "migrate", "condition") != "service_completed_successfully" {
-		t.Error("server must wait for successful one-shot migration")
-	}
-}
-
-func TestReleaseInitializerStableSecrets(t *testing.T) {
-	dir := releaseInstallerCopy(t)
-	if out, err := releaseInit(t, dir, "demo"); err != nil {
-		t.Fatalf("demo init: %v\n%s", err, out)
-	}
-	paths := []string{".env", "config.yaml", "secrets/root_key", "secrets/postgres_password", "secrets/owner_password", "secrets/app_password", "secrets/database_url", "secrets/owner_database_url", "secrets/metrics_token", "secrets/smtp_password"}
-	data := make(map[string][]byte)
-	infos := make(map[string]os.FileInfo)
-	for _, path := range paths {
-		var err error
-		data[path], err = os.ReadFile(filepath.Join(dir, path))
-		if err != nil {
-			t.Fatal(err)
-		}
-		infos[path], _ = os.Stat(filepath.Join(dir, path))
-	}
-	if infos[".env"].Mode().Perm() != 0o600 {
-		t.Error(".env must have mode 0600")
-	}
-	info, _ := os.Stat(filepath.Join(dir, "secrets"))
-	if info.Mode().Perm() != 0o700 {
-		t.Error("secret directory must have mode 0700")
-	}
-	if out, err := releaseInit(t, dir, "demo"); err != nil {
-		t.Fatalf("repeated init: %v\n%s", err, out)
-	}
-	for _, path := range paths {
-		after, _ := os.ReadFile(filepath.Join(dir, path))
-		info, _ := os.Stat(filepath.Join(dir, path))
-		if !bytes.Equal(data[path], after) || !os.SameFile(infos[path], info) {
-			t.Errorf("%s must preserve credentials and mounted inode", path)
-		}
-		if strings.HasPrefix(path, "secrets/") && info.Mode().Perm() != 0o444 {
-			t.Errorf("%s must be readable by the non-root container mount", path)
-		}
-	}
-	cfg, err := configuration.Load(filepath.Join(dir, "config.yaml"))
-	if err != nil || cfg.Validate() != nil {
-		t.Fatalf("generated demo config must validate: %v", err)
-	}
-	if cfg.Mode != configuration.ModeDevelopment || cfg.Storage.RuntimeRole != "proudauth_app" || cfg.Storage.MigrateOnStart {
-		t.Error("demo config must still separate database roles and use explicit migrations")
-	}
-	for _, name := range []string{"root_key", "postgres_password", "owner_password", "app_password", "metrics_token"} {
-		if bytes.Contains(data[".env"], data["secrets/"+name]) || bytes.Contains(data["config.yaml"], data["secrets/"+name]) {
-			t.Errorf("%s leaked into ordinary config", name)
-		}
-	}
-}
-
-func TestReleaseInitializerProductionSafety(t *testing.T) {
-	dir := releaseInstallerCopy(t)
-	if _, err := releaseInit(t, dir, "production"); err == nil {
-		t.Fatal("production example placeholders must be refused")
-	}
-	releaseEnvReplace(t, dir, "PROUDAUTH_PUBLIC_ORIGIN", "https://identity.operator.test")
-	releaseEnvReplace(t, dir, "SMTP_HOST", "smtp.operator.test")
-	releaseEnvReplace(t, dir, "EMAIL_FROM", "no-reply@operator.test")
-	if _, err := releaseInit(t, dir, "production"); err == nil {
-		t.Fatal("authenticated SMTP must require an operator-supplied password file")
-	}
-	passwordPath := filepath.Join(dir, "secrets/smtp_password")
-	if err := os.Chmod(passwordPath, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(passwordPath, []byte("fixture-SMTP-secret-never-published"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if out, err := releaseInit(t, dir, "production"); err != nil {
-		t.Fatalf("production init: %v\n%s", err, out)
-	}
-	cfg, err := configuration.Load(filepath.Join(dir, "config.yaml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := cfg.Validate(); err != nil {
-		t.Fatal(err)
-	}
-	if cfg.Mode != configuration.ModeProduction || cfg.Sessions.CookieInsecureDev || cfg.Delivery.Email.Adapter != "smtp" || cfg.Server.HostPolicy != "strict" {
-		t.Error("production config must retain HTTPS, secure cookies, SMTP and strict host checks")
-	}
-	if cfg.Delivery.Email.SMTPPassword != "file:/run/secrets/smtp_password" || cfg.Storage.MigrationDatabaseURL != "" {
-		t.Error("runtime config must have file SMTP reference and no owner credential")
-	}
-	config, _ := os.ReadFile(filepath.Join(dir, "config.yaml"))
-	if bytes.Contains(config, []byte("fixture-SMTP-secret-never-published")) {
-		t.Error("SMTP password leaked into config")
-	}
-	if _, err := releaseInit(t, dir, "demo"); err == nil {
-		t.Error("initializer must refuse silently changing an existing installation's profile")
-	}
-}
-
-func TestReleaseInitializerRefusesUnsafeInputs(t *testing.T) {
-	for _, tc := range []struct{ name, key, value string }{
-		{"shell", "SMTP_USERNAME", "$(touch sentinel)"},
-		{"unknown", "UNRECOGNIZED_OPTION", "1"},
-		{"public-demo", "PUBLIC_BIND", "0.0.0.0"},
-		{"trust-every-proxy", "PROUDAUTH_TRUSTED_PROXIES", "0.0.0.0/0"},
-		{"connection-capacity", "POOL_MAX_CONNECTIONS", "100"},
-		{"pool-below-minimum", "POOL_MAX_CONNECTIONS", "1"},
-		{"demo-origin-port", "PUBLIC_PORT", "8082"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := releaseInstallerCopy(t)
-			if err := os.WriteFile(filepath.Join(dir, ".env"), []byte(deployRead(t, "deploy/release/.env.demo.example")), 0o600); err != nil {
-				t.Fatal(err)
-			}
-			if tc.name == "unknown" {
-				file, _ := os.OpenFile(filepath.Join(dir, ".env"), os.O_APPEND|os.O_WRONLY, 0o600)
-				_, _ = file.WriteString(tc.key + "=" + tc.value + "\n")
-				_ = file.Close()
-			} else {
-				releaseEnvReplace(t, dir, tc.key, tc.value)
-			}
-			if _, err := releaseInit(t, dir, "demo"); err == nil {
-				t.Fatal("unsafe or misspelled configuration was accepted")
-			}
-			if _, err := os.Stat(filepath.Join(dir, "sentinel")); err == nil {
-				t.Fatal(".env content was executed")
-			}
-		})
-	}
-}
-
-func TestReleaseDeploymentBundleDeterministic(t *testing.T) {
-	dir := t.TempDir()
-	run := func() []byte {
-		t.Helper()
-		cmd := exec.Command("sh", filepath.Join(repoRoot, "scripts/package-deployment.sh"), "v0.2.0-alpha.1")
-		cmd.Env = append(os.Environ(), "DEPLOYMENT_OUT="+dir)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("packaging: %v\n%s", err, out)
-		}
-		data, err := os.ReadFile(filepath.Join(dir, "proudauth-v0.2.0-alpha.1-compose.tar.gz"))
-		if err != nil {
-			t.Fatal(err)
-		}
-		return data
-	}
-	first, second := run(), run()
-	if !bytes.Equal(first, second) {
-		t.Fatal("same source must produce byte-identical deployment archives")
-	}
-	gz, err := gzip.NewReader(bytes.NewReader(first))
+	gz, err := gzip.NewReader(bytes.NewReader(archive))
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer gz.Close()
-	tarReader := tar.NewReader(gz)
-	var names []string
+	files, modes := map[string][]byte{}, map[string]int64{}
+	reader := tar.NewReader(gz)
 	for {
-		header, err := tarReader.Next()
+		header, err := reader.Next()
 		if err == io.EOF {
-			break
+			return archive, files, modes
 		}
 		if err != nil {
 			t.Fatal(err)
 		}
-		name := strings.TrimPrefix(header.Name, "proudauth-v0.2.0-alpha.1-compose/")
 		if header.Typeflag == tar.TypeDir {
 			continue
 		}
+		name, ok := strings.CutPrefix(header.Name, "proudauth-"+version+"-compose/")
+		if !ok {
+			t.Fatalf("archive entry outside its directory: %s", header.Name)
+		}
+		body, err := io.ReadAll(reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		files[name], modes[name] = body, header.Mode
+	}
+}
+
+func TestReleaseDeploymentBundleDeterministic(t *testing.T) {
+	first, files, modes := releaseBundle(t, repoRoot, "v0.2.0-alpha.2")
+	second, _, _ := releaseBundle(t, repoRoot, "v0.2.0-alpha.2")
+	if !bytes.Equal(first, second) {
+		t.Fatal("same source must produce byte-identical deployment archives")
+	}
+	var names []string
+	for name := range files {
 		names = append(names, name)
-		if name == ".env" || name == "config.yaml" || strings.Contains(name, "secrets/") || strings.Contains(name, ".state/") {
-			t.Errorf("private state was packaged: %s", name)
+	}
+	slices.Sort(names)
+	if want := []string{".env", "LICENSE", "NOTICE", "SHA256SUMS", "docker-compose.yaml"}; !slices.Equal(names, want) {
+		t.Fatalf("the release installer is deploy/prod plus its license: got %v, want %v", names, want)
+	}
+	if !bytes.Equal(files["docker-compose.yaml"], []byte(deployRead(t, "deploy/prod/docker-compose.yaml"))) {
+		t.Error("the bundled docker-compose.yaml must be deploy/prod's")
+	}
+	if !bytes.Contains(files[".env"], []byte("\nPROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:0.2.0-alpha.2\n")) {
+		t.Error("the bundled .env must pin the image to the packaged version")
+	}
+	if modes[".env"] != 0o600 {
+		t.Errorf(".env receives the operator's secrets and must be packaged 0600, got %04o", modes[".env"])
+	}
+	for _, line := range strings.Split(string(files["SHA256SUMS"]), "\n") {
+		if line != "" && !slices.Contains(names, line[strings.LastIndex(line, " ")+1:]) {
+			t.Errorf("SHA256SUMS lists a file the archive lacks: %s", line)
 		}
 	}
-	for _, name := range []string{"docker-compose.yaml", ".env.example", ".env.demo.example", "init.sh", "configure.py", "init-database.sh", "README.md", "ENVIRONMENT.md", "LICENSE", "NOTICE", "SHA256SUMS"} {
-		if !slices.Contains(names, name) {
-			t.Errorf("source-free bundle missing %s", name)
+	if _, other, _ := releaseBundle(t, repoRoot, "v1.0.0"); !bytes.Contains(other[".env"], []byte("\nPROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:1.0.0\n")) {
+		t.Error("each release pins its own image version")
+	}
+}
+
+// TestReleaseBundleEmptiesDeploymentValues: packaging from a checkout whose
+// deploy/prod/.env was filled in never publishes those values (DEP-006).
+func TestReleaseBundleEmptiesDeploymentValues(t *testing.T) {
+	root := t.TempDir()
+	for _, rel := range []string{"scripts/package-deployment.sh", "deploy/prod/docker-compose.yaml", "LICENSE", "NOTICE"} {
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(root, rel)), 0o700); err != nil {
+			t.Fatal(err)
 		}
+		if err := os.WriteFile(filepath.Join(root, rel), []byte(deployRead(t, rel)), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	const private = "private-deployment-value-must-not-be-packaged"
+	filled := deployRead(t, "deploy/prod/.env")
+	for _, name := range []string{"PROUDAUTH_PUBLIC_ORIGIN", "PROUDAUTH_TRUSTED_PROXIES", "PROUDAUTH_DATABASE_URL", "PROUDAUTH_ROOT_KEY",
+		"PROUDAUTH_SMTP_HOST", "PROUDAUTH_SMTP_USERNAME", "PROUDAUTH_SMTP_PASSWORD", "PROUDAUTH_EMAIL_FROM"} {
+		if !strings.Contains(filled, "\n"+name+"=\n") {
+			t.Fatalf("deploy/prod/.env lacks the empty %s line", name)
+		}
+		filled = strings.Replace(filled, "\n"+name+"=\n", "\n"+name+"="+private+"\n", 1)
+	}
+	if err := os.WriteFile(filepath.Join(root, "deploy/prod/.env"), []byte(filled), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, files, _ := releaseBundle(t, root, "v0.2.0-alpha.2")
+	for name, body := range files {
+		if bytes.Contains(body, []byte(private)) {
+			t.Errorf("a deployment value from the packaging checkout leaked into %s", name)
+		}
+	}
+	if !bytes.Contains(files[".env"], []byte("\nPROUDAUTH_ROOT_KEY=\n")) || !bytes.Contains(files[".env"], []byte("\nPROUDAUTH_SMTP_PORT=587\n")) {
+		t.Error("the bundled .env must keep every variable, emptying only deployment values")
 	}
 }

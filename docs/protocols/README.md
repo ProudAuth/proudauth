@@ -2,6 +2,7 @@
 
 | Document | Contents |
 | --- | --- |
+| [api-conventions.md](api-conventions.md) | Rules shared by every operation of the OpenAPI contract: errors, strict JSON, authentication, idempotency, one-time secrets, concurrency, pagination, correlation, throttling, trust classes and permissions |
 | [oauth-oidc-profile.md](oauth-oidc-profile.md) | Endpoints, client types and authentication, client environments and claim mappings, authorization request rules, `prompt` and the `claims` parameter, grants, PKCE, PAR, DPoP, resource indicators, token exchange, introspection, revocation, UserInfo, logout, discovery, and what is not supported |
 | [tokens.md](tokens.md) | Token formats and prefixes, claim sets per `token_kind`, ID and logout tokens, verification algorithm, signing keys and JWKS |
 | [headless-authentication.md](headless-authentication.md) | The authentication transaction API: browser vs headless continuation, next actions, steps, remembered devices, errors, registration and its approval queue, guest identities, password reset, device flow, upstream providers |

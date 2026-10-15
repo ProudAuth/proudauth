@@ -1,24 +1,18 @@
 #!/bin/sh
-# Smoke test for a running development stack (DEP-002): health, realm
-# creation through the operator channel, readiness, discovery, JWKS, and
+# Smoke test for a running development stack (DEP-002): health, the default
+# realm through the operator channel, readiness, discovery, JWKS, and
 # refusal of insecure grants. Every check fails the script on error.
 set -eu
 BASE=${PROUDAUTH_URL:-http://localhost:8080}
-COMPOSE="docker compose -f $(dirname "$0")/../deploy/compose/compose.yaml"
+COMPOSE="docker compose -f $(dirname "$0")/../deploy/dev/docker-compose.yaml"
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 curl -fsS "$BASE/health/live" >/dev/null || fail "liveness"
 echo "live: ok"
 
-if out=$($COMPOSE exec -T server /usr/local/bin/identity-cli realm-create -config /etc/proudauth/config.yaml -name main 2>&1); then
-  echo "realm created"
-else
-  case "$out" in
-    *exist*|*conflict*) echo "realm exists" ;;
-    *) echo "$out" >&2; fail "realm creation" ;;
-  esac
-fi
+# The stack's one-shot realm service creates it; repeating is a no-op.
+$COMPOSE exec -T server /usr/local/bin/identity-cli realm-create -if-missing -name main || fail "realm creation"
 
 ready=""
 for _ in 1 2 3 4 5 6 7 8 9 10; do

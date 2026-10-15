@@ -53,7 +53,53 @@ builds and are not guarantees for this release.
 
 ## [Unreleased]
 
-No changes recorded after 0.2.0-alpha.1.
+### Added
+
+- `deploy/dev/` and `deploy/prod/` run the same image from a `.env` file
+  alone: `dev/` with PostgreSQL, a Mailpit mail catcher and Swagger UI, `prod/` with only the
+  ProudAuth image for an existing PostgreSQL, HTTPS proxy and SMTP relay. Both
+  apply migrations and create the default realm on every start (DEP-002).
+- `PROUDAUTH_SMTP_USERNAME`, `PROUDAUTH_SMTP_PASSWORD` and
+  `PROUDAUTH_HOST_POLICY` environment overrides.
+- `identity-cli realm-create -if-missing` succeeds without changes when the
+  realm exists, for unattended setup.
+
+### Changed
+
+- The release's Compose installer (`proudauth-<version>-compose.tar.gz`) is now
+  `deploy/prod`: `docker-compose.yaml` and `.env` with the image pinned to the
+  release, for your own PostgreSQL, HTTPS proxy and SMTP. Fill `.env`, then
+  `docker compose up -d --wait`; no Python initializer or generated secret
+  files. Separate schema-owner and runtime database roles (OPS-013) now need
+  the YAML configuration (DEP-002, DEP-006).
+- `make dev`, CI and `scripts/smoke-test.sh` use `deploy/dev`; CI runs the
+  stack on the image it just built and scanned.
+- The OpenAPI document opens with a one-line description; the shared API
+  conventions moved to `docs/protocols/api-conventions.md`, the license is
+  `Apache-2.0`, the server variable defaults to `http://localhost:8080` and tag
+  descriptions no longer carry requirement IDs. Swagger UI in `deploy/dev`
+  shows one page without the URL bar or schema list.
+- A secret given directly in `PROUDAUTH_DATABASE_URL`, `PROUDAUTH_ROOT_KEY`
+  or `PROUDAUTH_SMTP_PASSWORD` becomes the reference `env:<variable>`, so
+  production accepts environment-only configuration while literal secrets in
+  YAML files are still refused, and redacted exports show the variable name
+  instead of the value (DEP-006).
+
+### Removed
+
+- `deploy/release/` (`init.sh`, `configure.py`, `init-database.sh`, the demo
+  profile and its bundled PostgreSQL) and `deploy/compose/` (`init-secrets.sh`,
+  `config.dev.yaml`), replaced by `deploy/prod/` and `deploy/dev/`.
+- `deploy/config/production.example.yaml`. Environment variables configure
+  the image; for settings that need YAML, the installation runbook points to
+  `deploy/kubernetes/overlays/example/config.yaml` and the configuration
+  reference.
+- `PHASE1_VALIDATION.md`, an internal note from the repository migration.
+- The `docker-deploy/` folder and its offline local-image profile
+  (`init-env.sh`, `prepare-secrets.sh`, `start.sh`, `load-images.sh`,
+  `config.yaml`, `config.tunnel.yaml`, its Compose file and the copied OpenAPI
+  file). Use `deploy/dev/` instead; Swagger UI there reads `api/openapi/`
+  directly.
 
 ## Historical development before 0.2.0-alpha.1
 

@@ -58,14 +58,15 @@ func TestReleaseCIReuseExactLatestCommit(t *testing.T) {
 func TestOfflineBundleExcludesInstalledReleaseState(t *testing.T) {
 	f := newBundleFixture(t)
 	private := "fixture-private-release-state-must-never-be-published"
-	for _, name := range []string{"deploy/release/.env", "deploy/release/config.yaml", "deploy/release/secrets/root_key", "deploy/release/.configure.lock/owner"} {
-		path := filepath.Join(f.root, name)
-		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, []byte(private), 0o600); err != nil {
-			t.Fatal(err)
-		}
+	// A production .env filled in the packaging checkout.
+	filled := "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:0.2.0-alpha.2\nPROUDAUTH_ROOT_KEY=" + private +
+		"\nPROUDAUTH_DATABASE_URL=postgres://proudauth:" + private + "@db.example.test/proudauth\nPROUDAUTH_SMTP_PASSWORD=" + private + "\n"
+	path := filepath.Join(f.root, "deploy/prod/.env")
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(filled), 0o600); err != nil {
+		t.Fatal(err)
 	}
 	if out, err := f.command(context.Background(), "dev-test").CombinedOutput(); err != nil {
 		t.Fatalf("actual offline bundle assembly: %v\n%s", err, out)
@@ -87,9 +88,6 @@ func TestOfflineBundleExcludesInstalledReleaseState(t *testing.T) {
 		}
 		if err != nil {
 			t.Fatal(err)
-		}
-		if strings.Contains(header.Name, "/deploy/release/") && (strings.Contains(header.Name, "/secrets/") || strings.Contains(header.Name, "/.configure.lock") || strings.HasSuffix(header.Name, "/.env") || strings.HasSuffix(header.Name, "/config.yaml")) {
-			t.Errorf("private release path included: %s", header.Name)
 		}
 		body, err := io.ReadAll(reader)
 		if err != nil {

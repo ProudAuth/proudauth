@@ -98,14 +98,17 @@ identity-cli config-diff -from /etc/proudauth/config.yaml -to ./config.next.yaml
 | `PROUDAUTH_PUBLIC_ORIGIN` | `server.public_origin` |
 | `PROUDAUTH_PUBLIC_LISTEN` | `server.public_listen` |
 | `PROUDAUTH_INTERNAL_LISTEN` | `server.internal_listen` |
-| `PROUDAUTH_DATABASE_URL` | `storage.database_url` (value or secret ref) |
-| `PROUDAUTH_ROOT_KEY` | Replaces `keys.root_keys` with a single version 1 entry whose `ref` is this value, and sets `keys.active_version: 1`. Use a reference (`file:...`) in production. |
+| `PROUDAUTH_DATABASE_URL` | `storage.database_url`. A secret reference (`file:...`) is kept as given; a plain value becomes `env:PROUDAUTH_DATABASE_URL`, so production accepts it and redacted exports show the variable name, never the value. |
+| `PROUDAUTH_ROOT_KEY` | Replaces `keys.root_keys` with a single version 1 entry and sets `keys.active_version: 1`. A secret reference is the entry's `ref`; a plain key (64 hex digits) becomes `env:PROUDAUTH_ROOT_KEY`. |
 | `PROUDAUTH_MIGRATE_ON_START` | `storage.migrate_on_start` (boolean) |
 | `PROUDAUTH_EMAIL_ADAPTER` | `delivery.email.adapter` |
 | `PROUDAUTH_SMTP_HOST` | `delivery.email.smtp_host` |
 | `PROUDAUTH_SMTP_PORT` | `delivery.email.smtp_port` |
 | `PROUDAUTH_SMTP_TLS` | `delivery.email.smtp_tls` |
+| `PROUDAUTH_SMTP_USERNAME` | `delivery.email.smtp_username` |
+| `PROUDAUTH_SMTP_PASSWORD` | `delivery.email.smtp_password`; a plain value becomes `env:PROUDAUTH_SMTP_PASSWORD`, as for the database URL |
 | `PROUDAUTH_EMAIL_FROM` | `delivery.email.from` |
+| `PROUDAUTH_HOST_POLICY` | `server.host_policy` (`any` or `strict`) |
 | `PROUDAUTH_LOG_LEVEL` | `observability.log_level` |
 | `PROUDAUTH_IMPERSONATION_ENABLED` | `impersonation.enabled` (boolean) |
 | `PROUDAUTH_TRUSTED_PROXIES` | `server.trusted_proxies` (comma-separated) |
@@ -120,6 +123,13 @@ boolean variable must be one of `true`, `True`, `TRUE`, `t`, `T`, `1`, `false`,
 (1–4194304) and `PROUDAUTH_ARGON_TIME` (1–100) must be integers in range.
 Anything else stops every binary at startup with `environment: <VARIABLE>: ...`
 instead of silently turning a protection off. Empty variables are ignored.
+
+These variables alone configure every binary, without a YAML file
+(`TestProductionFromEnvironmentOnly`). The Compose files in
+[deploy/dev and deploy/prod](../../deploy/README.md) run the same image this way for
+development and production. A secret placed directly in a variable stays in the
+container's environment, which `docker inspect` shows to anyone with Docker
+access; prefer `file:` references to mounted secrets where that matters.
 
 ## Top level
 

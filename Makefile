@@ -24,7 +24,7 @@ sbom:
 image:
 	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE_NAME):$(VERSION) .
 dev:
-	./deploy/compose/init-secrets.sh && docker compose -f deploy/compose/compose.yaml up --build
+	docker compose -f deploy/dev/docker-compose.yaml up --build
 smoke:
 	./scripts/smoke-test.sh
 # Disaster-recovery drill (DEP-019, OPS-007): standby promotion and

@@ -8,8 +8,8 @@ the document says so.
 | Document | Contents |
 | --- | --- |
 | [installation.md](installation.md) | Production installation, database role separation, custom domains, bootstrap of the first administrator, configuration validation rules |
-| [docker-compose.md](docker-compose.md) | Source-free release installation, image pulls, demo/production profiles, first administrator enrollment and lifecycle commands |
-| [environment.md](environment.md) | Every adjacent `.env` variable, file-backed secrets, custody, idempotent initialization and configuration updates |
+| [docker-compose.md](docker-compose.md) | Release installation from `docker-compose.yaml` and `.env`, reverse proxy, first administrator, upgrades and the development stack |
+| [environment.md](environment.md) | Every `.env` variable for production and development, secrets and advanced settings |
 | [configuration.md](configuration.md) | Every configuration key with its default and effect; environment overrides; secret references; reviewing a change with `identity-cli config-diff` |
 | [keys.md](keys.md) | Key hierarchy, root-key and pepper custody, KMS envelope (`kms:` references), planned and emergency signing-key rotation, root-key rotation |
 | [backup-restore.md](backup-restore.md) | What to back up, restore procedure, restore reconciliation (`revocation-log`, `restore-begin`, `restore-reconcile`); the disaster-region recovery profile (warm standby, promotion runbook; DEP-019) |

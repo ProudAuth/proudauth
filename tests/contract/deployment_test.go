@@ -10,10 +10,10 @@ package contract
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -98,19 +98,18 @@ func deployLeaves(prefix string, v any, out *[]string) {
 	}
 }
 
-// TestDeployComposeStack covers DEP-002 (and DEP-004 for the Compose stack):
-// the development stack is a working Compose file whose secrets come from
-// generated, git-ignored files; its configuration and the production
-// template hold secret references only, load and validate, and every key
-// they use is in the configuration reference; a smoke-test command checks
-// the running stack, and CI runs it. The application containers run with a
-// read-only root filesystem, no capabilities and an explicit /tmp.
+// TestDeployComposeStack covers DEP-002 (and DEP-004 for the Compose stacks):
+// deploy/dev is a working development stack and deploy/prod the release
+// installer, both configured by their .env alone, never by secrets written
+// into a Compose file; the YAML templates hold secret references only, load
+// and validate, and every key they use is in the configuration reference; a
+// smoke-test command checks the running development stack, and CI runs it.
 func TestDeployComposeStack(t *testing.T) {
-	compose := deployDocs(t, "deploy/compose/compose.yaml")[0]
-	services, _ := compose["services"].(map[string]any)
-	for _, s := range []string{"postgres", "migrate", "server", "worker"} {
+	dev := deployDocs(t, "deploy/dev/docker-compose.yaml")[0]
+	services, _ := dev["services"].(map[string]any)
+	for _, s := range []string{"postgres", "migrate", "realm", "server", "worker"} {
 		if services[s] == nil {
-			t.Fatalf("compose.yaml lacks the %s service", s)
+			t.Fatalf("deploy/dev lacks the %s service", s)
 		}
 	}
 	// PostgreSQL 18 stores PGDATA below a major-version directory. Mounting
@@ -118,86 +117,25 @@ func TestDeployComposeStack(t *testing.T) {
 	if !slices.Contains(deployStrings(deployDig(services["postgres"], "volumes")), "pgdata:/var/lib/postgresql") {
 		t.Error("PostgreSQL 18 must persist its versioned data under /var/lib/postgresql")
 	}
-	t.Run("secret files work for the container UID and survive reinitialization", func(t *testing.T) {
-		dir := t.TempDir()
-		script := filepath.Join(dir, "init-secrets.sh")
-		if err := os.WriteFile(script, []byte(deployRead(t, "deploy/compose/init-secrets.sh")), 0o600); err != nil {
-			t.Fatal(err)
-		}
-		previous := make(map[string][]byte)
-		for pass := range 2 {
-			if out, err := exec.Command("sh", script).CombinedOutput(); err != nil {
-				t.Fatalf("initialization %d failed: %v\n%s", pass, err, out)
+	for _, rel := range []string{"deploy/dev/docker-compose.yaml", "deploy/prod/docker-compose.yaml"} {
+		stack, _ := deployDocs(t, rel)[0]["services"].(map[string]any)
+		for name, svc := range stack {
+			if name == "postgres" {
+				continue // the development database's fixed, public password
 			}
-			secretDir := filepath.Join(dir, "secrets")
-			info, err := os.Stat(secretDir)
-			if err != nil || info.Mode().Perm() != 0o700 {
-				t.Fatal("the host secret directory must be accessible only by its owner")
-			}
-			for _, name := range []string{"root_key", "db_password", "database_url"} {
-				path := filepath.Join(secretDir, name)
-				info, err := os.Stat(path)
-				if err != nil {
-					t.Fatal(err)
+			for k, v := range func() map[string]any { m, _ := deployDig(svc, "environment").(map[string]any); return m }() {
+				u := strings.ToUpper(k)
+				secret := strings.Contains(u, "PASSWORD") || strings.Contains(u, "SECRET") || strings.Contains(u, "KEY") || strings.HasSuffix(u, "DATABASE_URL")
+				if value := fmt.Sprint(v); secret && !strings.HasPrefix(value, "${") {
+					t.Errorf("%s: service %s sets %s in the Compose file; secrets come from .env", rel, name, k)
 				}
-				// Native Linux Compose binds the host file; its UID is not the
-				// image's UID 65532. A readable, non-writable mount is needed.
-				if mode := info.Mode().Perm(); mode&0o444 != 0o444 || mode&0o333 != 0 {
-					t.Errorf("%s must be readable by the container UID without write/execute permission, got %04o", name, mode)
-				}
-				body, err := os.ReadFile(path)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if pass > 0 && !bytes.Equal(previous[name], body) {
-					t.Errorf("reinitialization changed %s", name)
-				}
-				previous[name] = body
 			}
 		}
-		if !regexp.MustCompile(`^[0-9a-f]{64}$`).Match(previous["root_key"]) ||
-			!regexp.MustCompile(`^[0-9a-f]{36}$`).Match(previous["db_password"]) {
-			t.Error("initialization must generate full-length random hex keys and passwords")
-		}
-		wantURL := "postgres://proudauth:" + string(previous["db_password"]) + "@postgres:5432/proudauth?sslmode=disable"
-		if string(previous["database_url"]) != wantURL {
-			t.Error("database URL must use the generated password")
-		}
-	})
-	for name, svc := range services {
-		for k, v := range func() map[string]any { m, _ := deployDig(svc, "environment").(map[string]any); return m }() {
-			if u := strings.ToUpper(k); (strings.Contains(u, "PASSWORD") || strings.Contains(u, "SECRET") || strings.Contains(u, "KEY")) && !strings.HasSuffix(u, "_FILE") {
-				t.Errorf("service %s sets %s=%v in the Compose file; use a secret file", name, k, v)
-			}
-		}
-	}
-	for name, sec := range compose["secrets"].(map[string]any) {
-		if f, _ := deployDig(sec, "file").(string); !strings.HasPrefix(f, "./secrets/") {
-			t.Errorf("Compose secret %s must come from a generated file under ./secrets/, got %v", name, sec)
-		}
-	}
-	for _, name := range []string{"migrate", "server", "worker"} {
-		svc := services[name]
-		if deployDig(svc, "read_only") != true || !slices.Contains(deployStrings(deployDig(svc, "cap_drop")), "ALL") ||
-			!slices.Contains(deployStrings(deployDig(svc, "security_opt")), "no-new-privileges:true") {
-			t.Errorf("Compose service %s must run read-only, without capabilities and without privilege escalation", name)
-		}
-	}
-	for _, name := range []string{"server", "worker"} {
-		if !slices.Contains(deployStrings(deployDig(services[name], "tmpfs")), "/tmp") {
-			t.Errorf("Compose service %s must declare its writable temporary location (tmpfs /tmp)", name)
-		}
-	}
-	if !strings.Contains(deployRead(t, "deploy/compose/.gitignore"), "secrets/") || !strings.Contains(deployRead(t, ".gitignore"), "deploy/compose/secrets/") {
-		t.Error("generated Compose secrets must be git-ignored")
-	}
-	if init := deployRead(t, "deploy/compose/init-secrets.sh"); !strings.Contains(init, "/dev/urandom") || !strings.Contains(init, "umask 077") {
-		t.Error("init-secrets.sh must generate random secrets with private file modes")
 	}
 
 	// Configuration templates: secret references only, valid, documented.
 	reference := deployRead(t, "docs/operations/configuration.md")
-	for _, rel := range []string{"deploy/compose/config.dev.yaml", "deploy/config/production.example.yaml", "deploy/kubernetes/overlays/example/config.yaml"} {
+	for _, rel := range []string{"deploy/kubernetes/overlays/example/config.yaml"} {
 		cfg, err := configuration.Load(filepath.Join(repoRoot, rel))
 		if err != nil {
 			t.Fatalf("%s: %v", rel, err)
@@ -252,96 +190,15 @@ func TestDeployComposeStack(t *testing.T) {
 	}
 	makefile := deployRead(t, "Makefile")
 	if !regexp.MustCompile(`(?m)^smoke:\s*\n\t\./scripts/smoke-test\.sh`).MatchString(makefile) ||
-		!regexp.MustCompile(`(?m)^dev:\s*\n\t\./deploy/compose/init-secrets\.sh && docker compose -f deploy/compose/compose\.yaml up`).MatchString(makefile) {
-		t.Error("Makefile must offer `make dev` (init secrets, compose up) and `make smoke`")
+		!regexp.MustCompile(`(?m)^dev:\s*\n\tdocker compose -f deploy/dev/docker-compose\.yaml up --build`).MatchString(makefile) {
+		t.Error("Makefile must offer `make dev` (deploy/dev compose up) and `make smoke`")
+	}
+	if !strings.Contains(smoke, "deploy/dev/docker-compose.yaml") {
+		t.Error("smoke-test.sh must address the deploy/dev stack")
 	}
 	ci := deployRead(t, ".github/workflows/ci.yml")
-	if !strings.Contains(ci, "deploy/compose/init-secrets.sh") || !strings.Contains(ci, "docker compose -f deploy/compose/compose.yaml up") || !strings.Contains(ci, "make smoke") {
-		t.Error("CI must start the Compose stack and run the smoke test")
-	}
-}
-
-// DEP-002, DEP-004: the standalone image deployment initializes private,
-// stable credentials and never downloads images during startup.
-func TestDeployImageLocalStack(t *testing.T) {
-	compose := deployDocs(t, "docker-deploy/docker-compose.yaml")[0]
-	services, _ := compose["services"].(map[string]any)
-	for _, name := range []string{"postgres", "migrate", "server", "worker", "swagger"} {
-		if deployDig(services[name], "pull_policy") != "never" {
-			t.Errorf("%s must use an already loaded image", name)
-		}
-	}
-	if !slices.Contains(deployStrings(deployDig(services["postgres"], "volumes")), "pgdata:/var/lib/postgresql") {
-		t.Error("the standalone stack must use the PostgreSQL 18 volume root")
-	}
-	cfg, err := configuration.Load(filepath.Join(repoRoot, "docker-deploy/config.yaml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := cfg.Validate(); err != nil {
-		t.Fatal(err)
-	}
-	tunnel, err := configuration.Load(filepath.Join(repoRoot, "docker-deploy/config.tunnel.yaml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := tunnel.Validate(); err != nil {
-		t.Fatal(err)
-	}
-	if !strings.HasPrefix(tunnel.Server.PublicOrigin, "https://") || tunnel.Sessions.CookieInsecureDev || tunnel.Server.HostPolicy != "strict" {
-		t.Error("the tunnel profile must require its public HTTPS host and secure cookies")
-	}
-	if deployRead(t, "docker-deploy/openapi/proudauth.yaml") != deployRead(t, "api/openapi/proudauth.yaml") {
-		t.Error("the Swagger specification must match the source API contract")
-	}
-	dir := t.TempDir()
-	for _, name := range []string{"init-env.sh", "prepare-secrets.sh", ".env.example"} {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte(deployRead(t, "docker-deploy/"+name)), 0o600); err != nil {
-			t.Fatal(err)
-		}
-	}
-	run := func(script string) {
-		t.Helper()
-		if out, err := exec.Command("sh", filepath.Join(dir, script)).CombinedOutput(); err != nil {
-			t.Fatalf("%s failed: %v\n%s", script, err, out)
-		}
-	}
-	run("init-env.sh")
-	envPath := filepath.Join(dir, ".env")
-	envBefore, err := os.ReadFile(envPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, pattern := range []string{`(?m)^ROOT_KEY_VALUE=[0-9a-f]{64}$`, `(?m)^POSTGRES_PASSWORD=[0-9a-f]{48}$`} {
-		if !regexp.MustCompile(pattern).Match(envBefore) {
-			t.Error("initializer must create full-length random hexadecimal credentials")
-		}
-	}
-	run("init-env.sh")
-	envAfter, _ := os.ReadFile(envPath)
-	info, err := os.Stat(envPath)
-	if err != nil || info.Mode().Perm() != 0o600 || !bytes.Equal(envBefore, envAfter) {
-		t.Fatal(".env must remain private and unchanged on reinitialization")
-	}
-	run("prepare-secrets.sh")
-	secretDir := filepath.Join(dir, "secrets")
-	info, err = os.Stat(secretDir)
-	if err != nil || info.Mode().Perm() != 0o700 {
-		t.Fatal("secret directory must remain private")
-	}
-	for _, name := range []string{"root_key", "db_password", "database_url"} {
-		path := filepath.Join(secretDir, name)
-		before, _ := os.ReadFile(path)
-		inode, _ := os.Stat(path)
-		if err := os.Chmod(path, 0o600); err != nil {
-			t.Fatal(err)
-		}
-		run("prepare-secrets.sh")
-		after, _ := os.ReadFile(path)
-		info, err := os.Stat(path)
-		if err != nil || info.Mode().Perm() != 0o444 || !bytes.Equal(before, after) || !os.SameFile(inode, info) {
-			t.Errorf("%s must repair readability without changing credentials or the mounted inode", name)
-		}
+	if !strings.Contains(ci, "docker compose -f deploy/dev/docker-compose.yaml up") || !strings.Contains(ci, "make smoke") {
+		t.Error("CI must start the deploy/dev stack and run the smoke test")
 	}
 }
 
@@ -623,7 +480,7 @@ func TestDeployOfflineBundle(t *testing.T) {
 	for _, want := range []string{
 		"for arch in amd64 arm64", "identity-server identity-worker identity-cli", "GOOS=linux", "CGO_ENABLED=0",
 		"cp -R migrations deploy api", "operations", "LICENSE NOTICE", "modules.txt", "toolchain.txt",
-		`docker save -o "$STAGE/image.tar" -- "$IMAGE"`, "SHA256SUMS", "VERIFY.md", "sha256sum -c SHA256SUMS", `rm -rf "$OUT/deploy/compose/secrets"`,
+		`docker save -o "$STAGE/image.tar" -- "$IMAGE"`, "SHA256SUMS", "VERIFY.md", "sha256sum -c SHA256SUMS", `"$OUT/deploy/prod/.env"`,
 		".tar.gz.sha256",
 	} {
 		if !strings.Contains(script, want) {

@@ -96,30 +96,24 @@ mistaken for features.
 
 ## Quick start (development only)
 
-The Compose stack runs in `development` mode: plain HTTP on `localhost:8080`, the
-development mail sink instead of SMTP, insecure cookies and a locally generated
-root key. Never expose it to a network.
-
+`deploy/dev/` runs the image in `development` mode: plain HTTP on
+`localhost:8080`, insecure cookies, a public development root key and a Mailpit
+mail catcher instead of a real SMTP relay. Never expose it to a network.
 PostgreSQL 18 persists its versioned data under `/var/lib/postgresql` in the
-`pgdata` volume. Existing volumes containing an older layout need an explicit
-backup and migration before reuse; changing the mount is not a database upgrade.
-The initializer keeps the host `secrets/` directory at mode `0700` and its
-files at `0444`, so file-backed read-only secret mounts work with the image's
-non-root UID on native Linux. Rerunning it preserves the generated credentials.
+`pgdata` volume.
 
 Requirements: Docker with Compose v2, and Go (version from `go.mod`) to build the
 CLI locally.
 
 ```sh
-# 1. Create local secret files and start PostgreSQL, migrations, server and worker.
-make dev        # = ./deploy/compose/init-secrets.sh && docker compose -f deploy/compose/compose.yaml up --build
+# 1. Build the image and start PostgreSQL, Mailpit, Swagger UI, migrations, the
+#    default realm, server and worker (deploy/dev/.env needs no editing).
+make dev        # = docker compose -f deploy/dev/docker-compose.yaml up --build
 
-# 2. In another terminal, create a realm and the first administrator through the
-#    local operator channel (the CLI inside the server container).
-COMPOSE="docker compose -f deploy/compose/compose.yaml"
-$COMPOSE exec server /usr/local/bin/identity-cli realm-create -config /etc/proudauth/config.yaml -name main
-$COMPOSE exec server /usr/local/bin/identity-cli bootstrap -config /etc/proudauth/config.yaml \
-  -realm main -email admin@example.test -username root-admin
+# 2. In another terminal, create the first administrator through the local
+#    operator channel (the CLI inside the server container).
+COMPOSE="docker compose -f deploy/dev/docker-compose.yaml"
+$COMPOSE exec server identity-cli bootstrap -realm main -email admin@example.test -username root-admin
 # -> prints a one-time setup token (default lifetime 1h, maximum 24h)
 
 # 3. Build the CLI on the host, set the first password, then sign in.
@@ -129,10 +123,7 @@ go build -o bin/identity-cli ./cmd/identity-cli
 ```
 
 The bootstrap administrator must enroll TOTP and verify the email address on first
-sign-in. In development mode, emails are stored by the development sink and can be
-read on the private operator listener at
-`GET http://127.0.0.1:9090/dev/mailbox?realm=main&recipient=admin@example.test`.
-That route exists only in development mode and never on the public API.
+sign-in. The verification code arrives in Mailpit at `http://localhost:8025`.
 
 After login, `./bin/identity-cli users`, `orgs`, `invite`, `revoke-sessions`,
 `clients`, `roles`, `assign-role`, `grant-scopes`, `sessions`, `invitations`,
@@ -214,7 +205,7 @@ api/                   OpenAPI document, configuration/import JSON Schemas, even
 examples/              backend-for-frontend, protected-orders-api, protected-billing-api, machine-client
 tests/e2e/             in-process end-to-end and security regression tests
 tests/contract/        OpenAPI-vs-router and schema well-formedness checks
-deploy/                compose/ (development stack), kubernetes/ (Kustomize), config/production.example.yaml
+deploy/                dev/ and prod/ (Compose + .env; prod/ is the release installer), kubernetes/
 scripts/               secret scan, license check, Compose smoke test, offline bundle
 docs/                  specification, ADRs, operations, protocols, integrations, threat models
 ```
