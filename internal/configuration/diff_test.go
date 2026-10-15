@@ -1,6 +1,9 @@
 package configuration
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -148,6 +151,66 @@ func TestEnvParseErrorsFailClosed(t *testing.T) {
 	err := applyEnv(&c)
 	if err == nil || !strings.Contains(err.Error(), "PROUDAUTH_IMPERSONATION_ENABLED") || !strings.Contains(err.Error(), "PROUDAUTH_SMTP_PORT") {
 		t.Fatalf("malformed environment accepted: %v", err)
+	}
+}
+
+// TestProductionFromEnvironmentOnly: the published image runs in production
+// from PROUDAUTH_* variables alone. Secrets given directly in a variable
+// become env: references, so they pass DEP-006 and never appear in redacted
+// exports; the same literals in a YAML file are still refused.
+func TestProductionFromEnvironmentOnly(t *testing.T) {
+	const dsn, rootKey, smtpPassword = "postgres://proudauth:db-password-value@db.example.com:5432/proudauth?sslmode=require",
+		"6465762d6f6e6c792d726f6f742d6b65792d6e6f742d666f722d70726f642121", "smtp-password-value"
+	for name, v := range map[string]string{
+		"PROUDAUTH_MODE": "production", "PROUDAUTH_PUBLIC_ORIGIN": "https://id.example.com", "PROUDAUTH_HOST_POLICY": "strict",
+		"PROUDAUTH_DATABASE_URL": dsn, "PROUDAUTH_ROOT_KEY": rootKey,
+		"PROUDAUTH_EMAIL_ADAPTER": "smtp", "PROUDAUTH_SMTP_HOST": "smtp.example.com", "PROUDAUTH_SMTP_PORT": "587",
+		"PROUDAUTH_SMTP_TLS": "starttls", "PROUDAUTH_SMTP_USERNAME": "mailer", "PROUDAUTH_SMTP_PASSWORD": smtpPassword,
+		"PROUDAUTH_EMAIL_FROM": "no-reply@example.com",
+	} {
+		t.Setenv(name, v)
+	}
+	c, err := Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Validate(); err != nil {
+		t.Fatalf("environment-only production configuration refused: %v", err)
+	}
+	if c.Storage.DatabaseURL != "env:PROUDAUTH_DATABASE_URL" || c.Keys.RootKeys[0].Ref != "env:PROUDAUTH_ROOT_KEY" ||
+		c.Delivery.Email.SMTPPassword != "env:PROUDAUTH_SMTP_PASSWORD" {
+		t.Fatalf("secret variables must become env: references: %q %q %q", c.Storage.DatabaseURL, c.Keys.RootKeys[0].Ref, c.Delivery.Email.SMTPPassword)
+	}
+	for ref, want := range map[string]string{c.Storage.DatabaseURL: dsn, c.Keys.RootKeys[0].Ref: rootKey, c.Delivery.Email.SMTPPassword: smtpPassword} {
+		if got, err := ResolveSecret(ref); err != nil || got != want {
+			t.Fatalf("%s does not resolve to its variable: %v", ref, err)
+		}
+	}
+	if c.Delivery.Email.SMTPUsername != "mailer" || c.Server.HostPolicy != "strict" {
+		t.Fatalf("SMTP username or host policy not taken from the environment: %q %q", c.Delivery.Email.SMTPUsername, c.Server.HostPolicy)
+	}
+	exported := fmt.Sprintf("%+v", c.Redacted())
+	for _, secret := range []string{"db-password-value", rootKey, smtpPassword} {
+		if strings.Contains(exported, secret) {
+			t.Fatalf("redacted configuration exposes a secret from the environment")
+		}
+	}
+	t.Setenv("PROUDAUTH_SMTP_PASSWORD", "file:/run/secrets/smtp_password")
+	if c, err = Load(""); err != nil || c.Delivery.Email.SMTPPassword != "file:/run/secrets/smtp_password" {
+		t.Fatalf("an explicit reference must be kept as given: %q %v", c.Delivery.Email.SMTPPassword, err)
+	}
+	for name := range map[string]bool{"PROUDAUTH_DATABASE_URL": true, "PROUDAUTH_SMTP_PASSWORD": true} {
+		t.Setenv(name, "")
+	}
+	yaml := filepath.Join(t.TempDir(), "config.yaml")
+	if err := os.WriteFile(yaml, []byte("storage:\n  database_url: \""+dsn+"\"\ndelivery:\n  email:\n    smtp_password: literal\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if c, err = Load(yaml); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Validate(); err == nil || !strings.Contains(err.Error(), "smtp_password") || !strings.Contains(err.Error(), "database_url embeds a password") {
+		t.Fatalf("production accepted literal secrets from a configuration file: %v", err)
 	}
 }
 

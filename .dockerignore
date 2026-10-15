@@ -46,7 +46,5 @@ deploy/release/.configure.lock
 dist
 bin
 sbom.cdx.json
-docker-deploy/images
-docker-deploy/secrets
 **/.DS_Store
 docs-site/.state/

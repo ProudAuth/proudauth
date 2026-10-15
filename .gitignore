@@ -37,10 +37,4 @@ revocation-log*.json
 deploy/compose/secrets/
 .DS_Store
 
-# Standalone image deployment private state.
-docker-deploy/.env
-docker-deploy/.env.*
-!docker-deploy/.env.example
-docker-deploy/secrets/
-docker-deploy/images/
 /repro-results/

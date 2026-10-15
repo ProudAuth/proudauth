@@ -277,9 +277,11 @@ docker compose down
 deletes this installation's identity data.** Do not copy credentials, mailbox
 responses or logs containing sensitive operational data into issue reports.
 
-The standalone `docker-deploy/` source folder is a separate offline local
-demonstration, including Swagger. The release installer intentionally exposes
-only the identity API and the private operator listener.
+The source folder `docker-deploy/` runs the same image from environment
+variables alone: `dev/` adds PostgreSQL, a Mailpit mail catcher and Swagger UI
+for local work, and `prod/` contains only ProudAuth for an existing PostgreSQL,
+HTTPS proxy and SMTP relay. This installer intentionally exposes only the
+identity API and the private operator listener.
 
 Maintained templates: [deploy/release/](../../deploy/release/).
 [Full installation](installation.md), [configuration](configuration.md),

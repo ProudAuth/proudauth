@@ -53,7 +53,31 @@ builds and are not guarantees for this release.
 
 ## [Unreleased]
 
-No changes recorded after 0.2.0-alpha.1.
+### Added
+
+- `docker-deploy/` runs the same image from a `.env` file alone: `dev/` with
+  PostgreSQL, a Mailpit mail catcher and Swagger UI, `prod/` with only the
+  ProudAuth image for an existing PostgreSQL, HTTPS proxy and SMTP relay. Both
+  apply migrations and create the default realm on every start (DEP-002).
+- `PROUDAUTH_SMTP_USERNAME`, `PROUDAUTH_SMTP_PASSWORD` and
+  `PROUDAUTH_HOST_POLICY` environment overrides.
+- `identity-cli realm-create -if-missing` succeeds without changes when the
+  realm exists, for unattended setup.
+
+### Changed
+
+- A secret given directly in `PROUDAUTH_DATABASE_URL`, `PROUDAUTH_ROOT_KEY`
+  or `PROUDAUTH_SMTP_PASSWORD` becomes the reference `env:<variable>`, so
+  production accepts environment-only configuration while literal secrets in
+  YAML files are still refused, and redacted exports show the variable name
+  instead of the value (DEP-006).
+
+### Removed
+
+- The previous `docker-deploy/` offline local-image profile: `init-env.sh`,
+  `prepare-secrets.sh`, `start.sh`, `load-images.sh`, `config.yaml`,
+  `config.tunnel.yaml`, its Compose file and the copied OpenAPI file. Use
+  `docker-deploy/dev/` instead; Swagger UI there reads `api/openapi/` directly.
 
 ## Historical development before 0.2.0-alpha.1
 

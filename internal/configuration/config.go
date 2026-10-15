@@ -622,6 +622,18 @@ func applyEnv(c *Config) error {
 			}
 		}
 	}
+	// A secret given directly in a variable becomes the reference env:<name>:
+	// the value stays in the process environment only, so production accepts
+	// it and redacted exports name the variable, never the value (DEP-006).
+	secretRef := func(name string, dst *string) {
+		if v := os.Getenv(name); v != "" {
+			if IsSecretRef(v) {
+				*dst = v
+			} else {
+				*dst = "env:" + name
+			}
+		}
+	}
 	integer := func(name string, min, max int, set func(int)) {
 		if v := os.Getenv(name); v != "" {
 			n, err := strconv.Atoi(v)
@@ -638,9 +650,10 @@ func applyEnv(c *Config) error {
 	str("PROUDAUTH_PUBLIC_ORIGIN", &c.Server.PublicOrigin)
 	str("PROUDAUTH_PUBLIC_LISTEN", &c.Server.PublicListen)
 	str("PROUDAUTH_INTERNAL_LISTEN", &c.Server.InternalListen)
-	str("PROUDAUTH_DATABASE_URL", &c.Storage.DatabaseURL)
-	if v := os.Getenv("PROUDAUTH_ROOT_KEY"); v != "" {
-		c.Keys.RootKeys = []KeyRef{{Version: 1, Ref: v}}
+	secretRef("PROUDAUTH_DATABASE_URL", &c.Storage.DatabaseURL)
+	if os.Getenv("PROUDAUTH_ROOT_KEY") != "" {
+		c.Keys.RootKeys = []KeyRef{{Version: 1}}
+		secretRef("PROUDAUTH_ROOT_KEY", &c.Keys.RootKeys[0].Ref)
 		c.Keys.ActiveVersion = 1
 	}
 	boolean("PROUDAUTH_MIGRATE_ON_START", &c.Storage.MigrateOnStart)
@@ -648,7 +661,10 @@ func applyEnv(c *Config) error {
 	str("PROUDAUTH_SMTP_HOST", &c.Delivery.Email.SMTPHost)
 	integer("PROUDAUTH_SMTP_PORT", 1, 65535, func(n int) { c.Delivery.Email.SMTPPort = n })
 	str("PROUDAUTH_SMTP_TLS", &c.Delivery.Email.SMTPTLS)
+	str("PROUDAUTH_SMTP_USERNAME", &c.Delivery.Email.SMTPUsername)
+	secretRef("PROUDAUTH_SMTP_PASSWORD", &c.Delivery.Email.SMTPPassword)
 	str("PROUDAUTH_EMAIL_FROM", &c.Delivery.Email.From)
+	str("PROUDAUTH_HOST_POLICY", &c.Server.HostPolicy)
 	str("PROUDAUTH_LOG_LEVEL", &c.Observability.LogLevel)
 	boolean("PROUDAUTH_IMPERSONATION_ENABLED", &c.Impersonation.Enabled)
 	if v := os.Getenv("PROUDAUTH_TRUSTED_PROXIES"); v != "" {

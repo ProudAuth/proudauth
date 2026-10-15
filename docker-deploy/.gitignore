@@ -1,5 +1,3 @@
-.env
-.env.*
-!.env.example
-images/
-secrets/
+# dev/.env (public development defaults) and prod/.env (an empty template) are
+# committed. Fill a production .env only in a copy outside this checkout;
+# TestDeployDevAndProd fails if real values are committed here.

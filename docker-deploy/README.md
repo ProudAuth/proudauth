@@ -1,104 +1,61 @@
-# Deploy an existing ProudAuth image
+# Run ProudAuth with Docker Compose
 
-This portable development profile runs PostgreSQL, migrations, the server,
-worker and Swagger UI. It uses loopback HTTP and a private development email
-sink. Production needs HTTPS, SMTP and the service installation runbook.
-No private image archive, environment file or credentials ship with this folder.
+One image, configured only by environment variables. Each folder has two
+files: `docker-compose.yaml` and `.env`. Both `.env` files have the same
+variables; only the values differ.
 
-## Prepare images and credentials
+| Folder | Contains | For |
+| --- | --- | --- |
+| [`dev/`](dev/) | ProudAuth, PostgreSQL, Mailpit (fake mail) and Swagger UI | Your machine |
+| [`prod/`](prod/) | ProudAuth only | A server with your PostgreSQL, HTTPS proxy and SMTP |
 
-Build the service image from the repository root:
-
-```sh
-make image VERSION=0.2.0-local
-```
-
-PostgreSQL and Swagger images listed in `.env.example` must also be present
-locally. Compose uses `pull_policy: never`; startup never downloads an image.
-An operator-owned Docker image archive can be loaded with `load-images.sh`.
-It is not included in this public-source candidate.
-
-From this directory:
+## Development
 
 ```sh
-./init-env.sh
-# Review .env: image tags, platform, ports and public origin.
-./start.sh
+cd docker-deploy/dev
+docker compose up -d --build --wait
 ```
 
-`init-env.sh` creates a random database password and 32-byte root key with mode
-0600; existing credentials are preserved. `prepare-secrets.sh` creates a private
-0700 secret directory and read-only file mounts. The supplied example targets
-linux/arm64; set `PROUDAUTH_PLATFORM` to the architecture of your locally built
-image. Repeating startup preserves the database and existing realm.
+Nothing to fill in. `--build` builds the image from this checkout; set
+`PROUDAUTH_IMAGE` in `.env` to a release tag to run a published image instead.
 
-| Local URL | Purpose |
+| URL | Purpose |
 | --- | --- |
-| `http://localhost:8080` | Public identity API |
-| `http://localhost:8080/health/ready` | Readiness |
-| `http://localhost:8080/realms/main/.well-known/openid-configuration` | Discovery |
-| `http://127.0.0.1:8081/` | Swagger UI |
-| `http://127.0.0.1:9090/status` | Private operator status |
+| http://localhost:8080 | Identity API |
+| http://localhost:8080/realms/main/.well-known/openid-configuration | Discovery |
+| http://localhost:8025 | Every email sent (verification codes, invitations) |
+| http://localhost:8081 | Swagger UI |
+| http://127.0.0.1:9090/status | Operator status |
 
-Public ports bind to loopback; PostgreSQL has no published host port.
-The root API URL is not a built-in browser login page. Applications supply a
-login UI or use [headless authentication](../docs/protocols/headless-authentication.md).
+`docker compose down` stops it and keeps the data; `docker compose down -v`
+deletes the data.
 
-## First administrator
+## Production
 
-```sh
-docker compose exec server /usr/local/bin/identity-cli bootstrap -realm main -email admin@example.test -username admin
-PA_ORIGIN=$(sed -n 's/^PROUDAUTH_PUBLIC_ORIGIN=//p' .env)
-docker compose exec server /usr/local/bin/identity-cli setup-account --url "$PA_ORIGIN" --realm main
-docker compose exec server /usr/local/bin/identity-cli login --url "$PA_ORIGIN" --realm main
-```
+1. Copy `prod/` to the server, outside any Git checkout.
+2. Fill every empty value in `.env` (`chmod 600 .env`). The root key is
+   `openssl rand -hex 32`.
+3. `docker compose up -d --wait`
 
-Keep the one-time token private. First sign-in requires TOTP and email
-verification. In this development profile, verification messages appear only
-on the private operator mailbox:
-`http://127.0.0.1:9090/dev/mailbox?realm=main&recipient=admin@example.test`.
-CLI credentials are kept in the container's private temporary directory;
-log in again after recreating the container.
+Compose refuses to start while a required value is missing, and the image
+refuses development settings in production. Point your HTTPS reverse proxy
+at `PUBLIC_BIND:PUBLIC_PORT`, forwarding the original `Host` header.
 
-## HTTPS proxy or tunnel
+Back up `PROUDAUTH_ROOT_KEY` with the database: without it, the stored keys
+cannot be read. `PROUDAUTH_PUBLIC_ORIGIN` becomes the realm's issuer when the
+realm is first created; changing it later does not move an existing realm.
 
-`config.tunnel.yaml` is an example for an operator-controlled HTTPS proxy. It
-uses a strict public host and Secure cookies while retaining development email.
-Set these values in your private `.env`, using your own hostname and the exact
-trusted proxy address observed in your deployment:
+## Both
 
-```dotenv
-PROUDAUTH_PUBLIC_ORIGIN=https://id.example.com
-PROUDAUTH_CONFIG_FILE=config.tunnel.yaml
-PROUDAUTH_TRUSTED_PROXIES=<trusted-proxy-IP>/32
-```
-
-Publish only the public API listener; keep port 9090, metrics and email private.
-Stored realm issuers do not change when `.env` changes. For an existing realm,
-plan an explicit client/issuer transition; do not overwrite issuer rows as a
-routine deployment step. This configuration is a development demonstration,
-not a production SMTP profile.
-
-## Persistence and shutdown
+Every start runs migrations and creates the `main` realm if it is missing; the
+second start changes nothing. Create the first administrator once:
 
 ```sh
-docker compose ps
-docker compose logs --tail=100 server worker
-docker compose down
+docker compose exec server identity-cli bootstrap -realm main -email you@example.com -username admin
+docker compose exec server identity-cli setup-account --url <PROUDAUTH_PUBLIC_ORIGIN> --realm main
+docker compose exec server identity-cli login --url <PROUDAUTH_PUBLIC_ORIGIN> --realm main
 ```
 
-The last command keeps the database volume. `docker compose down -v` permanently
-deletes this deployment's identity data. PostgreSQL 18 stores its data beneath
-the mounted `/var/lib/postgresql` volume root. Keep the root key alongside a
-separately protected backup; changing it loses access to encrypted key material.
-Changing `.env` does not rotate an existing PostgreSQL role's password.
-
-The Swagger specification is a read-only copy of `api/openapi/proudauth.yaml`.
-After API changes, refresh it from the repository root:
-
-```sh
-cp api/openapi/proudauth.yaml docker-deploy/openapi/proudauth.yaml
-```
-
-For complete production controls see [installation](../docs/operations/installation.md),
-[key custody](../docs/operations/keys.md) and [backup/restore](../docs/operations/backup-restore.md).
+The first sign-in enrolls an authenticator app (TOTP) and verifies the email
+address; in development the code arrives in Mailpit. Every variable is
+described in [configuration](../docs/operations/configuration.md#environment-overrides).
