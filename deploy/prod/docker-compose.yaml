@@ -1,17 +1,5 @@
-# ProudAuth for production: only the ProudAuth image. PostgreSQL, the HTTPS
-# reverse proxy and SMTP are yours; .env says where they are.
-#
-#   1. Fill every empty value in .env, then: chmod 600 .env
-#   2. docker compose up -d --wait
-#   3. Once, create the first administrator and sign in (TOTP + email code):
-#        docker compose exec server identity-cli bootstrap -realm main -email you@example.com -username admin
-#        docker compose exec server identity-cli setup-account --url <PROUDAUTH_PUBLIC_ORIGIN> --realm main
-#        docker compose exec server identity-cli login --url <PROUDAUTH_PUBLIC_ORIGIN> --realm main
-#
-# Compose refuses to start while a required value is missing. Migrations and
-# the default realm run as one-shot containers on every start; both are
-# no-ops once done. Upgrade: change PROUDAUTH_IMAGE, then step 2 again.
-# Guide: https://proudauth.com/docs/operations/docker-compose/
+# ProudAuth: the identity server and its worker, configured by .env.
+# Start: docker compose pull && docker compose up -d
 name: ${COMPOSE_PROJECT_NAME:-proudauth}
 
 x-proudauth: &proudauth
@@ -21,7 +9,7 @@ x-proudauth: &proudauth
   cap_drop: [ALL]
   security_opt: ["no-new-privileges:true"]
   stop_grace_period: 35s
-  # Lets PROUDAUTH_DATABASE_URL reach PostgreSQL on this host, also on Linux.
+  # PostgreSQL on this machine is host.docker.internal.
   extra_hosts: ["host.docker.internal:host-gateway"]
   environment:
     PROUDAUTH_MODE: production
@@ -47,7 +35,7 @@ services:
     entrypoint: ["/usr/local/bin/identity-cli", "migrate"]
 
   realm:
-    # Creates the default realm on the first start; later starts keep it.
+    # Creates the main realm once.
     <<: *proudauth
     restart: "no"
     entrypoint: ["/usr/local/bin/identity-cli", "realm-create", "-if-missing"]
@@ -57,8 +45,7 @@ services:
   server:
     <<: *proudauth
     restart: unless-stopped
-    # Publish only to your reverse proxy; it terminates HTTPS for
-    # PROUDAUTH_PUBLIC_ORIGIN and forwards the original Host header.
+    # Your HTTPS reverse proxy forwards to this port.
     ports: ["${PUBLIC_BIND:-127.0.0.1}:${PUBLIC_PORT:-8080}:8080"]
     depends_on:
       realm: {condition: service_completed_successfully}

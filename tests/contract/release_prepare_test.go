@@ -62,7 +62,7 @@ func TestPrepareReleaseMovesEveryVersionReference(t *testing.T) {
 	}
 	for rel, want := range map[string]string{
 		"deploy/prod/.env":                  "\nPROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:9.8.7\n",
-		"docs/operations/docker-compose.md": "\nVERSION=v9.8.7\n",
+		"docs/operations/docker-compose.md": "\nPROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:9.8.7\n",
 		"README.md":                         "raw.githubusercontent.com/proudbase/proudauth/v9.8.7/deploy/prod/.env",
 		"deploy/README.md":                  "raw.githubusercontent.com/proudbase/proudauth/v9.8.7/deploy/prod/docker-compose.yaml",
 		"scripts/package-deployment.sh":     "${1:-v9.8.7}",
@@ -87,7 +87,8 @@ func TestPrepareReleaseMovesEveryVersionReference(t *testing.T) {
 	workflow := deployRead(t, ".github/workflows/release.yml")
 	for _, want := range []string{
 		`grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}" deploy/prod/.env`,
-		`grep -qx "VERSION=${GITHUB_REF_NAME}" docs/operations/docker-compose.md`,
+		`grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}" docs/operations/docker-compose.md`,
+		`--annotation "index:org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}"`, "## Docker image",
 		"secrets.WEBSITES_DISPATCH_TOKEN", "repos/proudbase/${site}/dispatches", "event_type=proudauth-release",
 	} {
 		if !strings.Contains(workflow, want) {

@@ -180,3 +180,21 @@ func TestDeployDevAndProd(t *testing.T) {
 		t.Errorf("dev and prod .env must define the same PROUDAUTH_* variables:\n dev  %v\n prod %v", image(dev), image(prod))
 	}
 }
+
+// TestInstallGuideShowsTheProductionFiles (DEP-002): the install guide, which
+// the websites publish as their quickstart, shows deploy/prod's
+// docker-compose.yaml and .env byte for byte, so copying them is installing
+// exactly the release.
+func TestInstallGuideShowsTheProductionFiles(t *testing.T) {
+	guide := deployRead(t, "docs/operations/docker-compose.md")
+	for lang, rel := range map[string]string{"yaml": "deploy/prod/docker-compose.yaml", "dotenv": "deploy/prod/.env"} {
+		if !strings.Contains(guide, "```"+lang+"\n"+deployRead(t, rel)+"```\n") {
+			t.Errorf("docs/operations/docker-compose.md must show %s exactly, in a ```%s block", rel, lang)
+		}
+	}
+	for _, command := range []string{"docker compose pull\ndocker compose up -d\n", "identity-cli bootstrap"} {
+		if !strings.Contains(guide, command) {
+			t.Errorf("the install guide lacks %q", command)
+		}
+	}
+}
