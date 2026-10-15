@@ -12,8 +12,8 @@ business permissions.
 [API contract](api/openapi/proudauth.yaml) · [Benchmarks](docs/operations/benchmarks.md#reference-results) ·
 [Security](SECURITY.md)
 
-**Current release: `v0.2.0-alpha.1` (pre-release).**
-[Release assets](https://github.com/proudbase/proudauth/releases/tag/v0.2.0-alpha.1) ·
+**Current release: `v0.2.0-alpha.2` (pre-release).**
+[Release assets](https://github.com/proudbase/proudauth/releases/tag/v0.2.0-alpha.2) ·
 [Container package](https://github.com/orgs/proudbase/packages/container/package/proudauth) ·
 [Docker Hub](https://hub.docker.com/r/mohamadalialghanem/proudauth)
 
@@ -33,31 +33,25 @@ and gaps. A configuration key or table alone is not a supported feature.
 No external security review or conformance certification has been completed.
 This pre-release software is not a production-hardening approval.
 
-## Install the release with Docker Compose
+## Install with Docker
 
-The release installer is two files: `docker-compose.yaml` and `.env`. They run
-the published image; PostgreSQL, the HTTPS proxy and SMTP are yours.
+Pull the image, fill in `.env`, start. PostgreSQL, the HTTPS proxy and SMTP are yours.
 
 ```sh
-VERSION=v0.2.0-alpha.2
-gh release download "$VERSION" --repo proudbase/proudauth \
-  --pattern "proudauth-$VERSION-compose.tar.gz" --pattern SHA256SUMS
-grep " proudauth-$VERSION-compose.tar.gz\$" SHA256SUMS | sha256sum -c -
-tar -xzf "proudauth-$VERSION-compose.tar.gz" && cd "proudauth-$VERSION-compose"
-# Fill every empty value in .env (the root key: openssl rand -hex 32), then:
-chmod 600 .env
-docker compose up -d --wait
+mkdir proudauth && cd proudauth
+curl -fsSLO https://raw.githubusercontent.com/proudbase/proudauth/v0.2.0-alpha.2/deploy/prod/docker-compose.yaml
+curl -fsSLO https://raw.githubusercontent.com/proudbase/proudauth/v0.2.0-alpha.2/deploy/prod/.env
+# Fill in .env: your HTTPS origin, PostgreSQL URL, a root key (openssl rand -hex 32) and SMTP.
+docker compose pull
+docker compose up -d
 ```
 
-Every start applies migrations and creates the `main` realm when it is missing.
-The image is also available as `ghcr.io/proudbase/proudauth` and on Docker Hub
-as `mohamadalialghanem/proudauth`. Follow the
-[Compose installation guide](docs/operations/docker-compose.md) for the reverse
-proxy, the first administrator, upgrades and limits;
-[every `.env` variable](docs/operations/environment.md) is documented.
-Applications supply their own sign-in UI; `proudauth.com` hosts project
-information and documentation. The pre-release does not establish production
-hardening, external security review or certification.
+Migrations run and the `main` realm is created on start. The
+[Compose guide](docs/operations/docker-compose.md) covers the reverse proxy, the
+first administrator and upgrades; [every `.env` variable](docs/operations/environment.md)
+is documented. The image is `ghcr.io/proudbase/proudauth`, mirrored on Docker Hub as
+`mohamadalialghanem/proudauth`. This pre-release has no external security review
+or certification yet.
 
 ## Develop from source
 
@@ -89,9 +83,9 @@ flow. See [deploy/](deploy/README.md) for every deployment folder.
 ## Build a Docker image
 
 ```sh
-make image VERSION=0.2.0-alpha.1
+make image VERSION=0.2.0-alpha.2
 # Equivalent:
-docker build --build-arg VERSION=0.2.0-alpha.1 -t proudauth:0.2.0-alpha.1 .
+docker build --build-arg VERSION=0.2.0-alpha.2 -t proudauth:0.2.0-alpha.2 .
 ```
 
 The image includes `identity-server`, `identity-worker` and `identity-cli`.

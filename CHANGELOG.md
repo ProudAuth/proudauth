@@ -53,6 +53,10 @@ builds and are not guarantees for this release.
 
 ## [Unreleased]
 
+No changes recorded after 0.2.0-alpha.2.
+
+## [0.2.0-alpha.2] - 2026-10-15
+
 ### Added
 
 - `deploy/dev/` and `deploy/prod/` run the same image from a `.env` file

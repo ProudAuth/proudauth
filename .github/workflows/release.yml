@@ -68,6 +68,9 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$VERIFIED_SHA"
           [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]
+          # Installers download deploy/prod from this tag: its .env must pin this release.
+          grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}" deploy/prod/.env ||
+            { echo "deploy/prod/.env must set PROUDAUTH_IMAGE to ghcr.io/proudbase/proudauth:${GITHUB_REF_NAME#v}"; exit 1; }
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           # The exact toolchain of the Dockerfile's build stage, so release

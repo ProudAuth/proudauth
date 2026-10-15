@@ -34,11 +34,19 @@ deletes the data.
 
 ## Production
 
-1. Copy `prod/` to the server, outside any Git checkout. The committed
-   `prod/.env` stays an empty template (`TestDeployDevAndProd`).
-2. Fill every empty value in `.env` (`chmod 600 .env`). The root key is
-   `openssl rand -hex 32`.
-3. `docker compose up -d --wait`
+On the server, outside any Git checkout:
+
+```sh
+mkdir proudauth && cd proudauth
+curl -fsSLO https://raw.githubusercontent.com/proudbase/proudauth/v0.2.0-alpha.2/deploy/prod/docker-compose.yaml
+curl -fsSLO https://raw.githubusercontent.com/proudbase/proudauth/v0.2.0-alpha.2/deploy/prod/.env
+# Fill every empty value in .env (the root key: openssl rand -hex 32), then:
+chmod 600 .env
+docker compose pull
+docker compose up -d
+```
+
+The committed `prod/.env` stays an empty template (`TestDeployDevAndProd`).
 
 Compose refuses to start while a required value is missing, and the image
 refuses development settings in production. Point your HTTPS reverse proxy
