@@ -108,7 +108,7 @@ CLI locally.
 ```sh
 # 1. Build the image and start PostgreSQL, Mailpit, Swagger UI, migrations, the
 #    default realm, server and worker (deploy/dev/.env needs no editing).
-make dev        # = docker compose -f deploy/dev/docker-compose.yaml up --build
+make dev        # builds proudauth:dev, then runs deploy/dev on it
 
 # 2. In another terminal, create the first administrator through the local
 #    operator channel (the CLI inside the server container).
