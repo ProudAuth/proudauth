@@ -70,9 +70,10 @@ func TestRenewableRenewsBeforeExpiry(t *testing.T) {
 		t.Fatalf("renewed token %q", tok)
 	}
 	// A failed renewal keeps the valid token; an expired token whose
-	// renewal fails is an error, not a stale token.
+	// renewal fails is an error, not a stale token. t2 was requested at
+	// 81 s: renewed from 161 s, handed out until 171 s.
 	fail.Store(true)
-	advance(90 * time.Second)
+	advance(85 * time.Second)
 	if tok := get(); tok != "t2" {
 		t.Fatalf("token %q while the renewal fails", tok)
 	}
@@ -86,6 +87,43 @@ func TestRenewableRenewsBeforeExpiry(t *testing.T) {
 	fail.Store(false)
 	if tok := get(); tok != "t3" {
 		t.Fatalf("token after recovery %q", tok)
+	}
+}
+
+// TestRenewableHoldsBackANearlyExpiredToken: in the last tenth of its
+// lifetime a token is no longer handed out, since a request could reach the
+// server after it expired; the caller waits for the renewal instead.
+func TestRenewableHoldsBackANearlyExpiredToken(t *testing.T) {
+	var mu sync.Mutex
+	now := time.Unix(1_000_000, 0)
+	clock := func() time.Time { mu.Lock(); defer mu.Unlock(); return now }
+	release := make(chan struct{})
+	var fetches atomic.Int64
+	r := &renewable{now: clock, fetch: func(context.Context) (string, time.Duration, error) {
+		if n := fetches.Add(1); n > 1 {
+			<-release
+		}
+		return fmt.Sprintf("t%d", fetches.Load()), 100 * time.Second, nil
+	}}
+	if tok, err := r.get(context.Background()); err != nil || tok != "t1" {
+		t.Fatalf("first token %q %v", tok, err)
+	}
+	mu.Lock()
+	now = now.Add(91 * time.Second)
+	mu.Unlock()
+	got := make(chan string, 1)
+	go func() {
+		tok, _ := r.get(context.Background())
+		got <- tok
+	}()
+	select {
+	case tok := <-got:
+		t.Fatalf("handed out %q with 9 s of 100 s left", tok)
+	case <-time.After(50 * time.Millisecond):
+	}
+	close(release)
+	if tok := <-got; tok != "t2" {
+		t.Fatalf("token after renewal %q", tok)
 	}
 }
 
@@ -195,7 +233,9 @@ func TestRunOutlastsTokenLifetime(t *testing.T) {
 	if testing.Short() {
 		t.Skip("runs for seconds")
 	}
-	ts := &tokenServer{ttl: time.Second, expiry: map[string]time.Time{}, refresh: "rt-0"}
+	// Two-second tokens across a 4.5 s run: renewed twice per scenario, with
+	// 200 ms of hand-out margin for a slow CI runner.
+	ts := &tokenServer{ttl: 2 * time.Second, expiry: map[string]time.Time{}, refresh: "rt-0"}
 	srv := httptest.NewServer(ts)
 	defer srv.Close()
 	c := NewClient(srv.URL, "bench", 4)
@@ -212,13 +252,18 @@ func TestRunOutlastsTokenLifetime(t *testing.T) {
 	env := &Env{Client: c, Admin: admin, Seed: &SeedData{Spec: SeedSpec{Users: 10}, Audience: "https://api.bench.test",
 		Machine: []SeedClient{{ClientID: "m1", Secret: "s"}, {ClientID: "m2", Secret: "s"}}, ResourceSrv: SeedClient{ClientID: "rs", Secret: "s"}}}
 	for _, sc := range []Scenario{&introspection{}, &auditQuery{}} {
-		res, err := Run(context.Background(), env, sc, Options{Concurrency: 4, Duration: 2500 * time.Millisecond, Seed: 1})
+		res, err := Run(context.Background(), env, sc, Options{Concurrency: 4, Duration: 4500 * time.Millisecond, Seed: 1})
 		if err != nil {
 			t.Fatal(err)
 		}
 		if len(res.Outcomes) != 1 || res.Outcomes["ok"] == 0 {
 			t.Errorf("%s across token expiry: outcomes %v", sc.Name(), res.Outcomes)
 		}
+	}
+	// As identity-bench does before exiting: SaveError waits for a refresh
+	// still running, so the file is final.
+	if admin.SaveError() != nil {
+		t.Fatal(admin.SaveError())
 	}
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
@@ -239,9 +284,6 @@ func TestRunOutlastsTokenLifetime(t *testing.T) {
 		if fi, err := os.Stat(creds); err != nil || fi.Mode().Perm() != 0o600 {
 			t.Fatalf("credentials file mode %v %v", fi.Mode().Perm(), err)
 		}
-	}
-	if admin.SaveError() != nil {
-		t.Fatal(admin.SaveError())
 	}
 }
 

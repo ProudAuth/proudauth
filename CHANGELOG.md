@@ -31,6 +31,11 @@ No changes recorded after 0.2.0-alpha.4.
 
 - The administrator example used the reserved username `admin`, which
   `identity-cli bootstrap` refuses; it is now `owner`.
+- `identity-bench` no longer sends a token in the last tenth of its lifetime
+  (it waits for the renewal instead) and counts the lifetime from the token
+  request, so a slow network does not turn renewals into `401`s. A refresh
+  still running when the command ends is awaited before the credentials file
+  is reported saved, so the file never keeps a spent refresh token.
 
 ## [0.2.0-alpha.3] - 2026-10-15
 

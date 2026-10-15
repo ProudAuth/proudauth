@@ -36,7 +36,10 @@ func (t StaticToken) Token(context.Context) (string, error) {
 // well-behaved client does instead of presenting expired tokens, and the
 // renewal's latency is not counted in the operation that noticed it. At most
 // one renewal runs at a time: a refresh token must never be presented twice
-// (reuse detection would revoke the family). An expired or missing token is
+// (reuse detection would revoke the family). The lifetime counts from when
+// the token was requested, and a token is no longer handed out once a tenth
+// of it (at most 10 s) is left, so a request does not reach the server with
+// a token that expired on the way. A token past that point, or missing, is
 // renewed while the caller waits.
 type renewable struct {
 	fetch func(context.Context) (string, time.Duration, error)
@@ -44,7 +47,7 @@ type renewable struct {
 
 	mu       sync.Mutex
 	tok      string
-	exp      time.Time
+	exp      time.Time // the token is handed out until then
 	renewAt  time.Time
 	inflight chan struct{} // closed when the running renewal has finished
 	err      error         // of the last renewal
@@ -57,12 +60,23 @@ func (r *renewable) clock() time.Time {
 	return time.Now()
 }
 
-// set stores a token valid for ttl from now; the caller holds r.mu.
-func (r *renewable) set(tok string, ttl time.Duration) {
-	now := r.clock()
-	r.tok, r.exp = tok, now.Add(ttl)
-	r.renewAt = r.exp.Add(-min(ttl/5, time.Minute))
+// set stores a token valid for ttl from the time it was requested; the
+// caller holds r.mu.
+func (r *renewable) set(tok string, ttl time.Duration, requested time.Time) {
+	expiry := requested.Add(ttl)
+	r.tok, r.exp = tok, expiry.Add(-min(ttl/10, 10*time.Second))
+	r.renewAt = expiry.Add(-min(ttl/5, time.Minute))
 	r.err = nil
+}
+
+// wait returns once no renewal is running.
+func (r *renewable) wait() {
+	r.mu.Lock()
+	done := r.inflight
+	r.mu.Unlock()
+	if done != nil {
+		<-done
+	}
 }
 
 func (r *renewable) get(ctx context.Context) (string, error) {
@@ -105,10 +119,11 @@ func (r *renewable) get(ctx context.Context) (string, error) {
 func (r *renewable) renew(ctx context.Context, done chan struct{}) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
+	requested := r.clock()
 	tok, ttl, err := r.fetch(ctx)
 	r.mu.Lock()
 	if err == nil && tok != "" && ttl > 0 {
-		r.set(tok, ttl)
+		r.set(tok, ttl, requested)
 	} else {
 		if err == nil {
 			err = errors.New("bench: token response without a token or lifetime")
@@ -194,7 +209,7 @@ func LoadAdminCredentials(path string, c *Client) (*AdminCredentials, error) {
 	a.r.fetch = a.refresh
 	if ttl := time.Until(cred.Expiry); ttl > 0 {
 		a.r.mu.Lock()
-		a.r.set(cred.AccessToken, ttl)
+		a.r.set(cred.AccessToken, ttl, time.Now())
 		a.r.mu.Unlock()
 	}
 	return a, nil
@@ -204,8 +219,11 @@ func LoadAdminCredentials(path string, c *Client) (*AdminCredentials, error) {
 func (a *AdminCredentials) Token(ctx context.Context) (string, error) { return a.r.get(ctx) }
 
 // SaveError reports a refresh whose rotated tokens could not be written back
-// to the file: the file then holds a spent refresh token.
+// to the file: the file then holds a spent refresh token. It first waits for
+// a refresh still running, so a command that calls it before exiting never
+// leaves the file behind the server's current refresh token.
 func (a *AdminCredentials) SaveError() error {
+	a.r.wait()
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.saveErr
