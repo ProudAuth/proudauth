@@ -24,6 +24,12 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   signs, tags, verifies its outputs with the operator commands from
   [installation.md](docs/operations/installation.md#verifying-a-release) and
   renders the release notes, and publishes nothing (DEP-003, GOV-005).
+- Configuration: `directory.sign_in_timeout`, `directory.max_concurrent_binds`,
+  `security.password.max_concurrent_hashes`; Compose variable `NETWORK_SUBNET`.
+- Metrics: `proudauth_key_rotations_refused_total{reason}` on the worker,
+  `busy` outcome of `proudauth_directory_binds_total`.
+- Audit event `mfa.upgrade_proof.recorded`; `mfa.totp.used`, `mfa.hotp.used`
+  and `mfa.recovery_code.used` carry `upgrade_proof`.
 
 ### Changed
 
@@ -152,15 +158,6 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   second factor are refused, and a policy stored earlier in that state reports
   `mfa_enrollment_unavailable` instead of an empty `next_actions` (MFA-003,
   MFA-005).
-
-### Added
-
-- Configuration: `directory.sign_in_timeout`, `directory.max_concurrent_binds`,
-  `security.password.max_concurrent_hashes`; Compose variable `NETWORK_SUBNET`.
-- Metrics: `proudauth_key_rotations_refused_total{reason}` on the worker,
-  `busy` outcome of `proudauth_directory_binds_total`.
-- Audit event `mfa.upgrade_proof.recorded`; `mfa.totp.used`, `mfa.hotp.used`
-  and `mfa.recovery_code.used` carry `upgrade_proof`.
 
 ### Known limitations
 
