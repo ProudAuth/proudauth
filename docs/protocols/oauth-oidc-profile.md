@@ -558,7 +558,7 @@ conformance suite has been run** ([interoperability.md](../integrations/interope
 | PKCE with `S256` | Required for every client |
 | `iss` in authorization responses (RFC 9207) | Always sent |
 | Exact redirect URI matching, `https` | Exact matching for every client; `fapi2` redirect URIs must be `https` (`422` on `redirect_uris`) |
-| Signing algorithms `PS256`, `ES256` or `EdDSA` | The realm's signing algorithm (`keys.signing_algorithm`) must be one of them when the client is registered or updated (`422`); the default `RS256` is not |
+| Signing algorithms `PS256`, `ES256` or `EdDSA` | The realm's signing algorithm (`keys.signing_algorithm`) must be one of them when the client is registered or updated (`422`), and a signing-key rotation to another algorithm is refused (`409`) while the realm has `fapi2` clients; the default `RS256` is not |
 | Short-lived authorization codes | At most 60 seconds, whatever `tokens.authorization_code_ttl` says |
 | Access token lifetime | At most 10 minutes |
 | Refresh tokens | Not rotated: the same refresh token stays valid until the family's idle or absolute expiry, the session ends or it is revoked; using it again is not treated as reuse (these clients are confidential and their tokens sender-constrained) |

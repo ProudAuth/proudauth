@@ -143,7 +143,16 @@ once the key is back), `/health/ready` reports `degraded`, and
 The worker's `keys.lifecycle` task runs every minute and:
 
 1. starts a planned rotation for each realm whose active key is older than
-   `keys.rotation_interval` (90 days) and has no pending key;
+   `keys.rotation_interval` (90 days) and has no pending key. The new key
+   keeps the realm's algorithm, that of its active key, so a realm moved to
+   `ES256`, `PS256` or `EdDSA` stays there; `keys.signing_algorithm` applies
+   only to realms without an active key (new realms). The same guards as the
+   manual rotation apply ([below](#planned-rotation-manual)): when they refuse
+   a realm, the worker logs `scheduled signing key rotation refused` with its
+   `realm_id`, counts it in `proudauth_key_rotations_refused_total{reason}`
+   (`pinned_resources`, `fapi2_clients`), retries it on the next run and still
+   rotates the other realms (`TestScheduledRotationKeepsRealmAlgorithm`,
+   `TestKeyRotationGuardsAllCallers`);
 2. activates pending keys older than `keys.prepublish_period` (48 h); the previous
    active key becomes `retiring` with `publish_until = now +
    tokens.max_access_token_ttl + keys.retirement_period` (default 60 min + 7 days);
@@ -164,7 +173,18 @@ identity-cli api GET /signing-keys                                # kid, algorit
 ```
 
 - Optional `"algorithm"` (`RS256`, `PS256`, `ES256`, `EdDSA`) changes the algorithm
-  of the new key; default is `keys.signing_algorithm`.
+  of the new key; the default is the realm's current algorithm, that of its
+  active key (`keys.signing_algorithm` when it has none). Changing
+  `keys.signing_algorithm` does not move existing realms: rotate each one
+  with `"algorithm"`.
+- A rotation is refused with `409 conflict` while active business resources
+  pin another `signing_algorithm` (the `resources` member lists them: re-pin
+  them first, then rotate; until the new key is active their tokens answer
+  `503 temporarily_unavailable`), or when the algorithm is not `PS256`,
+  `ES256` or `EdDSA` and the realm has `fapi2` clients (the `clients` member
+  lists them). The same checks run for scheduled and emergency rotations. A
+  resource created without `signing_algorithm` pins the realm's current
+  algorithm.
 - Only one planned rotation can be pending (`409 conflict` otherwise).
 - The new key is published immediately and becomes active after the prepublish
   period, giving verifiers time to fetch it. Tokens signed with the previous key

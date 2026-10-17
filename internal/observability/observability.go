@@ -356,6 +356,7 @@ type Metrics struct {
 	HookCalls        *Counter
 	SecuritySignals  *Counter
 	SigningFailures  *Counter
+	RotationsRefused *Counter
 	ActiveLeases     *Gauge
 	AuditUnsealed    *Gauge
 	AuditUnsealedAge *Gauge
@@ -386,6 +387,7 @@ func NewMetrics() *Metrics {
 		HookCalls:        r.Counter("proudauth_hook_calls_total", "Pre-action hook invocations", "kind", "outcome"),
 		SecuritySignals:  r.Counter("proudauth_security_signals_total", "Alertable security signals from audit evidence (OPS-004)", "signal"),
 		SigningFailures:  r.Counter("proudauth_signing_failures_total", "Token signing and key-provider failures (OPS-002)", "reason"),
+		RotationsRefused: r.Counter("proudauth_key_rotations_refused_total", "Scheduled signing-key rotations refused because pinned resources or fapi2 clients do not accept the realm's algorithm (TOK-005, TOK-012); updated by identity-worker", "reason"),
 		ActiveLeases:     r.Gauge("proudauth_worker_active_leases", "Unexpired worker leases across job, notification and webhook queues (OPS-002)", nil),
 		AuditUnsealed:    r.Gauge("proudauth_audit_unsealed_events", "Audit events not yet sealed into a hash-linked batch (AUD-014)", nil),
 		AuditUnsealedAge: r.Gauge("proudauth_audit_unsealed_oldest_seconds", "Age of the oldest unsealed audit event (AUD-014)", nil),

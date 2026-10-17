@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/proudauth/proudauth/internal/events"
 	"github.com/proudauth/proudauth/internal/keys"
 	"github.com/proudauth/proudauth/internal/platform/ids"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 	"github.com/proudauth/proudauth/internal/platform/secret"
 	"github.com/proudauth/proudauth/internal/runtime"
 	"github.com/proudauth/proudauth/internal/storage"
@@ -311,7 +313,30 @@ const (
 	RotationEmergency RotationMode = "emergency"
 )
 
+// Rotation refusals (TOK-005, ADV-001). Rotate returns them inside a
+// 409 conflict problem; errors.Is tells them apart.
+var (
+	// ErrRotationPinnedResources means active business resources pin a
+	// signing algorithm other than the one the new key would use.
+	ErrRotationPinnedResources = errors.New("token: resources pin a different signing algorithm")
+	// ErrRotationFAPI2Clients means fapi2 clients would be left with a
+	// realm key whose algorithm FAPI 2.0 does not allow.
+	ErrRotationFAPI2Clients = errors.New("token: fapi2 clients need a PS256, ES256 or EdDSA realm key")
+)
+
+// fapi2Algorithms are the algorithms FAPI 2.0 allows for signatures; they
+// match application.FAPI2SigningAlgs, checked at client registration.
+var fapi2Algorithms = []string{"PS256", "ES256", "EdDSA"}
+
 // Rotate performs signing-key rotation with audit (TOK-012, TOK-013).
+//
+// An empty alg keeps the realm's algorithm: that of its active key, or
+// keys.signing_algorithm when it has none (the realm's algorithm is derived
+// from its active key). Every caller, the admin API and the scheduled
+// rotation alike, runs the same guards inside the rotation's transaction: a
+// rotation whose algorithm active business resources do not pin, or that
+// would leave fapi2 clients with a non-FAPI 2.0 algorithm, is refused with a
+// 409 conflict naming them (TOK-005, ADV-001).
 //
 // Planned: a new key is prepublished as "pending"; ActivateDue promotes it after the
 // prepublish period, and the previous key keeps being published as "retiring" until
@@ -328,8 +353,17 @@ func (m *KeyManager) Rotate(ctx context.Context, realmID, alg string, mode Rotat
 			return err
 		}
 		now := m.d.Now()
-		var oldKID *string
-		_ = tx.QueryRow(ctx, `SELECT kid FROM signing_keys WHERE realm_id=$1 AND state='active' AND purpose='token'`, realmID).Scan(&oldKID)
+		var oldKID, oldAlg *string
+		_ = tx.QueryRow(ctx, `SELECT kid, algorithm FROM signing_keys WHERE realm_id=$1 AND state='active' AND purpose='token'`, realmID).Scan(&oldKID, &oldAlg)
+		if alg == "" {
+			alg = m.d.Cfg.Keys.SigningAlgorithm
+			if oldAlg != nil {
+				alg = *oldAlg
+			}
+		}
+		if err := checkRotation(ctx, tx, realmID, alg); err != nil {
+			return err
+		}
 		var err error
 		switch mode {
 		case RotationPlanned:
@@ -384,6 +418,51 @@ func (m *KeyManager) Rotate(ctx context.Context, realmID, alg string, mode Rotat
 	})
 	m.Invalidate(realmID)
 	return newKID, err
+}
+
+// checkRotation refuses a key algorithm that would stop issuance for pinned
+// resources (TOK-005) or sign fapi2 clients' responses with an algorithm
+// FAPI 2.0 does not allow (ADV-001).
+func checkRotation(ctx context.Context, tx pgx.Tx, realmID, alg string) error {
+	pinned, err := firstColumn(ctx, tx, `SELECT audience FROM api_resources WHERE realm_id=$1 AND state='active'
+		AND kind='business' AND signing_algorithm IS NOT NULL AND signing_algorithm <> $2 ORDER BY audience LIMIT 20`, realmID, alg)
+	if err != nil {
+		return err
+	}
+	if len(pinned) > 0 {
+		return problem.ErrConflict.WithDetail("resources pin a different signing algorithm; update their signing_algorithm first").
+			WithExtension("resources", pinned).With(ErrRotationPinnedResources)
+	}
+	if slices.Contains(fapi2Algorithms, alg) {
+		return nil
+	}
+	clients, err := firstColumn(ctx, tx, `SELECT client_id FROM clients WHERE realm_id=$1 AND security_profile='fapi2'
+		AND state <> 'decommissioned' ORDER BY client_id LIMIT 20`, realmID)
+	if err != nil {
+		return err
+	}
+	if len(clients) > 0 {
+		return problem.ErrConflict.WithDetail("fapi2 clients need a realm signing algorithm of PS256, ES256 or EdDSA").
+			WithExtension("clients", clients).With(ErrRotationFAPI2Clients)
+	}
+	return nil
+}
+
+func firstColumn(ctx context.Context, tx pgx.Tx, sql string, args ...any) ([]string, error) {
+	rows, err := tx.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var v string
+		if err := rows.Scan(&v); err != nil {
+			return nil, err
+		}
+		out = append(out, v)
+	}
+	return out, rows.Err()
 }
 
 // ActivateDue promotes pending keys older than the prepublish period and moves the

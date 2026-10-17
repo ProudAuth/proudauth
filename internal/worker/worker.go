@@ -458,7 +458,10 @@ func (w *Worker) RunJobs(ctx context.Context) (int, error) {
 }
 
 // KeyLifecycle activates prepublished keys, retires expired ones and schedules
-// planned rotations (TOK-012).
+// planned rotations (TOK-012). A scheduled rotation keeps each realm's
+// algorithm, that of its active key; keys.signing_algorithm only applies to a
+// realm without one. A rotation Rotate refuses for one realm (TOK-005,
+// ADV-001) is logged and counted, and the other realms still rotate.
 func (w *Worker) KeyLifecycle(ctx context.Context) (int, error) {
 	cfg := w.App.D.Cfg
 	publishFor := cfg.Tokens.MaxAccessTokenTTL + cfg.Keys.RetirementPeriod
@@ -474,8 +477,19 @@ func (w *Worker) KeyLifecycle(ctx context.Context) (int, error) {
 		return n, err
 	}
 	for _, realmID := range due {
-		if _, err := w.App.KeyMgr.Rotate(ctx, realmID, cfg.Keys.SigningAlgorithm, token.RotationPlanned, audit.System, "scheduled_rotation"); err != nil {
-			return n, err
+		if _, err := w.App.KeyMgr.Rotate(ctx, realmID, "", token.RotationPlanned, audit.System, "scheduled_rotation"); err != nil {
+			reason := ""
+			switch {
+			case errors.Is(err, token.ErrRotationPinnedResources):
+				reason = "pinned_resources"
+			case errors.Is(err, token.ErrRotationFAPI2Clients):
+				reason = "fapi2_clients"
+			default:
+				return n, err
+			}
+			w.App.Metrics.RotationsRefused.Inc(reason)
+			w.App.D.Log.Warn("scheduled signing key rotation refused", "component", "worker", "realm_id", realmID, "reason", reason, "error", err)
+			continue
 		}
 		n++
 	}
