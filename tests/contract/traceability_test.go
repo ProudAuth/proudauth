@@ -18,8 +18,10 @@ import (
 // step with docs/plan.md and the repository: every requirement and TEST case
 // of the plan is listed with the tests, code and documents that cite its ID.
 // It fails when a P0–P2 requirement has no evidence at all, when a TEST case
-// is cited by no test, or when the committed matrix is stale. Regenerate it
-// with PROUDAUTH_REGENERATE_TRACEABILITY=1 go test ./tests/contract -run TestRequirementsTraceability.
+// is cited by no test, when a partial entry is cited by no test, or when the
+// committed matrix is stale. This file itself is not evidence (see
+// generatorFile). Regenerate the matrix with
+// PROUDAUTH_REGENERATE_TRACEABILITY=1 go test ./tests/contract -run TestRequirementsTraceability.
 func TestRequirementsTraceability(t *testing.T) {
 	const root = "../.."
 	plan, err := os.ReadFile(filepath.Join(root, "docs/plan.md"))
@@ -56,6 +58,13 @@ func TestRequirementsTraceability(t *testing.T) {
 			t.Errorf("openExternal names %s, which is not in docs/plan.md", id)
 		}
 	}
+	for id := range partial {
+		if !known[id] {
+			t.Errorf("partial names %s, which is not in docs/plan.md", id)
+		} else if len(ev[id].tests) == 0 {
+			t.Errorf("partial names %s, which no test cites; Partial needs test evidence", id)
+		}
+	}
 	for _, r := range reqs {
 		st := status(r, ev[r.id])
 		if st == "Missing" && r.priority != "P3" {
@@ -89,13 +98,13 @@ func TestRequirementsTraceability(t *testing.T) {
 // and the release states its subset). Each is documented as not offered in
 // docs/protocols/compatibility.md and nothing advertises it.
 var notOffered = map[string]string{
-	"MFA-014":  "Not offered: no push or out-of-band approval channel ([compatibility.md](protocols/compatibility.md))",
-	"ADV-005":  "Not offered: no CIBA endpoint, and discovery advertises none ([compatibility.md](protocols/compatibility.md))",
-	"ADV-006":  "Not offered: no UMA profile ([compatibility.md](protocols/compatibility.md))",
-	"ADV-008":  "Not offered: no verifiable-credential issuer ([compatibility.md](protocols/compatibility.md))",
-	"ADV-009":  "Not offered: no credential presentation or wallet federation ([compatibility.md](protocols/compatibility.md))",
-	"PROV-015": "Not offered: no Kerberos/SPNEGO module; keytab custody, cross-realm trust, a shared replay cache and a KDC test harness are not designed yet ([directory.md](integrations/directory.md#kerberos-and-spnego-are-not-offered), [ADR 0018](architecture-decisions/0018-enterprise-protocols-deferred.md))",
-	"API-014":  "Not offered: no gRPC management interface, so no alternate administrative path exists ([compatibility.md](protocols/compatibility.md))",
+	"MFA-014":  "no push or out-of-band approval channel ([compatibility.md](protocols/compatibility.md))",
+	"ADV-005":  "no CIBA endpoint, and discovery advertises none ([compatibility.md](protocols/compatibility.md))",
+	"ADV-006":  "no UMA profile ([compatibility.md](protocols/compatibility.md))",
+	"ADV-008":  "no verifiable-credential issuer ([compatibility.md](protocols/compatibility.md))",
+	"ADV-009":  "no credential presentation or wallet federation ([compatibility.md](protocols/compatibility.md))",
+	"PROV-015": "no Kerberos/SPNEGO module; keytab custody, cross-realm trust, a shared replay cache and a KDC test harness are not designed yet ([directory.md](integrations/directory.md#kerberos-and-spnego-are-not-offered), [ADR 0018](architecture-decisions/0018-enterprise-protocols-when-complete.md))",
+	"API-014":  "no gRPC management interface, so no alternate administrative path exists ([compatibility.md](protocols/compatibility.md))",
 }
 
 // byDocument lists requirements whose evidence is a document or a repository
@@ -112,7 +121,7 @@ var byDocument = map[string]string{
 	"GOV-002": "DCO sign-off, checked by the CI job `dco` ([CONTRIBUTING.md](../CONTRIBUTING.md))",
 	"GOV-003": "[SECURITY.md](../SECURITY.md); issue templates route vulnerabilities to private advisories",
 	"GOV-008": "documentation changes ship with code changes ([CONTRIBUTING.md](../CONTRIBUTING.md), pull-request template)",
-	"QA-006":  "the README and ADR 0020 state that nothing is certified and no conformance suite was run",
+	"QA-006":  "[ADR 0020](architecture-decisions/0020-compliance-posture.md) states that nothing is certified and no conformance suite was run",
 	"PRV-009": "[ADR 0020](architecture-decisions/0020-compliance-posture.md): no compliance claim",
 	"DB-012":  "nothing is partitioned; the policy for doing it is in [capacity.md](operations/capacity.md)",
 	"DB-013":  "row-level security is deliberately not used ([ADR 0004](architecture-decisions/0004-persistence.md))",
@@ -137,6 +146,22 @@ var openExternal = map[string]string{
 	"SEC-018": "no external security review has been performed; the [README](../README.md) and [threat models](threat-models/README.md) say so",
 	"QA-005":  "no qualified external review yet; the [README](../README.md) says the software is not independently reviewed",
 }
+
+// partial lists requirements and TEST cases whose citing tests cover only part
+// of what the plan asks, or rest on synthetic evidence. The reason names the
+// gap and the release planned to close it. An entry is rated Partial instead
+// of Tested, and it must still be cited by at least one test.
+var partial = map[string]string{
+	"TEST-061": "the mixed-version evidence is synthetic: `TestMixedVersionWindow` inserts fake `schema_migrations` rows instead of running an older release; a real N-1 upgrade CI job is planned for 0.2.0-alpha.7",
+	"DEP-012":  "the mixed-version evidence is synthetic: `TestMixedVersionWindow` inserts fake `schema_migrations` rows instead of running an older release; a real N-1 upgrade CI job is planned for 0.2.0-alpha.7",
+	"QA-003":   "no fuzz target covers SAML XML and bindings, SCIM filters, authorization-request parsing or client-certificate parsing; those targets are planned for 0.2.0-beta.2",
+	"SDK-010":  "only the Go SDK is tested against a running server; a live-server smoke test for the Node.js, Dart, PHP and .NET SDKs is planned for SDK 0.3.0",
+	"SAML-010": "one independent SAML counterpart, Keycloak 26.8.0 ([interoperability.md](integrations/interoperability.md#third-party-products)); SimpleSAMLphp is planned for 0.2.0-beta.2",
+}
+
+// generatorFile is this file. Its maps and parser examples name plan IDs, but
+// naming an ID here tests nothing, so collectEvidence does not read it.
+const generatorFile = "tests/contract/traceability_test.go"
 
 type planReq struct{ id, priority, title string }
 
@@ -183,7 +208,8 @@ func (e *evidence) add(kind, ref string) {
 
 // collectEvidence finds every citation of a plan ID. Go tests are credited by
 // function (the test whose doc comment or body names the ID); other tests,
-// code and documents by file (code by directory).
+// code and documents by file (code by directory). The plan, the matrix and
+// this generator are not evidence and are skipped.
 func collectEvidence(root string, known map[string]bool) (map[string]*evidence, error) {
 	ev := map[string]*evidence{}
 	for id := range known {
@@ -202,7 +228,7 @@ func collectEvidence(root string, known map[string]bool) (map[string]*evidence, 
 		}
 		rel, _ := filepath.Rel(root, path)
 		rel = filepath.ToSlash(rel)
-		if rel == "docs/plan.md" || rel == "docs/requirements-traceability.md" {
+		if rel == "docs/plan.md" || rel == "docs/requirements-traceability.md" || rel == generatorFile {
 			return nil
 		}
 		kind := classify(rel)
@@ -320,6 +346,8 @@ func status(r planReq, e *evidence) string {
 		return "Not offered"
 	case openExternal[r.id] != "":
 		return "Open (external)"
+	case len(e.tests) > 0 && partial[r.id] != "":
+		return "Partial"
 	case len(e.tests) > 0:
 		return "Tested"
 	case len(e.code) > 0:
@@ -330,6 +358,33 @@ func status(r planReq, e *evidence) string {
 		return "Documented"
 	}
 	return "Missing"
+}
+
+// note is the reason printed after a status that needs one.
+func note(id, st string) string {
+	switch st {
+	case "Not offered":
+		return notOffered[id]
+	case "Open (external)":
+		return openExternal[id]
+	case "Partial":
+		return partial[id]
+	case "Documented":
+		return byDocument[id]
+	}
+	return ""
+}
+
+// caseStatus rates a TEST case: Tested when a test cites it, Partial when
+// partial says those tests fall short.
+func caseStatus(id string, e *evidence) string {
+	switch {
+	case len(e.tests) == 0:
+		return "Missing"
+	case partial[id] != "":
+		return "Partial"
+	}
+	return "Tested"
 }
 
 func renderMatrix(reqs []planReq, cases []planCase, ev map[string]*evidence) string {
@@ -354,6 +409,9 @@ documents that cite its ID. **Status:**
 
 - **Tested**: at least one test names the requirement (in its doc comment or
   body) and runs in CI.
+- **Partial**: tests name the requirement, but they cover only part of it or
+  rest on synthetic evidence; the gap and the release planned to close it are
+  given.
 - **Implemented**: code, an API contract, a CI job or deployment file names
   it, but no test does.
 - **Documented**: the evidence is a document or repository policy
@@ -365,14 +423,15 @@ documents that cite its ID. **Status:**
   security review); the documents state that it has not happened.
 
 The contract test fails when a P0–P2 requirement has no evidence, when a TEST
-case is cited by no test, or when this file is stale. A citation shows where
-a requirement is handled; whether the behaviour is right is what the cited
-tests check.
+case is cited by no test, when a Partial entry is cited by no test, or when
+this file is stale. The generator's own file is not counted as a test. A
+citation shows where a requirement is handled; whether the behaviour is right
+is what the cited tests check.
 
 ## Summary
 
-| Priority | Requirements | Tested | Implemented | Documented | Not offered | Open (external) |
-| --- | --- | --- | --- | --- | --- | --- |
+| Priority | Requirements | Tested | Partial | Implemented | Documented | Not offered | Open (external) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
 `)
 	total := map[string]int{}
 	for _, p := range []string{"P0", "P1", "P2", "P3"} {
@@ -381,20 +440,19 @@ tests check.
 		for _, v := range c {
 			n += v
 		}
-		fmt.Fprintf(&b, "| %s | %d | %d | %d | %d | %d | %d |\n", p, n, c["Tested"], c["Implemented"], c["Documented"], c["Not offered"], c["Open (external)"])
+		fmt.Fprintf(&b, "| %s | %d | %d | %d | %d | %d | %d | %d |\n", p, n, c["Tested"], c["Partial"], c["Implemented"], c["Documented"], c["Not offered"], c["Open (external)"])
 		total["n"] += n
-		for _, s := range []string{"Tested", "Implemented", "Documented", "Not offered", "Open (external)"} {
+		for _, s := range []string{"Tested", "Partial", "Implemented", "Documented", "Not offered", "Open (external)"} {
 			total[s] += c[s]
 		}
 	}
-	fmt.Fprintf(&b, "| All | %d | %d | %d | %d | %d | %d |\n", total["n"], total["Tested"], total["Implemented"], total["Documented"], total["Not offered"], total["Open (external)"])
-	tested := 0
+	fmt.Fprintf(&b, "| All | %d | %d | %d | %d | %d | %d | %d |\n", total["n"], total["Tested"], total["Partial"], total["Implemented"], total["Documented"], total["Not offered"], total["Open (external)"])
+	caseCounts := map[string]int{}
 	for _, c := range cases {
-		if len(ev[c.id].tests) > 0 {
-			tested++
-		}
+		caseCounts[caseStatus(c.id, ev[c.id])]++
 	}
-	fmt.Fprintf(&b, "\nTEST cases (plan section 34): %d of %d are cited by at least one test.\n", tested, len(cases))
+	fmt.Fprintf(&b, "\nTEST cases (plan section 34): %d of %d are cited by at least one test (%d Tested, %d Partial).\n",
+		caseCounts["Tested"]+caseCounts["Partial"], len(cases), caseCounts["Tested"], caseCounts["Partial"])
 
 	group := ""
 	for _, r := range reqs {
@@ -405,15 +463,19 @@ tests check.
 		}
 		e := ev[r.id]
 		st := status(r, e)
-		if note := notOffered[r.id] + byDocument[r.id] + openExternal[r.id]; note != "" && st != "Tested" && st != "Implemented" {
-			st += ": " + note
+		if n := note(r.id, st); n != "" {
+			st += ": " + n
 		}
 		fmt.Fprintf(&b, "| %s | %s | %s | %s | %s | %s | %s |\n", r.id, r.priority, cell(r.title), st,
 			refs(e.tests, 4), refs(e.code, 3), docRefs(e.docs, 3))
 	}
-	b.WriteString("\n## TEST cases\n\n| ID | Scenario | Tests |\n| --- | --- | --- |\n")
+	b.WriteString("\n## TEST cases\n\n| ID | Scenario | Status | Tests |\n| --- | --- | --- | --- |\n")
 	for _, c := range cases {
-		fmt.Fprintf(&b, "| %s | %s | %s |\n", c.id, cell(c.title), refs(ev[c.id].tests, 6))
+		st := caseStatus(c.id, ev[c.id])
+		if n := note(c.id, st); n != "" {
+			st += ": " + n
+		}
+		fmt.Fprintf(&b, "| %s | %s | %s | %s |\n", c.id, cell(c.title), st, refs(ev[c.id].tests, 6))
 	}
 	return b.String()
 }
@@ -450,9 +512,12 @@ func docRefs(m map[string]bool, n int) string {
 	for k := range m {
 		keys = append(keys, k)
 	}
+	// Current documents under docs/ first, then the rest (the README, the
+	// CHANGELOG and the development history in docs/history/), each
+	// alphabetically.
+	current := func(k string) bool { return strings.HasPrefix(k, "docs/") && !strings.HasPrefix(k, "docs/history/") }
 	sort.Slice(keys, func(i, j int) bool {
-		// Documents under docs/ first, then the rest, each alphabetically.
-		di, dj := strings.HasPrefix(keys[i], "docs/"), strings.HasPrefix(keys[j], "docs/")
+		di, dj := current(keys[i]), current(keys[j])
 		if di != dj {
 			return di
 		}

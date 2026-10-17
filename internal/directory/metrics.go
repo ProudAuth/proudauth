@@ -18,7 +18,7 @@ type metrics struct {
 func newMetrics(r *observability.Registry) *metrics {
 	return &metrics{
 		binds: r.Counter("proudauth_directory_binds_total",
-			"Directory sign-in binds by outcome (success, invalid_credentials, unavailable, disabled)", "outcome"),
+			"Directory sign-in binds by outcome (success, invalid_credentials, unavailable, disabled, busy)", "outcome"),
 		failovers: r.Counter("proudauth_directory_failovers_total",
 			"Directory endpoint failures that moved an operation to the next configured endpoint, by category (PROV-014)", "category"),
 		runs: r.Counter("proudauth_directory_sync_runs_total",

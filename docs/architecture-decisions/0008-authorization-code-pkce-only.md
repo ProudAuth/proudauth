@@ -57,3 +57,14 @@ only once implemented and tested (APP-020, OIDC-015).
 ## Related requirement IDs
 
 TOK-001, TOK-002, TOK-003, APP-004, OIDC-001, OIDC-002, AUT-020, TEST-028, TEST-029, §18.1, §18.2
+
+## Updates
+
+**Update — 2026-10-18.** Recorded under the dated-update rule
+([README](README.md#changing-a-decision)). The request-object item in the
+Decision was edited in place in 2026-10: the OIDC `claims` parameter, rejected
+at acceptance, is accepted and validated (OIDC-008, migration `0017`). It only
+narrows ID-token and UserInfo release within the granted scopes and can raise
+the `acr` requirement, so the decision, authorization code with PKCE as the
+only interactive flow, is unchanged. Request objects (`request`) are still
+rejected.

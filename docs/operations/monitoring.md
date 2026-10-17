@@ -134,6 +134,13 @@ them; the help text of `proudauth_jobs_failed_total` says so):
   There are no other workflow metrics: `/status` has no workflow backlog and
   `proudauth_worker_active_leases` does not count workflow runs; use
   `GET /workflows/{id}/diagnostics`.
+- `proudauth_key_rotations_refused_total` (`reason`: `pinned_resources`,
+  `fapi2_clients`): scheduled signing-key rotations that `keys.lifecycle`
+  refused for a realm because active business resources pin another
+  algorithm than the realm's, or fapi2 clients need a FAPI 2.0 algorithm
+  ([keys.md](keys.md#scheduled-automatic)). The other realms still rotate;
+  the refused realm is retried every minute and logs
+  `scheduled signing key rotation refused` with its `realm_id`.
 
 The queue-age gauges are refreshed by whichever listener is scraped (the
 server's internal listener or the worker's `workers.metrics_listen`), so
@@ -150,7 +157,7 @@ label values.
 
 | Metric | Type | Labels | Updated by | Meaning |
 | --- | --- | --- | --- | --- |
-| `proudauth_directory_binds_total` | counter | `outcome` (`success`, `invalid_credentials`, `unavailable`, `disabled`) | `identity-server` | Password sign-ins of directory-sourced accounts and first sign-in provisioning; `unavailable` is an outage, `disabled` a disabled connector, organization or module |
+| `proudauth_directory_binds_total` | counter | `outcome` (`success`, `invalid_credentials`, `unavailable`, `disabled`, `busy`) | `identity-server` | Password sign-ins of directory-sourced accounts and first sign-in provisioning; `unavailable` is an outage or an attempt past `directory.sign_in_timeout`, `disabled` a disabled connector, organization or module, `busy` a sign-in refused at once because `directory.max_concurrent_binds` were in use |
 | `proudauth_directory_failovers_total` | counter | `category` (`connect`, `dns`, `tls`, `timeout`, `network`, `server_unavailable`, `egress_denied`, `invalid_endpoint`) | the process doing the LDAP operation | Endpoint failures that moved an operation to the next configured endpoint; a failure of the last (or only) endpoint is not counted |
 | `proudauth_directory_sync_runs_total` | counter | `mode`, `state` | `identity-worker` | Finished synchronization and reconciliation runs (`succeeded`, `failed`, `refused`, `cancelled`) |
 | `proudauth_directory_sync_changes_total` | counter | `kind` | `identity-worker` | Records changed or reported by runs, by finding kind and counter |
@@ -306,6 +313,7 @@ above) and `identity-worker` of sampled task runs; when
 | Maintenance left on | `/status` `maintenance.mode != "off"` outside a planned window; an open debug window (`maintenance.debug_until`) |
 | Clock skew | `abs(proudauth_clock_skew_milliseconds) > 2000` or `/status` `clock_skew_ms`; readiness also fails with `reason: clock_skew` beyond `observability.max_clock_skew` (OPS-011) |
 | Token signing failing | any increase of `proudauth_signing_failures_total` (no active key, or the key cannot be loaded or used) |
+| Signing key not rotating | any increase of `proudauth_key_rotations_refused_total` on the worker listener: the log line names the realm; `POST /signing-key-rotations` in that realm answers `409` with the `resources` or `clients` to fix ([keys.md](keys.md#scheduled-automatic)) |
 | Audit evidence not being written | any increase of `proudauth_security_signals_total{signal="audit_write_failed"}`; `audit persistence failed` log lines |
 | Security signals | increases of `proudauth_security_signals_total` for `refresh_reuse`, `cross_tenant_denial`, `impersonation_denied`, `credential_compromised`, `signing_key_change`, `bootstrap` or `emergency_action`; review `factor_recovery`, `credential_issued`, `impersonation_activity`, `protected_account_signin`, `privileged_grant`, `authentication_review` and `configuration_change` against expected support and change activity (`privileged_grant` counts only privileged roles, so the `member` and `admin` grants of ordinary onboarding do not raise it; imports and organization templates that assign owner or privileged roles do). To route them to an alerting system, subscribe a webhook to `security.alert` ([below](#security-alerts)) |
 | Pre-action hook failures | `proudauth_hook_calls_total{outcome="failure"}`; `GET /hooks/{id}/diagnostics` (`health: "degraded"` when more than 10 % of the last 100 calls failed; `recent_failures`, `latency_p95_ms`, and per call `error_category` and `status_code`, EXT-017); `GET /hooks/{id}` (`failures`, `last_error`) |

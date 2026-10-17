@@ -1650,34 +1650,14 @@ func (a *App) adminRoutes(mux *http.ServeMux) {
 		if err := decode(r, &b); err != nil {
 			return err
 		}
-		if b.Algorithm == "" {
-			b.Algorithm = a.D.Cfg.Keys.SigningAlgorithm
-		}
 		mode := token.RotationPlanned
 		if b.Mode == "emergency" {
 			mode = token.RotationEmergency
 		}
-		// A key whose algorithm some resources do not accept would stop issuance
-		// for them (TOK-005): re-pin those resources first.
-		var pinned []string
-		rows, err := a.D.DB.Pool.Query(r.Context(), `SELECT audience FROM api_resources WHERE realm_id=$1 AND state='active'
-			AND kind='business' AND signing_algorithm IS NOT NULL AND signing_algorithm <> $2 ORDER BY audience LIMIT 20`, p.Realm.ID, b.Algorithm)
-		if err != nil {
-			return err
-		}
-		for rows.Next() {
-			var aud string
-			if err := rows.Scan(&aud); err != nil {
-				rows.Close()
-				return err
-			}
-			pinned = append(pinned, aud)
-		}
-		rows.Close()
-		if len(pinned) > 0 {
-			return problem.ErrConflict.WithDetail("resources pin a different signing algorithm; update their signing_algorithm first").
-				WithExtension("resources", pinned)
-		}
+		// Without an algorithm the new key keeps the realm's, that of its
+		// active key. Rotate refuses, with 409 naming them, an algorithm that
+		// pinned resources (TOK-005) or fapi2 clients (ADV-001) do not accept:
+		// re-pin those resources first.
 		kid, err := a.KeyMgr.Rotate(r.Context(), p.Realm.ID, b.Algorithm, mode, p.AuditRef(), b.Reason)
 		if err != nil {
 			if _, ok := problem.As(err); ok {

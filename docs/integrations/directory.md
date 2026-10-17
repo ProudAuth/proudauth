@@ -80,6 +80,8 @@ The `directory` configuration section
 | `directory.ca_file` | `""` | PEM bundle of additional trusted roots for LDAPS and StartTLS (added to the system roots); startup fails if the file is unreadable or holds no certificate |
 | `directory.connect_timeout` | `5s` | Connection timeout (at most `1m`); a connector can set its own |
 | `directory.operation_timeout` | `10s` | Timeout of one LDAP operation (at most `2m`); a connector can set its own |
+| `directory.sign_in_timeout` | `8s` | Overall deadline of one sign-in attempt's directory work, across every endpoint and JIT connector (at most `25s`) |
+| `directory.max_concurrent_binds` | half the transaction slots | Most sign-in directory operations per process; a full bound answers `503 unavailable` with `Retry-After: 5` |
 | `directory.max_entries_per_run` | `100000` | Most entries one synchronization or reconciliation run processes (at most `1000000`); an LDAP connector's own `max_entries` can only lower it |
 
 `directory.enabled`, `directory.allow_private_network`,
@@ -246,6 +248,17 @@ PROV-014.
   outage is audited as `directory.authentication.unavailable`; every case
   is counted in `proudauth_directory_binds_total` (`outcome` `unavailable`
   or `disabled`).
+- One sign-in attempt's directory work (service bind, search and user
+  bind, across every endpoint, and across every connector first sign-in
+  provisioning tries) ends at `directory.sign_in_timeout` (8 s) in total,
+  as `503 upstream_unavailable`; an endpoint that accepts connections and
+  never answers cannot hold the attempt for each endpoint's timeouts in
+  turn. At most `directory.max_concurrent_binds` such attempts run at once
+  per process; beyond that a sign-in that needs the directory answers
+  `503 unavailable` with `Retry-After: 5` at once and is counted
+  as `outcome` `busy`. A password step that may ask a directory is never
+  retried after a database deadlock, so the directory never sees the same
+  bind twice (DB-014).
 - A wrong password, or a disabled or missing entry, is
   `401 invalid_credentials`, as for local accounts. MFA, the temporary
   password lock and the realm's rate limits apply as for local passwords;
@@ -697,7 +710,7 @@ Not supported, and not advertised:
 PROV-015 allows a Kerberos/SPNEGO adapter only as an optional module with
 explicit keytab custody, service-principal configuration, trust boundaries
 and negative tests. None is shipped or advertised
-([ADR 0018](../architecture-decisions/0018-enterprise-protocols-deferred.md)):
+([ADR 0018](../architecture-decisions/0018-enterprise-protocols-when-complete.md)):
 
 1. **Keytab custody.** An SPNEGO acceptor needs the service principal's
    long-term key (keytab), which lets its holder impersonate the service

@@ -52,7 +52,7 @@ tests and have not received independent review.
 
 ```sh
 docker run -d --name proudauth-pg -e POSTGRES_USER=proudauth -e POSTGRES_PASSWORD=devpassword \
-  -e POSTGRES_DB=proudauth -p 127.0.0.1:55432:5432 postgres:17
+  -e POSTGRES_DB=proudauth -p 127.0.0.1:55432:5432 postgres:18.6
 export PROUDAUTH_TEST_DATABASE_URL='postgres://proudauth:devpassword@127.0.0.1:55432/proudauth?sslmode=disable'
 go test ./... -count=1          # unit, contract and end-to-end tests (without the
                                 # variable the database tests are skipped)

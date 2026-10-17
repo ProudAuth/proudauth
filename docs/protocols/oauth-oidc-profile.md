@@ -558,7 +558,7 @@ conformance suite has been run** ([interoperability.md](../integrations/interope
 | PKCE with `S256` | Required for every client |
 | `iss` in authorization responses (RFC 9207) | Always sent |
 | Exact redirect URI matching, `https` | Exact matching for every client; `fapi2` redirect URIs must be `https` (`422` on `redirect_uris`) |
-| Signing algorithms `PS256`, `ES256` or `EdDSA` | The realm's signing algorithm (`keys.signing_algorithm`) must be one of them when the client is registered or updated (`422`); the default `RS256` is not |
+| Signing algorithms `PS256`, `ES256` or `EdDSA` | The realm's signing algorithm (`keys.signing_algorithm`) must be one of them when the client is registered or updated (`422`), and a signing-key rotation to another algorithm is refused (`409`) while the realm has `fapi2` clients; the default `RS256` is not |
 | Short-lived authorization codes | At most 60 seconds, whatever `tokens.authorization_code_ttl` says |
 | Access token lifetime | At most 10 minutes |
 | Refresh tokens | Not rotated: the same refresh token stays valid until the family's idle or absolute expiry, the session ends or it is revoked; using it again is not treated as reuse (these clients are confidential and their tokens sender-constrained) |
@@ -794,7 +794,7 @@ provider's assertions mean (FED-002, `TestFederationAdapters`):
 | --- | --- | --- | --- |
 | `oidc` (default) | OpenID Connect | `issuer` required; scopes `openid email profile` | `email_verified` from the provider is believed |
 | `github` | OAuth 2.0 with the GitHub API | Issuer `https://github.com`, GitHub's endpoints and API; scopes `read:user user:email`; the subject is the numeric account ID | Only the primary, verified address from the API |
-| `google` | OpenID Connect | Issuer fixed to `https://accounts.google.com`; with `config.allowed_tenants` (Workspace domains) the tenant claim is `hd`, so consumer accounts are refused; scopes `openid email profile` | `email_verified` is believed |
+| `google` | OpenID Connect | Issuer fixed to `https://accounts.google.com`; with `config.allowed_tenants` (Workspace domains) the tenant claim is `hd`, so consumer accounts are refused; scopes `openid email profile` | `email_verified` is believed only where Google is authoritative for the address: a `gmail.com` or `googlemail.com` address, or an ID token whose `hd` claim equals the address's domain (case-insensitively). `hd` is read from the ID token whether or not `allowed_tenants` is set. Any other address (a consumer Google account registered with a corporate address, or a Workspace account of another domain) counts as unverified: it never links through `trusted_verified_email` and a just-in-time account keeps it unverified. A Workspace secondary domain (an alias domain that is not `hd`) is treated the same way |
 | `microsoft` | OpenID Connect (Entra ID work and school accounts) | Issuer `https://login.microsoftonline.com/{tenant}/v2.0` with `multi_tenant_issuer` and tenant claim `tid` always set; `config.allowed_tenants` (tenant IDs) required; endpoints default to the `organizations` authorize and token endpoints and the `common` JWKS. Subjects are pairwise per application | **Never treated as verified** (the claim is a mutable attribute), so `trusted_verified_email` linking is refused (`422`) and just-in-time accounts keep the address unverified |
 
 An unknown adapter is `422` on `adapter` (the message lists the registered
@@ -817,7 +817,29 @@ linked; use a reviewed migration").
 Just-in-time accounts (REG-009) never take over an address: an upstream
 email that the provider does not mark verified and that another account has
 already verified is not copied to the new account, which then gets a
-generated username (`<alias>-<login or subject>`). A generated username
+generated username (`<alias>-<login or subject>`).
+
+An organization-scoped connection (OIDC, social or SAML) speaks for its
+organization only, while the accounts it creates are realm-wide. Its
+upstream's verified email therefore counts only when the address's domain
+is one of the organization's verified domains (or a subdomain of one
+verified with `include_subdomains`; TEN-010, TEN-011), the rule SCIM
+provisioning follows. Outside them a just-in-time account keeps the address
+unverified with the `verify_email` required action (dropped instead when
+another account has verified it), so the account proves the address before
+it signs in, and the audit event `user.created` records
+`email_verified: false`. An organization administrator enables
+`jit_provisioning` on `/organizations/{org}/identity-providers` only with a
+non-empty `config.allowed_email_domains` whose every domain is a verified
+domain of the organization; otherwise `POST` and `PUT` answer `422` on
+`config.allowed_email_domains` ("just-in-time provisioning requires the
+organization's verified domains to be listed", or "... is limited to the
+organization's verified domains"). Realm administrators may still create an
+organization-scoped connection without that list; the sign-in rule above
+then still applies. Connections saved by an earlier release keep working
+until they are next updated; see
+[incidents.md](../operations/incidents.md#federation-created-verified-addresses-outside-an-organizations-domains)
+for finding accounts they created before the rule existed. A generated username
 that is taken gets a random suffix instead of failing the sign-in (after
 three taken suffixes the sign-in stops with `account_conflict`).
 

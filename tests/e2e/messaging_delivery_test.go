@@ -222,8 +222,7 @@ func TestSecurityNotices(t *testing.T) {
 	}
 	// Invitation.
 	alice := f.AccountToken("alice").Tokens.Str("access_token")
-	mustStatus(t, h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": "dave@example.test",
-		"role_ids": []string{f.Roles["orders-viewer"]}}), 201, "invite")
+	mustStatus(t, h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": "dave@example.test"}), 201, "invite")
 	if invitationFromMail(expect("dave@example.test", "invitation", "Acme Corp")) == "" {
 		t.Fatal("invitation notice carries no invitation")
 	}

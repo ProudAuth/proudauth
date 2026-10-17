@@ -41,6 +41,7 @@ import (
 	"github.com/proudauth/proudauth/internal/passkey"
 	"github.com/proudauth/proudauth/internal/platform/problem"
 	"github.com/proudauth/proudauth/internal/platform/reqctx"
+	"github.com/proudauth/proudauth/internal/platform/slots"
 	"github.com/proudauth/proudauth/internal/plugin"
 	"github.com/proudauth/proudauth/internal/provision"
 	"github.com/proudauth/proudauth/internal/provisioning"
@@ -68,19 +69,22 @@ type App struct {
 	Maintenance *maintenance.Cache
 	// Draining is set at shutdown so readiness fails before listeners close
 	// (OPS-012).
-	Draining   atomic.Bool
-	Metrics    *observability.Metrics
-	Realms     *realm.Service
-	Apps       *application.Service
-	Users      *identity.Service
-	Authz      *authorization.Service
-	Sessions   *session.Service
-	Orgs       *organization.Service
-	Notify     *notification.Service
-	Limiter    *ratelimit.Limiter
-	Auth       *authentication.Service
-	Passkeys   *passkey.Service
-	Federation *federation.Service
+	Draining atomic.Bool
+	// forwardWarnedAt is when the last warning about X-Forwarded-For from
+	// an untrusted peer was logged (Unix seconds), one a minute at most.
+	forwardWarnedAt atomic.Int64
+	Metrics         *observability.Metrics
+	Realms          *realm.Service
+	Apps            *application.Service
+	Users           *identity.Service
+	Authz           *authorization.Service
+	Sessions        *session.Service
+	Orgs            *organization.Service
+	Notify          *notification.Service
+	Limiter         *ratelimit.Limiter
+	Auth            *authentication.Service
+	Passkeys        *passkey.Service
+	Federation      *federation.Service
 	// SAML is the SAML identity provider profile (APP-018); SAMLKeys are the
 	// realm SAML signing keys, shared with SAML connections (FED-014). Both
 	// are nil unless saml.enabled.
@@ -164,7 +168,7 @@ func Build(d *runtime.Deps, metrics *observability.Metrics) (*App, error) {
 	}
 	hasher := &credential.Hasher{Params: credential.Params{Time: cfg.Security.Password.ArgonTime, Memory: cfg.Security.Password.ArgonMemoryKiB,
 		Threads: cfg.Security.Password.ArgonThreads}, MaxBytes: cfg.Security.Password.MaxBytes, Keys: d.Keys, Pepper: len(cfg.Keys.PepperKeys) > 0,
-		LegacyUntil: cfg.Security.Password.LegacyHashDeadline(), Now: d.Now}
+		LegacyUntil: cfg.Security.Password.LegacyHashDeadline(), Now: d.Now, Slots: slots.New(cfg.Security.Password.HashSlots())}
 	a.KeyMgr = token.NewKeyManager(d)
 	a.Signer = &token.Signer{Keys: a.KeyMgr, OnFailure: func(reason string) { a.Metrics.SigningFailures.Inc(reason) }}
 	a.Apps.SigningAlgorithm = a.Signer.ActiveAlgorithm

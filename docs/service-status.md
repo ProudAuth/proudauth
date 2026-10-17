@@ -5,8 +5,8 @@ implementation references describe the original monorepo; the ecosystem migratio
 is tracked in [repository-migration.md](repository-migration.md). Pre-release and
 external-review limitations remain applicable.
 
-The directory layout and language-SDK Make commands in this archived inventory
-describe that snapshot. Current service commands are `make build`, `make test`,
+The language-SDK Make commands in this archived inventory describe that
+snapshot. Current service commands are `make build`, `make test`,
 `make test-unit`, `make test-e2e`, `make image VERSION=<version>` and the documented
 benchmark/deployment entry points. SDK commands now run in the individual
 [public SDK repositories](integrations/sdk-compatibility.md); the service owns
@@ -30,8 +30,11 @@ throughout the code and documentation (for example `TOK-002`, `IMP-010`,
 The website and documentation renderer move to the standalone website repository.
 This service snapshot retains the specification, runbooks and API contracts.
 
-- **Pre-release (0.x, unreleased).** No version has been tagged. APIs, schema and
-  configuration can change between commits.
+- **Pre-release (0.x).** 0.2.0 prereleases are published, starting with
+  `v0.2.0-alpha.1` on 2026-10-13, as
+  [GitHub Releases](https://github.com/proudauth/proudauth/releases) and images at
+  `ghcr.io/proudauth/proudauth`. APIs, schema and configuration can still change
+  between prereleases; [CHANGELOG.md](../CHANGELOG.md) lists each one.
 - **Not independently reviewed.** No external security review has been performed
   (SEC-018, QA-005). Do not treat this software as hardened for production use.
 - **No certification.** Nothing has been submitted to an OpenID or FAPI conformance
@@ -88,7 +91,7 @@ mistaken for features.
 | Delivery | SMTP; SMS through an operator-run HTTPS gateway (signed requests, country allowlist, daily budget, explicit realm risk acceptance; the gateway adapter is unit-tested against a local HTTP server, end-to-end tests use the development sink); development sink for email and SMS; per-realm/organization templates and sender settings (sender domains approved by the operator or verified by the organization); an organization's own SMTP server with an encrypted, organization-bound password; signed bounce/complaint callbacks that suppress optional notices; SMTP configuration check; notices in the recipient's locale and time zone | Direct carrier/provider integrations |
 | Operations | Benchmark suite `identity-bench` (workload, adversarial, stress and soak scenarios with portable JSON results; published laptop reference numbers and a reproducible offline runner ([benchmarks.md](operations/benchmarks.md#reference-results))); Docker image (release workflow publishes it by digest with SBOMs, provenance attestations and a keyless cosign signature); Compose development stack; Kustomize manifests (`deploy/kubernetes`); offline bundle (`make bundle`); migrations with advisory lock, checksum checks, mixed-version window and safety gates (read-only `migrate -plan`, `-backup-reference` for contract migrations, preconditions), audited also when applied at startup; database-enforced realm boundaries for role assignments; health/readiness (including clock-skew check and a draining phase on shutdown); graceful worker shutdown that hands back held work; Prometheus-format metrics on the server and, optionally, the worker, including the age of the oldest due notification, webhook delivery and job; W3C `traceparent` propagation to hooks and upstream providers (sampling requested only by trusted proxies), span export of server requests and worker task runs over OTLP/HTTP, and request IDs in webhook events; `/status` with per-capability state, backlogs, key provider and residency (behind `server.metrics_token` when set); delivery outcome metrics for webhooks, notifications and back-channel logout; maintenance mode (`restricted`, `unavailable`); audited emergency controls for grant classes, clients, identity providers, organizations, service principals, hooks and webhooks; time-limited, audited debug logging windows; `identity-cli config-diff`; support bundle; revocation log export and restore reconciliation; configuration-as-code validate/import/export (import needs the permission of every change; optional reconcile of existing clients, resources and roles); a realm data export for portable exit; retention of ended grants, sessions and operational history; secret references `file:`, `env:`, `cred:` (systemd) and `vault:` (HashiCorp Vault KV v2); root, pepper and signing-wrap keys wrapped by any KMS or HSM with a command-line client (`kms:`, unwrapped into memory at start-up); separate schema-owner and runtime database roles; verified realm custom domains with optional strict `Host` checking; a data residency allowlist for outbound connectors; a per-account deletion propagation report | Helm chart; signing or decryption inside an HSM; built-in KMS clients; a metric for dropped spans |
 | API contracts | OpenAPI document (`api/openapi/proudauth.yaml`), configuration and import JSON Schemas (`api/schemas`), event schemas (`api/events`, versions 1 and 2) with a `correlation_id` linking events to the causing request; pre-action hook, plugin and lifecycle workflow schemas (`api/hooks`, `api/plugins`, `api/workflows`), versioned independently with schema-validated compatibility tests; a compatibility and deprecation policy ([docs/protocols/compatibility.md](protocols/compatibility.md)); contract tests check that documented routes equal registered routes and that the configuration schema covers every deployment key | Generated clients |
-| SDKs | Go: resource-server verifier (offline, introspection and bounded-state modes, multi-issuer, `net/http` middleware and metadata authentication for gRPC, WebSockets and message headers), support-access guard, OIDC/BFF client, admin client (0.2.0, one-time secrets wrapped, deprecation reporting). Node.js/TypeScript (`sdk/node`, unpublished 0.2.0): the same areas plus Express/Connect, `node:http` and Fastify adapters, unit-tested in CI against local mock HTTP servers only. Dart (`sdk/dart`, unpublished 0.2.0, Dart 3.4+, no Flutter dependency) and PHP (`sdk/php`, unpublished 0.2.0, PHP 8.2+): the same areas, with a framework-neutral bearer helper plus a `dart:io` adapter (Dart) and a request authenticator for plain PHP and PSR-15 (PHP), unit-tested in CI without a ProudAuth server. .NET (`sdk/dotnet`, unpublished 0.2.0, .NET 8+): the same areas, with ASP.NET Core authentication and middleware. Shared accepted/rejected access-token and support-operation fixtures (`sdk/fixtures`) that all five SDKs and independent verifiers run; `identity-cli config-export`, `config-plan` (with drift) and `config-apply`; a compatibility and security-update policy ([docs/integrations/sdk-compatibility.md](integrations/sdk-compatibility.md)) | Other languages (Python, Java, Ruby, Rust, Swift, Kotlin); Flutter/mobile sign-in (the Dart SDK is for backends); a webhook signature verifier; framework adapters beyond those listed |
+| SDKs | Go: resource-server verifier (offline, introspection and bounded-state modes, multi-issuer, `net/http` middleware and metadata authentication for gRPC, WebSockets and message headers), support-access guard, OIDC/BFF client, admin client (0.2.0, one-time secrets wrapped, deprecation reporting). Node.js/TypeScript (`sdk/node`, 0.2.0 on npm as `@proudauth/sdk`): the same areas plus Express/Connect, `node:http` and Fastify adapters, unit-tested in CI against local mock HTTP servers only. Dart (`sdk/dart`, unpublished 0.2.0, Dart 3.4+, no Flutter dependency) and PHP (`sdk/php`, unpublished 0.2.0, PHP 8.2+): the same areas, with a framework-neutral bearer helper plus a `dart:io` adapter (Dart) and a request authenticator for plain PHP and PSR-15 (PHP), unit-tested in CI without a ProudAuth server. .NET (`sdk/dotnet`, unpublished 0.2.0, .NET 8+): the same areas, with ASP.NET Core authentication and middleware. Shared accepted/rejected access-token and support-operation fixtures (`sdk/fixtures`) that all five SDKs and independent verifiers run; `identity-cli config-export`, `config-plan` (with drift) and `config-apply`; a compatibility and security-update policy ([docs/integrations/sdk-compatibility.md](integrations/sdk-compatibility.md)) | Other languages (Python, Java, Ruby, Rust, Swift, Kotlin); Flutter/mobile sign-in (the Dart SDK is for backends); a webhook signature verifier; framework adapters beyond those listed |
 | Sign-in policy history | Versioned authentication flow definitions with reachability and bypass analysis, simulation against the live flow, publication only from a current base, and rollback; bypass paths refused on every flow change ([docs/protocols/authentication-flows.md](protocols/authentication-flows.md)); OpenID Connect Session Management 1.0 (check-session iframe, `session_state`), opt-in per realm ([oauth-oidc-profile.md](protocols/oauth-oidc-profile.md#session-management-oidc-014)) | Session-management checks that survive third-party cookie blocking (a browser limitation); a built-in risk engine |
 | Security events | Declared OpenID Shared Signals Framework 1.0 transmitter (CAEP and RISC events about each receiver's own users, push and poll), and a receiver for registered transmitters with replay defenses, subject mapping and explicit action policies ([docs/integrations/shared-signals.md](integrations/shared-signals.md)) | Long polling; polling remote transmitters; conformance testing; tests against third-party SSF implementations |
 | Cross-tenant and cross-system access | Organization relationships that grant nothing by themselves, and partner project access with owner-issued grants of a role subset ([docs/integrations/partner-access.md](integrations/partner-access.md)); federation transfer of account links to a new connection or upstream tenant through a reviewed, second-approved map ([docs/operations/federation-transfer.md](operations/federation-transfer.md)); container-registry token bridge (Distribution token protocol) ([docs/integrations/container-registry.md](integrations/container-registry.md)); historical entitlement reconstruction for investigations ([docs/operations/investigations.md](operations/investigations.md)) | Inherited access along organization hierarchies (excluded by design); registry catalog access; tests against real registries |
@@ -175,14 +178,15 @@ tests are skipped and the run still reports `ok`.** Use `-v` and look for `SKIP`
 
 ```sh
 docker run -d --name proudauth-pg -e POSTGRES_USER=proudauth -e POSTGRES_PASSWORD=devpassword \
-  -e POSTGRES_DB=proudauth -p 127.0.0.1:55432:5432 postgres:17
+  -e POSTGRES_DB=proudauth -p 127.0.0.1:55432:5432 postgres:18.6
 export PROUDAUTH_TEST_DATABASE_URL='postgres://proudauth:devpassword@127.0.0.1:55432/proudauth?sslmode=disable'
 make test
 ```
 
 `PROUDAUTH_TEST_LOG=1` prints server warnings from the in-process test harness;
-`PROUDAUTH_TEST_KEEP_DB=1` keeps test databases for inspection. CI runs against
-PostgreSQL 17; the Compose file uses PostgreSQL 18. No other versions are tested.
+`PROUDAUTH_TEST_KEEP_DB=1` keeps test databases for inspection. PostgreSQL 18.x
+is the only supported version: CI and the Compose file run PostgreSQL 18.6. No
+other versions are tested.
 Contribution rules, fuzzing and review requirements are in
 [CONTRIBUTING.md](../CONTRIBUTING.md).
 
@@ -196,11 +200,7 @@ cmd/identity-bench/    benchmark tool: seeds a realm and measures a deployment t
 internal/              domain modules: authentication, authorization, oauth, token, keys, session,
                        organization, identity, impersonation, machine, audit, webhooks, egress, ...
 migrations/            ordered SQL migrations embedded in the binaries
-sdk/go/                verifier (resource servers), oidcclient (BFF), admin (API client)
-sdk/node/              Node.js/TypeScript SDK (same areas as sdk/go; unpublished)
-sdk/dart/              Dart SDK (same areas; unpublished, no Flutter dependency)
-sdk/php/               PHP 8.2+ SDK (same areas; unpublished)
-sdk/dotnet/            .NET 8+ SDK and ASP.NET Core adapter (same areas; unpublished)
+proudauth-sdk-*        Go, Node.js, Dart, PHP and .NET SDKs: separate repositories under github.com/proudauth
 api/                   OpenAPI document, configuration/import JSON Schemas, event schemas
 examples/              backend-for-frontend, protected-orders-api, protected-billing-api, machine-client
 tests/e2e/             in-process end-to-end and security regression tests

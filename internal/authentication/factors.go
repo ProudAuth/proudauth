@@ -26,6 +26,30 @@ func (s *Service) passwordCredential(ctx context.Context, q storage.Querier, use
 	return
 }
 
+type hashSlotKey struct{}
+
+// hashRetryAfter is the Retry-After of a refusal for want of a hashing slot:
+// one Argon2id check takes well under a second at the default cost.
+const hashRetryAfter = 2 * time.Second
+
+// hashSlot takes one of the process's password-hashing slots for the work
+// done with the returned context (security.password.max_concurrent_hashes,
+// NFR-002; unbounded unless the operator sets it). It never waits: with every
+// slot in use it answers 503 unavailable with Retry-After, before any
+// password is checked or any budget or failure is counted, so a login burst
+// cannot queue Argon2id work behind the database transaction slots. Nested
+// calls on the returned context reuse the slot already held.
+func (s *Service) hashSlot(ctx context.Context) (context.Context, func(), error) {
+	if held, _ := ctx.Value(hashSlotKey{}).(bool); held || s.Hasher == nil {
+		return ctx, func() {}, nil
+	}
+	release, ok := s.Hasher.Acquire()
+	if !ok {
+		return ctx, nil, problem.ErrUnavailable.WithDetail("password processing is at capacity; retry shortly").WithRetryAfter(hashRetryAfter)
+	}
+	return context.WithValue(ctx, hashSlotKey{}, true), release, nil
+}
+
 // VerifyPassword checks a password and transparently rehashes obsolete verifiers
 // (CRED-004). A compromised credential never authenticates (CRED-008).
 func (s *Service) VerifyPassword(ctx context.Context, tx pgx.Tx, userID, password string) (bool, error) {
@@ -91,6 +115,12 @@ func (s *Service) SetPasswordTx(ctx context.Context, tx pgx.Tx, realmID, userID,
 	if v := s.Policy.Check(password, minOverride, contextWords...); v != nil {
 		return problem.ErrPasswordPolicy.WithDetail(v.Message).WithExtension("policy_code", v.Code)
 	}
+	// History checks and the new verifier are Argon2id work (NFR-002).
+	ctx, release, err := s.hashSlot(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
 	if historyCount > 0 {
 		rows, err := tx.Query(ctx, `SELECT verifier FROM password_history WHERE user_id=$1 ORDER BY created_at DESC LIMIT $2`, userID, historyCount)
 		if err != nil {

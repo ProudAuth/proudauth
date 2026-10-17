@@ -551,7 +551,12 @@ fingerprints (`signing_certificates`, `signing_certificates_added`,
 6. The identity enters the shared federation pipeline: existing link,
    trusted-email linking, linking with proof of control of the local
    account (FED-005), JIT provisioning with organization membership and
-   default role, the registration approval queue, account state checks.
+   default role, the registration approval queue, account state checks. A
+   just-in-time account from an organization's connection gets a trusted
+   email (`trust_email_verified`) verified only in that organization's
+   verified domains; elsewhere it keeps the address unverified behind
+   `verify_email`
+   ([oauth-oidc-profile.md](../protocols/oauth-oidc-profile.md#upstream-identity-providers)).
    The browser is sent with a `303` to the login interface with
    `transaction_id` (`federation_error` on failure), or JSON is returned for
    realms without a login interface. The login completes only with the

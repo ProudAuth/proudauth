@@ -249,3 +249,16 @@ table; migration `0042` widened the `memberships.source` check with `scim`
 ## Related requirement IDs
 
 APP-020, OIDC-015, FED-001..FED-018, SAML-001..SAML-010, PROV-001..PROV-018, QA-004, QA-006, TEST-026, TEST-027, §18, §19, §29; update 2026-10-11: APP-018, USR-022, TEST-051, TEST-052; APP-016, APP-017, ADV-001..ADV-004, SES-018, TOK-019, TOK-020, OIDC-013, MCH-011..MCH-014, PROV-016, TEST-066, TEST-067
+
+## Updates
+
+**Update — 2026-10-18.** Recorded under the dated-update rule
+([README](README.md#changing-a-decision)). Apart from the two updates of
+2026-10-11 above, the Decision list was edited in place in 2026-10: the
+`google` and `microsoft` adapters (FED-002, migration `0040`) and SCIM 2.0
+inbound provisioning (PROV-001..PROV-009, PROV-018, migration `0042`) were
+added, and the **Not implemented**, discovery and connector-kind items were
+annotated with what the updates changed. Each shipped under the rule this
+record decides, which is unchanged. The file was renamed from
+`0018-enterprise-protocols-deferred.md` because most of what it deferred has
+shipped; the title was already accurate.

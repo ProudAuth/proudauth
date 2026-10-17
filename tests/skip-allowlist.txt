@@ -1,0 +1,9 @@
+# Tests allowed to skip in CI (QA-001).
+#
+# Format: <package> <TestName> # reason
+# <package> is the import path or its path relative to the module root;
+# <TestName> is a top-level test (covering its subtests) or a Test/subtest path.
+# internal/tools/testreport reads this file and fails a run when any other
+# test skips: a skipped test proves nothing, and CI provides PostgreSQL and
+# PROUDAUTH_TEST_DATABASE_URL so that no database test ever needs to skip.
+# No entries at the moment: every test runs in CI.

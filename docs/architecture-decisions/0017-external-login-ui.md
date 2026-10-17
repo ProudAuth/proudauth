@@ -61,3 +61,16 @@ only (10-minute lifetime) but requires login UI updates.
 ## Related requirement IDs
 
 AUT-001..AUT-008, AUT-016, AUT-020, SES-010, SEC-002, SEC-003, SDK-004, §1.2, §9.1, §28.4
+
+## Updates
+
+**Update — 2026-10-18.** Recorded under the dated-update rule
+([README](README.md#changing-a-decision)). The first Decision item was edited
+in place in 2026-10: the `pa_tx` cookie, scoped to
+`/api/v1/realms/{realm}/auth/` at acceptance, is scoped to the transaction's
+own path, so concurrent transactions in one browser do not overwrite each
+other (AUT-016, `TestConcurrentBrowserTransactions`). Because the cookie then
+no longer reached `POST /api/v1/realms/{realm}/registrations`, browser
+registration gained the route
+`POST /api/v1/realms/{realm}/auth/transactions/{id}/registration`
+(`TestBrowserRegistration`). The decision is unchanged.

@@ -17,11 +17,21 @@ All five SDKs have independently buildable public repositories and their own CI:
 | PHP | [proudauth-sdk-php](https://github.com/proudauth/proudauth-sdk-php) | `proudauth/sdk` |
 | .NET | [proudauth-sdk-dotnet](https://github.com/proudauth/proudauth-sdk-dotnet) | `ProudAuth.Sdk`, `ProudAuth.Sdk.AspNetCore` |
 
-The source API version is **0.2.0**. npm, pub.dev, Packagist and NuGet packages
-have not been published; public source availability does not establish registry
-publication. PHP's Composer manifest now lives at its repository root, so a VCS
-repository can consume it without a subtree split. The service pins the Go SDK
-as a normal checksum-verified module dependency, without a local replacement.
+The source API version is **0.2.0**. Registry publication differs per SDK
+(checked 2026-10-18; each SDK versions independently, see the
+[alpha.5 decisions](../releases/2026-10-alpha.5-decisions.md)):
+
+- **npm:** `@proudauth/sdk` 0.2.0 is published (2026-10-16).
+- **pub.dev, Packagist and NuGet:** `proudauth_sdk`, `proudauth/sdk` and
+  `ProudAuth.Sdk` are not published; use the Dart, PHP and .NET SDKs from source.
+- **Go:** `proudauth-sdk-go` has no version tag yet, so
+  `go get github.com/proudauth/proudauth-sdk-go@latest` resolves to a
+  pseudo-version of `main`.
+
+Public source availability does not establish registry publication. PHP's
+Composer manifest now lives at its repository root, so a VCS repository can
+consume it without a subtree split. The service pins the Go SDK as a normal
+checksum-verified module dependency, without a local replacement.
 
 [Pinned SDK evidence](sdk-repositories.json) records immutable source revisions,
 successful independent CI runs, workflow bytes and shared-contract hashes. The
@@ -212,14 +222,15 @@ No operation is deprecated today, so the server sends neither header yet.
 
 ## Security updates
 
-The SDKs follow the server's supported-versions table in
-[SECURITY.md](../../SECURITY.md#supported-versions): during 0.x the latest
-minor release and the previous one (until the next minor is published) get
-security fixes; today, with nothing tagged, only `main` does. Report SDK
-vulnerabilities privately as described there. A fix is published as a GitHub
-security advisory and a release, with a **Security fixes** entry in the
-CHANGELOG that names the affected SDK versions and the regression test or
-fixture added with it (QA-008).
+The SDKs version independently and apply the server's rule in
+[SECURITY.md](../../SECURITY.md#supported-versions) to their own releases: only
+an SDK's latest published prerelease or, once it has one, its latest 0.y minor
+release gets security fixes. Today that is `@proudauth/sdk` 0.2.0 on npm; the
+Go, Dart, PHP and .NET SDKs have no published version and receive fixes on
+`main`. Report SDK vulnerabilities privately through the SDK repository's own
+SECURITY.md. A fix is published as a GitHub security advisory and a release,
+with a **Security fixes** entry in the CHANGELOG that names the affected SDK
+versions and the regression test or fixture added with it (QA-008).
 
 ## Interoperability tests
 

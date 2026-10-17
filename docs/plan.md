@@ -1833,6 +1833,12 @@ An issue tracker should import requirement IDs and record implementation status,
 
 ### 35.4 Delivery checkpoint — 2026-10-13
 
+**Update — 2026-10-17.** The statements below describe the 2026-10-13 checkout.
+Since then `v0.2.0-alpha.1` (2026-10-13) and `v0.2.0-alpha.2`, `alpha.3` and
+`alpha.4` (2026-10-15) were published from the ProudAuth organization with
+signed images and release assets; the current release record is
+[docs/releases/](releases/2026-10-alpha.5-decisions.md).
+
 This checkpoint records implementation evidence; the requirements and exit
 gates above remain the acceptance contract, with the delivery exception below.
 The checkout is an untagged

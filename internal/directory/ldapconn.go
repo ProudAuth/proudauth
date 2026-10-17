@@ -211,7 +211,12 @@ func (s *Service) dialEndpoint(ctx context.Context, cfg *LDAPConfig, endpoint st
 	if !isTLS && (cfg.StartTLS == nil || *cfg.StartTLS) {
 		// The handshake is bounded: the deadline on the socket is cleared
 		// once StartTLS returns, before the reader needs it unbounded.
-		_ = raw.SetDeadline(time.Now().Add(connectTO + opTO))
+		// It also ends with ctx (a sign-in's overall deadline).
+		dl := time.Now().Add(connectTO + opTO)
+		if d, ok := ctx.Deadline(); ok && d.Before(dl) {
+			dl = d
+		}
+		_ = raw.SetDeadline(dl)
 		err := l.StartTLS(tlsCfg)
 		_ = raw.SetDeadline(time.Time{})
 		if err != nil {
@@ -245,6 +250,11 @@ func (s *Service) withDirectory(ctx context.Context, c *Connector, serviceBind b
 	for i, ep := range cfg.Endpoints {
 		cn, err := s.dialEndpoint(ctx, cfg, ep)
 		if err == nil {
+			// The client library bounds each operation by its own timeout
+			// only; closing the connection when ctx ends makes a sign-in's
+			// overall deadline (signIn) cut a pending bind or search short.
+			stop := context.AfterFunc(ctx, cn.close)
+			defer stop()
 			if serviceBind {
 				if berr := cn.bind(cfg.BindDN, password); berr != nil {
 					if cat, ok := isTransport(berr); ok {

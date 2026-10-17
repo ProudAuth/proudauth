@@ -2,9 +2,9 @@
 
 Requirements: DEP-012, DEP-020, OPS-008, OPS-012, OPS-013, TEST-061, API-013.
 
-ProudAuth has not published a release. Until 1.0 there is no compatibility
-promise between versions; read [CHANGELOG.md](../../CHANGELOG.md) before every
-upgrade.
+ProudAuth publishes 0.2.0 prereleases (`v0.2.0-alpha.N`). Until 1.0 there is no
+compatibility promise between versions; read [CHANGELOG.md](../../CHANGELOG.md)
+before every upgrade.
 
 Audit pagination from earlier development builds uses a different cursor
 MAC scope. After upgrading, restart `GET /audit-events` and organization

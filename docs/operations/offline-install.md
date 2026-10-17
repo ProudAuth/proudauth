@@ -59,7 +59,8 @@ contains:
   Kubernetes, example production configuration; local development secrets are
   removed), `api/` (OpenAPI and JSON Schemas);
 - `docs/` (architecture decisions, operations, threat models, protocols,
-  integrations), `LICENSE`, `NOTICE`, `README.md`, `SECURITY.md`, `CHANGELOG.md`;
+  integrations, and the development history before the first prerelease),
+  `LICENSE`, `NOTICE`, `README.md`, `SECURITY.md`, `CHANGELOG.md`;
 - `source-notes/` (module list, Go version, commit);
 - `image-<version>.tar.gz` when `IMAGE=<image reference>` is set; Docker and
   that image must already be available locally. Inspection/export failures
@@ -67,8 +68,9 @@ contains:
 - `SHA256SUMS` over every file and `VERIFY.md` with verification steps.
 
 The bundle does not include a PostgreSQL image, an SBOM or provenance; the release
-workflow produces an SBOM and build-provenance attestations separately. No release
-has been published yet.
+workflow produces an SBOM and build-provenance attestations separately. Every
+published release, from `v0.2.0-alpha.1` on, attaches its offline bundle, SBOMs
+and `SHA256SUMS` to its [GitHub release](https://github.com/proudauth/proudauth/releases).
 
 Version labels must start with a letter or digit and contain only letters,
 digits, dot, underscore, plus or hyphen. `BUNDLE_OUT=<directory>` selects

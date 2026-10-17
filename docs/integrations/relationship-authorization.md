@@ -160,14 +160,29 @@ the object in `resource`:
 2. Otherwise, when `resource.type` is a registered type, `resource.id` is set
    and there is an organization (`resource.org_id`, else the token's
    `org_id`), the action is looked up in the type's `permissions` and the
-   subject is matched against the mapped relations of that object:
+   subject is matched against the mapped relations of that object.
+   Relationships count only with the tenant eligibility RBAC applies,
+   checked on every decision: the organization must be `active` (a
+   `suspended`, `archived` or `deleting` organization grants nothing through
+   relationships, also to a realm-scoped token that names it only in
+   `resource.org_id`), and the subject must be an active user or service
+   principal eligible in it (below); otherwise the decision is
+   `NOT_PERMITTED` without reading any tuple.
    - tuples naming the subject directly, and relations implied through
      `implied_by`;
-   - for users: tuples naming a group the user belongs to (also through
-     ancestor groups, honoring membership validity windows), and tuples
-     naming the organization (every active member). The account must be
-     `active` or `recovery_restricted`;
-   - service principals match only tuples that name them directly;
+   - for users: only through an `active` membership whose `expires_at` has
+     not passed (a membership past its end counts as gone at once, before the
+     expiry sweep stores it as `expired`), with the account `active` or
+     `recovery_restricted`. Then also tuples naming a group the user belongs
+     to (also through ancestor groups, honoring membership validity windows;
+     a rule-derived membership counts only while its dynamic group was
+     recomputed within `security.dynamic_group_max_staleness` and its rule
+     has no error, as for RBAC), and tuples naming the organization (every
+     eligible member);
+   - service principals match only tuples that name them directly, and only
+     while the principal is `active` and allowed in the organization (its
+     owner organization or `allowed_organization_ids`), also when the
+     decision names it as an explicit `subject`;
    - `link.relation`: the relation on the object(s) this object's link relation
      names, **one hop** (a linked type's own links are not followed);
    - expired tuples never match.
@@ -204,7 +219,9 @@ callers with `realm.authorization.simulate`, a `subject`, as for
 - `all: true` (and an empty `objects`) when an organization-wide RBAC grant
   covers the action for every object; filter nothing then.
 - Otherwise every listed object was verified with the same evaluation as a
-  check; an unverified object is never returned. Objects are ordered by ID
+  check; an unverified object is never returned. The same tenant
+  eligibility applies: an organization that is not `active`, or a subject
+  not eligible in it, lists no objects (`objects: []`). Objects are ordered by ID
   after `cursor`; `next_cursor` is present when `objects` holds `limit`
   entries.
 - `limit` is 1–500 (default 100); a larger value is clamped to 500.
@@ -264,7 +281,8 @@ as the one pending or accepted share per object, relation and recipient.
   made) and clears their message
   ([data-inventory.md](../operations/data-inventory.md#account-deletion)).
   Deleting an organization does not remove them; tuples of former members
-  are inert because subjects must be active members. They are not in the
+  are inert because subjects must be eligible members, and an organization
+  that is not active matches nothing. They are not in the
   realm data export ([data-inventory.md](../operations/data-inventory.md#organizations-authorization-support)).
 - One organization per tuple; there is no realm-wide or cross-organization
   relationship.

@@ -164,11 +164,22 @@ type PasswordConfig struct {
 	ArgonThreads   uint8  `yaml:"argon_threads"`
 	BlocklistFile  string `yaml:"blocklist_file"`
 	HistoryCount   int    `yaml:"history_count"`
+	// MaxConcurrentHashes bounds the Argon2id password checks and hashes one
+	// process runs at once; a full bound answers 503 unavailable at once
+	// instead of queueing (NFR-002). 0 (the default): unbounded. Today the
+	// password step hashes inside its database transaction, so the
+	// transaction slots already bound it; the knob matters once hashing
+	// leaves the transaction.
+	MaxConcurrentHashes int `yaml:"max_concurrent_hashes"`
 	// LegacyHashesUntil ends a controlled migration (CRED-004): after this
 	// date (YYYY-MM-DD, UTC) imported legacy verifiers no longer verify or
 	// import, and affected accounts recover their password. Empty: allowed.
 	LegacyHashesUntil string `yaml:"legacy_hashes_until"`
 }
+
+// HashSlots is the bound on concurrent password hashing,
+// security.password.max_concurrent_hashes; 0 is unbounded.
+func (p PasswordConfig) HashSlots() int { return p.MaxConcurrentHashes }
 
 // LegacyHashDeadline parses security.password.legacy_hashes_until (zero when unset).
 func (p PasswordConfig) LegacyHashDeadline() time.Time {
@@ -223,7 +234,9 @@ type MFAFloor struct {
 	// Require is "none" (default), or "all": every account needs MFA.
 	Require string `yaml:"require"`
 	// AdminPhishingResistant forces phishing-resistant MFA for privileged
-	// and protected accounts in every realm.
+	// and protected accounts in every realm. It fails closed: realm policies
+	// that leave passkeys disabled are refused (realm.CheckMFAFloor), and a
+	// production server without passkeys does not start with it.
 	AdminPhishingResistant bool `yaml:"admin_phishing_resistant"`
 	// ForbidOrgAdminWaiver forbids realms from waiving MFA for organization
 	// administration (mfa.org_admin_mfa_optional).
@@ -339,6 +352,14 @@ type DirectoryConfig struct {
 	CAFile           string        `yaml:"ca_file"`
 	ConnectTimeout   time.Duration `yaml:"connect_timeout"`
 	OperationTimeout time.Duration `yaml:"operation_timeout"`
+	// SignInTimeout bounds the directory work of one sign-in attempt (search
+	// and bind, across every endpoint and connector it tries), so it ends
+	// well before the 30 s request deadline. 0: 8 s.
+	SignInTimeout time.Duration `yaml:"sign_in_timeout"`
+	// MaxConcurrentBinds bounds the sign-in directory operations one process
+	// runs at once; a full bound answers 503 unavailable at once
+	// instead of queueing. 0: half the storage transaction slots.
+	MaxConcurrentBinds int `yaml:"max_concurrent_binds"`
 	// MaxEntriesPerRun bounds the entries one synchronization or
 	// reconciliation run processes; connectors may set a lower bound.
 	MaxEntriesPerRun int `yaml:"max_entries_per_run"`
@@ -551,7 +572,7 @@ func Defaults() Config {
 		},
 		Federation: FederationConfig{Enabled: true, FetchTimeout: 10 * time.Second, MaxResponseBytes: 1 << 20},
 		Directory: DirectoryConfig{Enabled: true, ConnectTimeout: 5 * time.Second, OperationTimeout: 10 * time.Second,
-			MaxEntriesPerRun: 100000},
+			SignInTimeout: 8 * time.Second, MaxEntriesPerRun: 100000},
 		SAML: SAMLConfig{MaxMessageBytes: 256 << 10, MaxClockSkew: 5 * time.Minute, KeyPrepublish: 48 * time.Hour,
 			RetiredKeyPublication: 7 * 24 * time.Hour},
 		Delivery: DeliveryConfig{
@@ -994,6 +1015,9 @@ func (c *Config) Validate() error {
 		c.Directory.OperationTimeout > 2*time.Minute {
 		add("directory.connect_timeout must be at most 1m and directory.operation_timeout at most 2m")
 	}
+	if c.Directory.SignInTimeout < 0 || c.Directory.SignInTimeout > 25*time.Second {
+		add("directory.sign_in_timeout must be at most 25s, below the 30s request deadline (0 uses the 8s default)")
+	}
 	if c.Directory.MaxEntriesPerRun < 0 || c.Directory.MaxEntriesPerRun > 1_000_000 {
 		add("directory.max_entries_per_run must be between 0 and 1000000")
 	}
@@ -1094,6 +1118,8 @@ func (c *Config) Validate() error {
 		{"limits.max_group_depth", int64(c.Limits.MaxGroupDepth), 1, 32, false},
 		{"limits.max_role_expansion", int64(c.Limits.MaxRoleExpansion), 8, 1024, false},
 		{"limits.max_inflight_requests", int64(c.Limits.MaxInflightRequests), 1, 100000, true},
+		{"directory.max_concurrent_binds", int64(c.Directory.MaxConcurrentBinds), 1, 10000, true},
+		{"security.password.max_concurrent_hashes", int64(c.Security.Password.MaxConcurrentHashes), 1, 10000, true},
 	} {
 		if r.zeroIsDefault && r.v == 0 {
 			continue

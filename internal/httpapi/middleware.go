@@ -20,6 +20,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/proudauth/proudauth/internal/configuration"
 	"github.com/proudauth/proudauth/internal/keys"
 	"github.com/proudauth/proudauth/internal/maintenance"
 	"github.com/proudauth/proudauth/internal/observability"
@@ -72,10 +73,13 @@ func (a *App) clientIP(r *http.Request) string {
 	if err != nil {
 		return ""
 	}
+	xff := r.Header.Values("X-Forwarded-For")
 	if !a.trusted(remote) {
+		if len(xff) > 0 {
+			a.warnUntrustedForwarder(remote)
+		}
 		return remote.String()
 	}
-	xff := r.Header.Values("X-Forwarded-For")
 	hops := []string{}
 	for _, v := range xff {
 		for _, p := range strings.Split(v, ",") {
@@ -94,6 +98,26 @@ func (a *App) clientIP(r *http.Request) string {
 		}
 	}
 	return remote.String()
+}
+
+// warnUntrustedForwarder logs, at most once a minute, that a peer outside
+// server.trusted_proxies sent X-Forwarded-For, which is ignored. In
+// production that is almost always a reverse proxy the configuration does
+// not name: every client behind it then shares the proxy's address for the
+// per-address budgets and in audit and session records, so one busy or
+// abusive client locks everyone out (ABU-001, SEC-001). Development stacks
+// have no proxy and stay quiet.
+func (a *App) warnUntrustedForwarder(peer netip.Addr) {
+	if a.D.Cfg.Mode != configuration.ModeProduction {
+		return
+	}
+	now := a.D.Now().Unix()
+	last := a.forwardWarnedAt.Load()
+	if now-last < 60 || !a.forwardWarnedAt.CompareAndSwap(last, now) {
+		return
+	}
+	a.D.Log.Warn("X-Forwarded-For from a peer outside server.trusted_proxies is ignored: every client behind it shares one address for rate limits and audit records; set PROUDAUTH_TRUSTED_PROXIES (server.trusted_proxies) to the proxy's address or network",
+		"component", "http", "peer_network", reqctx.NetworkContext(peer.String(), false))
 }
 
 func (a *App) trusted(ip netip.Addr) bool {

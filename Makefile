@@ -3,7 +3,7 @@ GO ?= go
 VERSION ?= $(shell git describe --tags --always 2>/dev/null || echo dev)
 IMAGE_NAME ?= proudauth
 
-.PHONY: attack-suites attack-provisioning attack-federation interop-keycloak interop-zitadel build test test-unit test-e2e lint vet vuln sbom image dev smoke dr-drill bundle k8s-validate fuzz licenses bench bench-local bench-replicas repro-local
+.PHONY: attack-suites attack-provisioning attack-federation interop-keycloak interop-zitadel build test test-unit test-e2e e2e-shard lint vet vuln sbom image dev smoke dr-drill bundle k8s-validate fuzz licenses bench bench-local bench-replicas repro-local
 build:
 	$(GO) build -trimpath ./...
 test: vet
@@ -12,6 +12,12 @@ test-unit:
 	$(GO) test -count=1 ./internal/...
 test-e2e:
 	$(GO) test -count=1 ./tests/...
+# One shard of the end-to-end suite, as the CI e2e job runs them:
+# make e2e-shard SHARD=1 SHARDS=4
+SHARD ?= 0
+SHARDS ?= 4
+e2e-shard:
+	./scripts/e2e-shard.sh $(SHARD) $(SHARDS) -count=1
 vet:
 	$(GO) vet ./...
 lint: vet
@@ -63,6 +69,7 @@ fuzz:
 	$(GO) test ./internal/platform/reqctx -run '^$$' -fuzz '^FuzzParseTraceparent$$' -fuzztime 15s
 	$(GO) test ./internal/egress -run '^$$' -fuzz '^FuzzAllowed$$' -fuzztime 15s
 	$(GO) test ./internal/application -run '^$$' -fuzz '^FuzzClaimMappings$$' -fuzztime 15s
+	$(GO) test ./internal/oauth -run '^$$' -fuzz '^FuzzParseAuthorize$$' -fuzztime 15s
 licenses:
 	./scripts/check-licenses.sh
 

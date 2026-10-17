@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -32,6 +33,9 @@ type govJob struct {
 	Services map[string]any    `yaml:"services"`
 	Env      map[string]string `yaml:"env"`
 	Steps    []govStep         `yaml:"steps"`
+	Strategy struct {
+		Matrix map[string][]any `yaml:"matrix"`
+	} `yaml:"strategy"`
 }
 
 type govStep struct {
@@ -94,11 +98,15 @@ func govLoadWorkflow(t *testing.T, rel string) govWorkflow {
 
 // TestCIRunsSecurityTests covers QA-001: the critical-invariant tests are
 // what gates a change, not a coverage percentage. CI runs every Go test with
-// the race detector against PostgreSQL (without a database the end-to-end
-// security tests skip and still pass), every fuzz target CI and `make fuzz`
-// name exists (go test -fuzz with a pattern that matches nothing passes
-// without fuzzing), and the release publishes only after the whole CI
-// workflow has passed.
+// the race detector against PostgreSQL: the test job runs every package but
+// tests/e2e, and the e2e job runs tests/e2e in parallel shards
+// (scripts/e2e-shard.sh). Both pipe `go test -json` through
+// internal/tools/testreport with tests/skip-allowlist.txt, so a test that
+// skips outside the allowlist, a package that fails to build or a -run
+// pattern that matches nothing fails the job instead of passing silently.
+// Every fuzz target CI and `make fuzz` name exists (go test -fuzz with a
+// pattern that matches nothing passes without fuzzing), and the release
+// publishes only after the whole CI workflow has passed.
 func TestCIRunsSecurityTests(t *testing.T) {
 	ci := govLoadWorkflow(t, ".github/workflows/ci.yml")
 	if _, ok := ci.On["pull_request"]; !ok {
@@ -108,15 +116,44 @@ func TestCIRunsSecurityTests(t *testing.T) {
 	if !ok {
 		t.Fatal("ci.yml has no test job")
 	}
-	if test.Env["PROUDAUTH_TEST_DATABASE_URL"] == "" || test.Services["postgres"] == nil {
-		t.Error("the test job must provide a PostgreSQL service and PROUDAUTH_TEST_DATABASE_URL; without them the end-to-end tests skip and pass")
+	e2e, ok := ci.Jobs["e2e"]
+	if !ok {
+		t.Fatal("ci.yml has no e2e job")
+	}
+	for name, job := range map[string]govJob{"test": test, "e2e": e2e} {
+		if job.Env["PROUDAUTH_TEST_DATABASE_URL"] == "" || job.Services["postgres"] == nil {
+			t.Errorf("the %s job must provide a PostgreSQL service and PROUDAUTH_TEST_DATABASE_URL; without them the database tests skip", name)
+		}
+		runs := job.runs()
+		if !strings.Contains(runs, "go run ./internal/tools/testreport") || !strings.Contains(runs, "-allowlist tests/skip-allowlist.txt") || !strings.Contains(runs, "-require-tests") {
+			t.Errorf("the %s job must pipe go test -json through internal/tools/testreport with tests/skip-allowlist.txt and -require-tests, so a skipped test or an empty -run pattern fails the job", name)
+		}
+		if !strings.Contains(runs, "set -o pipefail") {
+			t.Errorf("the %s job pipes go test into testreport without pipefail, so a go test failure could be lost", name)
+		}
+		if regexp.MustCompile(`-coverprofile|-cover\b`).MatchString(runs) {
+			t.Errorf("the %s job gates on coverage; QA-001 requires direct tests of invariants, not a coverage number", name)
+		}
 	}
 	runs := test.runs()
-	if !regexp.MustCompile(`(?m)^go test \./\.\.\. .*-race`).MatchString(runs) {
-		t.Error("the test job must run go test ./... with -race")
+	if !regexp.MustCompile(`(?m)^go test \$\(go list \./\.\.\. \| grep -v '/tests/e2e\$'\) .*-race .*-json`).MatchString(runs) {
+		t.Error("the test job must run go test with -race and -json over every package except tests/e2e")
 	}
-	if regexp.MustCompile(`-coverprofile|-cover\b`).MatchString(runs) {
-		t.Error("the test job gates on coverage; QA-001 requires direct tests of invariants, not a coverage number")
+	shards := e2e.Strategy.Matrix["shard"]
+	if len(shards) < 2 {
+		t.Errorf("the e2e job runs %d shard(s); the suite is sharded so a pull request gets its result in parallel", len(shards))
+	}
+	shardRun := regexp.MustCompile(`\./scripts/e2e-shard\.sh \$\{\{ matrix\.shard \}\} (\d+) .*-race .*-json`).FindStringSubmatch(e2e.runs())
+	if shardRun == nil {
+		t.Error("the e2e job must run ./scripts/e2e-shard.sh ${{ matrix.shard }} <total> with -race and -json")
+	} else if shardRun[1] != strconv.Itoa(len(shards)) {
+		t.Errorf("e2e-shard.sh runs %s shards but the matrix has %d; a test would never run", shardRun[1], len(shards))
+	}
+	if st, err := os.Stat(filepath.Join(repoRoot, "scripts/e2e-shard.sh")); err != nil || st.Mode()&0o111 == 0 {
+		t.Errorf("scripts/e2e-shard.sh must exist and be executable: %v", err)
+	}
+	if !ci.Jobs["image"].needs("e2e") || !ci.Jobs["image"].needs("test") {
+		t.Error("the image job must need the test and e2e jobs: image is a required check, so a failing shard must block it")
 	}
 
 	fuzz := regexp.MustCompile(`go test (\./\S+) -run '\^\$\$?' -fuzz '\^(Fuzz\w+)\$\$?'`)
@@ -144,6 +181,43 @@ func TestCIRunsSecurityTests(t *testing.T) {
 	rel := govLoadWorkflow(t, ".github/workflows/release.yml")
 	if rel.Jobs["ci"].Uses != "./.github/workflows/ci.yml" || !rel.Jobs["release"].needs("ci") {
 		t.Error("the release job must need a ci job that calls .github/workflows/ci.yml")
+	}
+}
+
+// TestSkipAllowlistNamesRealTests keeps tests/skip-allowlist.txt honest: every
+// entry has a reason and names a test that exists in the package it points
+// to, so an allowed skip cannot outlive the test or hide a typo.
+func TestSkipAllowlistNamesRealTests(t *testing.T) {
+	const module = "github.com/proudauth/proudauth"
+	text := govRead(t, "tests/skip-allowlist.txt")
+	for i, line := range strings.Split(text, "\n") {
+		reason := ""
+		if j := strings.Index(line, "#"); j >= 0 {
+			reason = strings.TrimSpace(line[j+1:])
+			line = line[:j]
+		}
+		f := strings.Fields(line)
+		if len(f) == 0 {
+			continue
+		}
+		if len(f) != 2 || reason == "" {
+			t.Errorf("tests/skip-allowlist.txt:%d: want \"<package> <Test> # reason\"", i+1)
+			continue
+		}
+		dir := strings.TrimPrefix(f[0], module+"/")
+		top, _, _ := strings.Cut(f[1], "/")
+		files, _ := filepath.Glob(filepath.Join(repoRoot, dir, "*_test.go"))
+		found := false
+		for _, file := range files {
+			b, err := os.ReadFile(file)
+			if err == nil && strings.Contains(string(b), "func "+top+"(") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("tests/skip-allowlist.txt:%d: no test %s in %s", i+1, top, dir)
+		}
 	}
 }
 
@@ -289,21 +363,36 @@ func TestCodeOwnersReviewBoundaries(t *testing.T) {
 
 // TestReleaseTransparency covers GOV-005: releases are cut only from version
 // tags through the release workflow, which publishes the tag's own
-// CHANGELOG section as release notes, the binaries with checksums, SBOMs,
-// build provenance attestations and a signed image; the CHANGELOG keeps
-// breaking changes, security fixes (with advisories) and known limitations
-// in their own sections.
+// CHANGELOG section as release notes (refused without a Known limitations
+// heading), the binaries with checksums, SBOMs, build provenance attestations
+// and a signed image; the CHANGELOG keeps breaking changes, security fixes
+// (with advisories) and known limitations in their own sections, links every
+// version, and points to the history before the first tag in docs/history/.
+// The only other trigger is the manual dry run, which publishes nothing.
 func TestReleaseTransparency(t *testing.T) {
 	raw := govRead(t, ".github/workflows/release.yml")
 	rel := govLoadWorkflow(t, ".github/workflows/release.yml")
-	if !regexp.MustCompile(`(?m)^\s+tags: \["v\*"\]`).MatchString(raw) || rel.On["push"] == nil || len(rel.On) != 1 {
-		t.Errorf("the release workflow must run only for pushed v* tags: %v", rel.On)
+	if _, dispatch := rel.On["workflow_dispatch"]; !regexp.MustCompile(`(?m)^\s+tags: \["v\*"\]`).MatchString(raw) || rel.On["push"] == nil || !dispatch || len(rel.On) != 2 {
+		t.Errorf("the release workflow must run for pushed v* tags and the manual dry run only: %v", rel.On)
 	}
 	job, ok := rel.Jobs["release"]
 	if !ok {
 		t.Fatal("release.yml has no release job")
 	}
+	if job.Env["DRY_RUN"] != "${{ github.event_name == 'workflow_dispatch' }}" {
+		t.Errorf("the release job must derive DRY_RUN from the manual trigger, got %q", job.Env["DRY_RUN"])
+	}
+	for _, step := range job.Steps {
+		if strings.Contains(step.Run, "gh release create") || strings.Contains(step.Run, "/dispatches") {
+			if !regexp.MustCompile(`(?s)\[ "\$DRY_RUN" = true \].*?exit 0.*?(gh release create|gh api)`).MatchString(step.Run) {
+				t.Errorf("step %q must stop before publishing when DRY_RUN is true", step.Name)
+			}
+		}
+	}
 	runs, uses := job.runs(), strings.Join(job.uses(), "\n")
+	if !strings.Contains(runs, `grep -q '^### Known limitations' dist/RELEASE_NOTES.md`) {
+		t.Error("the release job must refuse a CHANGELOG section without a '### Known limitations' heading")
+	}
 	for _, c := range []struct{ what, re, in string }{
 		{"binaries for every platform", `for os in linux darwin; do for arch in amd64 arm64`, runs},
 		{"checksums of every release file", `sha256sum > SHA256SUMS`, runs},
@@ -311,7 +400,7 @@ func TestReleaseTransparency(t *testing.T) {
 		{"an image SBOM", `-o spdx-json=dist/image-sbom\.spdx\.json`, runs},
 		{"an image signature", `cosign sign --yes`, runs},
 		{"release notes from the CHANGELOG", `--notes-file dist/RELEASE_NOTES\.md`, runs},
-		{"a release bound to the existing tag", `(?s)gh release create "\$\{GITHUB_REF_NAME\}" .*?--verify-tag`, runs},
+		{"a release bound to the existing tag", `(?s)gh release create "\$\{RELEASE_TAG\}" .*?--verify-tag`, runs},
 		{"build provenance attestations", `actions/attest-build-provenance@`, uses},
 		{"an SBOM attestation", `actions/attest-sbom@`, uses},
 	} {
@@ -320,8 +409,12 @@ func TestReleaseTransparency(t *testing.T) {
 		}
 	}
 
-	// The release notes are exactly the tag's CHANGELOG section.
-	m := regexp.MustCompile(`awk -v v="\$\{GITHUB_REF_NAME#v\}" '([^']+)' CHANGELOG\.md > dist/RELEASE_NOTES\.md`).FindStringSubmatch(raw)
+	// The release notes are exactly the tag's CHANGELOG section (the
+	// Unreleased section on a dry run).
+	if !strings.Contains(raw, "section=${RELEASE_TAG#v}") || !strings.Contains(raw, `[ "$DRY_RUN" = true ] && section=Unreleased`) {
+		t.Error("the release-notes step must select the tag's section, or Unreleased on a dry run")
+	}
+	m := regexp.MustCompile(`awk -v v="\$section" '([^']+)' CHANGELOG\.md > dist/RELEASE_NOTES\.md`).FindStringSubmatch(raw)
 	if m == nil {
 		t.Fatal("cannot find the release-notes step in release.yml")
 	}
@@ -359,13 +452,14 @@ func TestReleaseTransparency(t *testing.T) {
 `), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	notes := func(version string) string {
-		out, err := exec.Command("awk", "-v", "v="+version, m[1], changelog).Output()
+	notesFrom := func(file, version string) string {
+		out, err := exec.Command("awk", "-v", "v="+version, m[1], file).Output()
 		if err != nil {
 			t.Fatalf("release-notes awk program: %v", err)
 		}
 		return string(out)
 	}
+	notes := func(version string) string { return notesFrom(changelog, version) }
 	got := notes("1.2.0")
 	for _, want := range []string{"## [1.2.0] - 2026-10-01", "breaking change A", "fix B (GHSA-0000-0000-0000)", "limitation C"} {
 		if !strings.Contains(got, want) {
@@ -381,12 +475,46 @@ func TestReleaseTransparency(t *testing.T) {
 		t.Errorf("a tag without a CHANGELOG section must produce empty notes (the step then fails), got:\n%s", got)
 	}
 
-	// The CHANGELOG has the sections the notes are made of.
+	// The CHANGELOG has the sections the notes are made of. Keep a Changelog
+	// names the security section "Security"; SECURITY.md and the development
+	// history call it "Security fixes".
 	cl := govRead(t, "CHANGELOG.md")
-	for _, h := range []string{"## [Unreleased]", "### Changed", "### Security fixes", "### Known limitations"} {
-		if !strings.Contains(cl, "\n"+h+"\n") {
-			t.Errorf("CHANGELOG.md has no %q section", h)
+	for _, h := range [][]string{{"## [Unreleased]"}, {"### Changed"}, {"### Security", "### Security fixes"}, {"### Known limitations"}} {
+		if !slices.ContainsFunc(h, func(s string) bool { return strings.Contains(cl, "\n"+s+"\n") }) {
+			t.Errorf("CHANGELOG.md has no %q section", strings.Join(h, `" or "`))
 		}
+	}
+
+	// Each version heading has its Keep a Changelog link: Unreleased compares
+	// the latest tag with main, a version compares with the one before it,
+	// and the oldest links its tag. The development history before the first
+	// tag lives in docs/history/, linked under a heading of its own, so the
+	// link block never ends up in a version's release notes.
+	const repo = "https://github.com/proudauth/proudauth/"
+	versions := regexp.MustCompile(`(?m)^## \[([^\]]+)\]`).FindAllStringSubmatch(cl, -1)
+	linkDef := regexp.MustCompile(`(?m)^\[[^\]]+\]: https://`)
+	if len(versions) < 2 || versions[0][1] != "Unreleased" {
+		t.Fatalf("CHANGELOG.md must start with [Unreleased] followed by the released versions, got %q", versions)
+	}
+	for i, v := range versions {
+		want := repo + "releases/tag/v" + v[1]
+		if i == 0 {
+			want = repo + "compare/v" + versions[1][1] + "...main"
+		} else if i < len(versions)-1 {
+			want = repo + "compare/v" + versions[i+1][1] + "...v" + v[1]
+		}
+		if !strings.Contains(cl, "\n["+v[1]+"]: "+want+"\n") {
+			t.Errorf("CHANGELOG.md lacks the link [%s]: %s", v[1], want)
+		}
+		if i > 0 {
+			if got := notesFrom(filepath.Join(repoRoot, "CHANGELOG.md"), v[1]); linkDef.MatchString(got) {
+				t.Errorf("release notes for %s include the link block:\n%s", v[1], got)
+			}
+		}
+	}
+	if !strings.Contains(cl, "](docs/history/CHANGELOG-pre-0.2.0.md)") ||
+		!strings.Contains(govRead(t, "docs/history/CHANGELOG-pre-0.2.0.md"), "\n## Historical development before 0.2.0-alpha.1\n") {
+		t.Error("CHANGELOG.md must link the development history before the first tag, docs/history/CHANGELOG-pre-0.2.0.md")
 	}
 	if !strings.Contains(cl, "breaking changes") || !strings.Contains(strings.ToLower(govRead(t, "SECURITY.md")), "advisor") {
 		t.Error("CHANGELOG.md must say where breaking changes are listed and SECURITY.md how advisories are published")

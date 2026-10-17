@@ -6,13 +6,15 @@ import (
 	"slices"
 
 	"github.com/proudauth/proudauth/internal/federation"
+	"github.com/proudauth/proudauth/internal/platform/canonical"
 	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
 // orgIdentityProviderRoutes lets organization administrators manage their own
 // organization's federation connections (TEN-007) within its boundary: the
-// connection is always scoped to the organization, trusted-email linking is
-// limited to the organization's verified domains, and trusting upstream MFA
+// connection is always scoped to the organization, trusted-email linking and
+// just-in-time provisioning are limited to the organization's verified
+// domains, and trusting upstream MFA
 // stays a realm-administrator decision because it affects the user's
 // assurance everywhere in the realm.
 func (a *App) orgIdentityProviderRoutes(mux *http.ServeMux) {
@@ -36,15 +38,30 @@ func (a *App) orgIdentityProviderRoutes(mux *http.ServeMux) {
 		if in.TrustUpstreamMFA && !a.can(ctx, p, "realm.identity_providers.write", a.realmScope(p)) {
 			return problem.ErrForbidden.WithDetail("trusting upstream MFA requires a realm administrator")
 		}
-		if in.LinkingPolicy == federation.LinkTrustedEmail {
-			verified, err := a.Orgs.VerifiedDomains(ctx, p.Realm.ID, orgID)
+		// Just-in-time accounts are realm-wide, so an organization creates
+		// them only for addresses in its own verified domains (TEN-007,
+		// REG-009): an empty list would admit every domain, including other
+		// tenants' and public ones.
+		if in.JIT && len(in.Config.AllowedEmailDomains) == 0 {
+			return problem.ErrValidation.WithField("config.allowed_email_domains", "just-in-time provisioning requires the organization's verified domains to be listed")
+		}
+		if in.LinkingPolicy != federation.LinkTrustedEmail && !in.JIT {
+			return nil
+		}
+		verified, err := a.Orgs.VerifiedDomains(ctx, p.Realm.ID, orgID)
+		if err != nil {
+			return err
+		}
+		for _, d := range in.Config.AllowedEmailDomains {
+			c, err := canonical.Domain(d)
 			if err != nil {
-				return err
+				return problem.ErrValidation.WithField("config.allowed_email_domains", "invalid domain "+d)
 			}
-			for _, d := range in.Config.AllowedEmailDomains {
-				if !slices.Contains(verified, d) {
-					return problem.ErrValidation.WithField("config.allowed_email_domains", "trusted email linking is limited to the organization's verified domains")
+			if !slices.Contains(verified, c) {
+				if in.JIT {
+					return problem.ErrValidation.WithField("config.allowed_email_domains", "just-in-time provisioning is limited to the organization's verified domains")
 				}
+				return problem.ErrValidation.WithField("config.allowed_email_domains", "trusted email linking is limited to the organization's verified domains")
 			}
 		}
 		return nil

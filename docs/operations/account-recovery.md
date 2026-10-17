@@ -64,11 +64,17 @@ Deleting the account cancels its pending and approved requests.
 
 A sign-in whose second factor is a recovery code, and that used no TOTP or
 passkey, creates a **recovery-restricted** session (`recovery_restricted: true`
-in `GET /me/sessions`). Recovery codes are refused where the
-phishing-resistant profile applies (with passkeys enabled: privileged or
-protected accounts when the realm sets `mfa.admin_phishing_resistant`, and
-requests whose `acr_values` ask for phishing-resistant authentication); those
-accounts recover through assisted recovery.
+in `GET /me/sessions`). Recovery codes never satisfy the
+phishing-resistant profile (privileged or protected accounts when the realm
+sets `mfa.admin_phishing_resistant` or the operator sets
+`security.mfa_floor.admin_phishing_resistant`, and requests whose
+`acr_values` ask for phishing-resistant authentication). There, an account
+that holds no user-verified passkey may use one as an upgrade proof that
+only unlocks registering a user-verified passkey in the same sign-in
+([headless-authentication.md](../protocols/headless-authentication.md#evaluation-order),
+step 5); the code is consumed, the session is the passkey's and is not
+restricted. An account that has a user-verified passkey must use it; when it
+is lost, the account recovers through assisted recovery.
 
 **Account state.** The same sign-in moves an `active` account to the state
 `recovery_restricted` (audit and outbox event `user.recovery_restricted`,
@@ -130,10 +136,15 @@ enrollment from a restricted session.
   to the operator only when the account has no deliverable address, and that
   hand-off is part of the `recovery.assisted` evidence.
 - **Lost passkeys (PASS-005).** A lost passkey is a lost factor: recovery codes
-  or assisted recovery. Where the phishing-resistant profile applies, a
-  recovery code is refused at sign-in ("a phishing-resistant authenticator is
-  required"), so those accounts use assisted recovery; TOTP and recovery codes
-  never satisfy that profile.
+  or assisted recovery. Where the phishing-resistant profile applies, TOTP and
+  recovery codes never satisfy that profile. An account with a user-verified
+  passkey gets "a phishing-resistant authenticator is required" for them at
+  sign-in, so it uses assisted recovery. An account without one (it holds only
+  TOTP, HOTP, recovery codes or a passkey never used with user verification)
+  proves one of them as an upgrade proof and then registers a user-verified
+  passkey in the same sign-in; with the password alone it cannot register
+  one, and `totp/enroll` and `totp/activate` are refused there, so the
+  existing TOTP and recovery codes cannot be replaced either (MFA-006).
 - **Adding a factor needs an existing one (MFA-006).** When the account
   already has an active TOTP, HOTP or passkey, `POST /me/totp/enroll`,
   `/me/totp/activate`, `/me/hotp/enroll`, `/me/hotp/activate`,

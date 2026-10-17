@@ -31,6 +31,7 @@ General rules:
 | Connector compromise (upstream provider, hook, webhook receiver, mail server, gateway) | [below](#compromised-connector) | Emergency controls for clients, organizations and grant types (`TestEmergencyControls`); the identity-provider (including a sign-in already at the upstream), hook, webhook and service-principal controls, sign-ins and links in the audit log, session revocation, link removal, sending the client secret again, webhook secret rotation and hook replacement (`TestRunbookConnectorCompromise`); replay (`TestRunbookWebhookOutage`); removing an organization's mail server (`TestTenantSMTPCredentials`); plugin and workflow disabling (`TestPluginLifecycle`, `TestWorkflowRevisionsRollbackAndDisable`). The SMS gateway, challenge providers and plugin publisher keys are operator configuration and are not tested |
 | Provisioning connector (SCIM) token compromise | [below](#provisioning-connector-token-compromise) | Token rotation and disabling a connector (`TestSCIMProvisioning`) |
 | SAML signing key or SAML counterparty compromise | [below](#saml-key-or-counterparty-compromise) | Forced key activation with a reason (`TestSAMLKeyRollover`); certificate replacement on a connection (`TestSAMLBroker`); the emergency controls on SAML connections and backing clients are not tested end to end |
+| Federation-created verified addresses outside an organization's domains (upgrade from 0.2.0-alpha.4 or earlier) | [below](#federation-created-verified-addresses-outside-an-organizations-domains) | The query, against an account made as earlier releases did (`TestOrganizationJITEmailVerification`); the review steps are not tested |
 | Directory or outbound connector compromise | [below](#directory-connector-compromise) | Disabling an LDAP connector (fail-closed sign-in, `TestLDAPDirectorySignIn`); rotating an outbound connector's credential (`TestOutboundProvisioning`); rotating an LDAP credential is not tested end to end |
 | Abuse spikes | [below](#abuse-spikes) | Budgets and the temporary lock (`TestPasswordlessAndAbuseBudgets`), flow rules (`TestAuthenticationFlowPolicy`), adversarial benchmark scenarios ([benchmarks.md](benchmarks.md)) |
 | Database outage | [below](#database-unavailable-or-degraded) | Strict-online denial during outages (TEST-035) |
@@ -376,6 +377,78 @@ is no emergency control for directory connectors.
    findings, and `operator_actions` in `.../health`. Revoke the sessions of
    accounts it changed if their identity attributes or state were altered.
 
+## Federation-created verified addresses outside an organization's domains
+
+Up to 0.2.0-alpha.4, a just-in-time account created through an
+organization-scoped connection took the upstream's `email_verified` for any
+address, and an organization administrator could enable
+`jit_provisioning` without `allowed_email_domains`. An organization's
+upstream could so give a realm-wide account a verified address in another
+organization's domain, or in a public one. The address's real owner could
+then not verify it (a verified address belongs to one account), and the
+other organization's SCIM connector could adopt the account. From 0.2.0-alpha.5 such an address stays
+unverified behind `verify_email`, and organization administrators enable JIT
+only for their own verified domains
+([oauth-oidc-profile.md](../protocols/oauth-oidc-profile.md#upstream-identity-providers)).
+Accounts created before the upgrade keep what they got. After upgrading:
+
+1. **List them** (read-only, `psql` against the primary). The query lists
+   every address that a connection's just-in-time account holds verified on
+   that connection's word, where the domain is not, today, a verified domain
+   of the connection's organization (nor a subdomain of one verified with
+   `include_subdomains`):
+
+   ```sql
+   SELECT p.realm_id, p.organization_id, p.alias AS connection, e.user_id,
+          i.original_value AS email, i.verified_at, d.organization_id AS domain_owner
+   FROM external_identities e
+   JOIN identity_providers p ON p.realm_id = e.realm_id AND p.id = e.provider_id
+   JOIN user_identifiers i ON i.realm_id = e.realm_id AND i.user_id = e.user_id
+   LEFT JOIN organization_domains d ON d.realm_id = i.realm_id AND d.state = 'verified'
+        AND d.domain = split_part(i.canonical_value, '@', 2)
+   WHERE e.linking_provenance = 'jit'
+     AND p.organization_id IS NOT NULL
+     AND i.type = 'email' AND i.verified_at IS NOT NULL
+     AND i.verification_source = 'federation:' || p.alias
+     AND NOT EXISTS (
+       SELECT 1 FROM organization_domains c
+       WHERE c.realm_id = p.realm_id AND c.organization_id = p.organization_id AND c.state = 'verified'
+         AND (c.domain = split_part(i.canonical_value, '@', 2)
+              OR (c.include_subdomains
+                  AND right(split_part(i.canonical_value, '@', 2), length(c.domain) + 1) = '.' || c.domain)))
+   ORDER BY p.realm_id, p.alias, i.verified_at;
+   ```
+
+   `domain_owner` names the organization that verified the domain, if any.
+   A connection renamed since the account was created no longer matches
+   `verification_source`; drop that condition to see those accounts too
+   (an address the user verified again later then also appears).
+2. **Review each row** with the domain's owner. Evidence:
+   `GET /audit-events?type=user.created&subject_id={user}` (metadata
+   `provider`, `email_verified`) and the connection's
+   `federation.login.succeeded` events.
+3. **Stop accounts that hold someone else's address**: revoke their
+   sessions (`POST /users/{user}/revoke-sessions`) and suspend them
+   (`POST /users/{user}/suspend {"reason":"INC-..."}`); a just-in-time
+   account has no other sign-in method, so removing its link is refused
+   (`409 last_sign_in_method`). If the account must stay, clearing the
+   verification is a database edit (record it in your incident log):
+   `UPDATE user_identifiers SET verified_at = NULL, verification_source = NULL WHERE id = '<identifier id>'`
+   and `UPDATE users SET required_actions = array_append(required_actions, 'verify_email'), updated_at = now() WHERE id = '{user}'`.
+4. **Fix the connection**: an organization's JIT connection without
+   `allowed_email_domains`, or listing domains it has not verified, is
+   refused (`422`) at its next `PUT` through
+   `/organizations/{org}/identity-providers`. Review such connections now
+   (`GET /identity-providers`, `jit_provisioning` and
+   `config.allowed_email_domains`) and correct them, or disable them
+   (`"state": "disabled"`).
+
+The same applies to `google` connections with `trusted_verified_email` and
+no `allowed_tenants`: earlier releases believed Google's `email_verified` for
+any address. Links they made appear in `federation.identity.linked` events
+(metadata `provenance: "trusted_verified_email"`); review those whose address
+is neither Gmail nor in a domain the Google Workspace tenant runs.
+
 ## Abuse spikes
 
 Signals: `proudauth_authentications_total{outcome="failure"}`,
@@ -614,7 +687,10 @@ Email:
    one organization's mail fails, check its server with the organization's
    owner, or remove it (`DELETE .../notification-settings/smtp`,
    `org.integrations.write`) to fall back to the deployment relay. A server whose
-   address the delivery egress policy refuses fails every attempt.
+   address the delivery egress policy refuses fails every attempt. A server
+   that accepts connections and then never answers fails each attempt after
+   the 30 s SMTP session deadline (`last_error` names an i/o timeout); the
+   worker goes on with other jobs and tasks meanwhile.
 3. One-time codes expire after `tokens.challenge_ttl` (10 min); after the outage
    users request a new code (send budgets and cooldowns still apply). Do not mark
    addresses verified to work around an outage; `POST /users/{user}/verification-overrides`

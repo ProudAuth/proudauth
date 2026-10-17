@@ -39,7 +39,8 @@ PostgreSQL is the only durable store and the authority for all security state.
   (`migrations/embed.go`), applied in lexical order under
   `pg_advisory_lock(727274001)`, each in its own transaction, with a SHA-256
   checksum recorded in `schema_migrations`.
-- **Tested versions:** PostgreSQL 17 (CI) and 18 (development Compose file).
+- **Tested versions:** PostgreSQL 18.x is the only supported version; CI and the
+  development Compose file run 18.6.
 
 ## Alternatives considered
 
@@ -73,3 +74,13 @@ PostgreSQL is the only durable store and the authority for all security state.
 ## Related requirement IDs
 
 ARC-002, ARC-003, ARC-005, DB-001..DB-014, DEP-010, DEP-012, OPS-008, TEST-061, §24
+
+## Updates
+
+**Update — 2026-10-18.** The "Tested versions" statement was changed in place:
+it named major version 17 for CI and 18 for the development Compose file, and
+now reads "PostgreSQL 18.x is the only supported version; CI and the
+development Compose file run 18.6" (owner decision 4,
+`docs/releases/2026-10-alpha.5-decisions.md`): CI runs `postgres:18.6`, and no
+other version is tested. The decision itself (PostgreSQL as the only durable
+store) is unchanged.

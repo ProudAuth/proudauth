@@ -188,6 +188,8 @@ func TestReplicaInvitationAcceptanceStress(t *testing.T) {
 	f, nodes := replicaStressFixture(t)
 	h := f.H
 	ctx := context.Background()
+	// Granting roles by invitation needs an MFA session (TestOrgAuthorityGrantsNeedMFA).
+	f.EnrollTOTP("alice")
 	alice := f.AccountToken("alice").Tokens.Str("access_token")
 	const rounds, concurrency = 8, 32
 	for round := range rounds {

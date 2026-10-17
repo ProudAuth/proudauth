@@ -97,6 +97,36 @@ func (s *Service) step(ctx context.Context, realmID, id string, p Proof, fn func
 	return st, nil
 }
 
+// offered refuses a step whose action the transaction does not offer now
+// (AUT-002, AUT-004): the server alone decides which steps are open, so a
+// step left out of next_actions (an enrollment the profile forbids, a
+// factor the realm does not allow) cannot be called directly either.
+func (s *Service) offered(ctx context.Context, q storage.Querier, t *Transaction, types ...string) error {
+	st, err := s.state(ctx, q, t)
+	if err != nil {
+		return err
+	}
+	if st.Error == "" && slices.ContainsFunc(st.NextActions, func(a Action) bool { return slices.Contains(types, a.Type) }) {
+		return nil
+	}
+	return problem.ErrUnexpectedStep
+}
+
+// recordUpgradeProof keeps a factor proved under the phishing-resistant
+// profile as the upgrade proof that unlocks passkey registration (MFA-006,
+// SEC-012). It is not added to the completed factors, so it never satisfies
+// MFA, and its audit evidence commits with the transaction.
+func (s *Service) recordUpgradeProof(ctx context.Context, tx pgx.Tx, t *Transaction, factor, credID string) error {
+	t.Pending.UpgradeProof = &UpgradeProof{UserID: t.UserID, Factor: factor, CredentialID: credID, At: s.d.Now()}
+	md := map[string]any{"factor": factor, "transaction_id": t.ID}
+	if credID != "" {
+		md["credential_id"] = credID
+	}
+	_, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "mfa.upgrade_proof.recorded", RealmID: t.RealmID, Actor: actorFor(t),
+		Subject: &audit.Ref{Type: "user", ID: t.UserID}, Metadata: md})
+	return err
+}
+
 // advance computes next actions and completes automatically when nothing remains.
 func (s *Service) advance(ctx context.Context, tx pgx.Tx, t *Transaction) (*State, error) {
 	st, err := s.state(ctx, tx, t)
@@ -208,6 +238,18 @@ func (s *Service) Password(ctx context.Context, realmID, id string, p Proof, ide
 		if _, err := s.Identify(ctx, realmID, id, p, identifier); err != nil {
 			return nil, err
 		}
+	}
+	// Stopgap until the password step runs its slow work outside the
+	// transaction (NFR-002): the Argon2id check (or its dummy) needs a
+	// hashing slot, refused at once when none is free, and a step that may
+	// bind against a directory runs once (DB-014).
+	ctx, release, err := s.hashSlot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+	if ctx, err = s.directoryOnce(ctx, realmID); err != nil {
+		return nil, err
 	}
 	return s.step(ctx, realmID, id, p, func(tx pgx.Tx, t *Transaction) (map[string]any, error) {
 		if t.Pending.Identifier == "" {
@@ -596,12 +638,20 @@ func (s *Service) TOTP(ctx context.Context, realmID, id string, p Proof, code st
 		if t.UserID == "" || !primaryDone(t) {
 			return nil, problem.ErrUnexpectedStep
 		}
-		if r, err := s.evaluate(ctx, tx, t); err != nil {
+		r, err := s.evaluate(ctx, tx, t)
+		if err != nil {
 			return nil, err
-		} else if r.phishingResistant {
+		}
+		switch {
+		case r.upgrade && r.hasTOTP:
+			// An upgrade proof under the phishing-resistant profile (below).
+		case r.phishingResistant:
 			return nil, problem.ErrUnexpectedStep.WithDetail("a phishing-resistant authenticator is required")
-		} else if r.totpDisallowed {
+		case r.totpDisallowed:
 			return nil, problem.ErrUnexpectedStep.WithDetail("TOTP is not an allowed factor in this realm")
+		}
+		if err := s.offered(ctx, tx, t, "totp"); err != nil {
+			return nil, err
 		}
 		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
@@ -615,10 +665,15 @@ func (s *Service) TOTP(ctx context.Context, realmID, id string, p Proof, code st
 				Subject: &audit.Ref{Type: "user", ID: t.UserID}, Outcome: audit.Failure})
 			return nil, errProof(problem.ErrInvalidProof)
 		}
+		if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "mfa.totp.used", RealmID: t.RealmID, Actor: actorFor(t),
+			Subject: &audit.Ref{Type: "user", ID: t.UserID}, Metadata: map[string]any{"credential_id": credID, "upgrade_proof": r.upgrade}}); err != nil {
+			return nil, err
+		}
+		if r.upgrade {
+			return nil, s.recordUpgradeProof(ctx, tx, t, "totp", credID)
+		}
 		t.Factors = append(t.Factors, session.Factor{Type: "totp", At: s.d.Now(), CredentialID: credID})
-		_, err = s.d.Audit.Record(ctx, tx, audit.Event{Type: "mfa.totp.used", RealmID: t.RealmID, Actor: actorFor(t),
-			Subject: &audit.Ref{Type: "user", ID: t.UserID}, Metadata: map[string]any{"credential_id": credID}})
-		return nil, err
+		return nil, nil
 	})
 }
 
@@ -633,12 +688,20 @@ func (s *Service) HOTP(ctx context.Context, realmID, id string, p Proof, code st
 		if err != nil {
 			return nil, err
 		}
-		if r, err := s.evaluate(ctx, tx, t); err != nil {
+		r, err := s.evaluate(ctx, tx, t)
+		if err != nil {
 			return nil, err
-		} else if r.phishingResistant {
+		}
+		switch {
+		case r.upgrade && r.hasHOTP:
+			// An upgrade proof under the phishing-resistant profile (below).
+		case r.phishingResistant:
 			return nil, problem.ErrUnexpectedStep.WithDetail("a phishing-resistant authenticator is required")
-		} else if !r.hasHOTP {
+		case !r.hasHOTP:
 			return nil, problem.ErrUnexpectedStep.WithDetail("no counter-based token is usable in this realm")
+		}
+		if err := s.offered(ctx, tx, t, "hotp"); err != nil {
+			return nil, err
 		}
 		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
@@ -652,10 +715,15 @@ func (s *Service) HOTP(ctx context.Context, realmID, id string, p Proof, code st
 				Subject: &audit.Ref{Type: "user", ID: t.UserID}, Outcome: audit.Failure})
 			return nil, errProof(problem.ErrInvalidProof)
 		}
+		if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "mfa.hotp.used", RealmID: t.RealmID, Actor: actorFor(t),
+			Subject: &audit.Ref{Type: "user", ID: t.UserID}, Metadata: map[string]any{"credential_id": credID, "upgrade_proof": r.upgrade}}); err != nil {
+			return nil, err
+		}
+		if r.upgrade {
+			return nil, s.recordUpgradeProof(ctx, tx, t, "hotp", credID)
+		}
 		t.Factors = append(t.Factors, session.Factor{Type: "hotp", At: s.d.Now(), CredentialID: credID})
-		_, err = s.d.Audit.Record(ctx, tx, audit.Event{Type: "mfa.hotp.used", RealmID: t.RealmID, Actor: actorFor(t),
-			Subject: &audit.Ref{Type: "user", ID: t.UserID}, Metadata: map[string]any{"credential_id": credID}})
-		return nil, err
+		return nil, nil
 	})
 }
 
@@ -666,12 +734,20 @@ func (s *Service) RecoveryCode(ctx context.Context, realmID, id string, p Proof,
 		if t.UserID == "" || !primaryDone(t) {
 			return nil, problem.ErrUnexpectedStep
 		}
-		if r, err := s.evaluate(ctx, tx, t); err != nil {
+		r, err := s.evaluate(ctx, tx, t)
+		if err != nil {
 			return nil, err
-		} else if r.phishingResistant {
+		}
+		switch {
+		case r.upgrade && r.hasRecovery:
+			// An upgrade proof under the phishing-resistant profile (below).
+		case r.phishingResistant:
 			return nil, problem.ErrUnexpectedStep.WithDetail("a phishing-resistant authenticator is required")
-		} else if !r.hasRecovery {
+		case !r.hasRecovery:
 			return nil, problem.ErrUnexpectedStep.WithDetail("recovery codes are not available")
+		}
+		if err := s.offered(ctx, tx, t, "recovery_code"); err != nil {
+			return nil, err
 		}
 		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
@@ -685,10 +761,16 @@ func (s *Service) RecoveryCode(ctx context.Context, realmID, id string, p Proof,
 				Subject: &audit.Ref{Type: "user", ID: t.UserID}, Outcome: audit.Failure})
 			return nil, errProof(problem.ErrInvalidProof)
 		}
-		t.Factors = append(t.Factors, session.Factor{Type: "recovery", At: s.d.Now()})
 		if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "mfa.recovery_code.used", RealmID: t.RealmID, Actor: actorFor(t),
-			Subject: &audit.Ref{Type: "user", ID: t.UserID}, Metadata: map[string]any{"recovery_codes_remaining": remaining}}); err != nil {
+			Subject: &audit.Ref{Type: "user", ID: t.UserID}, Metadata: map[string]any{"recovery_codes_remaining": remaining, "upgrade_proof": r.upgrade}}); err != nil {
 			return nil, err
+		}
+		if r.upgrade {
+			if err := s.recordUpgradeProof(ctx, tx, t, "recovery_code", ""); err != nil {
+				return nil, err
+			}
+		} else {
+			t.Factors = append(t.Factors, session.Factor{Type: "recovery", At: s.d.Now()})
 		}
 		return nil, s.notifySecurity(ctx, tx, t.RealmID, t.UserID, notification.TplRecovery, "a recovery code was used to sign in")
 	})
@@ -704,8 +786,16 @@ func (s *Service) EnrollTOTP(ctx context.Context, realmID, id string, p Proof) (
 		if err != nil {
 			return nil, err
 		}
+		if r.phishingResistant {
+			// Only a passkey meets the profile (SEC-012); a TOTP enrolled
+			// here would also replace the account's recovery codes.
+			return nil, problem.ErrUnexpectedStep.WithDetail("a phishing-resistant authenticator is required")
+		}
 		if !slices.Contains(r.actions, identity.ActionConfigureTOTP) || r.totpDisallowed {
 			return nil, problem.ErrUnexpectedStep
+		}
+		if err := s.offered(ctx, tx, t, "enroll_totp"); err != nil {
+			return nil, err
 		}
 		rlm, err := s.Realms.ByID(ctx, tx, t.RealmID)
 		if err != nil {
@@ -729,6 +819,19 @@ func (s *Service) ActivateTOTP(ctx context.Context, realmID, id string, p Proof,
 	return s.step(ctx, realmID, id, p, func(tx pgx.Tx, t *Transaction) (map[string]any, error) {
 		if t.UserID == "" || !primaryDone(t) || t.Pending.PendingTOTPCredential == "" {
 			return nil, problem.ErrUnexpectedStep
+		}
+		// Activation replaces the account's TOTP and recovery codes: it is
+		// open only while enrollment is (the profile and the factor policy
+		// can change after totp/enroll).
+		r, err := s.evaluate(ctx, tx, t)
+		if err != nil {
+			return nil, err
+		}
+		if r.phishingResistant {
+			return nil, problem.ErrUnexpectedStep.WithDetail("a phishing-resistant authenticator is required")
+		}
+		if err := s.offered(ctx, tx, t, "enroll_totp"); err != nil {
+			return nil, err
 		}
 		codes, credID, err := s.ActivateTOTPTx(ctx, tx, t.RealmID, t.UserID, code, s.d.Cfg.Security.RecoveryCodeCount)
 		if err != nil {

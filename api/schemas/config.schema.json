@@ -714,6 +714,13 @@
           "type": "integer",
           "default": 0
         },
+        "max_concurrent_hashes": {
+          "description": "Most Argon2id password checks and hashes (sign-in, the timing-equalizing dummy check, password changes, resets and registration) one process runs at once (NFR-002). A full bound answers 503 unavailable with Retry-After at once instead of queueing behind a database transaction slot. 0 (the default): unbounded; the database transaction slots bound the password step today.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "default": 0
+        },
         "legacy_hashes_until": {
           "description": "End of the legacy-hash migration (CRED-004), a date YYYY-MM-DD (UTC, inclusive). Afterwards imported legacy verifiers (salted SHA-256, bcrypt and PBKDF2) neither verify nor import; affected accounts recover their password. Empty: legacy verifiers are accepted (and rehashed at sign-in).",
           "type": "string",
@@ -1155,6 +1162,18 @@
           "description": "Default timeout of one directory operation (bind, search page, modify; at most 2m); connectors may set their own.",
           "$ref": "#/$defs/duration",
           "default": "10s"
+        },
+        "sign_in_timeout": {
+          "description": "Overall deadline of the directory work of one sign-in attempt: the service bind, search and user bind across every endpoint and every connector tried (first sign-in provisioning included). The per-endpoint timeouts still apply inside it. At most 25s, below the 30s request deadline; 0 uses the default. When it passes the attempt answers 503 upstream_unavailable.",
+          "$ref": "#/$defs/duration",
+          "default": "8s"
+        },
+        "max_concurrent_binds": {
+          "description": "Most sign-in directory operations (password binds of directory-sourced accounts and first sign-in provisioning) one process runs at once. A full bound answers 503 unavailable with Retry-After at once, so a slow or unreachable directory cannot hold every database transaction slot. 0: half the storage transaction slots (7 with the default storage.max_conns of 20).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "default": 0
         },
         "max_entries_per_run": {
           "description": "Maximum entries (or candidate accounts) one synchronization or reconciliation run processes; a larger result fails the run without deprovisioning anything.",

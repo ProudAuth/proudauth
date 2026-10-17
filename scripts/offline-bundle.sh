@@ -69,7 +69,7 @@ done
 cp -R migrations deploy api "$OUT/"
 rm -f "$OUT/migrations/embed.go"
 mkdir -p "$OUT/docs"
-for d in architecture-decisions operations threat-models protocols integrations; do
+for d in architecture-decisions operations threat-models protocols integrations history; do
   [ -d "docs/$d" ] && cp -R "docs/$d" "$OUT/docs/"
 done
 for f in LICENSE NOTICE README.md SECURITY.md CHANGELOG.md; do

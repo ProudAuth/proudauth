@@ -48,6 +48,7 @@ import (
 	"github.com/proudauth/proudauth/internal/organization"
 	"github.com/proudauth/proudauth/internal/platform/ids"
 	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/slots"
 	"github.com/proudauth/proudauth/internal/runtime"
 	"github.com/proudauth/proudauth/internal/storage"
 )
@@ -75,6 +76,10 @@ type Service struct {
 	// password and their managed attributes stay read-only.
 	Disabled bool
 
+	// bindSlots bounds concurrent sign-in directory work
+	// (directory.max_concurrent_binds, signIn); nil: unbounded.
+	bindSlots *slots.Pool
+
 	healthMu sync.Mutex
 	health   map[string]*endpointHealth
 }
@@ -93,7 +98,22 @@ func New(d *runtime.Deps, users *identity.Service, orgs *organization.Service, a
 	s.Egress = egress.Policy{AllowPrivate: cfg.Directory.AllowPrivateNetwork, AllowCIDRs: cfg.Directory.EgressAllowlist}
 	s.Outbound = egress.Policy{AllowPrivate: cfg.Delivery.AllowPrivateWebhooks, AllowCIDRs: cfg.Delivery.EgressAllowlist,
 		RequireHTTPS: cfg.Mode == configuration.ModeProduction, Timeout: 10 * time.Second, MaxBytes: 1 << 20}
+	s.bindSlots = slots.New(BindSlots(cfg))
 	return s
+}
+
+// defaultSignInTimeout applies when directory.sign_in_timeout is unset.
+const defaultSignInTimeout = 8 * time.Second
+
+// BindSlots is the bound on concurrent sign-in directory work:
+// directory.max_concurrent_binds, or half the storage transaction slots, so
+// an unreachable directory can hold at most half of them while its sign-ins
+// wait for sign_in_timeout.
+func BindSlots(cfg *configuration.Config) int {
+	if n := cfg.Directory.MaxConcurrentBinds; n > 0 {
+		return n
+	}
+	return max(1, storage.TxSlots(cfg.Storage.MaxConns)/2)
 }
 
 // Connector is a directory or outbound provisioning connector. Credentials

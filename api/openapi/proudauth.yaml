@@ -12336,7 +12336,7 @@ paths:
                   description: Anything other than emergency is treated as planned.
                 algorithm:
                   type: string
-                  description: Defaults to keys.signing_algorithm.
+                  description: Defaults to the realm's current algorithm, that of its active key (keys.signing_algorithm when it has none). Refused with 409 while active resources pin another algorithm (resources member) or, for an algorithm other than PS256, ES256 or EdDSA, while the realm has fapi2 clients (clients member).
                 reason:
                   type: string
               additionalProperties: false
@@ -16357,7 +16357,7 @@ paths:
       tags:
         - Federation
       summary: Create an organization connection
-      description: "Organization-scoped federation connections managed by organization administrators (TEN-007). The connection is always scoped to the path organization; trusted-email linking is limited to the organization's verified domains; trust_upstream_mfa requires a realm administrator. Writes require an MFA session."
+      description: "Organization-scoped federation connections managed by organization administrators (TEN-007). The connection is always scoped to the path organization; trusted-email linking is limited to the organization's verified domains; jit_provisioning requires a non-empty config.allowed_email_domains of the organization's verified domains (422 on config.allowed_email_domains otherwise), and a just-in-time account's upstream email counts as verified only in those domains; trust_upstream_mfa requires a realm administrator. Writes require an MFA session."
       security:
         - accountToken: []
         - adminToken: []
@@ -16445,7 +16445,7 @@ paths:
       tags:
         - Federation
       summary: Update an organization connection
-      description: "Organization-scoped federation connections managed by organization administrators (TEN-007). The connection is always scoped to the path organization; trusted-email linking is limited to the organization's verified domains; trust_upstream_mfa requires a realm administrator. Writes require an MFA session."
+      description: "Organization-scoped federation connections managed by organization administrators (TEN-007). The connection is always scoped to the path organization; trusted-email linking is limited to the organization's verified domains; jit_provisioning requires a non-empty config.allowed_email_domains of the organization's verified domains (422 on config.allowed_email_domains otherwise), and a just-in-time account's upstream email counts as verified only in those domains; trust_upstream_mfa requires a realm administrator. Writes require an MFA session."
       security:
         - accountToken: []
         - adminToken: []
@@ -33436,7 +33436,7 @@ components:
           schema:
             "$ref": "#/components/schemas/Problem"
     ServiceUnavailable:
-      description: "Load shedding, realm unavailable or dependency failure (code unavailable, upstream_unavailable). May include Retry-After."
+      description: "Load shedding, realm unavailable or dependency failure, or a full per-process bound on password hashing or directory sign-in (code unavailable, upstream_unavailable). May include Retry-After."
       headers:
         X-Request-Id:
           "$ref": "#/components/headers/X-Request-Id"
@@ -40767,7 +40767,7 @@ components:
       properties:
         signing_algorithm:
           type: string
-          description: "Pins the access-token JWS algorithm (TOK-005). Must be in security.allowed_algorithms; symmetric algorithms and none are rejected. Issuance fails closed if the realm's active key uses another algorithm, and key rotation to another algorithm is refused while resources pin this one. Defaults to keys.signing_algorithm."
+          description: "Pins the access-token JWS algorithm (TOK-005). Must be in security.allowed_algorithms; symmetric algorithms and none are rejected. Issuance fails closed if the realm's active key uses another algorithm, and key rotation to another algorithm is refused while resources pin this one. Defaults to the realm's current algorithm, that of its active key (keys.signing_algorithm when it has none)."
         access_token_ttl_seconds:
           type: integer
         audience:

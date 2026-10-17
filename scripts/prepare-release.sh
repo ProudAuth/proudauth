@@ -1,7 +1,7 @@
 #!/bin/sh
 # Prepare a release in one step (GOV-005): every published reference to the
-# current version moves to the new one, and the CHANGELOG's Unreleased notes
-# become the new version's section.
+# current version moves to the new one, the CHANGELOG's Unreleased notes
+# become the new version's section, and its compare links move on.
 #
 #   scripts/prepare-release.sh v0.3.0
 #
@@ -49,8 +49,15 @@ section = re.search(r'^## \[Unreleased\]\n(.*?)(?=^## )', text, re.M | re.S)
 notes = section.group(1).strip() if section else ''
 if not notes or notes.startswith('No changes recorded'):
     raise SystemExit('Write the release notes under "## [Unreleased]" in CHANGELOG.md first; nothing was changed')
-updates['CHANGELOG.md'] = text[:section.start()] + (f'## [Unreleased]\n\nNo changes recorded after {new[1:]}.\n\n'
-                                                    f'## [{new[1:]}] - {date}\n\n{notes}\n\n') + text[section.end():]
+text = text[:section.start()] + (f'## [Unreleased]\n\nNo changes recorded after {new[1:]}.\n\n'
+                                f'## [{new[1:]}] - {date}\n\n{notes}\n\n') + text[section.end():]
+# Keep a Changelog links: Unreleased compares the new tag with main, and the
+# new version compares with the one it follows.
+link = re.search(r'^\[Unreleased\]: (https://github\.com/[\w.-]+/[\w.-]+)/compare/' + re.escape('v' + old) + r'\.\.\.main$', text, re.M)
+if not link:
+    raise SystemExit(f'CHANGELOG.md has no "[Unreleased]: https://github.com/OWNER/REPO/compare/v{old}...main" link; nothing was changed')
+updates['CHANGELOG.md'] = (text[:link.start()] + f'[Unreleased]: {link.group(1)}/compare/{new}...main\n'
+                           f'[{new[1:]}]: {link.group(1)}/compare/v{old}...{new}' + text[link.end():])
 for name, text in updates.items():
     Path(name).write_text(text)
 changed = counts
