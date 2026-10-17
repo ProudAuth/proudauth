@@ -512,46 +512,67 @@ type relEval struct {
 	orgID   string
 	subj    Subject
 	now     time.Time
-	member  bool
-	groups  []string
-	reads   int
-	types   map[string]*ResourceType
-	tuples  map[string][][3]string // object -> (relation, subject type, subject id)
+	// eligible: the organization is active and the subject may hold
+	// relationships in it now; when false nothing matches.
+	eligible bool
+	member   bool
+	groups   []string
+	reads    int
+	types    map[string]*ResourceType
+	tuples   map[string][][3]string // object -> (relation, subject type, subject id)
 }
 
+// newRelEval prepares the evaluation with the same tenant eligibility as
+// RBAC's effective (AZ-007, AZ-010, AZ-021): the organization must be active,
+// the subject an active account or service principal; a user counts as a
+// member only through an active, unexpired membership (also before the
+// expiry sweep), and through the groups groupClosure yields (stale or broken
+// dynamic groups excluded); a service principal only while it is allowed in
+// the organization (owner organization or allowed_organization_ids).
 func (s *Service) newRelEval(ctx context.Context, q storage.Querier, realmID, orgID string, subj Subject) (*relEval, error) {
 	if q == nil {
 		q = s.d.DB.Pool
 	}
 	e := &relEval{s: s, ctx: ctx, q: q, realmID: realmID, orgID: orgID, subj: subj, now: s.d.Now(), types: map[string]*ResourceType{},
 		tuples: map[string][][3]string{}}
-	if subj.Type == SubjectUser {
-		// Active membership, account and the groups (with ancestors) it is in.
-		if err := q.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.organization_id=$1 AND m.user_id=$2
-			AND m.state='active' AND u.state IN ('active','recovery_restricted'))`, orgID, subj.ID).Scan(&e.member); err != nil {
-			return nil, err
-		}
-		if !e.member {
+	if subj.Type != SubjectUser && subj.Type != SubjectService {
+		return e, nil // only users and service principals hold relationships
+	}
+	var orgActive bool
+	if err := q.QueryRow(ctx, `SELECT state='active' FROM organizations WHERE realm_id=$1 AND id=$2`, realmID, orgID).Scan(&orgActive); err != nil {
+		if storage.IsNoRows(err) {
 			return e, nil
 		}
-		rows, err := q.Query(ctx, `WITH RECURSIVE g(id, depth) AS (
-				SELECT gm.group_id, 0 FROM group_memberships gm JOIN memberships m ON m.id=gm.membership_id
-				WHERE m.organization_id=$1 AND m.user_id=$2 AND m.state='active'
-				AND (gm.valid_from IS NULL OR gm.valid_from <= $3) AND (gm.valid_until IS NULL OR gm.valid_until > $3)
-				UNION SELECT p.parent_id, g.depth+1 FROM groups p JOIN g ON p.id=g.id WHERE p.parent_id IS NOT NULL AND g.depth < 64)
-			SELECT DISTINCT id FROM g`, orgID, subj.ID, e.now)
+		return nil, err
+	}
+	if !orgActive {
+		return e, nil
+	}
+	if ok, err := s.subjectActive(ctx, q, realmID, subj); err != nil || !ok {
+		return e, err
+	}
+	switch subj.Type {
+	case SubjectUser:
+		var membershipID string
+		err := q.QueryRow(ctx, `SELECT m.id FROM memberships m JOIN organizations o ON o.id=m.organization_id
+			WHERE m.realm_id=$1 AND m.organization_id=$2 AND m.user_id=$3 AND m.state='active' AND o.state='active'
+			AND (m.expires_at IS NULL OR m.expires_at > $4)`, realmID, orgID, subj.ID, e.now).Scan(&membershipID)
+		if storage.IsNoRows(err) {
+			return e, nil
+		}
 		if err != nil {
 			return nil, err
 		}
-		for rows.Next() {
-			var id string
-			if err := rows.Scan(&id); err != nil {
-				rows.Close()
-				return nil, err
-			}
-			e.groups = append(e.groups, id)
+		groups, err := s.groupClosure(ctx, q, orgID, membershipID, e.now)
+		if err != nil {
+			return nil, err
 		}
-		rows.Close()
+		e.eligible, e.member, e.groups = true, true, groups
+	case SubjectService:
+		if err := q.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM service_principals WHERE realm_id=$1 AND id=$2 AND state='active'
+			AND ($3 = ANY(allowed_organization_ids) OR owner_organization_id=$3))`, realmID, subj.ID, orgID).Scan(&e.eligible); err != nil {
+			return nil, err
+		}
 	}
 	return e, nil
 }
@@ -601,7 +622,7 @@ func (e *relEval) objectTuples(objType, objID string) ([][3]string, error) {
 func (e *relEval) matches(subjType, subjID string) bool {
 	switch subjType {
 	case RelSubjectUser, RelSubjectService:
-		return subjType == e.subj.Type && subjID == e.subj.ID && (subjType != RelSubjectUser || e.member)
+		return e.eligible && subjType == e.subj.Type && subjID == e.subj.ID
 	case RelSubjectGroup:
 		return e.member && slices.Contains(e.groups, subjID)
 	case RelSubjectOrganization:
@@ -671,13 +692,14 @@ func (e *relEval) permitted(objType, objID, permission string, depth int) (bool,
 }
 
 // CheckObject decides whether a subject may perform permission on one object
-// through relationships (AZ-021). A bound reached is a denial.
+// through relationships (AZ-021). A bound reached is a denial, and so is an
+// organization that is not active or a subject not eligible in it.
 func (s *Service) CheckObject(ctx context.Context, q storage.Querier, realmID, orgID string, subj Subject, objType, objID, permission string) (bool, error) {
 	if orgID == "" || objID == "" {
 		return false, nil
 	}
 	e, err := s.newRelEval(ctx, q, realmID, orgID, subj)
-	if err != nil {
+	if err != nil || !e.eligible {
 		return false, err
 	}
 	return e.permitted(objType, objID, permission, 0)
@@ -697,6 +719,11 @@ func (s *Service) ListObjects(ctx context.Context, realmID, orgID string, subj S
 	if e.typ(objType) == nil {
 		return nil, false, problem.ErrValidation.WithField("resource.type", "unknown resource type")
 	}
+	if !e.eligible {
+		// An organization that is not active, or a subject not eligible in
+		// it, has no objects (as CheckObject denies).
+		return []string{}, false, nil
+	}
 	type ref struct{ typ, id string }
 	starts := [][2]string{{subj.Type, subj.ID}}
 	if e.member {
@@ -704,8 +731,6 @@ func (s *Service) ListObjects(ctx context.Context, realmID, orgID string, subj S
 		for _, g := range e.groups {
 			starts = append(starts, [2]string{RelSubjectGroup, g})
 		}
-	} else if subj.Type == SubjectUser {
-		return []string{}, false, nil
 	}
 	seen := map[ref]bool{}
 	candidates := []string{}

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/proudauth/proudauth/internal/identity"
 	"github.com/proudauth/proudauth/internal/worker"
 )
 
@@ -219,4 +220,172 @@ func TestRelationshipAuthorization(t *testing.T) {
 	if n < 5 {
 		t.Fatalf("relationship evidence: %d events", n)
 	}
+}
+
+// TestRelationshipTenantEligibility covers AZ-021 with AZ-007 and AZ-010:
+// relationship decisions and lists apply the tenant eligibility RBAC
+// applies. A suspended organization grants nothing, also to a realm-scoped
+// token that names it only in resource.org_id; a membership past its
+// expires_at counts as gone before the expiry sweep stores it; a dynamic
+// group whose recomputation is stale no longer matches; a service principal
+// matches only while active and allowed in the organization, also through
+// explicit-subject evaluation.
+func TestRelationshipTenantEligibility(t *testing.T) {
+	f := NewFixture(t)
+	h := f.H
+	ctx := context.Background()
+	mustStatus(t, f.SetPolicy(func(p *realmPolicy) {
+		p.Profile.Attributes = []identity.AttributeDef{{Name: "department", Type: "string", MaxLength: 64, Visibility: "admin", Source: "directory"}}
+	}), 200, "schema")
+	svc := f.MachineToken(f.Clients["orders-rs"], h.Realm.Issuer+"/admin", "proudauth:admin", "").Str("access_token")
+	f.must(f.AdminAPI("POST", "/permissions", map[string]any{"name": "docs.read"}), 201, "permission")
+	f.must(h.API("PUT", "/resource-types/document", svc, map[string]any{"resource_id": f.Orders,
+		"relations":   []map[string]any{{"name": "viewer", "subject_types": []string{"user", "group", "organization", "service_principal"}}},
+		"permissions": map[string][]string{"docs.read": {"viewer"}}}), 201, "document type")
+
+	// bob is in the dynamic group Sales through his department.
+	u := f.must(f.AdminAPI("GET", "/users/"+f.Users["bob"], nil), 200, "user")
+	mustStatus(t, h.Do(Req{Method: "PATCH", Path: "/api/v1/realms/main/users/" + f.Users["bob"], Token: f.AdminToken,
+		Headers: map[string]string{"If-Match": u.Header.Get("ETag")}, JSON: map[string]any{"profile": map[string]any{"department": "sales"}}}), 200, "department")
+	grp := f.must(f.AdminAPI("POST", "/organizations/"+f.Acme+"/groups", map[string]any{"name": "Sales"}), 201, "group").Str("id")
+	f.must(f.AdminAPI("PUT", "/organizations/"+f.Acme+"/groups/"+grp+"/dynamic-rule",
+		map[string]any{"all": []map[string]any{{"attribute": "department", "equals": "sales"}}}), 200, "dynamic rule")
+
+	batchSP := f.Clients["batch"].SP // allowed in Acme
+	tuple := func(id, st, sid string) map[string]any {
+		return map[string]any{"op": "add", "object_type": "document", "object_id": id, "relation": "viewer", "subject_type": st, "subject_id": sid}
+	}
+	f.must(h.API("POST", "/organizations/"+f.Acme+"/relationships", svc, map[string]any{"writes": []map[string]any{
+		tuple("doc_bob", "user", f.Users["bob"]), tuple("doc_group", "group", grp), tuple("doc_org", "organization", f.Acme),
+		tuple("doc_sp", "service_principal", batchSP)}}), 200, "tuples")
+
+	bob := map[string]any{"type": "user", "id": f.Users["bob"]}
+	sp := map[string]any{"type": "service_principal", "id": batchSP}
+	resource := func(id string) map[string]any {
+		r := map[string]any{"type": "document", "org_id": f.Acme}
+		if id != "" {
+			r["id"] = id
+		}
+		return r
+	}
+	// Explicit-subject evaluation (realm.authorization.simulate) by the administrator.
+	expect := func(subject map[string]any, id string, allowed bool, what string) {
+		t.Helper()
+		d := f.must(f.AdminAPI("POST", "/authorization/check", map[string]any{"subject": subject, "action": "docs.read", "resource": resource(id)}), 200, "check")
+		if d.Get("allowed") != allowed {
+			t.Fatalf("%s: %s on %s: %s", what, subject["type"], id, d.Raw)
+		}
+	}
+	listed := func(subject map[string]any) string {
+		t.Helper()
+		return jsonString(f.must(f.AdminAPI("POST", "/authorization/list-objects", map[string]any{"subject": subject, "action": "docs.read",
+			"resource": resource("")}), 200, "list objects").Get("objects"))
+	}
+	// A realm-scoped token (no org_id; the organization comes from the
+	// resource) for an audience that does not require an organization.
+	docs := f.must(f.AdminAPI("POST", "/resources", map[string]any{"name": "Docs API", "audience": "https://docs.test", "requires_organization": false,
+		"scopes": []map[string]any{{"name": "docs:read"}}}), 201, "docs resource").Str("id")
+	f.must(f.AdminAPI("POST", "/resources/"+docs+"/introspectors", map[string]any{"client": f.Clients["orders-rs"].Ref}), 204, "introspector")
+	f.must(f.AdminAPI("PUT", "/clients/"+f.Clients["web"].Ref+"/resource-grants/"+docs, map[string]any{"allowed_scopes": []string{"docs:read"},
+		"subject_types": []string{"user"}}), 204, "grant")
+	realmTok := f.LoginWeb("bob", "", "https://docs.test", "docs:read").Tokens.Str("access_token")
+	if c := h.Introspect(f.Clients["orders-rs"].ID, f.Clients["orders-rs"].Secret, realmTok); c.Get("active") != true || c.Str("org_id") != "" {
+		t.Fatalf("fixture: realm-scoped token: %s", c.Raw)
+	}
+	expectToken := func(id string, allowed bool, what string) {
+		t.Helper()
+		d := f.must(h.API("POST", "/authorization/check", svc, map[string]any{"subject_token": realmTok, "action": "docs.read", "resource": resource(id)}),
+			200, "token check")
+		if d.Get("allowed") != allowed {
+			t.Fatalf("%s: realm token on %s: %s", what, id, d.Raw)
+		}
+	}
+	listedToken := func() string {
+		t.Helper()
+		return jsonString(f.must(h.API("POST", "/authorization/list-objects", svc, map[string]any{"subject_token": realmTok, "action": "docs.read",
+			"resource": resource("")}), 200, "token list").Get("objects"))
+	}
+	all := `["doc_bob","doc_group","doc_org"]`
+	baseline := func(what string) {
+		t.Helper()
+		for _, id := range []string{"doc_bob", "doc_group", "doc_org"} {
+			expect(bob, id, true, what)
+		}
+		expect(sp, "doc_sp", true, what)
+		if l := listed(bob); l != all {
+			t.Fatalf("%s: listed for bob: %s", what, l)
+		}
+		if l := listed(sp); l != `["doc_sp"]` {
+			t.Fatalf("%s: listed for the service principal: %s", what, l)
+		}
+	}
+	baseline("before")
+	expectToken("doc_bob", true, "before")
+	if l := listedToken(); l != all {
+		t.Fatalf("realm token list before: %s", l)
+	}
+
+	// A suspended organization: the realm token stays active, but no
+	// relationship of the organization counts.
+	mustStatus(t, f.AdminAPI("POST", "/organizations/"+f.Acme+"/suspend", map[string]any{"reason": "billing hold"}), 200, "suspend")
+	for _, id := range []string{"doc_bob", "doc_group", "doc_org"} {
+		expectToken(id, false, "suspended organization")
+		expect(bob, id, false, "suspended organization")
+	}
+	expect(sp, "doc_sp", false, "suspended organization")
+	if l := listedToken(); l != `[]` {
+		t.Fatalf("realm token list in a suspended organization: %s", l)
+	}
+	if l := listed(sp); l != `[]` {
+		t.Fatalf("service principal list in a suspended organization: %s", l)
+	}
+	mustStatus(t, f.AdminAPI("POST", "/organizations/"+f.Acme+"/reactivate", map[string]any{"reason": "paid"}), 200, "reactivate")
+	baseline("after reactivation")
+	expectToken("doc_bob", true, "after reactivation")
+
+	// A membership past its expires_at, not yet swept (still 'active').
+	if _, err := h.App.D.DB.Pool.Exec(ctx, `UPDATE memberships SET expires_at=$2 WHERE id=$1`, f.MemberAcme["bob"], h.Clock.Now().Add(-time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"doc_bob", "doc_group", "doc_org"} {
+		expect(bob, id, false, "expired membership")
+		expectToken(id, false, "expired membership")
+	}
+	if l := listed(bob); l != `[]` {
+		t.Fatalf("list with an expired membership: %s", l)
+	}
+	if _, err := h.App.D.DB.Pool.Exec(ctx, `UPDATE memberships SET expires_at=NULL WHERE id=$1`, f.MemberAcme["bob"]); err != nil {
+		t.Fatal(err)
+	}
+	baseline("membership without an end")
+
+	// A service principal no longer allowed in the organization, then disabled.
+	if _, err := h.App.D.DB.Pool.Exec(ctx, `UPDATE service_principals SET allowed_organization_ids='{}' WHERE id=$1`, batchSP); err != nil {
+		t.Fatal(err)
+	}
+	expect(sp, "doc_sp", false, "service principal not allowed in the organization")
+	if l := listed(sp); l != `[]` {
+		t.Fatalf("list for a service principal not allowed in the organization: %s", l)
+	}
+	if _, err := h.App.D.DB.Pool.Exec(ctx, `UPDATE service_principals SET allowed_organization_ids=ARRAY[$2::text] WHERE id=$1`, batchSP, f.Acme); err != nil {
+		t.Fatal(err)
+	}
+	expect(sp, "doc_sp", true, "allowed again")
+	mustStatus(t, f.AdminAPI("POST", "/service-principals/"+batchSP+"/disable", nil), 204, "disable")
+	expect(sp, "doc_sp", false, "disabled service principal")
+	if l := listed(sp); l != `[]` {
+		t.Fatalf("list for a disabled service principal: %s", l)
+	}
+
+	// A stale dynamic group (no recomputation within the staleness window):
+	// its tuples stop matching; bob's own tuple and the organization's do not.
+	h.Clock.Advance(2 * time.Hour)
+	f.ReloginAdmin()
+	expect(bob, "doc_group", false, "stale dynamic group")
+	expect(bob, "doc_bob", true, "stale dynamic group")
+	if l := listed(bob); l != `["doc_bob","doc_org"]` {
+		t.Fatalf("list with a stale dynamic group: %s", l)
+	}
+	runWorker(t, worker.New(h.App, "test"))
+	expect(bob, "doc_group", true, "recomputed dynamic group")
 }
