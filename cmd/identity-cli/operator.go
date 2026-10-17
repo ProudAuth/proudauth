@@ -176,6 +176,9 @@ func init() {
 			return err
 		}
 		fmt.Println("configuration: ok")
+		if c.Mode == configuration.ModeProduction && len(c.Server.TrustedProxies) == 0 {
+			fmt.Println("WARNING server.trusted_proxies is empty: behind a reverse proxy every client shares one address for rate limits and audit records; set PROUDAUTH_TRUSTED_PROXIES (server.trusted_proxies) to the proxy's address or network")
+		}
 		app, env, err := localApp(*cfg)
 		if err != nil {
 			return err

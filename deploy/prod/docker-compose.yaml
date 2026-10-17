@@ -15,7 +15,8 @@ x-proudauth: &proudauth
     PROUDAUTH_MODE: production
     PROUDAUTH_HOST_POLICY: strict
     PROUDAUTH_PUBLIC_ORIGIN: ${PROUDAUTH_PUBLIC_ORIGIN:?Set PROUDAUTH_PUBLIC_ORIGIN (https) in .env}
-    PROUDAUTH_TRUSTED_PROXIES: ${PROUDAUTH_TRUSTED_PROXIES:-}
+    # Empty in .env means the stack's own network (see networks below).
+    PROUDAUTH_TRUSTED_PROXIES: ${PROUDAUTH_TRUSTED_PROXIES:-172.30.0.0/24}
     PROUDAUTH_DATABASE_URL: ${PROUDAUTH_DATABASE_URL:?Set PROUDAUTH_DATABASE_URL in .env}
     PROUDAUTH_ROOT_KEY: ${PROUDAUTH_ROOT_KEY:?Set PROUDAUTH_ROOT_KEY in .env (openssl rand -hex 32)}
     PROUDAUTH_EMAIL_ADAPTER: smtp
@@ -68,3 +69,13 @@ services:
       timeout: 10s
       retries: 8
       start_period: 10s
+
+networks:
+  # The stack's own network with a fixed address range, the default of
+  # PROUDAUTH_TRUSTED_PROXIES above: a reverse proxy on this machine reaches
+  # the server through this network's gateway; a proxy container joins it.
+  # Change NETWORK_SUBNET and PROUDAUTH_TRUSTED_PROXIES together.
+  default:
+    ipam:
+      config:
+        - subnet: ${NETWORK_SUBNET:-172.30.0.0/24}

@@ -229,7 +229,8 @@ x-proudauth: &proudauth
     PROUDAUTH_MODE: production
     PROUDAUTH_HOST_POLICY: strict
     PROUDAUTH_PUBLIC_ORIGIN: ${PROUDAUTH_PUBLIC_ORIGIN:?Set PROUDAUTH_PUBLIC_ORIGIN (https) in .env}
-    PROUDAUTH_TRUSTED_PROXIES: ${PROUDAUTH_TRUSTED_PROXIES:-}
+    # Empty in .env means the stack's own network (see networks below).
+    PROUDAUTH_TRUSTED_PROXIES: ${PROUDAUTH_TRUSTED_PROXIES:-172.30.0.0/24}
     PROUDAUTH_DATABASE_URL: ${PROUDAUTH_DATABASE_URL:?Set PROUDAUTH_DATABASE_URL in .env}
     PROUDAUTH_ROOT_KEY: ${PROUDAUTH_ROOT_KEY:?Set PROUDAUTH_ROOT_KEY in .env (openssl rand -hex 32)}
     PROUDAUTH_EMAIL_ADAPTER: smtp
@@ -282,6 +283,16 @@ services:
       timeout: 10s
       retries: 8
       start_period: 10s
+
+networks:
+  # The stack's own network with a fixed address range, the default of
+  # PROUDAUTH_TRUSTED_PROXIES above: a reverse proxy on this machine reaches
+  # the server through this network's gateway; a proxy container joins it.
+  # Change NETWORK_SUBNET and PROUDAUTH_TRUSTED_PROXIES together.
+  default:
+    ipam:
+      config:
+        - subnet: ${NETWORK_SUBNET:-172.30.0.0/24}
 ```
 
 ### 2. Create `.env`
@@ -295,7 +306,9 @@ PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:0.2.0-alpha.4
 
 # Your HTTPS address, for example https://id.example.com (choose it once)
 PROUDAUTH_PUBLIC_ORIGIN=
-# Your reverse proxy's IP as the container sees it (optional)
+# Your reverse proxy as the container sees it. Empty means the stack's own
+# network (NETWORK_SUBNET below), which covers a proxy on this machine and a
+# proxy container that joins that network; set it if your proxy is elsewhere.
 PROUDAUTH_TRUSTED_PROXIES=
 
 # postgres://USER:PASSWORD@HOST:5432/DB?sslmode=require
@@ -316,6 +329,9 @@ PROUDAUTH_EMAIL_FROM=
 PROUDAUTH_LOG_LEVEL=info
 PUBLIC_BIND=127.0.0.1
 PUBLIC_PORT=8080
+# The stack's private Docker network; if it clashes with a network you use,
+# change it here and in PROUDAUTH_TRUSTED_PROXIES
+NETWORK_SUBNET=172.30.0.0/24
 ```
 
 | Value | What to put |
@@ -349,6 +365,47 @@ docker compose exec server identity-cli login --url https://id.example.com --rea
 
 The first sign-in adds an authenticator app and verifies your email.
 
+### Reverse proxy
+
+Your HTTPS proxy terminates TLS, keeps the original `Host` header and adds
+`X-Forwarded-For`. `PROUDAUTH_TRUSTED_PROXIES` names the proxy as the
+container sees it. Left empty, it is the stack's own network
+(`NETWORK_SUBNET`), which covers a proxy on this machine (it arrives through
+the network's gateway) and a proxy container that joins the network; set it
+when your proxy is elsewhere. If the server receives `X-Forwarded-For` from an
+address it does not trust, it treats every request as coming from the proxy,
+so all your users share one address for sign-in rate limits and audit
+records, and it logs a warning once a minute.
+
+Caddy (`Caddyfile`; it forwards `Host` and sets `X-Forwarded-For` by default):
+
+```caddyfile
+id.example.com {
+	reverse_proxy 127.0.0.1:8080
+}
+```
+
+nginx (`server` block; certificates as in your setup):
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name id.example.com;
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+}
+```
+
+A proxy running as a container (for example Caddy or Traefik in another
+Compose project) joins this stack's network (`docker network connect
+proudauth_default <proxy container>`, or an `external` network in its own
+Compose file) and forwards to `server:8080`; the default
+`PROUDAUTH_TRUSTED_PROXIES` already covers it.
+
 ### Good to know
 
 - **Upgrade:** back up the database, change the version in `PROUDAUTH_IMAGE`,
@@ -356,7 +413,7 @@ The first sign-in adds an authenticator app and verifies your email.
 - **Keep `PROUDAUTH_ROOT_KEY` safe** with your database backups: without it,
   stored keys cannot be read.
 - **Reverse proxy:** forward the original `Host` header; other hosts get `421`.
-  Set `PROUDAUTH_TRUSTED_PROXIES` to the proxy's address to pass client IPs.
+  `PROUDAUTH_TRUSTED_PROXIES` must cover the proxy (see [Reverse proxy](#reverse-proxy)).
 - **Logs:** `docker compose logs -f server worker`.
 - **Limits:** a single node; values in `.env` are visible to anyone with Docker
   access (`docker inspect`); separate database roles need the YAML
