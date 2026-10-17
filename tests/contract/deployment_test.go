@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -298,7 +299,13 @@ func TestDeployReleaseArtifacts(t *testing.T) {
 	image := index(func(s map[string]any) bool {
 		r, _ := s["run"].(string)
 		return strings.Contains(r, "docker push") ||
-			regexp.MustCompile(`(?m)^\s*docker buildx build(?:[^\n]*\\\n)*[^\n]*\s--push\b`).MatchString(r)
+			regexp.MustCompile(`(?m)^\s*docker buildx build(?:[^\n]*\\\n)*[^\n]*\s(?:--push\b|--output "type=image,[^"]*push=true,push-by-digest=true)`).MatchString(r)
+	})
+	sign := index(runs("cosign sign --yes"))
+	tag := index(runs("docker buildx imagetools create"))
+	verify := index(func(s map[string]any) bool {
+		r, _ := s["run"].(string)
+		return strings.Contains(r, "cosign verify") && strings.Contains(r, "gh attestation verify") && strings.Contains(r, "sha256sum -c SHA256SUMS")
 	})
 	digest := index(runs("dist/IMAGE_DIGEST"))
 	sourceSBOM := index(runs("syft@"))
@@ -314,7 +321,7 @@ func TestDeployReleaseArtifacts(t *testing.T) {
 	publish := index(runs("gh release create"))
 	for name, i := range map[string]int{"image push": image, "image digest record": digest, "source SBOM": sourceSBOM, "image SBOM": imageSBOM,
 		"offline bundle": bundle, "image provenance": imageProvenance, "image SBOM attestation": sbomAttestation, "checksums": checksums,
-		"release file provenance": fileProvenance, "publish": publish} {
+		"release file provenance": fileProvenance, "image signature": sign, "image tag": tag, "operator verification": verify, "publish": publish} {
 		if i < 0 {
 			t.Errorf("release.yml has no %s step", name)
 		}
@@ -327,6 +334,20 @@ func TestDeployReleaseArtifacts(t *testing.T) {
 	}
 	if !(checksums > bundle && checksums > digest && checksums > imageSBOM && fileProvenance > checksums && publish > fileProvenance) {
 		t.Error("SHA256SUMS must be written after every release file exists, then attested, then published")
+	}
+	// The image is pushed by digest; its version tags are written only after
+	// provenance, SBOM attestations and the signature exist for that digest,
+	// and the job verifies its outputs as an operator would before publishing.
+	if r, _ := deployDig(steps[image], "run").(string); !strings.Contains(r, "push-by-digest=true") || regexp.MustCompile(`-t "\$\{IMAGE\}:`).MatchString(r) {
+		t.Error("the image must be pushed by digest only, with no tag, so that a tag never names an unsigned image")
+	}
+	if !(tag > sign && tag > imageProvenance && tag > sbomAttestation && verify > tag && publish > verify) {
+		t.Error("the image must be attested and signed before it is tagged, then verified (checksums, attestations, signature) before the release is published")
+	}
+	// yaml.v3 decodes "workflow_dispatch:" with no inputs as a nil value, so
+	// test for the key.
+	if on, _ := deployDig(rel, "on").(map[string]any); on == nil || !slices.Contains(slices.Collect(maps.Keys(on)), "workflow_dispatch") {
+		t.Error("release.yml must offer workflow_dispatch: the dry run that exercises push, attestation, signing and verification against the staging package before a tag")
 	}
 	if p, _ := deployDig(steps[fileProvenance], "with", "subject-path").(string); p != "dist/*" {
 		t.Errorf("file provenance must cover every release file, got %q", p)

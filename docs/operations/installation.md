@@ -23,9 +23,9 @@ image works with a read-only root filesystem. The
 provides Linux/macOS binaries, checksums and source-free installation assets.
 For a single-machine installation, follow the
 [Docker Compose guide](docker-compose.md) and [complete `.env` reference](environment.md).
-Pull `ghcr.io/proudauth/proudauth:0.2.0-alpha.4` or the maintainer's Docker Hub
-mirror `mohamadalialghanem/proudauth:0.2.0-alpha.4`. The published registry image
-supports Linux amd64 and arm64; the offline release image archive is amd64,
+Pull `ghcr.io/proudauth/proudauth:0.2.0-alpha.4`; GHCR is the only registry
+this project publishes to (the earlier Docker Hub mirror is not updated). The
+published registry image supports Linux amd64 and arm64; the offline release image archive is amd64,
 with binaries supplied for both Linux architectures. This is pre-release
 software with no completed external security review or certification.
 To build locally, use `make image VERSION=0.2.0-alpha.4` or `go build ./cmd/...`.
@@ -36,7 +36,10 @@ Releases are built only by `.github/workflows/release.yml` from a tag, after
 the full CI suite passed on that commit (DEP-003, SEC-016). Each release has
 `SHA256SUMS` over every file, build-provenance attestations for the files and
 the image, an SBOM attestation for the image, and a keyless cosign signature
-of the multi-platform image digest (`IMAGE_DIGEST`). Per-platform image SBOMs
+of the multi-platform image digest (`IMAGE_DIGEST`). The image is pushed by
+digest and receives its version tags only after it is attested and signed, and
+the workflow runs the commands below on its own outputs before it publishes
+anything. Per-platform image SBOMs
 are `image-sbom.spdx.json` (amd64) and `image-sbom-linux-arm64.spdx.json`.
 Before installing:
 
@@ -46,8 +49,12 @@ gh attestation verify identity-server_linux_amd64 --repo proudauth/proudauth
 gh attestation verify "oci://$(cat IMAGE_DIGEST)" --repo proudauth/proudauth
 cosign verify "$(cat IMAGE_DIGEST)" \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp '^https://github.com/proudauth/proudauth/\.github/workflows/release\.yml@refs/tags/v'
+  --certificate-identity-regexp '(?i)^https://github\.com/proudauth/proudauth/\.github/workflows/release\.yml@refs/tags/v'
 ```
+
+The signing identity carries the organization's display name, `ProudAuth`, so
+the pattern matches case-insensitively; a pattern with lowercase `proudauth`
+alone rejects releases v0.2.0-alpha.3 and later.
 
 Deploy the image by its verified immutable digest (the content of `IMAGE_DIGEST`).
 Base images and the builder use immutable digests; external GitHub Actions use
