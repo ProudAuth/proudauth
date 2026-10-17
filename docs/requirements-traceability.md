@@ -575,7 +575,7 @@ TEST cases (plan section 34): 72 of 72 are cited by at least one test.
 
 | ID | P | Requirement | Status | Tests | Code | Documents |
 | --- | --- | --- | --- | --- | --- | --- |
-| SEC-001 | P0 | TLS and proxy trust | Tested | `TestTrustedProxyForwarding (tests/e2e/network_test.go)` | `api/schemas/`, `internal/configuration/`, `internal/httpapi/`, +1 more | — |
+| SEC-001 | P0 | TLS and proxy trust | Tested | `TestTrustedProxyForwarding (tests/e2e/network_test.go)`, `TestUntrustedForwardedForWarnsOnceAMinute (internal/httpapi/forwarded_test.go)` | `api/schemas/`, `internal/configuration/`, `internal/httpapi/`, +1 more | — |
 | SEC-002 | P0 | CSRF protection | Tested | `tests/e2e/saml_test.go` | `internal/authentication/`, `internal/httpapi/` | [0017-external-login-ui.md](architecture-decisions/0017-external-login-ui.md), [backend-for-frontend.md](integrations/backend-for-frontend.md), [installation.md](operations/installation.md), +2 more |
 | SEC-003 | P0 | CORS allowlists | Tested | `TestCORSAllowlist (tests/e2e/foundations_ops_test.go)` | `internal/httpapi/` | [0017-external-login-ui.md](architecture-decisions/0017-external-login-ui.md) |
 | SEC-004 | P0 | Input validation | Tested | `FuzzRejectDuplicateKeys (internal/token/fuzz_test.go)` | `api/schemas/`, `internal/httpapi/`, `internal/oauth/` | — |

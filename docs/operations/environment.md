@@ -16,7 +16,7 @@ to its configuration key.
 | --- | --- | --- |
 | `PROUDAUTH_IMAGE` | Release image, pinned to the archive's version, for example `ghcr.io/proudauth/proudauth:0.2.0-alpha.4`. Use a digest for a controlled deployment. GHCR is the only registry the project publishes to. | The same release image; `make dev` runs `proudauth:dev`, built from the checkout. |
 | `PROUDAUTH_PUBLIC_ORIGIN` | **Required.** Your HTTPS origin without a path. It becomes a realm's issuer when the realm is created; changing it later does not move an existing realm. | `http://localhost:8080`; change it together with `PUBLIC_PORT`. |
-| `PROUDAUTH_TRUSTED_PROXIES` | Comma-separated IPs/CIDRs of your reverse proxy as the container sees it. Empty trusts no forwarding headers. | Empty. |
+| `PROUDAUTH_TRUSTED_PROXIES` | Comma-separated IPs/CIDRs of your reverse proxy as the container sees it. Empty means the stack's own network (`NETWORK_SUBNET`), which covers a proxy on the same machine and a proxy container that joins the network; set it when the proxy is elsewhere. A forwarding header from an address outside this list is ignored: every user behind that proxy then shares one address for rate limits and audit records, and the server warns once a minute. | Empty: no proxy, headers ignored. |
 | `PROUDAUTH_DATABASE_URL` | **Required.** `postgres://USER:PASSWORD@HOST:5432/DB?sslmode=require`; the user owns the database. `host.docker.internal` reaches the Docker host. | The bundled PostgreSQL container. |
 | `PROUDAUTH_ROOT_KEY` | **Required.** 64 hexadecimal digits from `openssl rand -hex 32`. Back it up with the database. | A fixed, public development key. |
 | `PROUDAUTH_SMTP_HOST` | **Required.** Your SMTP relay. | `mailpit`. |
@@ -28,6 +28,7 @@ to its configuration key.
 | `PROUDAUTH_LOG_LEVEL` | `info`, `warn` or `error`; `debug` is refused in production. | `info`. |
 | `PUBLIC_BIND` | Host address the reverse proxy connects to; default `127.0.0.1`. | Always `127.0.0.1`. |
 | `PUBLIC_PORT` | Host port of the identity API; default `8080`. | `8080`. |
+| `NETWORK_SUBNET` | Address range of the stack's own Docker network, default `172.30.0.0/24`; change it together with `PROUDAUTH_TRUSTED_PROXIES` if it clashes with a network you use. | Not used. |
 | `OPERATOR_PORT` | Not published. | `9090`: `/status` and `/metrics` on `127.0.0.1`. |
 | `MAIL_PORT` | — | `8025`: the Mailpit inbox. |
 | `SWAGGER_PORT` | — | `8081`: Swagger UI for `api/openapi/`. |

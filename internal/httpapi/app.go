@@ -69,19 +69,22 @@ type App struct {
 	Maintenance *maintenance.Cache
 	// Draining is set at shutdown so readiness fails before listeners close
 	// (OPS-012).
-	Draining   atomic.Bool
-	Metrics    *observability.Metrics
-	Realms     *realm.Service
-	Apps       *application.Service
-	Users      *identity.Service
-	Authz      *authorization.Service
-	Sessions   *session.Service
-	Orgs       *organization.Service
-	Notify     *notification.Service
-	Limiter    *ratelimit.Limiter
-	Auth       *authentication.Service
-	Passkeys   *passkey.Service
-	Federation *federation.Service
+	Draining atomic.Bool
+	// forwardWarnedAt is when the last warning about X-Forwarded-For from
+	// an untrusted peer was logged (Unix seconds), one a minute at most.
+	forwardWarnedAt atomic.Int64
+	Metrics         *observability.Metrics
+	Realms          *realm.Service
+	Apps            *application.Service
+	Users           *identity.Service
+	Authz           *authorization.Service
+	Sessions        *session.Service
+	Orgs            *organization.Service
+	Notify          *notification.Service
+	Limiter         *ratelimit.Limiter
+	Auth            *authentication.Service
+	Passkeys        *passkey.Service
+	Federation      *federation.Service
 	// SAML is the SAML identity provider profile (APP-018); SAMLKeys are the
 	// realm SAML signing keys, shared with SAML connections (FED-014). Both
 	// are nil unless saml.enabled.
