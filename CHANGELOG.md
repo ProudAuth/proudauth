@@ -2,9 +2,10 @@
 
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and the project
-will use [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once a first
-version is tagged. During 0.x, any minor version can contain breaking changes;
-they are listed under **Changed** or **Removed** with migration notes.
+uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html); 0.2.0 is
+published as prereleases (`v0.2.0-alpha.N`). During 0.x, any minor version can
+contain breaking changes; they are listed under **Changed** or **Removed** with
+migration notes.
 
 Security fixes name the affected versions and link the advisory (QA-008,
 GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).

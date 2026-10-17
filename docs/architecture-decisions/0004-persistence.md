@@ -39,7 +39,8 @@ PostgreSQL is the only durable store and the authority for all security state.
   (`migrations/embed.go`), applied in lexical order under
   `pg_advisory_lock(727274001)`, each in its own transaction, with a SHA-256
   checksum recorded in `schema_migrations`.
-- **Tested versions:** PostgreSQL 17 (CI) and 18 (development Compose file).
+- **Tested versions:** PostgreSQL 18.x is the only supported version; CI and the
+  development Compose file run 18.6.
 
 ## Alternatives considered
 

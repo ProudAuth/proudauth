@@ -593,7 +593,7 @@ TEST cases (plan section 34): 72 of 72 are cited by at least one test.
 | SEC-016 | P1 | Supply-chain safeguards | Tested | `TestLocalReproductionRefusesMismatches (tests/contract/repro_local_test.go)`, `TestReleaseSupplyChain (tests/contract/foundations_test.go)`, `TestReleaseToolchainPinned (tests/contract/toolchain_test.go)`, `TestWorkflowActionsPinned (tests/contract/toolchain_test.go)`, +1 more | `./`, `.github/`, `.github/workflows/`, +1 more | [0002-go-implementation.md](architecture-decisions/0002-go-implementation.md), [0003-apache-2-license.md](architecture-decisions/0003-apache-2-license.md), [README.md](operations/README.md), +3 more |
 | SEC-017 | P0 | Isolation tests | Tested | `TestTenantCrossingMatrix (tests/e2e/tenant_matrix_test.go)` | — | — |
 | SEC-018 | P1 | Independent review | Open (external): no external security review has been performed; the [README](../README.md) and [threat models](threat-models/README.md) say so | `tests/contract/traceability_test.go` | — | [service-status.md](service-status.md), [README.md](threat-models/README.md), [cross-system-trust.md](threat-models/cross-system-trust.md), +5 more |
-| SEC-019 | P0 | Disclosure process | Tested | `tests/contract/traceability_test.go` | — | [SECURITY.md](../SECURITY.md) |
+| SEC-019 | P0 | Disclosure process | Tested | `TestDocsDoNotDenyPublishedReleases (tests/contract/release_state_test.go)`, `tests/contract/traceability_test.go` | — | [SECURITY.md](../SECURITY.md) |
 | SEC-020 | P1 | Emergency controls | Tested | `TestEmergencyControls (tests/e2e/emergency_test.go)`, `tests/e2e/runbooks_test.go` | `api/openapi/`, `internal/application/`, `internal/audit/`, +10 more | [0021-no-embedded-code-execution.md](architecture-decisions/0021-no-embedded-code-execution.md), [plugins.md](integrations/plugins.md), [saml.md](integrations/saml.md), +3 more |
 
 ## PRV
@@ -802,10 +802,10 @@ TEST cases (plan section 34): 72 of 72 are cited by at least one test.
 | GOV-002 | P0 | Contribution provenance | Tested | `tests/contract/traceability_test.go` | — | [0003-apache-2-license.md](architecture-decisions/0003-apache-2-license.md), [CONTRIBUTING.md](../CONTRIBUTING.md) |
 | GOV-003 | P0 | Security reporting | Tested | `tests/contract/traceability_test.go` | — | [CHANGELOG.md](../CHANGELOG.md), [SECURITY.md](../SECURITY.md) |
 | GOV-004 | P0 | Review boundaries | Tested | `TestCodeOwnersReviewBoundaries (tests/contract/governance_test.go)` | `.github/`, `.github/workflows/` | [CHANGELOG.md](../CHANGELOG.md), [CONTRIBUTING.md](../CONTRIBUTING.md) |
-| GOV-005 | P1 | Release transparency | Tested | `TestPrepareReleaseMovesEveryVersionReference (tests/contract/release_prepare_test.go)`, `TestReleaseTransparency (tests/contract/governance_test.go)` | `.github/workflows/`, `scripts/` | [security-checks.md](operations/security-checks.md), [CHANGELOG.md](../CHANGELOG.md) |
+| GOV-005 | P1 | Release transparency | Tested | `TestDocsDoNotDenyPublishedReleases (tests/contract/release_state_test.go)`, `TestPrepareReleaseMovesEveryVersionReference (tests/contract/release_prepare_test.go)`, `TestReleaseTransparency (tests/contract/governance_test.go)` | `.github/workflows/`, `scripts/` | [security-checks.md](operations/security-checks.md), [CHANGELOG.md](../CHANGELOG.md) |
 | GOV-006 | P1 | Sustainable maintenance | Tested | `tests/contract/traceability_test.go` | — | [README.md](integrations/README.md), [sdk-compatibility.md](integrations/sdk-compatibility.md) |
 | GOV-007 | P0 | No privileged paid branch | Tested | `TestNoEditionGating (tests/contract/governance_test.go)` | `scripts/` | [0002-go-implementation.md](architecture-decisions/0002-go-implementation.md), [0003-apache-2-license.md](architecture-decisions/0003-apache-2-license.md), [feature_request.md](../.github/ISSUE_TEMPLATE/feature_request.md) |
-| GOV-008 | P1 | Documentation parity | Tested | `tests/contract/traceability_test.go` | — | [CONTRIBUTING.md](../CONTRIBUTING.md) |
+| GOV-008 | P1 | Documentation parity | Tested | `TestDocsDoNotDenyPublishedReleases (tests/contract/release_state_test.go)`, `tests/contract/traceability_test.go` | — | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 
 ## TEST cases
 
