@@ -12,13 +12,15 @@ import (
 
 // releaseStateExcluded are the documents TestDocsDoNotDenyPublishedReleases
 // does not read: the specification, whose dated checkpoints describe the
-// checkout they were written for; the generated traceability matrix; and the
-// directories of recorded benchmark, consistency and release evidence, which
-// keep the wording of the snapshot they record. A directory ends in "/" and
+// checkout they were written for; the generated traceability matrix; the
+// development history kept verbatim under docs/history/; and the directories
+// of recorded benchmark, consistency and release evidence, which keep the
+// wording of the snapshot they record. A directory ends in "/" and
 // excludes everything below it; anything else names exactly one file.
 var releaseStateExcluded = []string{
 	"docs/plan.md",
 	"docs/requirements-traceability.md",
+	"docs/history/",
 	"docs/operations/bench-results/",
 	"docs/operations/consistency-results/",
 	"docs/operations/release-results/",
