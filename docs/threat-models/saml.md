@@ -5,8 +5,14 @@ Scope: the SAML 2.0 identity provider (SAML applications, APP-018) and broker
 [docs/integrations/saml.md](../integrations/saml.md). Method as in
 [system.md](system.md): assets, trust boundaries and STRIDE, each mitigation
 naming the code and the test that exercises it. This is the project's own
-code review, not an independent assessment (SEC-018), and the SAML code has
-not been exercised against any third-party SAML product (SAML-010, QA-004).
+code review, not an independent assessment (SEC-018). Both SAML roles are
+tested against the project's own test SP and IdP and, weekly in the `interop`
+workflow (`scripts/interop-keycloak.sh`), against one third-party product,
+Keycloak 26.8.0, in the profiles and with the gaps listed in
+[interoperability.md](../integrations/interoperability.md#keycloak-2680-protocol-profiles).
+No other SAML implementation (for example Shibboleth, SimpleSAMLphp or ADFS)
+has been exercised, and no SAML conformance suite has been run (SAML-010,
+QA-004).
 
 ## Assets
 

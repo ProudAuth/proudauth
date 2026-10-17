@@ -6,9 +6,17 @@ directory-authoritative accounts and outbound SCIM provisioning
 [outbound-provisioning.md](../integrations/outbound-provisioning.md);
 PROV-010..PROV-014, PROV-017, PROV-018, FED-015, USR-022). Inbound SCIM is
 covered in [system.md](system.md). Method as in system.md. This is the
-project's own code review, not an independent assessment (SEC-018), and the
-code has been tested only against the in-process `ldaptest` server and an
-in-process SCIM double, not real directories or SCIM services (QA-004).
+project's own code review, not an independent assessment (SEC-018). LDAP
+sign-in, synchronization, failover and write-back are tested only against the
+in-process `ldaptest` server, which serves OpenLDAP- and Active
+Directory-style entries; no real OpenLDAP, Active Directory or other LDAP
+server has been exercised yet. Outbound SCIM is tested against an in-process
+SCIM double and, weekly in the `interop` workflow
+(`scripts/interop-zitadel.sh`), against one third-party SCIM service provider,
+ZITADEL v4.16.3, for users only (no groups), in the profile listed in
+[interoperability.md](../integrations/interoperability.md#third-party-products);
+no other downstream SCIM service has received pushes, and no SCIM conformance
+suite has been run (QA-004).
 
 ## Assets
 
