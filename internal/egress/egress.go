@@ -111,8 +111,16 @@ func HostMatches(host string, list []string) bool {
 }
 
 // Allowed reports whether ip may be contacted under the policy.
+//
+// A zone (fe80::1%eth0, fc00::%0) scopes an address to one link. netip
+// prefixes never contain a zoned address, so comparing the address as given
+// would let a zoned private or loopback literal past every blocked range
+// (SEC-007; found by FuzzAllowed). The ranges are compared without the zone,
+// and a zoned address is never public: it is reachable only with
+// allow_private_network or an explicit CIDR.
 func (p Policy) Allowed(ip netip.Addr) bool {
-	ip = ip.Unmap()
+	zoned := ip.Zone() != ""
+	ip = ip.Unmap().WithZone("")
 	for _, c := range p.AllowCIDRs {
 		if pfx, err := netip.ParsePrefix(strings.TrimSpace(c)); err == nil && pfx.Contains(ip) {
 			return true
@@ -120,6 +128,9 @@ func (p Policy) Allowed(ip netip.Addr) bool {
 	}
 	if p.AllowPrivate {
 		return !ip.IsUnspecified() && !ip.IsMulticast()
+	}
+	if zoned {
+		return false
 	}
 	for _, b := range blockedPrefixes {
 		if b.Contains(ip) {
