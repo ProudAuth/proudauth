@@ -3,9 +3,12 @@ package federation
 import (
 	"context"
 	"regexp"
+	"slices"
 	"sort"
+	"strings"
 	"sync"
 
+	"github.com/proudauth/proudauth/internal/platform/canonical"
 	"github.com/proudauth/proudauth/internal/platform/problem"
 )
 
@@ -116,7 +119,9 @@ func init() {
 	// Google: one issuer for consumer and Workspace accounts. The subject is
 	// stable per Google account; a Workspace domain is the "hd" claim, so
 	// allowed_tenants restricts sign-in to listed Workspace domains (consumer
-	// accounts carry no hd and are then refused).
+	// accounts carry no hd and are then refused). Google's email_verified is
+	// believed only where Google is authoritative for the address (see
+	// googleEmailAuthoritative).
 	RegisterAdapter(&Adapter{Name: AdapterGoogle, OIDC: true, EmailLinkable: true, Prepare: func(in *Input) error {
 		if in.Issuer == "" {
 			in.Issuer = "https://accounts.google.com"
@@ -131,6 +136,10 @@ func init() {
 			in.Config.Scopes = []string{"openid", "email", "profile"}
 		}
 		return nil
+	}, Normalize: func(p *Provider, up *Upstream, claims map[string]any) {
+		if up.EmailVerified && !googleEmailAuthoritative(up.Email, claims) {
+			up.EmailVerified = false
+		}
 	}})
 	// Microsoft Entra ID (work and school accounts): a per-tenant issuer
 	// selected by the "tid" claim, so allowed_tenants is mandatory. The
@@ -181,6 +190,35 @@ func normalize(p *Provider, up *Upstream, claims map[string]any) {
 	if !a.EmailLinkable {
 		up.EmailVerified = false
 	}
+}
+
+// googleConsumerDomains are the domains of consumer Google accounts, whose
+// addresses Google issues itself.
+var googleConsumerDomains = []string{"gmail.com", "googlemail.com"}
+
+// googleEmailAuthoritative reports whether Google is authoritative for email
+// (FED-002, FED-004): a consumer Gmail address, or a Workspace account whose
+// "hd" claim names the address's own domain. Any other Google account may
+// carry email_verified=true for an address in a domain Google does not run
+// (a consumer account registered with a corporate address, or a former
+// employee's), and that assertion must not verify or link a local address.
+// The hd claim is read from the ID token itself: the connection's tenant is
+// filled in only when allowed_tenants is configured.
+func googleEmailAuthoritative(email string, claims map[string]any) bool {
+	c, _, err := canonical.Email(email)
+	if err != nil {
+		return false
+	}
+	domain := canonical.EmailDomain(c)
+	if slices.Contains(googleConsumerDomains, domain) {
+		return true
+	}
+	hd, _ := claims["hd"].(string)
+	if hd == "" {
+		return false
+	}
+	d, err := canonical.Domain(hd)
+	return err == nil && strings.EqualFold(d, domain)
 }
 
 var adapterName = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
