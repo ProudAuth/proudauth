@@ -44,8 +44,8 @@ func (a *App) orgGuard(p *Principal, r *http.Request, perm string) (*organizatio
 		}
 		return nil, problem.ErrNotFound
 	}
-	if orgAuthorityPermissions[perm] && p.IsUser() && (!p.Realm.Policy.MFA.OrgAdminMFAOptional || a.D.Cfg.Security.MFAFloor.ForbidOrgAdminWaiver) {
-		if err := a.requireMFASession(p); err != nil {
+	if orgAuthorityPermissions[perm] {
+		if err := a.requireOrgAuthorityMFA(p, nil); err != nil {
 			return nil, err
 		}
 	}
@@ -54,6 +54,68 @@ func (a *App) orgGuard(p *Principal, r *http.Request, perm string) (*organizatio
 		return nil, problem.ErrNotFound
 	}
 	return org, nil
+}
+
+// requireOrgAuthorityMFA applies the organization-administration MFA rule
+// (MFA-003): a user who changes who holds authority in an organization must
+// act from an MFA session unless the realm waived it (OrgAdminMFAOptional) and
+// the deployment floor allows the waiver. orgGuard applies it to the
+// orgAuthorityPermissions routes (grants == nil). Routes whose permission is
+// not authority-changing in itself, but whose request can grant roles
+// (members added with roles, invitations, group membership and inheritance),
+// pass grants, which reports whether this request grants more than plain
+// membership; it is evaluated only when the session falls short.
+func (a *App) requireOrgAuthorityMFA(p *Principal, grants func() (bool, error)) error {
+	if !p.IsUser() || (p.Realm.Policy.MFA.OrgAdminMFAOptional && !a.D.Cfg.Security.MFAFloor.ForbidOrgAdminWaiver) {
+		return nil
+	}
+	err := a.requireMFASession(p)
+	if err == nil || grants == nil {
+		return err
+	}
+	granting, gerr := grants()
+	if gerr != nil {
+		return gerr
+	}
+	if !granting {
+		return nil
+	}
+	return err
+}
+
+// grantsBeyondMember reports whether roleIDs name any role other than the
+// built-in organization member role, which every member holds (MFA-003).
+func (a *App) grantsBeyondMember(ctx context.Context, realmID string, roleIDs []string) (bool, error) {
+	if len(roleIDs) == 0 {
+		return false, nil
+	}
+	member, err := a.Authz.RoleByName(ctx, nil, realmID, "organization", authorization.RoleOrgMember)
+	if err != nil {
+		return false, err
+	}
+	for _, id := range roleIDs {
+		if id != member.ID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// invitationGrants reports whether an invitation grants authority on
+// acceptance: any project role, or an organization role other than the
+// default member role (MFA-003).
+func (a *App) invitationGrants(ctx context.Context, realmID, purpose string, roleIDs []string) (bool, error) {
+	if purpose == "project_access" {
+		return len(roleIDs) > 0, nil
+	}
+	return a.grantsBeyondMember(ctx, realmID, roleIDs)
+}
+
+// groupGrants reports whether members of a group hold roles through it,
+// directly or inherited from its ancestors (MFA-003, TEN-013).
+func (a *App) groupGrants(ctx context.Context, orgID, groupID string) (bool, error) {
+	roles, err := organization.GroupRolesTx(ctx, a.D.DB.Pool, orgID, groupID)
+	return len(roles) > 0, err
 }
 
 func (a *App) inviteContext(ctx context.Context, p *Principal, org *organization.Organization) organization.InviteContext {
@@ -288,6 +350,10 @@ func (a *App) tenantRoutes(mux *http.ServeMux) {
 			RoleIDs []string `json:"role_ids"`
 		}
 		if err := decode(r, &b); err != nil {
+			return err
+		}
+		// Roles beyond plain membership are authority (MFA-003).
+		if err := a.requireOrgAuthorityMFA(p, func() (bool, error) { return a.grantsBeyondMember(r.Context(), p.Realm.ID, b.RoleIDs) }); err != nil {
 			return err
 		}
 		m, err := a.Orgs.AddMember(r.Context(), p.Realm.ID, r.PathValue("org"), b.UserID, b.RoleIDs, p.Subject(), p.AuditRef())
@@ -578,6 +644,10 @@ func (a *App) tenantRoutes(mux *http.ServeMux) {
 		if err := decode(r, &in); err != nil {
 			return err
 		}
+		// An invitation granting roles grants them on acceptance (MFA-003).
+		if err := a.requireOrgAuthorityMFA(p, func() (bool, error) { return a.invitationGrants(r.Context(), p.Realm.ID, in.Purpose, in.RoleIDs) }); err != nil {
+			return err
+		}
 		inv, secret, err := a.Orgs.CreateInvitation(r.Context(), p.Realm.ID, org.ID, in, p.Subject(), p.AuditRef(), a.inviteContext(r.Context(), p, org))
 		if err != nil {
 			return err
@@ -600,6 +670,18 @@ func (a *App) tenantRoutes(mux *http.ServeMux) {
 		if err := decode(r, &b); err != nil {
 			return err
 		}
+		// One entry granting roles puts the whole batch under MFA-003: the
+		// caller steps up once and retries rather than getting half a batch.
+		if err := a.requireOrgAuthorityMFA(p, func() (bool, error) {
+			for _, in := range b.Items {
+				if ok, err := a.invitationGrants(r.Context(), p.Realm.ID, in.Purpose, in.RoleIDs); ok || err != nil {
+					return ok, err
+				}
+			}
+			return false, nil
+		}); err != nil {
+			return err
+		}
 		batchID, results, err := a.Orgs.CreateInvitationBatch(r.Context(), p.Realm.ID, org.ID, b.Items, p.Subject(), p.AuditRef(), a.inviteContext(r.Context(), p, org))
 		if err != nil {
 			return err
@@ -617,6 +699,18 @@ func (a *App) tenantRoutes(mux *http.ServeMux) {
 		}
 		var in organization.ReassignInput
 		if err := decode(r, &in); err != nil {
+			return err
+		}
+		// Reassignment chooses who receives the invitation's roles (MFA-003).
+		if err := a.requireOrgAuthorityMFA(p, func() (bool, error) {
+			old, err := a.Orgs.Invitation(r.Context(), nil, org.ID, r.PathValue("id"))
+			if problem.Is(err, problem.ErrNotFound) {
+				return false, nil // the service reports the missing invitation
+			} else if err != nil {
+				return false, err
+			}
+			return a.invitationGrants(r.Context(), p.Realm.ID, old.Purpose, old.RoleIDs)
+		}); err != nil {
 			return err
 		}
 		inv, err := a.Orgs.ReassignInvitation(r.Context(), p.Realm.ID, org.ID, r.PathValue("id"), in, p.Subject(), p.AuditRef(), a.inviteContext(r.Context(), p, org))
@@ -835,6 +929,11 @@ func (a *App) tenantRoutes(mux *http.ServeMux) {
 		if err := decode(r, &rule); err != nil {
 			return err
 		}
+		// The rule decides who holds the group's roles (MFA-003). Removing
+		// it freezes the current members and grants nothing new.
+		if err := a.requireOrgAuthorityMFA(p, func() (bool, error) { return a.groupGrants(r.Context(), r.PathValue("org"), r.PathValue("group")) }); err != nil {
+			return err
+		}
 		st, err := a.Orgs.SetDynamicRule(r.Context(), p.Realm.ID, r.PathValue("org"), r.PathValue("group"), &rule, p.Realm.Policy.Profile.Attributes,
 			p.Subject(), p.AuditRef())
 		if err != nil {
@@ -965,6 +1064,25 @@ func (a *App) tenantRoutes(mux *http.ServeMux) {
 		if err := decode(r, &in); err != nil {
 			return err
 		}
+		// Moving a group under a parent that grants roles gives them to the
+		// moved subtree's members (MFA-003).
+		if err := a.requireOrgAuthorityMFA(p, func() (bool, error) {
+			if in.ParentID == nil || *in.ParentID == "" {
+				return false, nil
+			}
+			g, err := a.Orgs.GetGroup(r.Context(), r.PathValue("org"), r.PathValue("group"))
+			if problem.Is(err, problem.ErrNotFound) {
+				return false, nil // the service reports the missing group
+			} else if err != nil {
+				return false, err
+			}
+			if g.ParentID == *in.ParentID {
+				return false, nil // an unchanged parent grants nothing
+			}
+			return a.groupGrants(r.Context(), r.PathValue("org"), *in.ParentID)
+		}); err != nil {
+			return err
+		}
 		ver, err := ifMatch(r, false)
 		if err != nil {
 			return err
@@ -1006,6 +1124,10 @@ func (a *App) tenantRoutes(mux *http.ServeMux) {
 			MembershipID string `json:"membership_id"`
 		}
 		if err := decode(r, &b); err != nil {
+			return err
+		}
+		// Joining a group that grants roles is a role grant (MFA-003).
+		if err := a.requireOrgAuthorityMFA(p, func() (bool, error) { return a.groupGrants(r.Context(), r.PathValue("org"), r.PathValue("group")) }); err != nil {
 			return err
 		}
 		if err := a.Orgs.AddGroupMember(r.Context(), p.Realm.ID, r.PathValue("org"), r.PathValue("group"), b.MembershipID, p.Subject(), p.AuditRef()); err != nil {

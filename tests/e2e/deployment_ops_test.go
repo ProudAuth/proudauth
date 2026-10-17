@@ -440,8 +440,7 @@ func TestReplicasShareOneTimeState(t *testing.T) {
 
 	alice := f.AccountToken("alice").Tokens.Str("access_token")
 	f.CreateUser("dave")
-	mustStatus(t, h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": "dave@example.test",
-		"role_ids": []string{f.Roles["orders-viewer"]}}), 201, "invite")
+	mustStatus(t, h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": "dave@example.test"}), 201, "invite")
 	secret := invitationFromMail(h.Mail("dave@example.test", "invitation"))
 	dave := f.AccountToken("dave").Tokens.Str("access_token")
 	if ok := race(6, func(n *Harness) *Resp {
@@ -604,7 +603,7 @@ func TestRestoreDrill(t *testing.T) {
 	f.CreateUser("dave")
 	f.must(f.AdminAPI("POST", "/organizations/"+f.Acme+"/members", map[string]any{"user_id": f.Users["dave"]}), 201, "dave member")
 	alice := f.AccountToken("alice").Tokens.Str("access_token")
-	inv := h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": "erin@example.test", "role_ids": []string{f.Roles["orders-viewer"]}})
+	inv := h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": "erin@example.test"})
 	mustStatus(t, inv, 201, "invite erin")
 	erinInvitation := invitationFromMail(h.Mail("erin@example.test", "invitation"))
 	bobRefresh := f.LoginWeb("bob", f.Acme, f.OrdersAud, "openid orders:read").Tokens.Str("refresh_token")

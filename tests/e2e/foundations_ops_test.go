@@ -137,8 +137,8 @@ func TestDeliveryFailureLeavesRecoverableState(t *testing.T) {
 	defer func() { h.App.Notify.DevSink = true }()
 
 	alice := f.AccountToken("alice").Tokens.Str("access_token")
-	inv := f.must(h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": "dave@example.test",
-		"role_ids": []string{f.Roles["orders-viewer"]}}), 201, "invite while mail is down")
+	inv := f.must(h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": "dave@example.test"}), 201,
+		"invite while mail is down")
 	id := inv.Str("invitation.id")
 	invitation := func() map[string]any {
 		t.Helper()

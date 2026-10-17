@@ -171,8 +171,7 @@ func TestTransactionFaultsLeaveNoPartialState(t *testing.T) {
 			name := fmt.Sprintf("invitee%d", i)
 			user := f.CreateUser(name)
 			alice := f.AccountToken("alice").Tokens.Str("access_token")
-			inv := f.must(h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": name + "@example.test",
-				"role_ids": []string{f.Roles["orders-viewer"]}}), 201, "invite")
+			inv := f.must(h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": name + "@example.test"}), 201, "invite")
 			invID, secretInv := inv.Str("invitation.id"), invitationFromMail(h.Mail(name+"@example.test", "invitation"))
 			tok := f.AccountToken(name).Tokens.Str("access_token")
 			return faultRun{
@@ -454,8 +453,7 @@ func TestDeliveryOutageDuringSensitiveFlows(t *testing.T) {
 	t.Run("invitation", func(t *testing.T) {
 		since := h.Clock.Now()
 		alice := f.AccountToken("alice").Tokens.Str("access_token")
-		inv := h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": "ivy@example.test",
-			"role_ids": []string{f.Roles["orders-viewer"]}})
+		inv := h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": "ivy@example.test"})
 		mustStatus(t, inv, 201, "invite while mail is down")
 		exhaust("invitation", since, 20*time.Minute, 8)
 		var state string
