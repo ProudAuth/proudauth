@@ -16357,7 +16357,7 @@ paths:
       tags:
         - Federation
       summary: Create an organization connection
-      description: "Organization-scoped federation connections managed by organization administrators (TEN-007). The connection is always scoped to the path organization; trusted-email linking is limited to the organization's verified domains; trust_upstream_mfa requires a realm administrator. Writes require an MFA session."
+      description: "Organization-scoped federation connections managed by organization administrators (TEN-007). The connection is always scoped to the path organization; trusted-email linking is limited to the organization's verified domains; jit_provisioning requires a non-empty config.allowed_email_domains of the organization's verified domains (422 on config.allowed_email_domains otherwise), and a just-in-time account's upstream email counts as verified only in those domains; trust_upstream_mfa requires a realm administrator. Writes require an MFA session."
       security:
         - accountToken: []
         - adminToken: []
@@ -16445,7 +16445,7 @@ paths:
       tags:
         - Federation
       summary: Update an organization connection
-      description: "Organization-scoped federation connections managed by organization administrators (TEN-007). The connection is always scoped to the path organization; trusted-email linking is limited to the organization's verified domains; trust_upstream_mfa requires a realm administrator. Writes require an MFA session."
+      description: "Organization-scoped federation connections managed by organization administrators (TEN-007). The connection is always scoped to the path organization; trusted-email linking is limited to the organization's verified domains; jit_provisioning requires a non-empty config.allowed_email_domains of the organization's verified domains (422 on config.allowed_email_domains otherwise), and a just-in-time account's upstream email counts as verified only in those domains; trust_upstream_mfa requires a realm administrator. Writes require an MFA session."
       security:
         - accountToken: []
         - adminToken: []

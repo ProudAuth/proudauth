@@ -179,6 +179,12 @@ func TestFederation(t *testing.T) {
 		t.Helper()
 		return f.AdminAPI("POST", "/identity-providers", body)
 	}
+	// Acme's connection vouches for addresses in Acme's verified domain only
+	// (REG-009, TEN-010): zoe@corp.test and quinn@corp.test are verified on
+	// arrival because Acme verified corp.test.
+	saved := organization.TXTResolver
+	gapVerifyDomain(f, f.Acme, "corp.test")
+	organization.TXTResolver = saved
 	corp := create(map[string]any{"alias": "corp", "display_name": "Corp SSO", "issuer": idp.srv.URL, "client_secret": "upstream-secret",
 		"config": map[string]any{"client_id": "proudauth-main"}, "jit_provisioning": true, "organization_id": f.Acme,
 		"jit_default_role_id": f.Roles["orders-viewer"]})
@@ -375,11 +381,7 @@ func TestFederation(t *testing.T) {
 		pw := "pat has a long passphrase 2026"
 		f.must(h.API("POST", "/account-setup", "", map[string]any{"setup_token": token, "password": pw}), 200, "setup pat")
 		f.must(f.AdminAPI("POST", "/organizations/"+f.Acme+"/members", map[string]any{"user_id": r.Str("user.id")}), 201, "pat member")
-		ch := f.must(f.AdminAPI("POST", "/organizations/"+f.Acme+"/domains", map[string]any{"domain": "corp.test"}), 201, "add domain")
-		saved := organization.TXTResolver
-		organization.TXTResolver = func(context.Context, string) ([]string, error) { return []string{ch.Str("dns_record_value")}, nil }
-		defer func() { organization.TXTResolver = saved }()
-		f.must(f.AdminAPI("POST", "/organizations/"+f.Acme+"/domains/"+ch.Str("domain.id")+"/verify", nil), 200, "verify domain")
+		// corp.test was verified for Acme when the test began.
 		org := f.must(f.AdminAPI("GET", "/organizations/"+f.Acme, nil), 200, "org")
 		upd := h.Do(Req{Method: "PATCH", Path: "/api/v1/realms/main/organizations/" + f.Acme, Token: f.AdminToken,
 			Headers: map[string]string{"If-Match": org.Header.Get("ETag")},

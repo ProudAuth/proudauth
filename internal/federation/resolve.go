@@ -217,9 +217,13 @@ func (s *Service) ResolveTx(ctx context.Context, tx pgx.Tx, realmID string, p *P
 	// Just-in-time provisioning from an explicitly trusted connection (REG-009).
 	in := identity.CreateInput{CreatedVia: "federation", State: identity.StateActive}
 	if up.Email != "" {
+		verified, err := s.jitEmailVerified(ctx, realmID, p, up)
+		if err != nil {
+			return nil, err
+		}
 		in.Email = up.Email
-		in.EmailVerified = up.EmailVerified
-		if up.EmailVerified {
+		in.EmailVerified = verified
+		if verified {
 			in.VerificationSource = "federation:" + p.Alias
 		} else if c, _, cerr := canonical.Email(up.Email); cerr == nil {
 			// An unverified address that another account has verified is not
@@ -232,6 +236,11 @@ func (s *Service) ResolveTx(ctx context.Context, tx pgx.Tx, realmID string, p *P
 			}
 			if held {
 				in.Email, in.EmailVerified = "", false
+			} else if up.EmailVerified {
+				// The upstream vouched for an address outside its organization's
+				// verified domains: the account keeps it, as SCIM does, but
+				// proves it before signing in (TEN-007, REG-009).
+				in.RequiredActions = []string{identity.ActionVerifyEmail}
 			}
 		}
 	}
@@ -288,7 +297,7 @@ func (s *Service) ResolveTx(ctx context.Context, tx pgx.Tx, realmID string, p *P
 		return nil, err
 	}
 	if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "user.created", RealmID: realmID, Actor: audit.Ref{Type: "identity_provider", ID: p.ID},
-		Subject: &audit.Ref{Type: "user", ID: u.ID}, Metadata: map[string]any{"created_via": "federation", "provider": p.Alias, "email_verified": up.EmailVerified}}); err != nil {
+		Subject: &audit.Ref{Type: "user", ID: u.ID}, Metadata: map[string]any{"created_via": "federation", "provider": p.Alias, "email_verified": in.EmailVerified}}); err != nil {
 		return nil, err
 	}
 	if p.OrganizationID != "" {
@@ -310,6 +319,25 @@ func (s *Service) ResolveTx(ctx context.Context, tx pgx.Tx, realmID string, p *P
 		}
 	}
 	return &Resolution{UserID: u.ID, Created: true, Linked: true}, nil
+}
+
+// jitEmailVerified decides whether a just-in-time account starts with its
+// upstream email verified (REG-009). A realm connection believes its upstream
+// (the adapter has already discarded assertions it does not trust). An
+// organization's connection speaks for that organization only, so its
+// assertion counts only inside the organization's verified domains (TEN-010,
+// TEN-011), the rule SCIM provisioning follows: otherwise one tenant could
+// mint verified addresses in another tenant's domain, or in a public one,
+// and the domain's real owner would then meet a conflict or a takeover.
+func (s *Service) jitEmailVerified(ctx context.Context, realmID string, p *Provider, up *Upstream) (bool, error) {
+	if !up.EmailVerified || p.OrganizationID == "" {
+		return up.EmailVerified, nil
+	}
+	c, _, err := canonical.Email(up.Email)
+	if err != nil {
+		return false, nil
+	}
+	return s.Orgs.DomainCovered(ctx, realmID, p.OrganizationID, canonical.EmailDomain(c))
 }
 
 // jitMembership adds a just-in-time member to the connection's organization with
