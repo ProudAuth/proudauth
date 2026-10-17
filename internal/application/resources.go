@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/url"
 	"slices"
 	"strings"
@@ -165,7 +166,17 @@ func (s *Service) CreateResourceTx(ctx context.Context, tx pgx.Tx, realmID strin
 		return nil, perr
 	}
 	if in.SigningAlgorithm == "" {
+		// A new resource pins the realm's algorithm, that of its active key
+		// (TOK-005); keys.signing_algorithm applies while it has none.
 		in.SigningAlgorithm = s.d.Cfg.Keys.SigningAlgorithm
+		var alg string
+		err := tx.QueryRow(ctx, `SELECT algorithm FROM signing_keys WHERE realm_id=$1 AND state='active' AND purpose='token'`, realmID).Scan(&alg)
+		switch {
+		case err == nil:
+			in.SigningAlgorithm = alg
+		case !errors.Is(err, pgx.ErrNoRows):
+			return nil, err
+		}
 	}
 	if perr := s.checkAlgorithm(in.SigningAlgorithm); perr != nil {
 		return nil, perr

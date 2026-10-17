@@ -66,8 +66,14 @@ and `tokens.access_token_ttl_seconds`.
   RSA 3072), `PS256`, `ES256` or `EdDSA`. An API resource may pin a
   `signing_algorithm` (from `security.allowed_algorithms`); access tokens for it
   are issued only while the realm's active key uses that algorithm (otherwise
-  `503 temporarily_unavailable`), and signing-key rotations that would break a
-  pinned resource are refused (`TestResourceAlgorithmProfile`).
+  `503 temporarily_unavailable`). A resource created without one pins the
+  realm's current algorithm. Every signing-key rotation, through
+  `POST /signing-key-rotations` or scheduled by the worker, keeps the realm's
+  algorithm unless the request names another, and is refused (`409`) when
+  active resources pin a different algorithm or `fapi2` clients would be left
+  without `PS256`, `ES256` or `EdDSA` (`TestResourceAlgorithmProfile`,
+  `TestScheduledRotationKeepsRealmAlgorithm`, `TestKeyRotationGuardsAllCallers`,
+  `TestKeyRotationKeepsFAPI2Algorithm`; [keys.md](../operations/keys.md#scheduled-automatic)).
 - `kid` format: `<alg lowercased>-<YYYYMMDD>-<16 hex>`; opaque to verifiers.
 - `typ`: `at+jwt` (access), `JWT` (ID token), `logout+jwt` (logout token).
 

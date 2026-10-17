@@ -642,7 +642,7 @@
       }
     },
     "ResourceInput": {
-      "description": "API resource (resource server) to create (application.ResourceInput). Created with kind business and the operator's keys.signing_algorithm. Validated only when applied, not in the plan.",
+      "description": "API resource (resource server) to create (application.ResourceInput). Created with kind business and, without signing_algorithm, the realm's current algorithm (that of its active key). Validated only when applied, not in the plan.",
       "type": "object",
       "additionalProperties": false,
       "required": ["name", "audience"],
@@ -686,7 +686,7 @@
         },
         "impersonation_policy": {"$ref": "#/$defs/ResourceImpersonationPolicy"},
         "signing_algorithm": {
-          "description": "Pins the access-token signing algorithm for this resource (TOK-005); empty means the operator's keys.signing_algorithm. Must be an asymmetric algorithm listed in security.allowed_algorithms.",
+          "description": "Pins the access-token signing algorithm for this resource (TOK-005); empty means the realm's current algorithm, that of its active key (the operator's keys.signing_algorithm when it has none). Must be an asymmetric algorithm listed in security.allowed_algorithms.",
           "type": "string",
           "examples": ["RS256", "ES256", "PS256", "EdDSA"]
         },

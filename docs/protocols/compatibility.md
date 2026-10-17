@@ -98,7 +98,9 @@ authorization-signing and mutual-TLS members were added
 ([oauth-oidc-profile.md](oauth-oidc-profile.md#discovery-document)). Clients
 must ignore members and values they do not use.
 
-Coordinate a change of the realm's signing algorithm (`keys.signing_algorithm`)
+Coordinate a change of the realm's signing algorithm (`keys.signing_algorithm`
+for new realms, `POST /signing-key-rotations` with `algorithm` for an existing
+one)
 with clients that registered `userinfo_signed_response_alg` or
 `authorization_signed_response_alg` (responses are always signed with the
 active key, and such a client cannot be updated until its value matches) and
