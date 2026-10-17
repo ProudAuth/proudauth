@@ -138,6 +138,9 @@ func (s *Service) tenantSender(ctx context.Context, realmID, orgID string) (*SMT
 		password = string(pt)
 	}
 	policy := egress.Policy{AllowPrivate: s.d.Cfg.Delivery.AllowPrivateWebhooks, AllowCIDRs: s.d.Cfg.Delivery.EgressAllowlist}
+	// SMTPSender.Send puts the connection Dial returns under the delivery
+	// deadline and closes it when ctx ends, so a tenant server that accepts
+	// and then stays silent cannot hold the worker.
 	return &SMTPSender{Host: t.Host, Port: t.Port, Username: t.Username, PasswordRef: password, TLSMode: t.TLSMode,
 		Dial: func(ctx context.Context, host, port string) (net.Conn, error) {
 			if !egress.HostAllowed(host) {

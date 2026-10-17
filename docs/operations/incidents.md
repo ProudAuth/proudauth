@@ -614,7 +614,10 @@ Email:
    one organization's mail fails, check its server with the organization's
    owner, or remove it (`DELETE .../notification-settings/smtp`,
    `org.integrations.write`) to fall back to the deployment relay. A server whose
-   address the delivery egress policy refuses fails every attempt.
+   address the delivery egress policy refuses fails every attempt. A server
+   that accepts connections and then never answers fails each attempt after
+   the 30 s SMTP session deadline (`last_error` names an i/o timeout); the
+   worker goes on with other jobs and tasks meanwhile.
 3. One-time codes expire after `tokens.challenge_ttl` (10 min); after the outage
    users request a new code (send budgets and cooldowns still apply). Do not mark
    addresses verified to work around an outage; `POST /users/{user}/verification-overrides`
