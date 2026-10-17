@@ -279,10 +279,20 @@ an acceptable answer, a silent omission is not.
 
 ## Releasing
 
-1. Write the release notes under `## [Unreleased]` in `CHANGELOG.md`.
-2. Run `scripts/prepare-release.sh v0.3.0` (your version) and open a pull request.
-3. After it merges: `git tag -a v0.3.0 -m "ProudAuth v0.3.0" && git push origin v0.3.0`.
+1. Write the release notes under `## [Unreleased]` in `CHANGELOG.md`, with a
+   `### Known limitations` subsection: the release workflow refuses a version
+   whose section lacks one.
+2. Dry-run the release from `main`: `gh workflow run release.yml --ref main`.
+   It builds, pushes by digest to `ghcr.io/proudauth/proudauth-staging`,
+   attests, signs, tags, verifies its outputs with the operator commands and
+   renders the release notes, and publishes nothing. Run it after any change
+   to `release.yml` or to the actions it pins.
+3. Run `scripts/prepare-release.sh v0.3.0` (your version) and open a pull request.
+4. After it merges: `git tag -a v0.3.0 -m "ProudAuth v0.3.0" && git push origin v0.3.0`.
 
-The release workflow builds, signs and publishes the image and the release, and
-refuses a tag the prepared files do not match. proudauth.com
-then shows the new version and its install guide on their own.
+The release workflow builds the image and pushes it by digest, attests and
+signs it, then tags it, verifies every output the way
+[installation.md](docs/operations/installation.md#verifying-a-release) tells
+operators to, and only then publishes the release. It refuses a tag the
+prepared files do not match. proudauth.com then shows the new version and its
+install guide on its own.

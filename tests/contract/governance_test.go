@@ -363,21 +363,35 @@ func TestCodeOwnersReviewBoundaries(t *testing.T) {
 
 // TestReleaseTransparency covers GOV-005: releases are cut only from version
 // tags through the release workflow, which publishes the tag's own
-// CHANGELOG section as release notes, the binaries with checksums, SBOMs,
-// build provenance attestations and a signed image; the CHANGELOG keeps
-// breaking changes, security fixes (with advisories) and known limitations
-// in their own sections.
+// CHANGELOG section as release notes (refused without a Known limitations
+// heading), the binaries with checksums, SBOMs, build provenance attestations
+// and a signed image; the CHANGELOG keeps breaking changes, security fixes
+// (with advisories) and known limitations in their own sections. The only
+// other trigger is the manual dry run, which publishes nothing.
 func TestReleaseTransparency(t *testing.T) {
 	raw := govRead(t, ".github/workflows/release.yml")
 	rel := govLoadWorkflow(t, ".github/workflows/release.yml")
-	if !regexp.MustCompile(`(?m)^\s+tags: \["v\*"\]`).MatchString(raw) || rel.On["push"] == nil || len(rel.On) != 1 {
-		t.Errorf("the release workflow must run only for pushed v* tags: %v", rel.On)
+	if _, dispatch := rel.On["workflow_dispatch"]; !regexp.MustCompile(`(?m)^\s+tags: \["v\*"\]`).MatchString(raw) || rel.On["push"] == nil || !dispatch || len(rel.On) != 2 {
+		t.Errorf("the release workflow must run for pushed v* tags and the manual dry run only: %v", rel.On)
 	}
 	job, ok := rel.Jobs["release"]
 	if !ok {
 		t.Fatal("release.yml has no release job")
 	}
+	if job.Env["DRY_RUN"] != "${{ github.event_name == 'workflow_dispatch' }}" {
+		t.Errorf("the release job must derive DRY_RUN from the manual trigger, got %q", job.Env["DRY_RUN"])
+	}
+	for _, step := range job.Steps {
+		if strings.Contains(step.Run, "gh release create") || strings.Contains(step.Run, "/dispatches") {
+			if !regexp.MustCompile(`(?s)\[ "\$DRY_RUN" = true \].*?exit 0.*?(gh release create|gh api)`).MatchString(step.Run) {
+				t.Errorf("step %q must stop before publishing when DRY_RUN is true", step.Name)
+			}
+		}
+	}
 	runs, uses := job.runs(), strings.Join(job.uses(), "\n")
+	if !strings.Contains(runs, `grep -q '^### Known limitations' dist/RELEASE_NOTES.md`) {
+		t.Error("the release job must refuse a CHANGELOG section without a '### Known limitations' heading")
+	}
 	for _, c := range []struct{ what, re, in string }{
 		{"binaries for every platform", `for os in linux darwin; do for arch in amd64 arm64`, runs},
 		{"checksums of every release file", `sha256sum > SHA256SUMS`, runs},
@@ -385,7 +399,7 @@ func TestReleaseTransparency(t *testing.T) {
 		{"an image SBOM", `-o spdx-json=dist/image-sbom\.spdx\.json`, runs},
 		{"an image signature", `cosign sign --yes`, runs},
 		{"release notes from the CHANGELOG", `--notes-file dist/RELEASE_NOTES\.md`, runs},
-		{"a release bound to the existing tag", `(?s)gh release create "\$\{GITHUB_REF_NAME\}" .*?--verify-tag`, runs},
+		{"a release bound to the existing tag", `(?s)gh release create "\$\{RELEASE_TAG\}" .*?--verify-tag`, runs},
 		{"build provenance attestations", `actions/attest-build-provenance@`, uses},
 		{"an SBOM attestation", `actions/attest-sbom@`, uses},
 	} {
@@ -394,8 +408,12 @@ func TestReleaseTransparency(t *testing.T) {
 		}
 	}
 
-	// The release notes are exactly the tag's CHANGELOG section.
-	m := regexp.MustCompile(`awk -v v="\$\{GITHUB_REF_NAME#v\}" '([^']+)' CHANGELOG\.md > dist/RELEASE_NOTES\.md`).FindStringSubmatch(raw)
+	// The release notes are exactly the tag's CHANGELOG section (the
+	// Unreleased section on a dry run).
+	if !strings.Contains(raw, "section=${RELEASE_TAG#v}") || !strings.Contains(raw, `[ "$DRY_RUN" = true ] && section=Unreleased`) {
+		t.Error("the release-notes step must select the tag's section, or Unreleased on a dry run")
+	}
+	m := regexp.MustCompile(`awk -v v="\$section" '([^']+)' CHANGELOG\.md > dist/RELEASE_NOTES\.md`).FindStringSubmatch(raw)
 	if m == nil {
 		t.Fatal("cannot find the release-notes step in release.yml")
 	}

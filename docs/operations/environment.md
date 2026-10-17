@@ -14,7 +14,7 @@ to its configuration key.
 
 | Variable | Production (`deploy/prod`) | Development (`deploy/dev`) |
 | --- | --- | --- |
-| `PROUDAUTH_IMAGE` | Release image, pinned to the archive's version, for example `ghcr.io/proudauth/proudauth:0.2.0-alpha.4`. Use a digest for a controlled deployment. The Docker Hub mirror is `docker.io/mohamadalialghanem/proudauth`. | The same release image; `make dev` runs `proudauth:dev`, built from the checkout. |
+| `PROUDAUTH_IMAGE` | Release image, pinned to the archive's version, for example `ghcr.io/proudauth/proudauth:0.2.0-alpha.4`. Use a digest for a controlled deployment. GHCR is the only registry the project publishes to. | The same release image; `make dev` runs `proudauth:dev`, built from the checkout. |
 | `PROUDAUTH_PUBLIC_ORIGIN` | **Required.** Your HTTPS origin without a path. It becomes a realm's issuer when the realm is created; changing it later does not move an existing realm. | `http://localhost:8080`; change it together with `PUBLIC_PORT`. |
 | `PROUDAUTH_TRUSTED_PROXIES` | Comma-separated IPs/CIDRs of your reverse proxy as the container sees it. Empty trusts no forwarding headers. | Empty. |
 | `PROUDAUTH_DATABASE_URL` | **Required.** `postgres://USER:PASSWORD@HOST:5432/DB?sslmode=require`; the user owns the database. `host.docker.internal` reaches the Docker host. | The bundled PostgreSQL container. |

@@ -11,6 +11,20 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 
 ## [Unreleased]
 
+### Added
+
+- `internal/testutil` fault-injection helpers for reliability tests: a TCP
+  black hole, silent and stalling SMTP relays, a refused port and a slow HTTP
+  server.
+- `docs/releases/` records the owner decisions taken at the start of each
+  release phase, beginning with
+  [0.2.0-alpha.5](docs/releases/2026-10-alpha.5-decisions.md).
+- The release workflow can be dry-run from `main` (`workflow_dispatch`): it
+  builds, pushes by digest to `ghcr.io/proudauth/proudauth-staging`, attests,
+  signs, tags, verifies its outputs with the operator commands from
+  [installation.md](docs/operations/installation.md#verifying-a-release) and
+  renders the release notes, and publishes nothing (DEP-003, GOV-005).
+
 ### Changed
 
 - Database-backed tests clone a template database that is migrated once per
@@ -24,15 +38,32 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   `PROUDAUTH_TEST_REQUIRE_DB=1`, a missing `PROUDAUTH_TEST_DATABASE_URL`
   fails database tests instead of skipping them. The `image` check now also
   waits for every e2e shard.
+- The release image is pushed by digest and receives its version tags only
+  after its provenance, SBOM attestations and signature exist, so a tag never
+  names an unsigned image; every release verifies its own checksums,
+  attestations, signature and tag before it is published. The source SBOM
+  lists the Go module graph only, no longer the GitHub Actions and the SBOM
+  evidence files found in the tree.
+- A release whose CHANGELOG section has no `### Known limitations` heading is
+  refused by the release workflow (GOV-005).
+- GHCR is the only registry the project publishes to; the Docker Hub mirror
+  is not updated and is no longer documented.
 
-### Added
+### Known limitations
 
-- `internal/testutil` fault-injection helpers for reliability tests: a TCP
-  black hole, silent and stalling SMTP relays, a refused port and a slow HTTP
-  server.
-- `docs/releases/` records the owner decisions taken at the start of each
-  release phase, beginning with
-  [0.2.0-alpha.5](docs/releases/2026-10-alpha.5-decisions.md).
+- Not independently reviewed or certified (SEC-018, QA-005); no OpenID
+  Foundation conformance suite has been run.
+- The Go and Node SDKs keep a retired or compromised signing key trusted until
+  the verifying process restarts; after an emergency rotation, restart
+  resource servers. SDK 0.3.0 adds key refresh and rejection.
+- Administrators of different organizations inside one realm are not yet
+  separated from each other everywhere: an organization's mail server, egress
+  allowances, membership expiry and the approval rule on every grant path are
+  tightened in 0.2.0-alpha.7 and alpha.8. Until then, treat organization
+  administrator as a trusted role.
+- Per-network abuse budgets key on the full IPv6 address and the token
+  endpoint has one budget per client (0.2.0-alpha.6 changes both); the worker
+  runs its tasks in one sequential loop (0.2.0-alpha.7 isolates them).
 
 ## [0.2.0-alpha.4] - 2026-10-15
 

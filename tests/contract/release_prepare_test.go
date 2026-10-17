@@ -86,8 +86,8 @@ func TestPrepareReleaseMovesEveryVersionReference(t *testing.T) {
 
 	workflow := deployRead(t, ".github/workflows/release.yml")
 	for _, want := range []string{
-		`grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:${GITHUB_REF_NAME#v}" deploy/prod/.env`,
-		`grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:${GITHUB_REF_NAME#v}" docs/operations/docker-compose.md`,
+		`grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:${RELEASE_TAG#v}" deploy/prod/.env`,
+		`grep -qx "PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:${RELEASE_TAG#v}" docs/operations/docker-compose.md`,
 		`--annotation "index:org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}"`, "## Docker image",
 		"secrets.WEBSITES_DISPATCH_TOKEN", "repos/proudauth/${site}/dispatches", "event_type=proudauth-release",
 	} {
