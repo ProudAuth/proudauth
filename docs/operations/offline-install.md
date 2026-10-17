@@ -59,7 +59,8 @@ contains:
   Kubernetes, example production configuration; local development secrets are
   removed), `api/` (OpenAPI and JSON Schemas);
 - `docs/` (architecture decisions, operations, threat models, protocols,
-  integrations), `LICENSE`, `NOTICE`, `README.md`, `SECURITY.md`, `CHANGELOG.md`;
+  integrations, and the development history before the first prerelease),
+  `LICENSE`, `NOTICE`, `README.md`, `SECURITY.md`, `CHANGELOG.md`;
 - `source-notes/` (module list, Go version, commit);
 - `image-<version>.tar.gz` when `IMAGE=<image reference>` is set; Docker and
   that image must already be available locally. Inspection/export failures

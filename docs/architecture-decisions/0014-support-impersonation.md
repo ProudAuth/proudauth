@@ -92,3 +92,16 @@ write-verb segment is a write even when it ends in a read suffix (for example
 ## Related requirement IDs
 
 IMP-001..IMP-024, MFA-003, INT-010, TEST-040..TEST-047, TEST-071, §16
+
+## Updates
+
+**Update — 2026-10-18.** Recorded under the dated-update rule
+([README](README.md#changing-a-decision)). Two changes were written into this
+record in place in 2026-10. The **One classification rule** item was added to
+the Decision with a security fix: the server classified support actions
+differently from the SDKs, and an `allowlisted_write` support token could
+perform any write through the decision API (IMP-011, IMP-013,
+`TestSupportClassificationMatchesSDKTable`, `TestSupportWritesNeedAllowlist`).
+The last sentence of Consequences records a fix: turning support access off
+now ends live grants at their next introspection, and denied requests are
+audited. The decision is unchanged.

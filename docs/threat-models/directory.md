@@ -59,4 +59,4 @@ in-process SCIM double, not real directories or SCIM services (QA-004).
 Kerberos/SPNEGO (PROV-015) and password write-back (PROV-013) are not
 implemented; the reasons are in
 [directory.md](../integrations/directory.md#kerberos-and-spnego-are-not-offered)
-and [ADR 0018](../architecture-decisions/0018-enterprise-protocols-deferred.md).
+and [ADR 0018](../architecture-decisions/0018-enterprise-protocols-when-complete.md).

@@ -90,3 +90,13 @@ software-key ciphertext until it is rewrapped.
 ## Related requirement IDs
 
 SEC-010, DEP-006, DEP-008, DEP-016, CRED-009, MFA-001, PWDLESS-007, TOK-011, TOK-012, TOK-013, OPS-005, §37.1
+
+## Updates
+
+**Update — 2026-10-18.** Recorded under the dated-update rule
+([README](README.md#changing-a-decision)). The **KMS envelope** item (DEP-016,
+`TestKMSUnwrap`) was added to the Decision in place in 2026-10, together with
+the alternatives and the consequence that refer to it; the consequence on
+audit batch signatures was added at the same time. The envelope changes only
+where root, pepper and signing-wrap keys come from at start-up; how keys are
+derived and used is unchanged.

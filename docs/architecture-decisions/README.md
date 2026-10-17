@@ -2,8 +2,9 @@
 
 These records implement GOV-001: architecture and compatibility decisions are
 versioned with their rationale, alternatives and migration implications. Each ADR
-corresponds to one row of the decision register in docs/plan.md §37.1 and records
-what the code actually does today, including where it falls short of the register.
+corresponds to one row of the decision register in docs/plan.md §37.1. It keeps the
+decision as accepted and, through dated updates, records what the code does today,
+including where it falls short of the register.
 
 | ADR | Decision | Status |
 | --- | --- | --- |
@@ -24,7 +25,7 @@ what the code actually does today, including where it falls short of the registe
 | [0015](0015-key-hierarchy.md) | Keys: root keys, HKDF purpose keys, AES-256-GCM, wrapped signing keys | Accepted |
 | [0016](0016-delivery-adapters.md) | Email and SMS: replaceable operator-configured adapters | Accepted |
 | [0017](0017-external-login-ui.md) | Browser integration: external login UI and headless transactions | Accepted |
-| [0018](0018-enterprise-protocols-deferred.md) | Federation and enterprise protocols: ship each only when complete | Accepted |
+| [0018](0018-enterprise-protocols-when-complete.md) | Federation and enterprise protocols: ship each only when complete | Accepted |
 | [0019](0019-single-write-region.md) | HA topology: one authoritative write region | Accepted |
 | [0020](0020-compliance-posture.md) | Compliance posture: evidence and controls, no certification claims | Accepted |
 | [0021](0021-no-embedded-code-execution.md) | Custom logic: out of process only, no embedded code execution (EXT-013; not a §37.1 register row) | Accepted |
@@ -34,12 +35,34 @@ what the code actually does today, including where it falls short of the registe
 
 Each record has: **Status**, **Context**, **Decision**, **Alternatives
 considered**, **Consequences**, **Migration implications** and **Related
-requirement IDs** (from docs/plan.md).
+requirement IDs** (from docs/plan.md). A record changed after acceptance ends
+with **Updates** (see below).
 
 ## Changing a decision
 
-A decision is replaced, not edited: add a new ADR with the next number, set the
-old record's status to `Superseded by NNNN`, and update the threat model, tests and
-operations documents in the same pull request. docs/plan.md §37.1 requires that a
-substituted decision preserve the security invariant it protects (for example,
-choosing another database does not remove atomic one-time proof consumption).
+The text of an accepted record is not rewritten. How a change is recorded
+depends on what changed:
+
+- **The decision stands, but the code has changed** (a capability implemented,
+  a scope extended or narrowed, a defect fixed): add a dated paragraph that
+  starts with `**Update — YYYY-MM-DD.**` to a `## Updates` section at the end
+  of the record, newest last. It says what changed and why, with requirement
+  IDs, migrations and tests. The original Context, Decision and Consequences
+  stay as accepted; a statement the update overtakes may get a short pointer
+  to it, but is not rewritten.
+- **The decision is reversed or substituted:** add a new ADR with the next
+  number whose status reads `Accepted; supersedes NNNN`, set the old record's
+  status to `Superseded by NNNN`, link the two, and update the threat model,
+  tests and operations documents in the same pull request. docs/plan.md §37.1
+  requires that a substituted decision preserve the security invariant it
+  protects (for example, choosing another database does not remove atomic
+  one-time proof consumption).
+- **Editorial fixes** that change neither the decision nor what the record
+  says the code does (a broken link, a typo, a renamed path or file) are made
+  in place.
+
+Records amended before this rule was written (2026-10-18) carry inline
+"Update 2026-10" notes and `## Update (2026-10…)` sections, which stay as they
+are. Where such an edit changed the Decision text without an update section,
+the record now has a dated update that says so (0007, 0008, 0014, 0015, 0017
+and 0018).

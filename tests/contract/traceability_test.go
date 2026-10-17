@@ -94,7 +94,7 @@ var notOffered = map[string]string{
 	"ADV-006":  "Not offered: no UMA profile ([compatibility.md](protocols/compatibility.md))",
 	"ADV-008":  "Not offered: no verifiable-credential issuer ([compatibility.md](protocols/compatibility.md))",
 	"ADV-009":  "Not offered: no credential presentation or wallet federation ([compatibility.md](protocols/compatibility.md))",
-	"PROV-015": "Not offered: no Kerberos/SPNEGO module; keytab custody, cross-realm trust, a shared replay cache and a KDC test harness are not designed yet ([directory.md](integrations/directory.md#kerberos-and-spnego-are-not-offered), [ADR 0018](architecture-decisions/0018-enterprise-protocols-deferred.md))",
+	"PROV-015": "Not offered: no Kerberos/SPNEGO module; keytab custody, cross-realm trust, a shared replay cache and a KDC test harness are not designed yet ([directory.md](integrations/directory.md#kerberos-and-spnego-are-not-offered), [ADR 0018](architecture-decisions/0018-enterprise-protocols-when-complete.md))",
 	"API-014":  "Not offered: no gRPC management interface, so no alternate administrative path exists ([compatibility.md](protocols/compatibility.md))",
 }
 
@@ -450,9 +450,12 @@ func docRefs(m map[string]bool, n int) string {
 	for k := range m {
 		keys = append(keys, k)
 	}
+	// Current documents under docs/ first, then the rest (the README, the
+	// CHANGELOG and the development history in docs/history/), each
+	// alphabetically.
+	current := func(k string) bool { return strings.HasPrefix(k, "docs/") && !strings.HasPrefix(k, "docs/history/") }
 	sort.Slice(keys, func(i, j int) bool {
-		// Documents under docs/ first, then the rest, each alphabetically.
-		di, dj := strings.HasPrefix(keys[i], "docs/"), strings.HasPrefix(keys[j], "docs/")
+		di, dj := current(keys[i]), current(keys[j])
 		if di != dj {
 			return di
 		}

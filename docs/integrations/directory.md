@@ -697,7 +697,7 @@ Not supported, and not advertised:
 PROV-015 allows a Kerberos/SPNEGO adapter only as an optional module with
 explicit keytab custody, service-principal configuration, trust boundaries
 and negative tests. None is shipped or advertised
-([ADR 0018](../architecture-decisions/0018-enterprise-protocols-deferred.md)):
+([ADR 0018](../architecture-decisions/0018-enterprise-protocols-when-complete.md)):
 
 1. **Keytab custody.** An SPNEGO acceptor needs the service principal's
    long-term key (keytab), which lets its holder impersonate the service

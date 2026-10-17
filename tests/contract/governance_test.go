@@ -366,8 +366,9 @@ func TestCodeOwnersReviewBoundaries(t *testing.T) {
 // CHANGELOG section as release notes (refused without a Known limitations
 // heading), the binaries with checksums, SBOMs, build provenance attestations
 // and a signed image; the CHANGELOG keeps breaking changes, security fixes
-// (with advisories) and known limitations in their own sections. The only
-// other trigger is the manual dry run, which publishes nothing.
+// (with advisories) and known limitations in their own sections, links every
+// version, and points to the history before the first tag in docs/history/.
+// The only other trigger is the manual dry run, which publishes nothing.
 func TestReleaseTransparency(t *testing.T) {
 	raw := govRead(t, ".github/workflows/release.yml")
 	rel := govLoadWorkflow(t, ".github/workflows/release.yml")
@@ -451,13 +452,14 @@ func TestReleaseTransparency(t *testing.T) {
 `), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	notes := func(version string) string {
-		out, err := exec.Command("awk", "-v", "v="+version, m[1], changelog).Output()
+	notesFrom := func(file, version string) string {
+		out, err := exec.Command("awk", "-v", "v="+version, m[1], file).Output()
 		if err != nil {
 			t.Fatalf("release-notes awk program: %v", err)
 		}
 		return string(out)
 	}
+	notes := func(version string) string { return notesFrom(changelog, version) }
 	got := notes("1.2.0")
 	for _, want := range []string{"## [1.2.0] - 2026-10-01", "breaking change A", "fix B (GHSA-0000-0000-0000)", "limitation C"} {
 		if !strings.Contains(got, want) {
@@ -473,12 +475,46 @@ func TestReleaseTransparency(t *testing.T) {
 		t.Errorf("a tag without a CHANGELOG section must produce empty notes (the step then fails), got:\n%s", got)
 	}
 
-	// The CHANGELOG has the sections the notes are made of.
+	// The CHANGELOG has the sections the notes are made of. Keep a Changelog
+	// names the security section "Security"; SECURITY.md and the development
+	// history call it "Security fixes".
 	cl := govRead(t, "CHANGELOG.md")
-	for _, h := range []string{"## [Unreleased]", "### Changed", "### Security fixes", "### Known limitations"} {
-		if !strings.Contains(cl, "\n"+h+"\n") {
-			t.Errorf("CHANGELOG.md has no %q section", h)
+	for _, h := range [][]string{{"## [Unreleased]"}, {"### Changed"}, {"### Security", "### Security fixes"}, {"### Known limitations"}} {
+		if !slices.ContainsFunc(h, func(s string) bool { return strings.Contains(cl, "\n"+s+"\n") }) {
+			t.Errorf("CHANGELOG.md has no %q section", strings.Join(h, `" or "`))
 		}
+	}
+
+	// Each version heading has its Keep a Changelog link: Unreleased compares
+	// the latest tag with main, a version compares with the one before it,
+	// and the oldest links its tag. The development history before the first
+	// tag lives in docs/history/, linked under a heading of its own, so the
+	// link block never ends up in a version's release notes.
+	const repo = "https://github.com/proudauth/proudauth/"
+	versions := regexp.MustCompile(`(?m)^## \[([^\]]+)\]`).FindAllStringSubmatch(cl, -1)
+	linkDef := regexp.MustCompile(`(?m)^\[[^\]]+\]: https://`)
+	if len(versions) < 2 || versions[0][1] != "Unreleased" {
+		t.Fatalf("CHANGELOG.md must start with [Unreleased] followed by the released versions, got %q", versions)
+	}
+	for i, v := range versions {
+		want := repo + "releases/tag/v" + v[1]
+		if i == 0 {
+			want = repo + "compare/v" + versions[1][1] + "...main"
+		} else if i < len(versions)-1 {
+			want = repo + "compare/v" + versions[i+1][1] + "...v" + v[1]
+		}
+		if !strings.Contains(cl, "\n["+v[1]+"]: "+want+"\n") {
+			t.Errorf("CHANGELOG.md lacks the link [%s]: %s", v[1], want)
+		}
+		if i > 0 {
+			if got := notesFrom(filepath.Join(repoRoot, "CHANGELOG.md"), v[1]); linkDef.MatchString(got) {
+				t.Errorf("release notes for %s include the link block:\n%s", v[1], got)
+			}
+		}
+	}
+	if !strings.Contains(cl, "](docs/history/CHANGELOG-pre-0.2.0.md)") ||
+		!strings.Contains(govRead(t, "docs/history/CHANGELOG-pre-0.2.0.md"), "\n## Historical development before 0.2.0-alpha.1\n") {
+		t.Error("CHANGELOG.md must link the development history before the first tag, docs/history/CHANGELOG-pre-0.2.0.md")
 	}
 	if !strings.Contains(cl, "breaking changes") || !strings.Contains(strings.ToLower(govRead(t, "SECURITY.md")), "advisor") {
 		t.Error("CHANGELOG.md must say where breaking changes are listed and SECURITY.md how advisories are published")
