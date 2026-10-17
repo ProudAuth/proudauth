@@ -412,16 +412,15 @@ func (s *Service) checkGroupCeilingTx(ctx context.Context, tx pgx.Tx, realmID, o
 	return nil
 }
 
-// groupRolesTx lists the roles a group grants its members, including those
-// assigned to its ancestors.
 // GroupRolesTx lists the roles a group grants its members, including those
-// assigned to its ancestors.
-func GroupRolesTx(ctx context.Context, tx pgx.Tx, orgID, groupID string) ([]string, error) {
-	return groupRolesTx(ctx, tx, orgID, groupID)
+// assigned to its ancestors. q is the caller's transaction, or the pool for a
+// read outside one (the MFA-003 pre-check in httpapi).
+func GroupRolesTx(ctx context.Context, q storage.Querier, orgID, groupID string) ([]string, error) {
+	return groupRolesTx(ctx, q, orgID, groupID)
 }
 
-func groupRolesTx(ctx context.Context, tx pgx.Tx, orgID, groupID string) ([]string, error) {
-	rows, err := tx.Query(ctx, `WITH RECURSIVE up(id, parent_id, depth) AS (
+func groupRolesTx(ctx context.Context, q storage.Querier, orgID, groupID string) ([]string, error) {
+	rows, err := q.Query(ctx, `WITH RECURSIVE up(id, parent_id, depth) AS (
 			SELECT id, parent_id, 0 FROM groups WHERE organization_id=$2 AND id=$1
 			UNION ALL SELECT g.id, g.parent_id, up.depth+1 FROM groups g JOIN up ON g.id=up.parent_id WHERE up.depth < 64)
 		SELECT DISTINCT role_id FROM role_assignments WHERE subject_type='group' AND subject_id IN (SELECT id FROM up)`, groupID, orgID)

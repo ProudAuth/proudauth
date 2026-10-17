@@ -27,6 +27,8 @@ func invitationFromMail(body string) string {
 // on the database, not a cache).
 func TestInvitationLifecycle(t *testing.T) {
 	f := NewFixture(t)
+	// Granting roles by invitation needs an MFA session (TestOrgAuthorityGrantsNeedMFA).
+	f.EnrollTOTP("alice")
 	alice := f.AccountToken("alice").Tokens.Str("access_token") // acme owner
 	newUser := f.CreateUser("dave")
 	_ = newUser
@@ -123,6 +125,8 @@ func TestInvitationLifecycle(t *testing.T) {
 // creation grants nothing.
 func TestInvitationRevalidatesInviter(t *testing.T) {
 	f := NewFixture(t)
+	// Granting roles by invitation needs an MFA session (TestOrgAuthorityGrantsNeedMFA).
+	f.EnrollTOTP("carol")
 	carol := f.AccountToken("carol").Tokens.Str("access_token") // globex admin
 	f.CreateUser("erin")
 	inv := f.H.API("POST", "/organizations/"+f.Globex+"/invitations", carol, map[string]any{"email": "erin@example.test", "role_ids": []string{f.Roles["orders-viewer"]}})

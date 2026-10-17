@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/proudauth/proudauth/internal/authorization"
+	"github.com/proudauth/proudauth/internal/identity"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestInactiveSubjectsHoldNoPermissions covers AZ-007 with USR-003: a
@@ -179,6 +181,90 @@ func TestDelegationCeilings(t *testing.T) {
 			"composite_role_ids": []string{a.Str("id")}}), 201, "rb")
 		_ = b
 	})
+}
+
+// TestOrgAuthorityGrantsNeedMFA covers MFA-003 with TEN-008 and TEN-013: an
+// organization administrator who grants roles without the role routes (a
+// member added with roles, an organization or project invitation with roles,
+// alone or in a batch, the reassignment of such an invitation, joining a
+// group that grants roles, moving a group under one, or a dynamic rule on
+// one) must act from an MFA session, as on the role routes. Plain membership
+// needs none, and the realm waiver (OrgAdminMFAOptional) still applies.
+func TestOrgAuthorityGrantsNeedMFA(t *testing.T) {
+	f := NewFixture(t)
+	h := f.H
+	mustStatus(t, f.SetPolicy(func(p *realm.Policy) {
+		p.Profile.Attributes = []identity.AttributeDef{{Name: "department", Type: "string", MaxLength: 64, Visibility: "admin", Source: "directory"}}
+	}), 200, "schema")
+	org := "/organizations/" + f.Globex
+	viewer := []string{f.Roles["orders-viewer"]} // within carol's ceiling
+	dave, erin := f.CreateUser("dave"), f.CreateUser("erin")
+	group := func(name string, roles ...string) string {
+		t.Helper()
+		id := f.must(f.AdminAPI("POST", org+"/groups", map[string]any{"name": name}), 201, "group "+name).Str("id")
+		for _, r := range roles {
+			f.must(f.AdminAPI("POST", org+"/groups/"+id+"/roles", map[string]any{"role_id": r}), 201, "group role")
+		}
+		return id
+	}
+	viewers, ruled, plain, open := group("viewers", viewer[0]), group("ruled", viewer[0]), group("plain"), group("open")
+	pending := f.must(f.AdminAPI("POST", org+"/invitations", map[string]any{"email": "frank@example.test", "role_ids": viewer}), 201, "pending invitation")
+	project := f.must(f.AdminAPI("POST", "/projects", map[string]any{"name": "Globex Portal"}), 201, "project").Str("id")
+	portal := f.must(f.AdminAPI("POST", "/roles", map[string]any{"boundary_type": "project", "project_id": project, "name": "portal-user",
+		"permissions": []string{"orders.read"}}), 201, "project role").Str("id")
+	f.must(f.AdminAPI("POST", "/projects/"+project+"/grants", map[string]any{"organization_id": f.Globex, "allowed_role_ids": []string{portal}}), 201, "grant")
+
+	grants := []struct {
+		what, method, path string
+		body               map[string]any
+		want               int
+	}{
+		{"adding a member with roles", "POST", org + "/members", map[string]any{"user_id": dave, "role_ids": viewer}, 201},
+		{"an invitation with roles", "POST", org + "/invitations", map[string]any{"email": "ivy@example.test", "role_ids": viewer}, 201},
+		{"a project invitation", "POST", org + "/invitations", map[string]any{"email": "pat@example.test", "purpose": "project_access",
+			"project_id": project, "role_ids": []string{portal}}, 201},
+		{"a batch with one role-granting entry", "POST", org + "/invitations/batch", map[string]any{"items": []map[string]any{
+			{"email": "jo@example.test"}, {"email": "kim@example.test", "role_ids": viewer}}}, 200},
+		{"reassigning a role-granting invitation", "POST", org + "/invitations/" + pending.Str("invitation.id") + "/reassign",
+			map[string]any{"email": "frank.new@example.test", "reason": "ticket 77: address changed"}, 201},
+		{"joining a role-granting group", "POST", org + "/groups/" + viewers + "/members", map[string]any{"membership_id": f.MemberGlobex["bob"]}, 204},
+		{"moving a group under a role-granting parent", "PATCH", org + "/groups/" + plain, map[string]any{"parent_id": viewers}, 200},
+		{"a dynamic rule on a role-granting group", "PUT", org + "/groups/" + ruled + "/dynamic-rule",
+			map[string]any{"all": []map[string]any{{"attribute": "department", "equals": "sales"}}}, 200},
+	}
+
+	single := f.AccountToken("carol").Tokens.Str("access_token") // globex admin, password only
+	for _, g := range grants {
+		if r := h.API(g.method, g.path, single, g.body); r.Status != 403 || r.Str("code") != "mfa_required" {
+			t.Errorf("%s from a single-factor session: %d %s", g.what, r.Status, r.Raw)
+		}
+	}
+	if t.Failed() {
+		t.FailNow()
+	}
+	// The refusals changed nothing.
+	if m := string(f.must(f.AdminAPI("GET", org+"/groups/"+viewers+"/members", nil), 200, "group members").Raw); strings.Contains(m, f.MemberGlobex["bob"]) {
+		t.Fatalf("refused group join applied: %s", m)
+	}
+	if g := f.must(f.AdminAPI("GET", org+"/groups/"+plain, nil), 200, "group"); g.Str("parent_id") != "" {
+		t.Fatalf("refused group move applied: %s", g.Raw)
+	}
+	// Plain membership is not authority.
+	mustStatus(t, h.API("POST", org+"/members", single, map[string]any{"user_id": erin}), 201, "adding a plain member")
+	mustStatus(t, h.API("POST", org+"/invitations", single, map[string]any{"email": "lou@example.test"}), 201, "a plain invitation")
+	mustStatus(t, h.API("POST", org+"/invitations/batch", single, map[string]any{"items": []map[string]any{{"email": "max@example.test"}}}), 200, "a plain batch")
+	mustStatus(t, h.API("POST", org+"/groups/"+open+"/members", single, map[string]any{"membership_id": f.MemberGlobex["bob"]}), 204, "joining a plain group")
+	// Where the realm waives MFA for organization administration, the grant
+	// routes follow the role routes.
+	mustStatus(t, f.SetPolicy(func(p *realm.Policy) { p.MFA.OrgAdminMFAOptional = true }), 200, "waive")
+	mustStatus(t, h.API("POST", org+"/invitations", single, map[string]any{"email": "waived@example.test", "role_ids": viewer}), 201, "a grant under the waiver")
+	mustStatus(t, f.SetPolicy(func(p *realm.Policy) { p.MFA.OrgAdminMFAOptional = false }), 200, "unwaive")
+
+	f.EnrollTOTP("carol")
+	carol := f.AccountToken("carol").Tokens.Str("access_token")
+	for _, g := range grants {
+		mustStatus(t, h.API(g.method, g.path, carol, g.body), g.want, g.what+" from an MFA session")
+	}
 }
 
 // TestLastOwnerProtection covers TEST-011 with TEN-006 and DB-007: the only

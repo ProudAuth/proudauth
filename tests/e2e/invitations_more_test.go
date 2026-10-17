@@ -14,6 +14,8 @@ import (
 func TestBulkAndProjectInvitations(t *testing.T) {
 	f := NewFixture(t)
 	h := f.H
+	// Granting roles by invitation needs an MFA session (TestOrgAuthorityGrantsNeedMFA).
+	f.EnrollTOTP("alice")
 	alice := f.AccountToken("alice").Tokens.Str("access_token") // acme owner
 	inviteURL := "/organizations/" + f.Acme + "/invitations"
 
@@ -307,6 +309,8 @@ func TestInvitationLimitsAndExpiry(t *testing.T) {
 func TestInvitationRoleCeiling(t *testing.T) {
 	f := NewFixture(t)
 	h := f.H
+	// Granting roles by invitation needs an MFA session (TestOrgAuthorityGrantsNeedMFA).
+	f.EnrollTOTP("carol")
 	carol := f.AccountToken("carol").Tokens.Str("access_token") // globex admin holding orders-viewer
 	inviteURL := "/organizations/" + f.Globex + "/invitations"
 	f.CreateUser("erin")
@@ -341,6 +345,8 @@ func TestInvitationRoleCeiling(t *testing.T) {
 func TestSharedInvitationLinks(t *testing.T) {
 	f := NewFixture(t)
 	h := f.H
+	// Granting roles by invitation needs an MFA session (TestOrgAuthorityGrantsNeedMFA).
+	f.EnrollTOTP("alice")
 	alice := f.AccountToken("alice").Tokens.Str("access_token") // acme owner
 	inviteURL := "/organizations/" + f.Acme + "/invitations"
 	link := func(change map[string]any) *Resp {

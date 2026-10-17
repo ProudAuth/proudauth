@@ -99,8 +99,7 @@ func TestRestoreProofConsumption(t *testing.T) {
 	// An invitation accepted after the backup.
 	f.CreateUser("erin")
 	alice := f.AccountToken("alice").Tokens.Str("access_token")
-	mustStatus(t, h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": "erin@example.test",
-		"role_ids": []string{f.Roles["orders-viewer"]}}), 201, "invite erin")
+	mustStatus(t, h.API("POST", "/organizations/"+f.Acme+"/invitations", alice, map[string]any{"email": "erin@example.test"}), 201, "invite erin")
 	invitation := invitationFromMail(h.Mail("erin@example.test", "invitation"))
 	// A second client secret and a personal access token, revoked after the backup.
 	batch := f.Clients["batch"]
