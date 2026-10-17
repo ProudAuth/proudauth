@@ -69,6 +69,7 @@ fuzz:
 	$(GO) test ./internal/platform/reqctx -run '^$$' -fuzz '^FuzzParseTraceparent$$' -fuzztime 15s
 	$(GO) test ./internal/egress -run '^$$' -fuzz '^FuzzAllowed$$' -fuzztime 15s
 	$(GO) test ./internal/application -run '^$$' -fuzz '^FuzzClaimMappings$$' -fuzztime 15s
+	$(GO) test ./internal/oauth -run '^$$' -fuzz '^FuzzParseAuthorize$$' -fuzztime 15s
 licenses:
 	./scripts/check-licenses.sh
 

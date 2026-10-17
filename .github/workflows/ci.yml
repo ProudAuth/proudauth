@@ -68,6 +68,7 @@ jobs:
           go test ./internal/platform/reqctx -run '^$' -fuzz '^FuzzParseTraceparent$' -fuzztime 15s
           go test ./internal/egress -run '^$' -fuzz '^FuzzAllowed$' -fuzztime 15s
           go test ./internal/application -run '^$' -fuzz '^FuzzClaimMappings$' -fuzztime 15s
+          go test ./internal/oauth -run '^$' -fuzz '^FuzzParseAuthorize$' -fuzztime 15s
 
   e2e:
     # tests/e2e: every test runs the server in-process on its own database
