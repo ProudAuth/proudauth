@@ -1,0 +1,28 @@
+{
+  "format_version": "1",
+  "hash_algorithm": "sha256",
+  "source_digest_sha256_16": "ed47a3d61d279094",
+  "artifacts": {
+    "binary-sha256.txt": "207e81e04cf4ddab03f4f6e4f4b0ddc3ed24a176287a27242fbf8e0f76c63577",
+    "build-info.txt": "0cfa38ed9842657adb3b5781331cc6edafc367e24030444aece17d21b749b054",
+    "client-credentials.json": "69d31c0f3160f3ac5bda95420f4df018f438e3f6ef18168407c2b7b75e80a47d",
+    "effective-config-redacted.json": "b410c40e5d9ec6085b8f01ac530b6d5f17c9e04b809b64e5b09b4856b959ec97",
+    "environment.json": "cdd344ab574b48b96cdcb114e25384b6806cf8f9d415d3b4fc6620ad16d36a6b",
+    "introspection.json": "9c397624f25ebb5ba37352be873ef47461b8de2b0ce98840cee8faec10485ec2",
+    "password-login.json": "d3487c4f1368111b468a06f907b085dcb54526acb37896d9a017cabb4fc6a5d2",
+    "postgres/client-credentials-top-statements.tsv": "8f2ccfc2f958ae344c186724f969ff9f09f2fb969d1b443fcde109f0857181cd",
+    "postgres/database-size-bytes.txt": "d9b2bf7e076b79f38d23c6790746c5983f5179927db89d0e1a6f336a9a9f4c72",
+    "postgres/introspection-top-statements.tsv": "ccf7e8a96fccfa94fa4ec1746eb1b456b03aa490b0e7f1babc6da50b57084dd0",
+    "postgres/largest-tables.tsv": "d8fa9f66691967501dd8b58ad63467a7968f76d00d56116a05db761cb028eae1",
+    "postgres/password-login-top-statements.tsv": "fd72ea8636983a97c9b812a3c718ba8c21cca57b01d71056ed107a42e73c18a2",
+    "postgres/refresh-top-statements.tsv": "a58db6dd2098e77e2ff71484fc28deb86ac70e105a9e2c436139843cd3eb9c90",
+    "postgres/settings.tsv": "f181e2ac46f522c90ac3aaa6d589309eacac1f8e2d9ef25786cd9883ba35c73b",
+    "postgres/token-top-statements.tsv": "4810c7ffdbc58c33de3a007b4a32c4b8064ad24356718b6eb42dbdfdc30be007",
+    "proudauth-config-node-1.yaml": "80f4685ea42ed929ca6e71f568fbb92389c01058c09f96fd5053758a01474c78",
+    "proudauth-config.yaml": "80f4685ea42ed929ca6e71f568fbb92389c01058c09f96fd5053758a01474c78",
+    "refresh.json": "b25b851ecbb8bb5de395b97aefa79ff5fb7b4e7e17cf8528298dc27e95aca92a",
+    "seed-spec.json": "4a35bc62ef9551a4433546afd3219025f33dcf52bf0ad96c625488cf660a1dc4",
+    "summary.json": "936ac5af6419bba898d33dc06866d2f12d05f1d99a712d0397ae17bc1ffcc78c"
+  },
+  "note": "0.2.0-alpha.5 core-flow baselines (password-login, refresh, client-credentials, introspection) on one cohosted laptop; the private runner temp directory in effective-config-redacted.json is replaced by $WORK; summary.json keeps the failed 'token' entry, an invalid scenario name in the invocation, not a server result; private seed and administrator authority excluded; not a sizing guarantee."
+}

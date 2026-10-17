@@ -20,6 +20,10 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 - `docs/releases/` records the owner decisions taken at the start of each
   release phase, beginning with
   [0.2.0-alpha.5](docs/releases/2026-10-alpha.5-decisions.md).
+- Reference measurements of the four core token flows on the alpha.5 tree,
+  within three percent of the 2026-10-11 results
+  ([benchmarks.md](docs/operations/benchmarks.md#alpha5-core-flow-baselines-nfr-003-nfr-008),
+  `docs/operations/bench-results/2026-10-18-laptop-alpha5-baselines/`).
 - The release workflow can be dry-run from `main` (`workflow_dispatch`): it
   builds, pushes by digest to `ghcr.io/proudauth/proudauth-staging`, attests,
   signs, tags, verifies its outputs with the operator commands from

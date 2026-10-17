@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+130839	55766.0	0.426	130839	UPDATE client_credentials SET last_used_at=$2 WHERE id=$1
+261650	2630.3	0.010	261650	SELECT id, realm_id, client_id, coalesce(project_id,$3), name, coalesce(description,$4), client_type, token_endpoint_auth_method, grant_types, security_profile, state, first_party, consent_mode, allow
+130842	2296.4	0.018	130842	SELECT id FROM client_credentials WHERE client_ref=$1 AND kind=$4 AND state=$5 AND secret_digest=$2 AND (expires_at IS NULL OR expires_at > $3)
+261642	1985.3	0.008	0	SELECT uri, purpose FROM client_redirect_uris WHERE client_ref=$1 ORDER BY created_at, uri
+261633	1672.3	0.006	0	SELECT origin FROM client_origins WHERE client_ref=$1 ORDER BY origin
+130843	1042.6	0.008	261686	SELECT id, coalesce(resource_id,$3), name, coalesce(description,$4), coalesce(consent_text,$5), sensitivity, is_default, kind, required_permissions, coalesce(step_up_acr,$6), coalesce(max_auth_age_sec
+130827	958.1	0.007	130827	SELECT id, realm_id, coalesce(project_id,$3), name, audience, coalesce(description,$4), kind, token_format, verification_mode, access_token_ttl_seconds, requires_organization, impersonation_enabled, i
+130797	769.0	0.006	130797	SELECT permission_revision FROM service_principals WHERE id=$1
+130784	760.5	0.006	130784	SELECT state FROM service_principals WHERE realm_id=$1 AND id=$2
+130810	749.3	0.006	130810	SELECT resource_id FROM resource_server_clients WHERE client_ref=$1
+130800	495.8	0.004	130800	SELECT EXISTS (SELECT $3 FROM token_revocations WHERE realm_id=$1 AND reference_type=$4 AND reference_id=$2)
+168	291.4	1.734	168	SELECT pg_advisory_xact_lock(hashtext($1))

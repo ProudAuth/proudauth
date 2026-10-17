@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+84	2.6	0.031	84	UPDATE outbox_events SET state='dispatched', dispatched_at=$2, attempts=attempts+1 WHERE seq=$1
+4	2.5	0.630	4	SELECT pg_advisory_xact_lock(hashtext($1))
+84	0.1	0.002	0	SELECT id, event_types, payload_form, event_version FROM webhook_subscriptions WHERE realm_id=$1 AND state='active' AND (organization_id IS NULL OR organization_id=$2)
+28	0.1	0.003	0	SELECT w.id, w.name, w.published_by_id, r.number, r.definition_hash, r.definition FROM workflows w JOIN workflow_revisions r ON r.workflow_id=w.id AND r.number=w.active_revision WHERE w.state='active'
+28	0.1	0.002	0	SELECT id, realm_id, coalesce(organization_id,''), name, kind, state, config, role_ceiling_ids, group_role_mappings, coalesce(default_role_id,''), secret_ciphertext, secret_set_at, last_sync_at, last_
+4	0.0	0.011	0	UPDATE jobs SET state='running', lease_owner=$1, lease_expires_at=$2, attempts=attempts+1, updated_at=$3 WHERE id = (SELECT id FROM jobs j WHERE type = ANY($4) AND ((state='queued' AND run_after <= $3
+4	0.0	0.004	0	begin isolation level read committed
+1	0.0	0.011	0	SELECT id, realm_id, coalesce(organization_id,''), name, kind, state, config, role_ceiling_ids, group_role_mappings, coalesce(default_role_id,''), secret_ciphertext, secret_set_at, last_sync_at, last_
+1	0.0	0.006	0	UPDATE notification_jobs SET lease_owner=$1, lease_expires_at=$2, attempts=attempts+1, state='attempted', updated_at=$3 WHERE id IN (SELECT id FROM notification_jobs WHERE id IN ( -- Fair share (TEN-0
+1	0.0	0.005	0	UPDATE workflow_runs SET lease_owner=$1, lease_expires_at=$2 WHERE id IN (SELECT id FROM ( -- Fair share (TEN-018): one realm's backlog cannot starve the others. SELECT r.id, r.next_run_at, row_number
+1	0.0	0.005	1	SELECT count(*) FROM outbound_deliveries WHERE state IN ('pending','retrying')
+1	0.0	0.004	0	UPDATE webhook_deliveries SET lease_owner=$1, lease_expires_at=$2, attempts=attempts+1 WHERE id IN (SELECT id FROM webhook_deliveries WHERE id IN ( -- Fair share (TEN-018, EXT-005): a slow or flooded 
