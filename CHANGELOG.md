@@ -11,7 +11,28 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 
 ## [Unreleased]
 
-No changes recorded after 0.2.0-alpha.4.
+### Changed
+
+- Database-backed tests clone a template database that is migrated once per
+  migration set (its name carries a digest of `migrations/*.sql`), instead of
+  replaying every migration for each test. `PROUDAUTH_TEST_NO_TEMPLATE=1`
+  restores direct migration (QA-001).
+- CI runs `tests/e2e` as four parallel shards (`scripts/e2e-shard.sh`, job
+  `e2e`) and pipes every `go test` run through `internal/tools/testreport`,
+  which fails the job when a test skips outside `tests/skip-allowlist.txt`,
+  when a package fails to build, or when no test ran. Under CI, or with
+  `PROUDAUTH_TEST_REQUIRE_DB=1`, a missing `PROUDAUTH_TEST_DATABASE_URL`
+  fails database tests instead of skipping them. The `image` check now also
+  waits for every e2e shard.
+
+### Added
+
+- `internal/testutil` fault-injection helpers for reliability tests: a TCP
+  black hole, silent and stalling SMTP relays, a refused port and a slow HTTP
+  server.
+- `docs/releases/` records the owner decisions taken at the start of each
+  release phase, beginning with
+  [0.2.0-alpha.5](docs/releases/2026-10-alpha.5-decisions.md).
 
 ## [0.2.0-alpha.4] - 2026-10-15
 
