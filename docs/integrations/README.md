@@ -27,14 +27,15 @@ How applications and services integrate with ProudAuth (docs/plan.md §28).
 | [policy-engines.md](policy-engines.md) | Connecting an external policy decision point (for example Open Policy Agent) to the decision API: operator configuration, realm policy, call contract, `restrict` and `decide` modes, failure behavior (AZ-026) |
 | [elevation-and-access-reviews.md](elevation-and-access-reviews.md) | Just-in-time role elevation with approval and automatic expiry, and access review campaigns with evidence export (AZ-024, AZ-025) |
 
-Reference implementations in this repository:
+Reference implementations in the SDK repositories (`proudauth-sdk-*`) and in
+this repository (`examples/`):
 
 | Path | What it shows |
 | --- | --- |
 | `proudauth-sdk-go/verifier` | Offline JWT verification, strict-online introspection, bounded-state verification fed by the session-event stream, `SupportGuard`, `net/http` `Middleware`, `AuthenticateMetadata` (gRPC, WebSocket and message headers), `MultiIssuer` |
 | `proudauth-sdk-go/oidcclient` | Authorization code + PKCE, ID-token validation, serialized refresh, logout |
 | `proudauth-sdk-go/admin` | Typed administration client (0.2.0) with problem details, pagination, idempotency keys, one-time secrets wrapped in `admin.Secret`, deprecation reporting |
-| `proudauth-sdk-node` | Node.js/TypeScript SDK (unpublished 0.2.0): verifier, introspection and `SupportGuard`, bounded-state verification, `MultiIssuerVerifier`, OIDC BFF client, admin client with `Secret`, Express/Connect, `node:http` and Fastify adapters; see interoperability.md for its test status |
+| `proudauth-sdk-node` | Node.js/TypeScript SDK (0.2.0 on npm): verifier, introspection and `SupportGuard`, bounded-state verification, `MultiIssuerVerifier`, OIDC BFF client, admin client with `Secret`, Express/Connect, `node:http` and Fastify adapters; see interoperability.md for its test status |
 | `proudauth-sdk-dart` | Dart SDK (unpublished 0.2.0, no Flutter dependency): the same areas, with signature verification implemented in the package, `authorizeBearer` and a `dart:io` adapter |
 | `proudauth-sdk-php` | PHP 8.2+ SDK (unpublished 0.2.0, no Composer dependencies): the same areas, with a shared key-set store for PHP-FPM workers and `RequestAuthenticator` for plain PHP and PSR-15 |
 | `proudauth-sdk-dotnet` | .NET 8+ SDK (unpublished 0.2.0): the same areas, with ASP.NET Core authentication and middleware; [usage and test status](https://github.com/proudauth/proudauth-sdk-dotnet/blob/main/README.md) |
@@ -47,8 +48,9 @@ Reference implementations in this repository:
 
 Every integration below is maintained by this repository's maintainers (no
 community-maintained or unmaintained adapters exist) and follows the 0.x
-versioning of the project: nothing is released yet. **Maturity** says how far
-it has been exercised:
+versioning of the project: the service publishes 0.2.0 prereleases, and the SDKs
+version independently ([sdk-compatibility.md](sdk-compatibility.md)).
+**Maturity** says how far it has been exercised:
 
 - **In-repo tested**: tested end to end only against test doubles or
   counterparts in this repository ([interoperability.md](interoperability.md#counterparts)).

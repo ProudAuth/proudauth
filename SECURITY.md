@@ -14,8 +14,7 @@ Use **GitHub private vulnerability reporting** through the repository's
 (Security tab, "Report a vulnerability"). Reports are private to the reporter
 and maintainers. There is no monitored project security mailbox advertised here.
 
-This local snapshot has not been published. Before public source publication,
-maintainers must enable private vulnerability reporting and verify this route.
+Private vulnerability reporting is enabled on this public repository.
 SDK vulnerabilities belong to the corresponding language repository's private
 advisory form; reports affecting the shared protocol can also go to the service
 maintainer. Never put reproduction secrets in a public issue.
@@ -23,7 +22,7 @@ maintainer. Never put reproduction secrets in a public issue.
 Please include:
 
 - the affected commit, tag or image digest;
-- the component (for example `internal/oauth`, `sdk/go/verifier`, a migration);
+- the component (for example `internal/oauth`, `internal/token`, a migration);
 - reproduction steps or a proof of concept against a local development stack;
 - the impact you believe it has (for example tenant crossing, token forgery,
   privilege escalation, secret disclosure, denial of service);
@@ -70,7 +69,8 @@ Every security fix is reproducible without customer data:
 - **A regression test or fixture lands with the fix.** It fails before the fix
   and passes after it: an end-to-end scenario in `tests/e2e`, a unit test next
   to the code, a fuzz input committed under `testdata/fuzz/<Target>/`, or a
-  case in the shared SDK fixtures (`sdk/fixtures`). Name it in the pull
+  case in the shared SDK contract fixtures (`tests/fixtures/sdk-contracts`,
+  vendored by each SDK repository). Name it in the pull
   request and in the CHANGELOG entry.
 - **Synthetic data only.** Fixtures use test-only keys, `example.test` style
   names and generated IDs. A reproduction taken from a report or an incident is
@@ -92,25 +92,33 @@ While the project is in the 0.x series:
 
 | Version | Security fixes |
 | --- | --- |
-| Latest 0.y minor release | Yes |
-| Previous 0.(y-1) minor release | Yes, until the next minor release after it is published |
-| Older releases and untagged commits | No |
+| Latest published 0.2.0 prerelease ([Releases](https://github.com/proudauth/proudauth/releases)) | Yes, until 0.2.0 is published |
+| Latest 0.y minor release, from 0.2.0 on | Yes |
+| Older releases and prereleases, and untagged commits | No |
 
-No release has been tagged yet, so today only the `main` branch receives fixes.
-After 1.0 this table will be replaced by a policy published with the 1.0 release.
-The same lines apply to the Go, Node.js, Dart, PHP and .NET SDKs, whose versioning is described
-in [docs/integrations/sdk-compatibility.md](docs/integrations/sdk-compatibility.md).
+During the 0.2.0 prerelease series only the latest published prerelease
+receives security fixes, and each fix ships as the next prerelease
+(`v0.2.0-alpha.N`). From 0.2.0 on, only the latest 0.y minor release receives
+them. After 1.0 this table will be replaced by a policy published with the 1.0
+release. The SDKs version independently;
+[docs/integrations/sdk-compatibility.md](docs/integrations/sdk-compatibility.md#security-updates)
+states which SDK versions receive fixes.
 
 ## Scope
 
 In scope:
 
-- code in this repository: `cmd/`, `internal/`, `migrations/`, the transitional Go SDK and shared fixtures in `sdk/`, `scripts/`, and the API contracts in `api/`;
+- code in this repository: `cmd/`, `internal/`, `migrations/`, the shared SDK contract fixtures in `tests/fixtures/sdk-contracts`, `scripts/`, and the API contracts in `api/`;
 - the `Dockerfile`, `deploy/` files and `.github/workflows/` (supply-chain issues);
 - the example applications in `examples/` where a flaw would mislead integrators
   into an insecure pattern;
 - documented security properties in `docs/` that the code does not actually
   provide.
+
+SDK code lives in the five SDK repositories under
+[github.com/proudauth](https://github.com/proudauth) (`proudauth-sdk-go`,
+`proudauth-sdk-node`, `proudauth-sdk-dart`, `proudauth-sdk-php` and
+`proudauth-sdk-dotnet`), each with its own SECURITY.md.
 
 Out of scope:
 

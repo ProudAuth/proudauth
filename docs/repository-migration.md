@@ -16,8 +16,8 @@ the website renderer have standalone owners and release lifecycles.
 
 The CLI imports the admin client from `github.com/proudauth/proudauth-sdk-go`;
 service end-to-end tests import its admin, verifier and OIDC packages.
-`go.mod` pins `v0.0.0-20261013190527-116f9fa19d0b`, corresponding to public
-commit `116f9fa19d0b0174a0c270763e2ef6abf872233b`; `go.sum` verifies the module.
+`go.mod` pins `v0.0.0-20261015160744-4c3faf77751b`, corresponding to public
+commit `4c3faf77751ba493eba31de28897869350c74c54`; `go.sum` verifies the module.
 No local `replace` directive, Go workspace or sibling checkout is required.
 SDK implementation sources are absent from this repository.
 
@@ -57,7 +57,10 @@ source revision, successful CI run, workflow bytes and shared-contract hashes.
    mismatch rejection and owned-resource cleanup remain unchanged.
 6. Image smoke, full CI, dependency/security scans and publication privacy checks
    remain required before a version tag. Snapshot notes and metadata do not
-   replace those live verification results or establish registry publication.
+   replace those live verification results or establish registry publication:
+   of the SDK registries only npm carries a release (`@proudauth/sdk` 0.2.0,
+   2026-10-16); pub.dev, Packagist and NuGet carry none, and the Go SDK has no
+   version tag ([registry state](integrations/sdk-compatibility.md)).
 
 ## Historical measurement provenance
 
