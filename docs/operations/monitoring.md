@@ -150,7 +150,7 @@ label values.
 
 | Metric | Type | Labels | Updated by | Meaning |
 | --- | --- | --- | --- | --- |
-| `proudauth_directory_binds_total` | counter | `outcome` (`success`, `invalid_credentials`, `unavailable`, `disabled`) | `identity-server` | Password sign-ins of directory-sourced accounts and first sign-in provisioning; `unavailable` is an outage, `disabled` a disabled connector, organization or module |
+| `proudauth_directory_binds_total` | counter | `outcome` (`success`, `invalid_credentials`, `unavailable`, `disabled`, `busy`) | `identity-server` | Password sign-ins of directory-sourced accounts and first sign-in provisioning; `unavailable` is an outage or an attempt past `directory.sign_in_timeout`, `disabled` a disabled connector, organization or module, `busy` a sign-in refused at once because `directory.max_concurrent_binds` were in use |
 | `proudauth_directory_failovers_total` | counter | `category` (`connect`, `dns`, `tls`, `timeout`, `network`, `server_unavailable`, `egress_denied`, `invalid_endpoint`) | the process doing the LDAP operation | Endpoint failures that moved an operation to the next configured endpoint; a failure of the last (or only) endpoint is not counted |
 | `proudauth_directory_sync_runs_total` | counter | `mode`, `state` | `identity-worker` | Finished synchronization and reconciliation runs (`succeeded`, `failed`, `refused`, `cancelled`) |
 | `proudauth_directory_sync_changes_total` | counter | `kind` | `identity-worker` | Records changed or reported by runs, by finding kind and counter |

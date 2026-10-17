@@ -209,6 +209,18 @@ func (s *Service) Password(ctx context.Context, realmID, id string, p Proof, ide
 			return nil, err
 		}
 	}
+	// Stopgap until the password step runs its slow work outside the
+	// transaction (NFR-002): the Argon2id check (or its dummy) needs a
+	// hashing slot, refused at once when none is free, and a step that may
+	// bind against a directory runs once (DB-014).
+	ctx, release, err := s.hashSlot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+	if ctx, err = s.directoryOnce(ctx, realmID); err != nil {
+		return nil, err
+	}
 	return s.step(ctx, realmID, id, p, func(tx pgx.Tx, t *Transaction) (map[string]any, error) {
 		if t.Pending.Identifier == "" {
 			return nil, problem.ErrUnexpectedStep.WithDetail("identify first")

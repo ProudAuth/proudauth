@@ -33436,7 +33436,7 @@ components:
           schema:
             "$ref": "#/components/schemas/Problem"
     ServiceUnavailable:
-      description: "Load shedding, realm unavailable or dependency failure (code unavailable, upstream_unavailable). May include Retry-After."
+      description: "Load shedding, realm unavailable or dependency failure, or a full per-process bound on password hashing or directory sign-in (code unavailable, upstream_unavailable). May include Retry-After."
       headers:
         X-Request-Id:
           "$ref": "#/components/headers/X-Request-Id"

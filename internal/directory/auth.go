@@ -21,6 +21,44 @@ func unavailable(detail string) error {
 	return problem.ErrUpstreamUnavailable.WithDetail(detail).WithRetryAfter(30 * time.Second)
 }
 
+// bindRetryAfter is the Retry-After of a sign-in refused for want of a bind
+// slot: the slots free up as attempts finish or reach sign_in_timeout.
+const bindRetryAfter = 5 * time.Second
+
+// signIn prepares the directory work of one sign-in attempt (NFR-002,
+// PROV-014). It takes one of the process's bind slots
+// (directory.max_concurrent_binds) without waiting: with every slot in use
+// it answers 503 unavailable with Retry-After, so a slow or
+// unreachable directory cannot pile sign-ins, each holding a database
+// transaction slot, onto the process. The returned context bounds all of
+// the attempt's directory work, across every endpoint and connector, by
+// directory.sign_in_timeout. done releases both.
+func (s *Service) signIn(ctx context.Context) (context.Context, func(), error) {
+	release, ok := s.bindSlots.TryAcquire()
+	if !ok {
+		s.m.binds.Inc("busy")
+		return nil, nil, problem.ErrUnavailable.WithDetail("directory sign-in is at capacity; retry shortly").WithRetryAfter(bindRetryAfter)
+	}
+	to := s.d.Cfg.Directory.SignInTimeout
+	if to <= 0 {
+		to = defaultSignInTimeout
+	}
+	dctx, cancel := context.WithTimeout(ctx, to)
+	return dctx, func() { cancel(); release() }, nil
+}
+
+// SignsIn reports whether a password check in the realm may ask a directory:
+// the module is enabled and the realm has an active LDAP connector.
+func (s *Service) SignsIn(ctx context.Context, realmID string) (bool, error) {
+	if !s.active() {
+		return false, nil
+	}
+	var uses bool
+	err := s.d.DB.Pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM provisioning_connectors WHERE realm_id=$1 AND kind='ldap' AND state='active')`,
+		realmID).Scan(&uses)
+	return uses, err
+}
+
 // VerifyPassword verifies the password of a directory-sourced account by a
 // bind as that account (PROV-011): the directory decides, and no password
 // hash is ever read or stored. handled is false for accounts no directory
@@ -43,7 +81,12 @@ func (s *Service) VerifyPassword(ctx context.Context, q storage.Querier, userID,
 		s.m.binds.Inc("invalid_credentials")
 		return true, false, nil
 	}
-	dn, ok, err := s.bindAs(ctx, c, l, password)
+	dctx, done, err := s.signIn(ctx)
+	if err != nil {
+		return true, false, err
+	}
+	dn, ok, err := s.bindAs(dctx, c, l, password)
+	done()
 	if err != nil {
 		s.m.binds.Inc("unavailable")
 		_, _ = s.d.Audit.Record(context.WithoutCancel(ctx), s.d.DB.Pool, audit.Event{Type: "directory.authentication.unavailable", RealmID: c.RealmID,
@@ -140,6 +183,15 @@ func (s *Service) ProvisionOnLogin(ctx context.Context, tx pgx.Tx, realmID, iden
 		list = append(list, c)
 	}
 	rows.Close()
+	if len(list) == 0 {
+		return nil, nil
+	}
+	// One bind slot and one deadline cover every directory tried.
+	dctx, done, err := s.signIn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer done()
 	for _, c := range list {
 		if !s.organizationActive(ctx, tx, c) {
 			continue
@@ -147,7 +199,7 @@ func (s *Service) ProvisionOnLogin(ctx context.Context, tx pgx.Tx, realmID, iden
 		cfg := c.ldap
 		var found *ldap.Entry
 		matched, ok := false, false
-		err := s.withDirectory(ctx, c, true, func(cn *conn) error {
+		err := s.withDirectory(dctx, c, true, func(cn *conn) error {
 			entries, err := cn.search(cfg.UserBaseDN, scopeOf(cfg.UserScope), loginFilter(cfg, identifier), userAttributes(cfg), 2)
 			if err != nil {
 				return err
