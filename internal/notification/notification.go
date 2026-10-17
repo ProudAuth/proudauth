@@ -12,7 +12,10 @@ import (
 	"fmt"
 	htmltemplate "html/template"
 	"io"
+	"mime"
+	"mime/quotedprintable"
 	"net"
+	"net/mail"
 	"net/smtp"
 	"regexp"
 	"slices"
@@ -761,84 +764,176 @@ type SMTPSender struct {
 	Dial func(ctx context.Context, host, port string) (net.Conn, error)
 }
 
-// Send sends one message.
+// smtpSessionBudget bounds one SMTP delivery from the established connection
+// to QUIT: greeting, STARTTLS, AUTH, MAIL, RCPT, DATA. net/smtp ignores the
+// context, so without a connection deadline a relay that accepts TCP and then
+// stays silent would block the worker forever. A variable so tests can lower
+// it.
+var smtpSessionBudget = 30 * time.Second
+
+// Send sends one message. The whole session runs under one connection
+// deadline (smtpSessionBudget, or the context's deadline when sooner), and
+// cancelling ctx closes the connection, so the worker's task timeout ends a
+// stalled delivery; the same holds for organization mail servers (TEN-022),
+// which come through Dial.
 func (s *SMTPSender) Send(ctx context.Context, e Email) (string, error) {
-	from, fromName, to, subject, text, html := e.From, e.FromName, e.To, e.Subject, e.Text, e.HTML
-	addr := net.JoinHostPort(s.Host, fmt.Sprint(s.Port))
 	msgID := fmt.Sprintf("<%s@proudauth>", ids.New("msg"))
-	var b strings.Builder
-	fmt.Fprintf(&b, "From: %s <%s>\r\nTo: %s\r\nSubject: %s\r\nMessage-ID: %s\r\nDate: %s\r\nMIME-Version: 1.0\r\n",
-		headerSafe(fromName), headerSafe(from), headerSafe(to), headerSafe(subject), msgID, time.Now().UTC().Format(time.RFC1123Z))
-	if e.ReplyTo != "" {
-		fmt.Fprintf(&b, "Reply-To: %s\r\n", headerSafe(e.ReplyTo))
-	}
-	if html != "" {
-		boundary := "pa-" + secretHex()
-		fmt.Fprintf(&b, "Content-Type: multipart/alternative; boundary=%q\r\n\r\n--%s\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s\r\n--%s\r\nContent-Type: text/html; charset=utf-8\r\n\r\n%s\r\n--%s--\r\n",
-			boundary, boundary, text, boundary, html, boundary)
-	} else {
-		fmt.Fprintf(&b, "Content-Type: text/plain; charset=utf-8\r\n\r\n%s\r\n", text)
-	}
-	dialer := &net.Dialer{Timeout: 10 * time.Second}
+	msg := buildMessage(e, msgID, time.Now())
+	addr := net.JoinHostPort(s.Host, fmt.Sprint(s.Port))
+	deadline := smtpDeadline(ctx)
 	var conn net.Conn
 	var err error
-	switch {
-	case s.Dial != nil:
+	if s.Dial != nil {
 		conn, err = s.Dial(ctx, s.Host, fmt.Sprint(s.Port))
-		if err == nil && s.TLSMode == "implicit" {
-			tc := tls.Client(conn, &tls.Config{ServerName: s.Host, MinVersion: tls.VersionTLS12})
-			if err = tc.HandshakeContext(ctx); err != nil {
-				conn.Close()
-			}
-			conn = tc
-		}
-	case s.TLSMode == "implicit":
-		conn, err = tls.DialWithDialer(dialer, "tcp", addr, &tls.Config{ServerName: s.Host, MinVersion: tls.VersionTLS12})
-	default:
+	} else {
+		dialer := &net.Dialer{Timeout: 10 * time.Second, Deadline: deadline}
 		conn, err = dialer.DialContext(ctx, "tcp", addr)
 	}
 	if err != nil {
 		return "", err
 	}
-	c, err := smtp.NewClient(conn, s.Host)
+	release, err := guardConn(ctx, conn, deadline)
 	if err != nil {
 		conn.Close()
 		return "", err
 	}
+	defer release()
+	err = s.session(ctx, conn, e.From, e.To, msg)
+	if err != nil {
+		conn.Close()
+		if ctx.Err() != nil {
+			return "", fmt.Errorf("smtp delivery to %s: %w (%v)", addr, ctx.Err(), err)
+		}
+		return "", err
+	}
+	return msgID, nil
+}
+
+// smtpDeadline is when an SMTP session starting now must end: after
+// smtpSessionBudget, or at the context's deadline when that is sooner.
+func smtpDeadline(ctx context.Context) time.Time {
+	deadline := time.Now().Add(smtpSessionBudget)
+	if d, ok := ctx.Deadline(); ok && d.Before(deadline) {
+		deadline = d
+	}
+	return deadline
+}
+
+// guardConn puts conn under deadline and closes it as soon as ctx ends,
+// until release is called when the session returns.
+func guardConn(ctx context.Context, conn net.Conn, deadline time.Time) (release func(), err error) {
+	if err := conn.SetDeadline(deadline); err != nil {
+		return nil, err
+	}
+	stop := make(chan struct{})
+	go func() {
+		select {
+		case <-ctx.Done():
+			conn.Close()
+		case <-stop:
+		}
+	}()
+	return func() { close(stop) }, nil
+}
+
+// session speaks SMTP on an established connection, which already carries
+// the delivery deadline (the implicit TLS handshake included).
+func (s *SMTPSender) session(ctx context.Context, conn net.Conn, from, to string, msg []byte) error {
+	if s.TLSMode == "implicit" {
+		tc := tls.Client(conn, &tls.Config{ServerName: s.Host, MinVersion: tls.VersionTLS12})
+		if err := tc.HandshakeContext(ctx); err != nil {
+			return err
+		}
+		conn = tc
+	}
+	c, err := smtp.NewClient(conn, s.Host)
+	if err != nil {
+		return err
+	}
 	defer c.Close()
 	if s.TLSMode == "starttls" {
 		if err := c.StartTLS(&tls.Config{ServerName: s.Host, MinVersion: tls.VersionTLS12}); err != nil {
-			return "", err
+			return err
 		}
 	}
 	if s.Username != "" {
 		pw := s.PasswordRef
 		if s.Resolve != nil {
 			if pw, err = s.Resolve(s.PasswordRef); err != nil {
-				return "", err
+				return err
 			}
 		}
 		if err := c.Auth(smtp.PlainAuth("", s.Username, pw, s.Host)); err != nil {
-			return "", err
+			return err
 		}
 	}
 	if err := c.Mail(from); err != nil {
-		return "", err
+		return err
 	}
 	if err := c.Rcpt(to); err != nil {
-		return "", err
+		return err
 	}
 	w, err := c.Data()
 	if err != nil {
-		return "", err
+		return err
 	}
-	if _, err := w.Write([]byte(b.String())); err != nil {
-		return "", err
+	if _, err := w.Write(msg); err != nil {
+		return err
 	}
 	if err := w.Close(); err != nil {
-		return "", err
+		return err
 	}
-	return msgID, c.Quit()
+	return c.Quit()
+}
+
+// buildMessage renders the RFC 5322 message. Non-ASCII Subject and sender
+// names are RFC 2047 encoded words, and a body part with non-ASCII text is
+// sent quoted-printable, so localized templates (MSG-006) reach 7-bit relays
+// intact.
+func buildMessage(e Email, msgID string, now time.Time) []byte {
+	var b strings.Builder
+	from := (&mail.Address{Name: headerSafe(e.FromName), Address: headerSafe(e.From)}).String()
+	fmt.Fprintf(&b, "From: %s\r\nTo: %s\r\nSubject: %s\r\nMessage-ID: %s\r\nDate: %s\r\nMIME-Version: 1.0\r\n",
+		from, headerSafe(e.To), mime.QEncoding.Encode("utf-8", headerSafe(e.Subject)), msgID, now.UTC().Format(time.RFC1123Z))
+	if e.ReplyTo != "" {
+		fmt.Fprintf(&b, "Reply-To: %s\r\n", headerSafe(e.ReplyTo))
+	}
+	if e.HTML != "" {
+		boundary := "pa-" + secretHex()
+		fmt.Fprintf(&b, "Content-Type: multipart/alternative; boundary=%q\r\n\r\n", boundary)
+		fmt.Fprintf(&b, "--%s\r\n", boundary)
+		writePart(&b, "text/plain", e.Text)
+		fmt.Fprintf(&b, "--%s\r\n", boundary)
+		writePart(&b, "text/html", e.HTML)
+		fmt.Fprintf(&b, "--%s--\r\n", boundary)
+	} else {
+		writePart(&b, "text/plain", e.Text)
+	}
+	return []byte(b.String())
+}
+
+// writePart writes a Content-Type header, the blank line and the body,
+// quoted-printable when the body has bytes outside US-ASCII.
+func writePart(b *strings.Builder, contentType, body string) {
+	fmt.Fprintf(b, "Content-Type: %s; charset=utf-8\r\n", contentType)
+	if isASCII(body) {
+		fmt.Fprintf(b, "\r\n%s\r\n", body)
+		return
+	}
+	b.WriteString("Content-Transfer-Encoding: quoted-printable\r\n\r\n")
+	qp := quotedprintable.NewWriter(b)
+	_, _ = qp.Write([]byte(body))
+	_ = qp.Close()
+	b.WriteString("\r\n")
+}
+
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] >= 0x80 {
+			return false
+		}
+	}
+	return true
 }
 
 func headerSafe(s string) string {
@@ -922,6 +1017,14 @@ func (s *SMTPSender) Check(ctx context.Context) (stage string, err error) {
 	if err != nil {
 		return "connect", err
 	}
+	// The same session deadline as Send, so a silent relay cannot hold the
+	// check past its request timeout.
+	release, err := guardConn(ctx, conn, smtpDeadline(ctx))
+	if err != nil {
+		conn.Close()
+		return "connect", err
+	}
+	defer release()
 	c, err := smtp.NewClient(conn, s.Host)
 	if err != nil {
 		conn.Close()
