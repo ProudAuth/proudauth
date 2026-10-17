@@ -701,6 +701,19 @@ approximately 79797 job rows (1.35 GiB including indexes/TOAST) and 431062
 audit rows (408 MiB). Later scenarios and the soak inherit that accumulated
 history and worker load; the seed does not start with a synthetic audit log.
 
+These runs use local passwords only: no directory connector was configured,
+so they say nothing about directory outages. A password step holds a
+database transaction slot for its whole Argon2id check and, for
+directory-sourced accounts, its LDAP search and bind. Since 0.2.0-alpha.5
+`directory.sign_in_timeout` and `directory.max_concurrent_binds` bound the
+directory work and answer `503 unavailable` at once when full;
+`security.password.max_concurrent_hashes` can bound the hashing the same way
+(off by default, since the transaction slots bound it today). An unreachable directory therefore holds at most half
+the transaction slots, for at most 8 s per attempt, instead of letting
+token issuance and refresh stall. The behaviour is covered by
+`TestDirectorySignInDeadline`, not measured here
+([capacity.md](capacity.md#directory-outages)).
+
 ### Short soak (NFR-005)
 
 Ten consecutive one-minute windows of `mixed` completed 282941 operations;

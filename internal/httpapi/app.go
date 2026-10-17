@@ -41,6 +41,7 @@ import (
 	"github.com/proudauth/proudauth/internal/passkey"
 	"github.com/proudauth/proudauth/internal/platform/problem"
 	"github.com/proudauth/proudauth/internal/platform/reqctx"
+	"github.com/proudauth/proudauth/internal/platform/slots"
 	"github.com/proudauth/proudauth/internal/plugin"
 	"github.com/proudauth/proudauth/internal/provision"
 	"github.com/proudauth/proudauth/internal/provisioning"
@@ -164,7 +165,7 @@ func Build(d *runtime.Deps, metrics *observability.Metrics) (*App, error) {
 	}
 	hasher := &credential.Hasher{Params: credential.Params{Time: cfg.Security.Password.ArgonTime, Memory: cfg.Security.Password.ArgonMemoryKiB,
 		Threads: cfg.Security.Password.ArgonThreads}, MaxBytes: cfg.Security.Password.MaxBytes, Keys: d.Keys, Pepper: len(cfg.Keys.PepperKeys) > 0,
-		LegacyUntil: cfg.Security.Password.LegacyHashDeadline(), Now: d.Now}
+		LegacyUntil: cfg.Security.Password.LegacyHashDeadline(), Now: d.Now, Slots: slots.New(cfg.Security.Password.HashSlots())}
 	a.KeyMgr = token.NewKeyManager(d)
 	a.Signer = &token.Signer{Keys: a.KeyMgr, OnFailure: func(reason string) { a.Metrics.SigningFailures.Inc(reason) }}
 	a.Apps.SigningAlgorithm = a.Signer.ActiveAlgorithm

@@ -220,6 +220,16 @@ func (s *Service) CompleteAccountSetup(ctx context.Context, realmID, token, pass
 // authentication (CRED-006). Other sessions are revoked per policy; the current
 // session survives so the user is not logged out of the device they used.
 func (s *Service) ChangePassword(ctx context.Context, realmID, userID, currentSessionID, currentPassword, newPassword string) error {
+	// One hashing slot covers the current-password check and the new
+	// verifier; a full bound refuses before the transaction opens (NFR-002).
+	ctx, release, err := s.hashSlot(ctx)
+	if err != nil {
+		return err
+	}
+	defer release()
+	if ctx, err = s.directoryOnce(ctx, realmID); err != nil {
+		return err
+	}
 	return s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
 		u, err := s.Users.LockUser(ctx, tx, realmID, userID)
 		if err != nil {

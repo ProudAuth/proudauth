@@ -24,6 +24,7 @@ import (
 
 	"github.com/proudauth/proudauth/internal/keys"
 	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/platform/slots"
 )
 
 // Params are versioned Argon2id parameters (CRED-001).
@@ -51,7 +52,16 @@ type Hasher struct {
 	// supplies the time (defaults to the system clock).
 	LegacyUntil time.Time
 	Now         func() time.Time
+	// Slots bounds the password checks and hashes run at once in this
+	// process (security.password.max_concurrent_hashes, NFR-002): callers
+	// take one with Acquire around their Argon2id work and fail fast when
+	// none is free. nil: unbounded.
+	Slots *slots.Pool
 }
+
+// Acquire takes a hashing slot without waiting; ok is false when every slot
+// is in use. release returns the slot.
+func (h *Hasher) Acquire() (release func(), ok bool) { return h.Slots.TryAcquire() }
 
 // ErrLegacyRetired reports a legacy verifier after the migration ended.
 var ErrLegacyRetired = errors.New("credential: legacy password hashes are no longer accepted; recover the password")

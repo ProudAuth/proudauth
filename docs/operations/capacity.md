@@ -136,6 +136,42 @@ excluded by default; an explicit `state` filter can list it.
   organization by `security.rate_limits.login_per_organization` and
   `organization_per_window` ([configuration.md](configuration.md)).
 
+## Directory outages
+
+A password sign-in still runs its Argon2id check, the timing pad and, for
+directory-sourced accounts or first sign-in provisioning, the LDAP search and
+bind inside one database transaction, holding one of the process's
+transaction slots (15 with the default `storage.max_conns` of 20) that token
+issuance and refresh also use. Moving that work out of the transaction is
+planned for 0.2.0-alpha.8. Until then three bounds keep a slow or
+unreachable directory, or a login burst, from taking every slot (NFR-002):
+
+- `directory.sign_in_timeout` (8 s) ends one attempt's directory work in
+  total, across every endpoint and JIT connector, with `503
+  upstream_unavailable` (`Retry-After: 30`). Without it an endpoint that
+  accepts connections and never answers held the attempt for each
+  endpoint's connect and operation timeouts in turn, up to the 30 s request
+  deadline.
+- `directory.max_concurrent_binds` (half the transaction slots: 7 by
+  default) bounds the sign-ins waiting on a directory. Beyond that, sign-ins
+  that need a directory answer `503 unavailable` with
+  `Retry-After: 5` at once (`proudauth_directory_binds_total{outcome="busy"}`),
+  so during a full directory outage at least 8 slots stay free for
+  `client_credentials`, refresh and local-account sign-ins.
+- `security.password.max_concurrent_hashes` (unbounded unless set) bounds
+  Argon2id work; beyond it password steps answer `503 unavailable` with
+  `Retry-After: 2` at once, before any budget or failure is counted. Today
+  the password step hashes inside its database transaction, so the
+  transaction slots already bound it and the default leaves it off; once
+  hashing leaves the transaction (planned for 0.2.0-alpha.8), size it with
+  the hashing cost in [benchmarks.md](benchmarks.md) (about 47 sign-ins per
+  second at the default Argon2id parameters on the reference host): raising
+  it above the CPU count adds queueing, not throughput.
+
+Clients should retry both 503 codes after `Retry-After`. Raising the bounds
+trades directory-outage isolation for burst capacity; raising
+`storage.max_conns` raises the default bind bound with it.
+
 ## Built-in bounds
 
 | Bound | Value |
