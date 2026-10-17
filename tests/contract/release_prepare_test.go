@@ -30,7 +30,9 @@ func TestPrepareReleaseMovesEveryVersionReference(t *testing.T) {
 		}
 	}
 	current := strings.TrimPrefix(deployEnvFile(t, "deploy/prod/.env")["PROUDAUTH_IMAGE"], "ghcr.io/proudauth/proudauth:")
-	changelog := "# Changelog\n\n## [Unreleased]\n\n### Fixed\n\n- A fix worth releasing.\n\n## [" + current + "] - 2026-01-01\n\n- Earlier.\n"
+	const repo = "https://github.com/proudauth/proudauth/"
+	unlinked := "# Changelog\n\n## [Unreleased]\n\n### Fixed\n\n- A fix worth releasing.\n\n## [" + current + "] - 2026-01-01\n\n- Earlier.\n"
+	changelog := unlinked + "\n[Unreleased]: " + repo + "compare/v" + current + "...main\n[" + current + "]: " + repo + "releases/tag/v" + current + "\n"
 	write := func(body string) {
 		if err := os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte(body), 0o644); err != nil {
 			t.Fatal(err)
@@ -56,6 +58,13 @@ func TestPrepareReleaseMovesEveryVersionReference(t *testing.T) {
 	if !strings.Contains(read("deploy/prod/.env"), current) {
 		t.Fatal("a refused preparation must not change any file")
 	}
+	write(unlinked)
+	if out, err := run("v9.8.7"); err == nil || !strings.Contains(string(out), "/compare/v"+current+"...main") {
+		t.Fatalf("a CHANGELOG without its [Unreleased] compare link must be refused: %v %s", err, out)
+	}
+	if !strings.Contains(read("deploy/prod/.env"), current) {
+		t.Fatal("a refused preparation must not change any file")
+	}
 	write(changelog)
 	if out, err := run("v9.8.7"); err != nil {
 		t.Fatalf("prepare-release: %v\n%s", err, out)
@@ -71,6 +80,9 @@ func TestPrepareReleaseMovesEveryVersionReference(t *testing.T) {
 		if !strings.Contains(read(rel), want) {
 			t.Errorf("%s does not contain %q after preparing v9.8.7", rel, want)
 		}
+	}
+	if want := "\n[Unreleased]: " + repo + "compare/v9.8.7...main\n[9.8.7]: " + repo + "compare/v" + current + "...v9.8.7\n[" + current + "]: "; !strings.Contains(read("CHANGELOG.md"), want) {
+		t.Errorf("CHANGELOG.md does not move its compare links to v9.8.7 (want %q):\n%s", want, read("CHANGELOG.md"))
 	}
 	for _, rel := range files[1:] {
 		if strings.Contains(read(rel), current) {

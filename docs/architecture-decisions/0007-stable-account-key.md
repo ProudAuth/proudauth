@@ -21,13 +21,13 @@ TEST-026).
 - External identities (`external_identities`) are unique per provider, upstream
   issuer and upstream subject (DB-003). Upstream OpenID Connect and GitHub-style
   OAuth federation is implemented (`internal/federation`, `TestFederation`); SAML
-  and LDAP were not at acceptance ([0018](0018-enterprise-protocols-deferred.md)).
+  and LDAP were not at acceptance ([0018](0018-enterprise-protocols-when-complete.md)).
   Update 2026-10-11: SAML connections key external identities the same way
   (issuer = the IdP's entity ID, subject = the NameID or a configured subject
   attribute), and LDAP/Active Directory accounts are linked by the entry's
   immutable ID (`entryUUID` or `objectGUID`) as a connector-scoped external ID
   in `connector_external_ids`, never by DN or username
-  ([0018](0018-enterprise-protocols-deferred.md#update-2026-10-11-saml-and-directory-integration)).
+  ([0018](0018-enterprise-protocols-when-complete.md#update-2026-10-11-saml-and-directory-integration)).
 - Clients may use pairwise subjects (`subject_type: pairwise` with a
   `sector_identifier`): `sub = "pws_" + base64url(HMAC(purpose key, sector || user ID))[:20 bytes]`,
   derived on first use and then stored in `pairwise_subjects` (migration `0018`).
@@ -52,7 +52,7 @@ TEST-026).
   them (Update 2026-10; `TestPairwiseSubjects`). Values issued before migration
   `0018` are stored only when next issued, with the version active at that time.
   Stored values are not removed when an account is deleted (the `users` row is
-  kept).
+  kept). No longer true; see [Updates](#updates).
 
 ## Migration implications
 
@@ -63,3 +63,17 @@ migration `0018`) records values as they are issued; it was not backfilled.
 ## Related requirement IDs
 
 DOM-001, DOM-002, DOM-006, DB-002, DB-003, REG-002, REG-003, USR-021, APP-012, OIDC-010, MIG-004, MIG-017
+
+## Updates
+
+**Update — 2026-10-18.** Recorded under the dated-update rule
+([README](README.md#changing-a-decision)). The Decision and Consequences above
+were edited in place in 2026-10: the external-identity item gained the SAML
+and LDAP/Active Directory keys (see [ADR 0018's update of
+2026-10-11](0018-enterprise-protocols-when-complete.md#update-2026-10-11-saml-and-directory-integration)),
+and pairwise subjects became stored when first issued (migration `0018`,
+OIDC-010, APP-012, `TestPairwiseSubjects`), so a change of
+`keys.active_version` no longer changes them. The decision itself is
+unchanged. One consequence above is out of date: account deletion removes the
+user's stored pairwise subjects (`identity.EraseAccountDataTx`, PRV-005); only
+the `users` row is kept.
