@@ -99,6 +99,15 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   by earlier alphas. Affected: every earlier 0.2.0 prerelease; regression
   tests `TestOrganizationJITEmailVerification`,
   `TestOrganizationJITConnectionDomains`, `TestGoogleAdapterEmailAuthority`.
+- The egress policy refuses zoned IPv6 literals (`fc00::%0`, `fe80::1%eth0`)
+  under the public-only rule and compares every blocked range without the
+  zone: `netip` prefixes never contain a zoned address, so such a literal
+  passed every blocked range and counted as global unicast, which let an
+  administrator-supplied webhook, hook, federation or provisioning URL name a
+  private or loopback destination (SEC-007; found by `FuzzAllowed` in CI).
+  Zoned addresses stay reachable only with `allow_private_network` or an
+  explicit allowed CIDR. Affected: every earlier 0.2.0 prerelease; regression
+  test `TestAllowedRefusesZonedAddresses`.
 - `deploy/prod` trusts the stack's own Docker network as the reverse proxy by
   default (`NETWORK_SUBNET`, `172.30.0.0/24`), so client addresses behind the
   required HTTPS proxy reach the per-address sign-in budgets and the audit
