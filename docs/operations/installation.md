@@ -223,7 +223,12 @@ It also prints the database role check ([below](#database-roles)) and the
 number of accounts still on imported legacy password verifiers
 (`accounts on legacy password hashes: N (until <date>)`, with `no deadline`
 instead of a date while `security.password.legacy_hashes_until` is unset;
-CRED-004, [migration.md](migration.md#credentials-and-factors)).
+CRED-004, [migration.md](migration.md#credentials-and-factors)). It warns
+about each realm that requires phishing-resistant MFA for administrators
+(`mfa.admin_phishing_resistant` or `security.mfa_floor.admin_phishing_resistant`)
+while its policy leaves passkeys disabled, so sign-in cannot apply it
+(`WARNING realm <name>: phishing-resistant MFA is required ...`; SEC-012,
+[configuration.md](configuration.md)).
 
 Alternatives to `identity-cli migrate`: `identity-server -migrate`, or
 `storage.migrate_on_start: true`, which the server and the worker honor at

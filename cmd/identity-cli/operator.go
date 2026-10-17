@@ -195,6 +195,11 @@ func init() {
 				return fmt.Errorf("realm %s: signing key unusable (wrong root key?): %w", r.Name, err)
 			}
 			fmt.Printf("realm %s: issuer %s, signing key ok\n", r.Name, r.Issuer)
+			// A realm policy saved before the phishing-resistant profile
+			// required passkeys (SEC-012, MFA-005): sign-in cannot apply it.
+			if realm.PhishingResistantUnmet(r.Policy, c.Security.MFAFloor) {
+				fmt.Printf("WARNING realm %s: phishing-resistant MFA is required for administrators (mfa.admin_phishing_resistant or security.mfa_floor.admin_phishing_resistant) but passkeys are disabled, so administrators sign in with TOTP or recovery codes; enable login.passkeys or list webauthn in mfa.allowed_factors\n", r.Name)
+			}
 		}
 		fmt.Printf("key hierarchy fingerprint: %s\n", env.Keys.Fingerprint())
 		// The service's own database role should not be able to change the

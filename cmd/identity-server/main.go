@@ -56,6 +56,10 @@ func run(configPath string, migrate bool) error {
 		return err
 	}
 	server.RegisterModules(app)
+	// The phishing-resistant floor fails closed (SEC-012, MFA-005).
+	if err := app.Auth.CheckPhishingResistantFloor(); err != nil {
+		return err
+	}
 	if err := app.Authz.SyncBuiltIns(ctx); err != nil {
 		return fmt.Errorf("sync built-in permissions: %w", err)
 	}

@@ -311,6 +311,13 @@ func (m MFAPolicy) TOTPAllowed() bool {
 	return len(m.AllowedFactors) == 0 || slices.Contains(m.AllowedFactors, "totp")
 }
 
+// PasskeysEnabled reports whether the realm offers passkeys, for sign-in
+// (login.passkeys) or as a second factor (webauthn in mfa.allowed_factors).
+// The phishing-resistant profile can only be met where it is true (SEC-012).
+func (p Policy) PasskeysEnabled() bool {
+	return p.Login.Passkeys || slices.Contains(p.MFA.AllowedFactors, "webauthn")
+}
+
 // CodeFactors lists the code-based second factors (credential types totp and
 // hotp) the realm accepts. An enrolled factor the realm does not allow
 // satisfies nothing at sign-in (MFA-005), so it does not count as an

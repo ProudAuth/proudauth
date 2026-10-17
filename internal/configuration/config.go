@@ -223,7 +223,9 @@ type MFAFloor struct {
 	// Require is "none" (default), or "all": every account needs MFA.
 	Require string `yaml:"require"`
 	// AdminPhishingResistant forces phishing-resistant MFA for privileged
-	// and protected accounts in every realm.
+	// and protected accounts in every realm. It fails closed: realm policies
+	// that leave passkeys disabled are refused (realm.CheckMFAFloor), and a
+	// production server without passkeys does not start with it.
 	AdminPhishingResistant bool `yaml:"admin_phishing_resistant"`
 	// ForbidOrgAdminWaiver forbids realms from waiving MFA for organization
 	// administration (mfa.org_admin_mfa_optional).

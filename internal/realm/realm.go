@@ -296,17 +296,34 @@ func (s *Service) MarkBootstrapped(ctx context.Context, tx pgx.Tx, realmID strin
 // ValidatePolicy enforces safety floors that realm administrators cannot lower.
 // CheckMFAFloor refuses realm MFA settings below the operator's floor
 // (MFA-005). The floor is also applied at sign-in, so a policy saved before
-// the floor was raised cannot lower it either.
+// the floor was raised cannot lower it either. The phishing-resistant floor
+// fails closed: a policy that leaves passkeys disabled is refused, since the
+// profile could not be met there. A realm saved in that state before this
+// check cannot meet it at sign-in; identity-cli doctor reports such realms.
 func CheckMFAFloor(p Policy, f configuration.MFAFloor) error {
 	switch {
 	case f.Require == "all" && p.MFA.Requirement != MFARequired:
 		return problem.ErrValidation.WithField("mfa.requirement", "the operator requires MFA for every account (security.mfa_floor.require)")
 	case f.AdminPhishingResistant && !p.MFA.AdminPhishingResistant:
 		return problem.ErrValidation.WithField("mfa.admin_phishing_resistant", "the operator requires phishing-resistant MFA for administrators")
+	case f.AdminPhishingResistant && !p.PasskeysEnabled():
+		// The floor fails closed: without passkeys the profile could not be
+		// met, and administrators would sign in with phishable factors.
+		return problem.ErrValidation.WithField("login.passkeys", "the operator requires phishing-resistant MFA for administrators: enable login.passkeys or list webauthn in mfa.allowed_factors")
 	case f.ForbidOrgAdminWaiver && p.MFA.OrgAdminMFAOptional:
 		return problem.ErrValidation.WithField("mfa.org_admin_mfa_optional", "the operator forbids waiving MFA for organization administration")
 	}
 	return nil
+}
+
+// PhishingResistantUnmet reports a realm where the phishing-resistant
+// administrator profile is required, by the realm's own
+// mfa.admin_phishing_resistant or by the operator floor, but passkeys are
+// disabled, so sign-in cannot apply it. ValidatePolicy and CheckMFAFloor
+// refuse such policies now; a realm saved before them may still be in that
+// state, and identity-cli doctor reports it (SEC-012, MFA-005).
+func PhishingResistantUnmet(p Policy, f configuration.MFAFloor) bool {
+	return (p.MFA.AdminPhishingResistant || f.AdminPhishingResistant) && !p.PasskeysEnabled()
 }
 
 func ValidatePolicy(p Policy, operatorAllowsImpersonation bool) error {
@@ -405,6 +422,20 @@ func ValidatePolicy(p Policy, operatorAllowsImpersonation bool) error {
 		default:
 			return problem.ErrValidation.WithField("mfa.allowed_factors", "unknown factor "+f)
 		}
+	}
+	// MFA can be required of any account (privileged roles, protected
+	// accounts, acr_values), and an account without a second factor then
+	// enrolls one in the sign-in transaction (MFA-003). Only TOTP and
+	// passkeys can be enrolled there: HOTP and recovery codes cannot, and
+	// email or SMS codes are primary sign-in methods, never a second factor
+	// (PWDLESS-006). A list without either leaves such sign-ins with no
+	// action that could complete them (MFA-005).
+	if len(p.MFA.AllowedFactors) > 0 && !p.MFA.TOTPAllowed() && !p.PasskeysEnabled() {
+		return problem.ErrValidation.WithField("mfa.allowed_factors", "must allow a second factor that can be enrolled at sign-in: totp, or webauthn (or enable login.passkeys)")
+	}
+	if p.MFA.AdminPhishingResistant && !p.PasskeysEnabled() {
+		// Only a user-verified passkey meets the profile (SEC-012).
+		return problem.ErrValidation.WithField("mfa.admin_phishing_resistant", "requires passkeys: enable login.passkeys or list webauthn in mfa.allowed_factors")
 	}
 	for _, sc := range p.ClientRegistration.OpenScopes {
 		switch sc {
