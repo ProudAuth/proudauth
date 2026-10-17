@@ -111,7 +111,7 @@ Every step returns the full state:
 | `completed_factors` | Factor types recorded so far (`pwd`, `otp`, `sms`, `magic_link`, `totp`, `hotp`, `recovery`, `hwk`, `swk`, `x509`, `fed`, `fed_mfa`, `anon` for guests) |
 | `user` | Shown only after primary authentication; email masked |
 | `redirect_to` | On completion: `redirect_uri?code=...&state=...&iss=...`. On cancel or failure: the redirect URI with an `error` |
-| `error` | Blocking reason while `status` stays `pending` and `next_actions` is empty (`account_unavailable`, `organization_access_denied`, `no_organization`: the request needs an organization and the user has no active membership, `login_method_not_allowed`, `registration_pending_approval`, `guest_not_permitted`, `authentication_policy_denied`, `connection_not_allowed`: the sign-in used another organization's connection, FED-006), or failure code of a `failed` transaction (`too_many_failures`, `access_denied`) |
+| `error` | Blocking reason while `status` stays `pending` and `next_actions` is empty (`account_unavailable`, `organization_access_denied`, `no_organization`: the request needs an organization and the user has no active membership, `login_method_not_allowed`, `registration_pending_approval`, `guest_not_permitted`, `authentication_policy_denied`, `connection_not_allowed`: the sign-in used another organization's connection, FED-006, `mfa_enrollment_unavailable`: MFA must be enrolled but the realm policy allows no factor that can be enrolled in the transaction, see [Evaluation order](#evaluation-order)), or failure code of a `failed` transaction (`too_many_failures`, `access_denied`) |
 | `notice` | Non-terminal condition, e.g. `upstream_unavailable`, `account_conflict` |
 | `one_time` | Secrets shown exactly once: `totp` (`secret`, `otpauth_uri`), `recovery_codes`, and for headless clients `remembered_device_token` (browsers get it only as the `pa_rd` cookie) |
 | `webauthn` | Passkey ceremony options to pass to the WebAuthn browser API |
@@ -134,11 +134,11 @@ would be `complete`, the server completes the transaction within the same reques
 | `magic_link` | `otp/send`, then `magic-link` | `{"purpose": "magic_link"}`; then `{"token": "<secret from the link fragment>"}` (see Magic links) |
 | `verify_email` | `otp/send` then `otp/verify` | `{"purpose": "verify_email"}`, then `{"code": "..."}` |
 | `verify_contact` | `otp/send` then `otp/verify` | `{"purpose": "verify_contact"}`, then `{"code": "..."}` (see [Verified contact](#verified-contact-aut-018)) |
-| `totp` | `totp` | `{"code": "123456"}` |
-| `hotp` | `hotp` | `{"code": "123456"}` (counter-based code, MFA-013; see [HOTP](#hotp-counter-based-codes)) |
+| `totp` | `totp` | `{"code": "123456"}` (with `options.upgrade_proof: true`, an upgrade proof under the phishing-resistant profile, see [Evaluation order](#evaluation-order)) |
+| `hotp` | `hotp` | `{"code": "123456"}` (counter-based code, MFA-013; see [HOTP](#hotp-counter-based-codes); `options.upgrade_proof` as for `totp`) |
 | `certificate` | `certificate` | `{}`; the certificate comes from the TLS connection or a trusted proxy, so send the step to the mutual-TLS endpoint (X.509 sign-in, PROV-016, [mutual-tls.md](mutual-tls.md#x509-sign-in-prov-016)) |
-| `recovery_code` | `recovery-code` | `{"code": "abcde-fghjk-..."}` (session becomes recovery-restricted) |
-| `webauthn` | `webauthn/options` then `webauthn/verify` | `{}` → `state.webauthn`; then `{"credential": <PublicKeyCredential JSON>}` |
+| `recovery_code` | `recovery-code` | `{"code": "abcde-fghjk-..."}` (session becomes recovery-restricted; with `options.upgrade_proof: true` the code is consumed as an upgrade proof instead and the session is not restricted) |
+| `webauthn` | `webauthn/options` then `webauthn/verify` | `{}` → `state.webauthn`; then `{"credential": <PublicKeyCredential JSON>}` (`options.upgrade_proof` as for `totp`) |
 | `enroll_totp` | `totp/enroll` then `totp/activate` | `{}` → `one_time.totp`; then `{"code": "..."}` → `one_time.recovery_codes` |
 | `enroll_webauthn` | `webauthn/registration-options` then `webauthn/register` | `{}` → `state.webauthn`; then `{"credential": ..., "name": "Laptop"}` |
 | `update_password` | `password/update` | `{"new_password": "..."}` |
@@ -158,6 +158,15 @@ would be `complete`, the server completes the transaction within the same reques
 | — | `guest` | `{}` signs in as a new guest account (realm policy `registration.allow_guests`; see Guest identities) |
 | — | `cancel` | `{}` |
 | — | `resume` | `{}` re-evaluates after an out-of-band step |
+
+The factor and enrollment steps (`totp`, `hotp`, `recovery-code`,
+`webauthn/options` and `webauthn/verify` after primary authentication,
+`totp/enroll`, `totp/activate`, `webauthn/registration-options`,
+`webauthn/register`) are accepted only while their action is among the
+current `next_actions`; otherwise they answer `409 unexpected_step`
+(AUT-002, AUT-004). A step the server does not offer cannot be called
+directly either, and an enrollment begun earlier cannot be finished after the
+profile or the factor policy changed.
 
 ### Evaluation order
 
@@ -183,7 +192,26 @@ would be `complete`, the server completes the transaction within the same reques
    enrollment the realm requires): its only action is `cancel_deletion`
    ([below](#pending-deletion-usr-012)).
 5. Required actions: MFA enrollment (`enroll_totp` and/or `enroll_webauthn`) when
-   MFA is required but nothing is enrolled; administrator-set actions
+   MFA is required but nothing is enrolled. Under the phishing-resistant
+   profile only `enroll_webauthn` is offered (with user verification
+   required) when the account holds no user-verified passkey, and
+   `totp/enroll` and `totp/activate` are refused (`409 unexpected_step`). An
+   account that already holds another second factor (TOTP, an allowed HOTP,
+   recovery codes, or a passkey that never performed user verification)
+   proves it first (MFA-006): the transaction then offers that factor's
+   action with `options.upgrade_proof: true` (`webauthn` without requiring
+   user verification) and no enrollment, so the password alone cannot
+   register a passkey. The proof is an upgrade proof: it unlocks
+   `enroll_webauthn` in this transaction, is audited
+   (`mfa.upgrade_proof.recorded`, metadata `factor`; the factor's own `used`
+   event carries `upgrade_proof: true`), and is not a completed factor, so
+   it never satisfies MFA; registering the user-verified passkey does. A
+   passkey that answers the proof with user verification meets the profile
+   at once. An account that has a user-verified passkey must use it (a lost
+   one goes through assisted recovery). When MFA must be enrolled but the
+   realm policy allows no factor the transaction can enroll (a policy saved
+   before `mfa.allowed_factors` was checked, see below), the state has
+   `error: "mfa_enrollment_unavailable"` and no next actions. Administrator-set actions
    (`update_password`, `verify_email`, `verify_contact`, `configure_totp`;
    registering a passkey, in the transaction or through self-service, also
    completes `configure_totp`); `accept_terms` when the
@@ -200,7 +228,9 @@ would be `complete`, the server completes the transaction within the same reques
 9. Completion.
 
 **MFA is required when** the realm sets `mfa.requirement: required`; the user has
-TOTP enrolled, or HOTP while the realm allows it; the user holds a privileged realm role or is protected (bootstrap
+TOTP enrolled while the realm allows it, or HOTP while the realm allows it
+(an enrolled factor that `mfa.allowed_factors` excludes neither requires MFA
+nor satisfies it, and a passkey counts only while passkeys are enabled); the user holds a privileged realm role or is protected (bootstrap
 administrators); the client sets `token_policy.require_mfa`; `acr_values` request
 `mfa` or `phishing_resistant`, which includes a requested scope with a
 `step_up_acr` or `sensitivity: privileged` (AUT-010,
@@ -212,7 +242,17 @@ are primary factors and never count as a second factor (PWDLESS-006). When the p
 applies (realm `mfa.admin_phishing_resistant` for administrators, or an
 `acr_values` request), only a user-verified passkey (or a certificate from a
 `multi_factor` user trust anchor) satisfies it, also when a flow rule's
-`require_mfa` applies; TOTP and HOTP are then not offered.
+`require_mfa` applies; TOTP, HOTP and recovery codes are then offered only as
+an upgrade proof (step 5).
+
+`mfa.allowed_factors` must allow a second factor the transaction can enroll:
+`totp`, or `webauthn` (or `login.passkeys`); a list such as
+`["hotp", "recovery_code"]`, `["recovery_code"]` or `["email_otp"]` is
+refused with `422` (email and SMS codes are primary methods, never a second
+factor). `mfa.admin_phishing_resistant` requires passkeys to be enabled
+(`login.passkeys` or `webauthn` in `mfa.allowed_factors`), as does the
+operator floor `security.mfa_floor.admin_phishing_resistant`
+([configuration.md](../operations/configuration.md)).
 
 ### HOTP (counter-based codes)
 
@@ -459,8 +499,8 @@ stricter policy. Every decision is audited as `authentication.flow.evaluated`
 | --- | --- |
 | `allow` | None beyond stopping rule evaluation |
 | `require_mfa` | A second factor in this transaction (or in the SSO session it reuses) is required; a remembered device does not count. Accounts without one enroll TOTP or a passkey in the transaction. A phishing-resistant requirement already in force is not weakened |
-| `require_phishing_resistant` | Only a user-verified passkey satisfies the transaction; accounts without a passkey must enroll one. When passkeys are not enabled the transaction stops with `authentication_policy_denied` |
-| `challenge` | The `challenge` next action ([below](#challenges)) must be answered before MFA and required actions: factor enrollment in the transaction is not offered until it is, so a holder of only the first factor cannot answer it with a factor of their own making. A second factor already enrolled (a passkey, or TOTP outside the phishing-resistant profile) also answers it; a remembered device does not. A recovery code is not offered while a challenge is pending, but the `recovery-code` step still accepts an unused code, which answers the challenge and makes the session recovery-restricted. With no way to answer, the transaction stops with `authentication_policy_denied` |
+| `require_phishing_resistant` | Only a user-verified passkey satisfies the transaction; accounts without one enroll one, after proving the second factor they already hold as an upgrade proof (see [Evaluation order](#evaluation-order), step 5). When passkeys are not enabled the transaction stops with `authentication_policy_denied` |
+| `challenge` | The `challenge` next action ([below](#challenges)) must be answered before MFA and required actions: factor enrollment in the transaction is not offered until it is, so a holder of only the first factor cannot answer it with a factor of their own making. A second factor already enrolled (a passkey, or TOTP outside the phishing-resistant profile) also answers it; a remembered device does not. A recovery code is neither offered nor accepted while a challenge is pending (`409 unexpected_step`). With no way to answer, the transaction stops with `authentication_policy_denied` |
 | `review` | The sign-in proceeds; the decision raises the security signal `authentication_review`, published as a `security.alert` webhook event ([monitoring.md](../operations/monitoring.md#security-alerts)) |
 | `deny` | The transaction stops with `error: "authentication_policy_denied"`, `status` stays `pending` and `next_actions` is empty; cancel it and inform the user. The client receives no error redirect |
 

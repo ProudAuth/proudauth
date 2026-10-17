@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/configuration"
 	"github.com/proudauth/proudauth/internal/identity"
 	"github.com/proudauth/proudauth/internal/notification"
 	"github.com/proudauth/proudauth/internal/passkey"
@@ -52,11 +53,18 @@ func (s *Service) WebAuthnOptions(ctx context.Context, realmID, id string, p Pro
 			if err != nil {
 				return nil, err
 			}
-			// A passkey answers an MFA prompt or a flow challenge.
+			// A passkey answers an MFA prompt or a flow challenge, or gives
+			// the upgrade proof under the phishing-resistant profile.
 			if !(r.mfaRequired && !r.mfaDone || r.challenge) || !r.hasPasskey || !r.passkeysEnabled {
 				return nil, problem.ErrUnexpectedStep
 			}
-			opts, err = s.Passkeys.BeginLogin(ctx, tx, rlm, t.ID, t.UserID, "", r.phishingResistant)
+			if err := s.offered(ctx, tx, t, "webauthn"); err != nil {
+				return nil, err
+			}
+			// An upgrade proof is a passkey never used with user
+			// verification: the ceremony asks for it without requiring it,
+			// and a verified answer meets the profile at once.
+			opts, err = s.Passkeys.BeginLogin(ctx, tx, rlm, t.ID, t.UserID, "", r.phishingResistant && !r.upgrade)
 			return nil, err
 		}
 		if !rlm.Policy.Login.Passkeys {
@@ -99,8 +107,17 @@ func (s *Service) WebAuthnVerify(ctx context.Context, realmID, id string, p Proo
 		}
 		second := primaryDone(t)
 		expected := ""
+		upgrade := false
 		if second {
 			expected = t.UserID
+			r, err := s.evaluate(ctx, tx, t)
+			if err != nil {
+				return nil, err
+			}
+			if err := s.offered(ctx, tx, t, "webauthn"); err != nil {
+				return nil, err
+			}
+			upgrade = r.upgrade
 		}
 		actor := audit.Ref{Type: "anonymous", ID: "transaction:" + t.ID}
 		if t.UserID != "" {
@@ -136,6 +153,11 @@ func (s *Service) WebAuthnVerify(ctx context.Context, realmID, id string, p Proo
 			now := s.d.Now()
 			t.AuthTime = &now
 		}
+		if upgrade && !f.UserVerified {
+			// Proves the existing passkey but cannot meet the profile: it
+			// unlocks registering a user-verified one (MFA-006, SEC-012).
+			return nil, s.recordUpgradeProof(ctx, tx, t, "webauthn", f.CredentialID)
+		}
 		t.Factors = append(t.Factors, f)
 		return nil, nil
 	})
@@ -158,6 +180,11 @@ func (s *Service) WebAuthnRegistrationOptions(ctx context.Context, realmID, id s
 		}
 		if !r.passkeysEnabled || !slices.Contains(r.actions, identity.ActionConfigureTOTP) {
 			return nil, problem.ErrUnexpectedStep
+		}
+		// Under the phishing-resistant profile an account that holds another
+		// second factor proves it first (upgrade proof, MFA-006).
+		if err := s.offered(ctx, tx, t, "enroll_webauthn"); err != nil {
+			return nil, err
 		}
 		rlm, err := s.Realms.ByID(ctx, tx, t.RealmID)
 		if err != nil {
@@ -183,6 +210,11 @@ func (s *Service) WebAuthnRegister(ctx context.Context, realmID, id string, p Pr
 		if t.UserID == "" || !primaryDone(t) {
 			return nil, problem.ErrUnexpectedStep
 		}
+		// Registration stays open only while it is offered: the profile or
+		// the factor policy may have changed since the ceremony began.
+		if err := s.offered(ctx, tx, t, "enroll_webauthn"); err != nil {
+			return nil, err
+		}
 		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
@@ -195,6 +227,7 @@ func (s *Service) WebAuthnRegister(ctx context.Context, realmID, id string, p Pr
 			return nil, passkeyErr(err)
 		}
 		t.Factors = append(t.Factors, f)
+		t.Pending.UpgradeProof = nil
 		t.ActionsDone = append(t.ActionsDone, identity.ActionConfigureTOTP)
 		// A passkey satisfies the forced second-factor enrollment.
 		if err := s.Users.RemoveRequiredActionTx(ctx, tx, t.UserID, identity.ActionConfigureTOTP); err != nil {
@@ -213,6 +246,19 @@ func (s *Service) loginBudgetIP(ctx context.Context, t *Transaction) error {
 	}
 	if !d.Allowed {
 		return problem.ErrRateLimited.WithRetryAfter(d.RetryAfter)
+	}
+	return nil
+}
+
+// CheckPhishingResistantFloor refuses, in production, an operator floor
+// (security.mfa_floor.admin_phishing_resistant) that sign-in could not
+// meet because passkeys (WebAuthn) are not configured: the floor fails
+// closed instead of leaving administrators on phishable factors (SEC-012,
+// MFA-005). The server calls it at startup.
+func (s *Service) CheckPhishingResistantFloor() error {
+	cfg := s.d.Cfg
+	if cfg.Mode == configuration.ModeProduction && cfg.Security.MFAFloor.AdminPhishingResistant && s.Passkeys == nil {
+		return errors.New("security.mfa_floor.admin_phishing_resistant requires passkeys (WebAuthn), which this server does not provide")
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -421,7 +422,43 @@ func TestPasskeys(t *testing.T) {
 	})
 
 	t.Run("phishing-resistant administrators", func(t *testing.T) {
+		// root-admin enrolled TOTP (and got recovery codes) at bootstrap. The
+		// profile must not let the password alone register a passkey and
+		// take over the account (MFA-006): the existing TOTP is proved first,
+		// as an upgrade proof that unlocks registration and nothing else.
 		f.ReloginAdmin()
+		admin := LoginOpts{ClientID: "proudauth-cli", Scope: "proudauth:admin", Resources: []string{h.Realm.Issuer + "/admin"}, Identifier: "root-admin"}
+		signIn := func() (string, string, string, *Resp) {
+			t.Helper()
+			start, verifier, cont := h.StartTx(admin)
+			txID := start.Str("transaction_id")
+			h.Step(txID, cont, "identify", map[string]any{"identifier": "root-admin"})
+			return txID, verifier, cont, h.Step(txID, cont, "password", map[string]any{"password": h.passwords["root-admin"]})
+		}
+		activeTOTP := func() int {
+			t.Helper()
+			var n int
+			if err := h.App.D.DB.Pool.QueryRow(context.Background(), `SELECT count(*) FROM credentials WHERE user_id=$1 AND type='totp' AND state='active'`,
+				f.Users["admin"]).Scan(&n); err != nil {
+				t.Fatal(err)
+			}
+			return n
+		}
+
+		// A TOTP enrollment begun before the profile applied cannot be
+		// activated after it does: activation would replace the account's
+		// TOTP and recovery codes.
+		mustStatus(t, h.Do(Req{Method: "POST", Path: "/api/v1/realms/main/users/" + f.Users["admin"] + "/required-actions", Token: f.AdminToken,
+			JSON: map[string]any{"actions": []string{"configure_totp"}}}), 204, "require a factor enrollment")
+		pendTx, _, pendCont, _ := signIn()
+		st := h.Step(pendTx, pendCont, "totp", map[string]any{"code": h.TOTPNow("root-admin")})
+		if !has(actionTypes(st), "enroll_totp") {
+			t.Fatalf("required enrollment not offered: %s", st.Raw)
+		}
+		en := h.Step(pendTx, pendCont, "totp/enroll", nil)
+		mustStatus(t, en, 200, "totp enroll before the profile")
+		h.seeds["root-admin (pending)"] = en.Str("one_time.totp.secret")
+
 		cur := f.must(f.AdminAPI("GET", "/settings", nil), 200, "settings")
 		var pol realm.Policy
 		_ = json.Unmarshal([]byte(jsonString(cur.Get("policy"))), &pol)
@@ -431,17 +468,54 @@ func TestPasskeys(t *testing.T) {
 			Headers: map[string]string{"If-Match": cur.Header.Get("ETag")}})
 		mustStatus(t, upd, 200, "policy update")
 
-		admin := LoginOpts{ClientID: "proudauth-cli", Scope: "proudauth:admin", Resources: []string{h.Realm.Issuer + "/admin"}, Identifier: "root-admin"}
-		start, verifier, cont := h.StartTx(admin)
-		txID := start.Str("transaction_id")
-		h.Step(txID, cont, "identify", map[string]any{"identifier": "root-admin"})
-		st := h.Step(txID, cont, "password", map[string]any{"password": h.passwords["root-admin"]})
+		if r := h.Step(pendTx, pendCont, "totp/activate", map[string]any{"code": h.TOTPNow("root-admin (pending)")}); r.Status != 409 {
+			t.Fatalf("TOTP activated under the phishing-resistant profile: %d %s", r.Status, r.Raw)
+		}
+		if n := activeTOTP(); n != 1 {
+			t.Fatalf("active TOTP credentials after the refused activation: %d", n)
+		}
+
+		// Password alone: the existing factors are offered as an upgrade
+		// proof, and nothing can be enrolled yet.
+		txID, verifier, cont, st := signIn()
 		acts := actionTypes(st)
-		if has(acts, "totp") || has(acts, "recovery_code") || has(acts, "enroll_totp") || !has(acts, "enroll_webauthn") {
-			t.Fatalf("phishing-resistant profile offered weaker factors: %v", acts)
+		if has(acts, "enroll_webauthn") || has(acts, "enroll_totp") || !has(acts, "totp") || !has(acts, "recovery_code") {
+			t.Fatalf("password-only actions under the profile: %v", acts)
+		}
+		for _, a := range st.Get("next_actions").([]any) {
+			if opts, _ := a.(map[string]any)["options"].(map[string]any); opts["upgrade_proof"] != true {
+				t.Fatalf("action not marked as an upgrade proof: %v", a)
+			}
+		}
+		for step, body := range map[string]any{
+			"webauthn/registration-options": nil,
+			"totp/enroll":                   nil,
+			"totp/activate":                 map[string]any{"code": "000000"},
+		} {
+			if r := h.Step(txID, cont, step, body); r.Status != 409 {
+				t.Fatalf("%s accepted with the password alone: %d %s", step, r.Status, r.Raw)
+			}
+		}
+
+		// The TOTP proof unlocks passkey registration only: no factor is
+		// completed and TOTP is not offered again.
+		st = h.Step(txID, cont, "totp", map[string]any{"code": h.TOTPNow("root-admin")})
+		mustStatus(t, st, 200, "totp upgrade proof")
+		acts = actionTypes(st)
+		if st.Str("status") != "pending" || has(toStrings(st.Get("completed_factors")), "totp") {
+			t.Fatalf("upgrade proof counted as a factor: %s", st.Raw)
+		}
+		if !has(acts, "enroll_webauthn") || has(acts, "enroll_totp") || has(acts, "totp") || has(acts, "recovery_code") {
+			t.Fatalf("actions after the upgrade proof: %v", acts)
 		}
 		if r := h.Step(txID, cont, "totp", map[string]any{"code": h.TOTPNow("root-admin")}); r.Status != 409 {
-			t.Fatalf("TOTP accepted under phishing-resistant profile: %d %s", r.Status, r.Raw)
+			t.Fatalf("TOTP accepted again after the upgrade proof: %d %s", r.Status, r.Raw)
+		}
+		if r := h.Step(txID, cont, "totp/enroll", nil); r.Status != 409 {
+			t.Fatalf("TOTP enrollment under the profile: %d %s", r.Status, r.Raw)
+		}
+		if n := activeTOTP(); n != 1 {
+			t.Fatalf("active TOTP credentials: %d", n)
 		}
 		// Synced passkeys are refused by policy; a device-bound one is accepted.
 		synced := newSoftKey("login.test", "https://login.test", true)
@@ -462,24 +536,79 @@ func TestPasskeys(t *testing.T) {
 		if acr := jwtPayload(toks.Str("access_token"))["acr"]; acr != "urn:proudauth:acr:phishing_resistant" {
 			t.Fatalf("admin acr %v", acr)
 		}
+		var proof string
+		_ = h.App.D.DB.Pool.QueryRow(context.Background(), `SELECT metadata->>'factor' FROM audit_events WHERE type='mfa.upgrade_proof.recorded'
+			AND subject_id=$1`, f.Users["admin"]).Scan(&proof)
+		if proof != "totp" {
+			t.Fatalf("upgrade proof not audited: %q", proof)
+		}
 		// Next admin login: only the passkey is offered as second factor.
-		start, verifier, cont = h.StartTx(admin)
-		txID = start.Str("transaction_id")
-		h.Step(txID, cont, "identify", map[string]any{"identifier": "root-admin"})
-		st = h.Step(txID, cont, "password", map[string]any{"password": h.passwords["root-admin"]})
-		if acts := actionTypes(st); !has(acts, "webauthn") || has(acts, "totp") || has(acts, "recovery_code") {
+		txID, verifier, cont, st = signIn()
+		if acts := actionTypes(st); !has(acts, "webauthn") || has(acts, "totp") || has(acts, "recovery_code") || has(acts, "enroll_webauthn") {
 			t.Fatalf("second admin login actions: %v", acts)
+		}
+		if r := h.Step(txID, cont, "totp", map[string]any{"code": h.TOTPNow("root-admin")}); r.Status != 409 {
+			t.Fatalf("TOTP accepted with a user-verified passkey enrolled: %d %s", r.Status, r.Raw)
 		}
 		o := h.Step(txID, cont, "webauthn/options", nil)
 		done = h.Step(txID, cont, "webauthn/verify", map[string]any{"credential": key.get(t, o.Get("webauthn.public_key"))})
 		toks = f.exchange(done, verifier, "proudauth-cli", h.Realm.Issuer+"/admin")
 		mustStatus(t, toks, 200, "admin passkey login")
 		// Bob's synced passkey is now refused at sign-in by policy.
-		start, _, cont = h.StartTx(cli)
+		start, _, cont := h.StartTx(cli)
 		txID = start.Str("transaction_id")
 		o = h.Step(txID, cont, "webauthn/options", nil)
 		if r := h.Step(txID, cont, "webauthn/verify", map[string]any{"credential": bob.get(t, o.Get("webauthn.public_key"))}); r.Status != 400 {
 			t.Fatalf("synced passkey accepted after allow_synced=false: %d %s", r.Status, r.Raw)
 		}
 	})
+}
+
+// TestPhishingResistantUpgradeFromUnverifiedPasskey covers MFA-006 and
+// SEC-012: under the phishing-resistant profile an account whose only
+// passkey never performed user verification proves that passkey first; the
+// proof unlocks registering a user-verified passkey but is not MFA itself.
+func TestPhishingResistantUpgradeFromUnverifiedPasskey(t *testing.T) {
+	f := NewFixture(t, passkeyPolicy)
+	h := f.H
+	weak := newSoftKey("login.test", "https://login.test", false)
+	weak.uv = false
+	tok := f.AccountToken("carol").Tokens.Str("access_token")
+	opts := h.API("POST", "/me/webauthn/registration-options", tok, map[string]any{})
+	mustStatus(t, opts, 200, "registration options")
+	mustStatus(t, h.API("POST", "/me/webauthn/registration-complete", tok, map[string]any{"ceremony_id": opts.Str("ceremony_id"),
+		"credential": weak.create(t, opts.Get("public_key")), "name": "Old key"}), 201, "register unverified passkey")
+
+	strict := LoginOpts{ClientID: "proudauth-cli", Scope: "proudauth:account", Resources: []string{h.Realm.Issuer + "/account"},
+		ACR: "urn:proudauth:acr:phishing_resistant"}
+	start, verifier, cont := h.StartTx(strict)
+	txID := start.Str("transaction_id")
+	h.Step(txID, cont, "identify", map[string]any{"identifier": "carol@example.test"})
+	st := h.Step(txID, cont, "password", map[string]any{"password": h.passwords["carol@example.test"]})
+	if acts := actionTypes(st); !has(acts, "webauthn") || has(acts, "enroll_webauthn") {
+		t.Fatalf("password-only actions: %v", acts)
+	}
+	if r := h.Step(txID, cont, "webauthn/registration-options", nil); r.Status != 409 {
+		t.Fatalf("passkey registration with the password alone: %d %s", r.Status, r.Raw)
+	}
+	o := h.Step(txID, cont, "webauthn/options", nil)
+	mustStatus(t, o, 200, "upgrade ceremony")
+	if uv := o.Str("webauthn.public_key.userVerification"); uv == "required" {
+		t.Fatalf("upgrade ceremony requires user verification the passkey never gave: %s", o.Raw)
+	}
+	st = h.Step(txID, cont, "webauthn/verify", map[string]any{"credential": weak.get(t, o.Get("webauthn.public_key"))})
+	mustStatus(t, st, 200, "upgrade proof")
+	if st.Str("status") != "pending" || len(toStrings(st.Get("completed_factors"))) != 1 || !has(actionTypes(st), "enroll_webauthn") {
+		t.Fatalf("after the upgrade proof: %s", st.Raw)
+	}
+	strong := newSoftKey("login.test", "https://login.test", false)
+	ro := h.Step(txID, cont, "webauthn/registration-options", nil)
+	mustStatus(t, ro, 200, "registration options")
+	done := h.Step(txID, cont, "webauthn/register", map[string]any{"credential": strong.create(t, ro.Get("webauthn.public_key")), "name": "New key"})
+	mustStatus(t, done, 200, "register")
+	toks := f.exchange(done, verifier, "proudauth-cli", h.Realm.Issuer+"/account")
+	mustStatus(t, toks, 200, "token")
+	if acr := jwtPayload(toks.Str("access_token"))["acr"]; acr != "urn:proudauth:acr:phishing_resistant" {
+		t.Fatalf("acr %v", acr)
+	}
 }

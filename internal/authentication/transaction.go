@@ -145,6 +145,20 @@ type PendingState struct {
 	// Flow is the authentication flow decision for the current account
 	// (AUT-012), kept so risk hooks run once per sign-in.
 	Flow *FlowDecision `json:"flow,omitempty"`
+	// UpgradeProof records an existing second factor proved in this
+	// transaction that the phishing-resistant profile does not accept
+	// (MFA-006, SEC-012). It unlocks passkey registration and nothing else:
+	// it is not a completed factor and never satisfies MFA.
+	UpgradeProof *UpgradeProof `json:"upgrade_proof,omitempty"`
+}
+
+// UpgradeProof is the factor an account proved before registering its first
+// user-verified passkey under the phishing-resistant profile.
+type UpgradeProof struct {
+	UserID       string    `json:"user_id"`
+	Factor       string    `json:"factor"`
+	CredentialID string    `json:"credential_id,omitempty"`
+	At           time.Time `json:"at"`
 }
 
 func (t *Transaction) hasPrompt(p string) bool { return slices.Contains(t.Prompt, p) }
@@ -502,25 +516,36 @@ type requirements struct {
 	hasTOTP     bool
 	// hasHOTP: an active counter-based token in a realm that allows HOTP
 	// (MFA-013).
-	hasHOTP     bool
-	hasPasskey  bool
-	hasRecovery bool
+	hasHOTP    bool
+	hasPasskey bool
+	// hasVerifiedPasskey: an active passkey that has completed a ceremony
+	// with user verification, so it can meet the phishing-resistant profile.
+	hasVerifiedPasskey bool
+	hasRecovery        bool
 	// totpDisallowed: the realm's allowed factors exclude TOTP (MFA-005).
 	totpDisallowed bool
 	// phishingResistant requires a user-verified passkey as the second factor and
 	// excludes TOTP and recovery codes (SEC-012, admin_phishing_resistant policy or
 	// an acr_values request for phishing resistance).
 	phishingResistant bool
-	deviceRemembered  string
-	selectAccount     bool
-	passkeysEnabled   bool
-	actions           []string
-	needOrg           bool
-	orgOptions        []map[string]any
-	needConsent       bool
-	consentScopes     []application.Scope
-	ssoRequired       bool
-	ssoProviderID     string
+	// upgrade: the phishing-resistant profile applies, the account holds no
+	// user-verified passkey but holds another second factor, and that factor
+	// has not been proved in this transaction yet. Until it is, passkey
+	// registration is not offered (MFA-006): whoever holds only the password
+	// must not enroll a passkey of their own making (UpgradeProof).
+	upgrade bool
+	// mfaPrompt: MFA is pending and an enrolled factor can satisfy it.
+	mfaPrompt        bool
+	deviceRemembered string
+	selectAccount    bool
+	passkeysEnabled  bool
+	actions          []string
+	needOrg          bool
+	orgOptions       []map[string]any
+	needConsent      bool
+	consentScopes    []application.Scope
+	ssoRequired      bool
+	ssoProviderID    string
 	// cancelDeletion: a pending-deletion account completed every factor it
 	// needs; its only possible action is cancel_deletion (USR-012).
 	cancelDeletion bool
@@ -584,12 +609,27 @@ func (s *Service) evaluate(ctx context.Context, q storage.Querier, t *Transactio
 	if err := q.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM credentials WHERE user_id=$1 AND type='totp' AND state='active'),
 		EXISTS (SELECT 1 FROM credentials WHERE user_id=$1 AND type='hotp' AND state='active'),
 		EXISTS (SELECT 1 FROM webauthn_credentials WHERE user_id=$1 AND state='active'),
-		EXISTS (SELECT 1 FROM recovery_codes WHERE user_id=$1 AND state='active')`, u.ID).Scan(&r.hasTOTP, &r.hasHOTP, &r.hasPasskey, &r.hasRecovery); err != nil {
+		EXISTS (SELECT 1 FROM webauthn_credentials WHERE user_id=$1 AND state='active' AND user_verified),
+		EXISTS (SELECT 1 FROM recovery_codes WHERE user_id=$1 AND state='active')`, u.ID).Scan(&r.hasTOTP, &r.hasHOTP, &r.hasPasskey,
+		&r.hasVerifiedPasskey, &r.hasRecovery); err != nil {
 		return nil, err
 	}
-	// HOTP is separate, opt-in policy (MFA-013): an enrolled token counts
-	// only while the realm lists it.
+	// Factor policy (MFA-005, MFA-013): factors the realm does not allow
+	// never satisfy MFA and never make it required, even when enrolled; an
+	// MFA requirement then needs an allowed one. Every narrowing happens
+	// before the requirement is computed, so an enrolled factor the realm no
+	// longer offers cannot leave the transaction waiting for a step it never
+	// offers. HOTP is opt-in: it counts only while the realm lists it.
+	r.passkeysEnabled = s.Passkeys != nil && rlm.Policy.PasskeysEnabled()
 	r.hasHOTP = r.hasHOTP && rlm.Policy.MFA.HOTPAllowed()
+	if !rlm.Policy.MFA.TOTPAllowed() {
+		r.hasTOTP, r.totpDisallowed = false, true
+	}
+	if allowed := rlm.Policy.MFA.AllowedFactors; len(allowed) > 0 && !slices.Contains(allowed, "recovery_code") {
+		r.hasRecovery = false
+	}
+	r.hasPasskey = r.hasPasskey && r.passkeysEnabled
+	r.hasVerifiedPasskey = r.hasVerifiedPasskey && r.passkeysEnabled
 	// MFA requirement (MFA-003, MFA-005, TEN-012).
 	privileged, err := s.Authz.HoldsPrivilegedRealmRole(ctx, q, t.RealmID, u.ID)
 	if err != nil {
@@ -598,17 +638,6 @@ func (s *Service) evaluate(ctx context.Context, q storage.Querier, t *Transactio
 	floor := s.d.Cfg.Security.MFAFloor
 	r.mfaRequired = rlm.Policy.MFA.Requirement == realm.MFARequired || floor.Require == "all" || r.hasTOTP || r.hasHOTP || privileged || u.Protected ||
 		client.TokenPolicy.RequireMFA || slices.ContainsFunc(t.ACRValues, func(a string) bool { return strings.Contains(a, "mfa") || strings.Contains(a, "phishing_resistant") })
-	r.passkeysEnabled = s.Passkeys != nil && (rlm.Policy.Login.Passkeys || slices.Contains(rlm.Policy.MFA.AllowedFactors, "webauthn"))
-	// Factor policy (MFA-005): factors the realm does not allow never satisfy
-	// MFA, even when enrolled; an MFA requirement then needs an allowed one.
-	if allowed := rlm.Policy.MFA.AllowedFactors; len(allowed) > 0 {
-		if !slices.Contains(allowed, "totp") {
-			r.hasTOTP, r.totpDisallowed = false, true
-		}
-		if !slices.Contains(allowed, "recovery_code") {
-			r.hasRecovery = false
-		}
-	}
 	r.phishingResistant = r.passkeysEnabled && (((rlm.Policy.MFA.AdminPhishingResistant || floor.AdminPhishingResistant) && (privileged || u.Protected)) ||
 		slices.ContainsFunc(t.ACRValues, func(a string) bool { return strings.Contains(a, "phishing_resistant") }))
 	if r.phishingResistant {
@@ -691,13 +720,27 @@ func (s *Service) evaluate(ctx context.Context, q storage.Querier, t *Transactio
 		r.challenge = true
 		return r, nil
 	}
-	if r.mfaRequired && !r.mfaDone && !r.hasPasskey && !r.codeFactor() {
-		// Required but not enrolled: enroll within the transaction (MFA-003). Under
-		// the phishing-resistant profile only a passkey enrollment satisfies it.
+	switch {
+	case r.phishingResistant && !r.mfaDone && !r.hasVerifiedPasskey:
+		// The phishing-resistant profile applies and no enrolled passkey can
+		// meet it: the account registers one in the transaction (SEC-012).
+		// An account that already holds another second factor (TOTP, HOTP,
+		// recovery codes, or a passkey never used with user verification)
+		// proves it first (MFA-006): someone holding only the password must
+		// not register a passkey of their own making and take over the
+		// account. The proof unlocks registration only; it is not MFA.
+		hasOther := r.hasTOTP || r.hasHOTP || r.hasRecovery || r.hasPasskey
+		if hasOther && (t.Pending.UpgradeProof == nil || t.Pending.UpgradeProof.UserID != u.ID) {
+			r.upgrade = true
+			return r, nil
+		}
 		r.actions = append(r.actions, identity.ActionConfigureTOTP)
-	}
-	if r.mfaRequired && !r.mfaDone && (r.hasPasskey || r.codeFactor()) {
+	case r.mfaRequired && !r.mfaDone && (r.hasPasskey || r.codeFactor()):
+		r.mfaPrompt = true
 		return r, nil
+	case r.mfaRequired && !r.mfaDone:
+		// Required but not enrolled: enroll within the transaction (MFA-003).
+		r.actions = append(r.actions, identity.ActionConfigureTOTP)
 	}
 	if u.State == identity.StatePendingDeletion {
 		// Every factor the account needs is done (with an enrollment the
@@ -982,7 +1025,24 @@ func (s *Service) state(ctx context.Context, q storage.Querier, t *Transaction) 
 		}
 	case len(r.actions) > 0 && r.actions[0] == identity.ActionVerifyEmail:
 		add(Action{Type: "verify_email", Required: true, Fields: []string{"code"}, Options: map[string]any{"resend": true}})
-	case r.mfaRequired && !r.mfaDone && (r.hasPasskey || r.codeFactor()):
+	case r.upgrade:
+		// Upgrade proof (MFA-006, SEC-012): an existing second factor the
+		// profile does not accept unlocks passkey registration; a passkey
+		// that answers with user verification meets the profile directly.
+		upgrade := map[string]any{"upgrade_proof": true}
+		if r.hasPasskey {
+			add(Action{Type: "webauthn", Required: false, Options: map[string]any{"upgrade_proof": true, "user_verification_required": false}})
+		}
+		if r.hasTOTP {
+			add(Action{Type: "totp", Required: false, Fields: []string{"code"}, Options: upgrade})
+		}
+		if r.hasHOTP {
+			add(Action{Type: "hotp", Required: false, Fields: []string{"code"}, Options: upgrade})
+		}
+		if r.hasRecovery {
+			add(Action{Type: "recovery_code", Required: false, Fields: []string{"code"}, Options: upgrade})
+		}
+	case r.mfaPrompt:
 		if r.hasTOTP && !r.phishingResistant {
 			add(Action{Type: "totp", Required: false, Fields: []string{"code"}})
 		}
@@ -1021,6 +1081,13 @@ func (s *Service) state(ctx context.Context, q storage.Querier, t *Transaction) 
 				}
 				if r.passkeysEnabled {
 					add(Action{Type: "enroll_webauthn", Required: r.phishingResistant, Options: map[string]any{"user_verification_required": r.phishingResistant}})
+				}
+				if r.totpDisallowed && !r.passkeysEnabled {
+					// Nothing can be enrolled (a realm policy saved before
+					// ValidatePolicy refused such factor lists): say so
+					// instead of waiting for a step that is never offered.
+					st.Error, st.NextActions = "mfa_enrollment_unavailable", []Action{}
+					return st, nil
 				}
 			case identity.ActionVerifyEmail:
 				add(Action{Type: "verify_email", Required: true, Fields: []string{"code"}, Options: map[string]any{"resend": true}})
