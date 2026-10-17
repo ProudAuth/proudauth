@@ -49,6 +49,110 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 - GHCR is the only registry the project publishes to; the Docker Hub mirror
   is not updated and is no longer documented.
 
+### Security
+
+- Phishing-resistant administrator profile: an account that holds TOTP, HOTP,
+  recovery codes or a passkey never used with user verification must prove
+  that factor in the sign-in before a passkey can be registered. The proof is
+  an upgrade proof: it unlocks `enroll_webauthn`, is audited as
+  `mfa.upgrade_proof.recorded`, and never satisfies MFA. `totp/enroll` and
+  `totp/activate` are refused under the profile, so the password alone can no
+  longer register a passkey or replace the account's TOTP and recovery codes
+  (MFA-006, SEC-012). Sign-in factor and enrollment steps are accepted only
+  while their action is in `next_actions`; otherwise `409 unexpected_step`
+  (AUT-002, AUT-004). `security.mfa_floor.admin_phishing_resistant` and the
+  realm's `mfa.admin_phishing_resistant` fail closed: realm policies that
+  leave passkeys disabled are refused (`422`), a production server does not
+  start with the floor when it provides no passkeys, and `identity-cli doctor`
+  warns about realms already in that state (MFA-005). Affected: every
+  earlier 0.2.0 prerelease; regression tests `TestPasskeys`,
+  `TestPhishingResistantUpgradeFromUnverifiedPasskey`,
+  `TestFactorPolicyLeavesNoDeadEnd`.
+- Organization role grants made outside the role routes need an MFA session
+  (MFA-003, TEN-008, TEN-013) unless the realm waives it with
+  `mfa.org_admin_mfa_optional`: adding a member with any role besides
+  `member`; creating or reassigning an invitation, or a batch, that offers such
+  a role or any project role; adding a member to a group that grants roles
+  directly or through its ancestors; moving a group under such a parent; and
+  setting a dynamic rule on such a group. A password-only organization
+  administrator could grant the admin role this way; single-factor sessions
+  now get `403 mfa_required`. Affected: every earlier 0.2.0 prerelease;
+  regression test `TestOrgAuthorityGrantsNeedMFA`.
+- Relationship (ReBAC) decisions and `list-objects` apply the same tenant
+  eligibility as RBAC (AZ-007, AZ-010, AZ-021): nothing matches when the
+  organization is not `active`, a membership stops counting once `expires_at`
+  passes (before the expiry sweep), a rule-derived group membership counts
+  only while its dynamic group is fresh and without rule error, and a service
+  principal only while active and allowed in the organization. Affected:
+  every earlier 0.2.0 prerelease; regression test
+  `TestRelationshipTenantEligibility`.
+- An organization-scoped connection's just-in-time accounts get their
+  upstream email verified only inside the organization's verified domains;
+  elsewhere the address stays unverified behind `verify_email`, or is dropped
+  when another account has verified it. Organization administrators can
+  enable `jit_provisioning` only with a non-empty `config.allowed_email_domains`
+  made of the organization's verified domains (`422` otherwise). The `google`
+  adapter believes `email_verified` only for `gmail.com` and `googlemail.com`
+  addresses or when the `hd` claim equals the address's domain (REG-009,
+  TEN-007, TEN-010, TEN-011, FED-002, FED-004). After upgrading, run the query
+  in [incidents.md](docs/operations/incidents.md) to review accounts created
+  by earlier alphas. Affected: every earlier 0.2.0 prerelease; regression
+  tests `TestOrganizationJITEmailVerification`,
+  `TestOrganizationJITConnectionDomains`, `TestGoogleAdapterEmailAuthority`.
+- `deploy/prod` trusts the stack's own Docker network as the reverse proxy by
+  default (`NETWORK_SUBNET`, `172.30.0.0/24`), so client addresses behind the
+  required HTTPS proxy reach the per-address sign-in budgets and the audit
+  records instead of every user sharing the gateway's address; the install
+  guide gains a reverse-proxy section. In production, `X-Forwarded-For` from
+  a peer outside `server.trusted_proxies` logs a warning once a minute, and
+  `identity-cli doctor` warns when the list is empty (ABU-001, SEC-001,
+  DEP-002). Affected: `deploy/prod` of every earlier 0.2.0 prerelease;
+  regression test `TestUntrustedForwardedForWarnsOnceAMinute`.
+
+### Fixed
+
+- Scheduled signing-key rotation keeps each realm's algorithm, taken from its
+  active key; it reverted every realm to `keys.signing_algorithm`, which broke
+  resources pinned to ES256, PS256 or EdDSA and fapi2 clients after
+  `keys.rotation_interval`. `KeyManager.Rotate` runs the rotation guards for
+  every caller and refuses with `409` an algorithm that pinned business
+  resources reject (`resources`) or that leaves fapi2 clients with a
+  non-FAPI 2.0 algorithm (`clients`); a refused scheduled rotation is logged,
+  counted and skipped while the other realms rotate. `POST
+  /signing-key-rotations` without `algorithm` keeps the realm's algorithm,
+  and a resource created without `signing_algorithm` pins it (TOK-005,
+  TOK-012, ADV-001).
+- SMTP delivery and the relay check run each session under a 30 s connection
+  deadline, or the task's deadline if sooner, and close the connection when
+  the worker task's context ends, so a relay or organization mail server that
+  accepts connections and never answers cannot freeze the worker (TEN-022,
+  MSG-012). Non-ASCII `Subject` and sender names are sent as RFC 2047 encoded
+  words and non-ASCII body parts as quoted-printable (MSG-006).
+- Password sign-in no longer lets a slow or unreachable LDAP/AD directory hold
+  every database transaction slot (NFR-002, DB-014): `directory.sign_in_timeout`
+  (8 s) bounds one attempt's directory work across every endpoint and JIT
+  connector, `directory.max_concurrent_binds` (half the transaction slots)
+  fails fast with `503 unavailable` and `Retry-After`, and password steps
+  that may ask a directory are not retried after a deadlock, so a bind is
+  never repeated. `security.password.max_concurrent_hashes` can bound Argon2id
+  work the same way and is off by default. The two-phase password step that
+  moves this work out of the transaction follows in 0.2.0-alpha.8.
+- Factor-policy narrowing is applied before the MFA requirement: a TOTP the
+  realm no longer allows does not force MFA, a passkey does not count while
+  passkeys are disabled, `mfa.allowed_factors` lists without an enrollable
+  second factor are refused, and a policy stored earlier in that state reports
+  `mfa_enrollment_unavailable` instead of an empty `next_actions` (MFA-003,
+  MFA-005).
+
+### Added
+
+- Configuration: `directory.sign_in_timeout`, `directory.max_concurrent_binds`,
+  `security.password.max_concurrent_hashes`; Compose variable `NETWORK_SUBNET`.
+- Metrics: `proudauth_key_rotations_refused_total{reason}` on the worker,
+  `busy` outcome of `proudauth_directory_binds_total`.
+- Audit event `mfa.upgrade_proof.recorded`; `mfa.totp.used`, `mfa.hotp.used`
+  and `mfa.recovery_code.used` carry `upgrade_proof`.
+
 ### Known limitations
 
 - Not independently reviewed or certified (SEC-018, QA-005); no OpenID
