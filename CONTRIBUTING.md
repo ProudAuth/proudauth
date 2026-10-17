@@ -58,18 +58,33 @@ export PROUDAUTH_TEST_DATABASE_URL='postgres://proudauth:devpassword@127.0.0.1:5
 
 ```sh
 make test                       # go vet ./... && go test -count=1 ./...
-go test ./... -count=1 -race    # what CI runs (with -timeout 30m; CI job deadline 45m)
 go test ./tests/e2e -run TestSupportImpersonation -v
+make e2e-shard SHARD=1 SHARDS=4 # one of the four shards CI runs in parallel
+go test ./... -count=1 -race -json | go run ./internal/tools/testreport -allowlist tests/skip-allowlist.txt -require-tests
 ```
 
-Database-backed tests (`internal/storage`, `tests/e2e`) **skip** when
-`PROUDAUTH_TEST_DATABASE_URL` is unset, and `go test` still prints `ok`. A run that
-finishes in a few seconds almost certainly skipped them; use `-v` and check for
-`=== RUN` and `SKIP` lines. Useful variables:
+The last line is what CI runs: the `test` job over every package but
+`tests/e2e`, and the `e2e` job over `tests/e2e` in four shards
+(`scripts/e2e-shard.sh`), each with `-race`. `internal/tools/testreport` turns
+the JSON stream into a compact log and fails the run when a test skipped
+outside [tests/skip-allowlist.txt](tests/skip-allowlist.txt), when a package
+failed to build, or when no test ran. Add an allowlist entry only for a skip
+that is right in CI, with its reason.
+
+Database-backed tests (`internal/storage`, `tests/e2e`) **skip** locally when
+`PROUDAUTH_TEST_DATABASE_URL` is unset, and `go test` still prints `ok`. A run
+that finishes in a few seconds almost certainly skipped them; pipe through
+`testreport` or use `-v` and check for `SKIP` lines. In CI (`CI` set) or with
+`PROUDAUTH_TEST_REQUIRE_DB=1` they fail instead. Each test gets its own
+database, cloned from a template that `internal/testutil` migrates once per
+migration set, so a changed migration costs one template build, not one
+migration replay per test. Useful variables:
 
 | Variable | Effect |
 | --- | --- |
 | `PROUDAUTH_TEST_DATABASE_URL` | Admin connection; each test creates and drops its own database |
+| `PROUDAUTH_TEST_REQUIRE_DB=1` | Fail, rather than skip, database tests when the URL is unset (CI behaviour) |
+| `PROUDAUTH_TEST_NO_TEMPLATE=1` | Migrate every test database directly instead of cloning the template |
 | `PROUDAUTH_TEST_LOG=1` | Prints server warnings from the in-process harness |
 | `PROUDAUTH_TEST_KEEP_DB=1` | Keeps test databases after the run |
 

@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -32,6 +33,9 @@ type govJob struct {
 	Services map[string]any    `yaml:"services"`
 	Env      map[string]string `yaml:"env"`
 	Steps    []govStep         `yaml:"steps"`
+	Strategy struct {
+		Matrix map[string][]any `yaml:"matrix"`
+	} `yaml:"strategy"`
 }
 
 type govStep struct {
@@ -94,11 +98,15 @@ func govLoadWorkflow(t *testing.T, rel string) govWorkflow {
 
 // TestCIRunsSecurityTests covers QA-001: the critical-invariant tests are
 // what gates a change, not a coverage percentage. CI runs every Go test with
-// the race detector against PostgreSQL (without a database the end-to-end
-// security tests skip and still pass), every fuzz target CI and `make fuzz`
-// name exists (go test -fuzz with a pattern that matches nothing passes
-// without fuzzing), and the release publishes only after the whole CI
-// workflow has passed.
+// the race detector against PostgreSQL: the test job runs every package but
+// tests/e2e, and the e2e job runs tests/e2e in parallel shards
+// (scripts/e2e-shard.sh). Both pipe `go test -json` through
+// internal/tools/testreport with tests/skip-allowlist.txt, so a test that
+// skips outside the allowlist, a package that fails to build or a -run
+// pattern that matches nothing fails the job instead of passing silently.
+// Every fuzz target CI and `make fuzz` name exists (go test -fuzz with a
+// pattern that matches nothing passes without fuzzing), and the release
+// publishes only after the whole CI workflow has passed.
 func TestCIRunsSecurityTests(t *testing.T) {
 	ci := govLoadWorkflow(t, ".github/workflows/ci.yml")
 	if _, ok := ci.On["pull_request"]; !ok {
@@ -108,15 +116,44 @@ func TestCIRunsSecurityTests(t *testing.T) {
 	if !ok {
 		t.Fatal("ci.yml has no test job")
 	}
-	if test.Env["PROUDAUTH_TEST_DATABASE_URL"] == "" || test.Services["postgres"] == nil {
-		t.Error("the test job must provide a PostgreSQL service and PROUDAUTH_TEST_DATABASE_URL; without them the end-to-end tests skip and pass")
+	e2e, ok := ci.Jobs["e2e"]
+	if !ok {
+		t.Fatal("ci.yml has no e2e job")
+	}
+	for name, job := range map[string]govJob{"test": test, "e2e": e2e} {
+		if job.Env["PROUDAUTH_TEST_DATABASE_URL"] == "" || job.Services["postgres"] == nil {
+			t.Errorf("the %s job must provide a PostgreSQL service and PROUDAUTH_TEST_DATABASE_URL; without them the database tests skip", name)
+		}
+		runs := job.runs()
+		if !strings.Contains(runs, "go run ./internal/tools/testreport") || !strings.Contains(runs, "-allowlist tests/skip-allowlist.txt") || !strings.Contains(runs, "-require-tests") {
+			t.Errorf("the %s job must pipe go test -json through internal/tools/testreport with tests/skip-allowlist.txt and -require-tests, so a skipped test or an empty -run pattern fails the job", name)
+		}
+		if !strings.Contains(runs, "set -o pipefail") {
+			t.Errorf("the %s job pipes go test into testreport without pipefail, so a go test failure could be lost", name)
+		}
+		if regexp.MustCompile(`-coverprofile|-cover\b`).MatchString(runs) {
+			t.Errorf("the %s job gates on coverage; QA-001 requires direct tests of invariants, not a coverage number", name)
+		}
 	}
 	runs := test.runs()
-	if !regexp.MustCompile(`(?m)^go test \./\.\.\. .*-race`).MatchString(runs) {
-		t.Error("the test job must run go test ./... with -race")
+	if !regexp.MustCompile(`(?m)^go test \$\(go list \./\.\.\. \| grep -v '/tests/e2e\$'\) .*-race .*-json`).MatchString(runs) {
+		t.Error("the test job must run go test with -race and -json over every package except tests/e2e")
 	}
-	if regexp.MustCompile(`-coverprofile|-cover\b`).MatchString(runs) {
-		t.Error("the test job gates on coverage; QA-001 requires direct tests of invariants, not a coverage number")
+	shards := e2e.Strategy.Matrix["shard"]
+	if len(shards) < 2 {
+		t.Errorf("the e2e job runs %d shard(s); the suite is sharded so a pull request gets its result in parallel", len(shards))
+	}
+	shardRun := regexp.MustCompile(`\./scripts/e2e-shard\.sh \$\{\{ matrix\.shard \}\} (\d+) .*-race .*-json`).FindStringSubmatch(e2e.runs())
+	if shardRun == nil {
+		t.Error("the e2e job must run ./scripts/e2e-shard.sh ${{ matrix.shard }} <total> with -race and -json")
+	} else if shardRun[1] != strconv.Itoa(len(shards)) {
+		t.Errorf("e2e-shard.sh runs %s shards but the matrix has %d; a test would never run", shardRun[1], len(shards))
+	}
+	if st, err := os.Stat(filepath.Join(repoRoot, "scripts/e2e-shard.sh")); err != nil || st.Mode()&0o111 == 0 {
+		t.Errorf("scripts/e2e-shard.sh must exist and be executable: %v", err)
+	}
+	if !ci.Jobs["image"].needs("e2e") || !ci.Jobs["image"].needs("test") {
+		t.Error("the image job must need the test and e2e jobs: image is a required check, so a failing shard must block it")
 	}
 
 	fuzz := regexp.MustCompile(`go test (\./\S+) -run '\^\$\$?' -fuzz '\^(Fuzz\w+)\$\$?'`)
@@ -144,6 +181,43 @@ func TestCIRunsSecurityTests(t *testing.T) {
 	rel := govLoadWorkflow(t, ".github/workflows/release.yml")
 	if rel.Jobs["ci"].Uses != "./.github/workflows/ci.yml" || !rel.Jobs["release"].needs("ci") {
 		t.Error("the release job must need a ci job that calls .github/workflows/ci.yml")
+	}
+}
+
+// TestSkipAllowlistNamesRealTests keeps tests/skip-allowlist.txt honest: every
+// entry has a reason and names a test that exists in the package it points
+// to, so an allowed skip cannot outlive the test or hide a typo.
+func TestSkipAllowlistNamesRealTests(t *testing.T) {
+	const module = "github.com/proudauth/proudauth"
+	text := govRead(t, "tests/skip-allowlist.txt")
+	for i, line := range strings.Split(text, "\n") {
+		reason := ""
+		if j := strings.Index(line, "#"); j >= 0 {
+			reason = strings.TrimSpace(line[j+1:])
+			line = line[:j]
+		}
+		f := strings.Fields(line)
+		if len(f) == 0 {
+			continue
+		}
+		if len(f) != 2 || reason == "" {
+			t.Errorf("tests/skip-allowlist.txt:%d: want \"<package> <Test> # reason\"", i+1)
+			continue
+		}
+		dir := strings.TrimPrefix(f[0], module+"/")
+		top, _, _ := strings.Cut(f[1], "/")
+		files, _ := filepath.Glob(filepath.Join(repoRoot, dir, "*_test.go"))
+		found := false
+		for _, file := range files {
+			b, err := os.ReadFile(file)
+			if err == nil && strings.Contains(string(b), "func "+top+"(") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("tests/skip-allowlist.txt:%d: no test %s in %s", i+1, top, dir)
+		}
 	}
 }
 
