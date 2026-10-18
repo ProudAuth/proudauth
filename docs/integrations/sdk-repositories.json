@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "note": "Pinned independent SDK CI and synthetic-contract snapshot. Checked on 2026-10-15; not a package registry release, certification, or independent security review. Service traceability credits only local tests; SDK tests execute in these workflows.",
+  "note": "Pinned independent SDK CI and synthetic-contract snapshot. Checked on 2026-10-15, the Go SDK again on 2026-10-18 at its v0.2.0 tag; not a package registry release, certification, or independent security review. Service traceability credits only local tests; SDK tests execute in these workflows.",
   "repositories": [
     {
       "language": "go",
       "repository": "proudauth/proudauth-sdk-go",
-      "revision": "4c3faf77751ba493eba31de28897869350c74c54",
+      "revision": "1be1ba206169694c17267b9a840812c7086954a1",
       "workflow_path": ".github/workflows/ci.yml",
-      "workflow_sha256": "e709b836c907daf9c38536e45b7956ef44ad96ba9eb942567bbf0023b3e70840",
-      "workflow": "name: ci\n\non:\n  push:\n    branches: [main]\n  pull_request:\n  workflow_dispatch:\n\npermissions:\n  contents: read\n\nconcurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true\n\njobs:\n  test:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 15\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0\n        with:\n          go-version-file: go.mod\n          cache: true\n      - name: Verify vendored contracts\n        run: python3 scripts/check-contracts.py\n      - name: Verify module and formatting\n        run: |\n          go mod verify\n          test -z \"$(gofmt -l admin internal oidcclient verifier)\"\n          go vet ./...\n      - name: Unit, negative, concurrency and shared-fixture tests\n        run: go test -race -count=1 ./...\n      - name: Verifier fuzz smoke\n        run: |\n          go test ./verifier -run '^$' -fuzz '^FuzzVerify$' -fuzztime 30s\n          go test ./verifier -run '^$' -fuzz '^FuzzSenderURLNormalization$' -fuzztime 30s\n",
-      "ci_run": "https://github.com/proudauth/proudauth-sdk-go/actions/runs/38766360671",
+      "workflow_sha256": "8e4c58ba8db029c08ad02a5736a216a6612424d8b0eb9544542d4168d7f75f8e",
+      "workflow": "name: ci\n\non:\n  push:\n    branches: [main]\n  pull_request:\n  workflow_dispatch:\n\npermissions:\n  contents: read\n\nconcurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true\n\njobs:\n  test:\n    runs-on: ubuntu-24.04\n    timeout-minutes: 15\n    strategy:\n      fail-fast: false\n      matrix:\n        # The declared floor (go.mod) and the two later releases.\n        go: [\"1.25.x\", \"1.26.x\", \"1.27.x\"]\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0\n        with:\n          go-version: ${{ matrix.go }}\n          cache: true\n      - name: Declared floor matches the oldest tested Go\n        run: |\n          floor=$(sed -n 's/^go \\([0-9.]*\\)$/\\1/p' go.mod)\n          test \"$floor\" = \"1.25\" || { echo \"go.mod declares go $floor; the CI matrix tests 1.25 as the floor\"; exit 1; }\n      - name: Verify vendored contracts\n        run: python3 scripts/check-contracts.py\n      - name: Verify module and formatting\n        run: |\n          go mod verify\n          test -z \"$(gofmt -l admin internal oidcclient verifier)\"\n          go vet ./...\n      - name: Unit, negative, concurrency and shared-fixture tests\n        run: go test -race -count=1 ./...\n      - name: Verifier fuzz smoke\n        run: |\n          go test ./verifier -run '^$' -fuzz '^FuzzVerify$' -fuzztime 30s\n          go test ./verifier -run '^$' -fuzz '^FuzzSenderURLNormalization$' -fuzztime 30s\n",
+      "ci_run": "https://github.com/proudauth/proudauth-sdk-go/actions/runs/39117994765",
       "ci_conclusion": "success",
       "fixtures": {
         "access-tokens/cases.json": "2140c779c7267b225713b8f1b198676822fc31ebe19f674b710279163a0eeba3",

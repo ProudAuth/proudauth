@@ -12,7 +12,11 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 
 ## [Unreleased]
 
-No changes recorded after 0.2.0-alpha.5.
+### Changed
+
+- The service depends on `github.com/proudauth/proudauth-sdk-go` `v0.2.0`, the
+  SDK's first release tag, instead of a pseudo-version of its `main` branch
+  (SDK-009); `docs/integrations/sdk-repositories.json` pins that revision.
 
 ## [0.2.0-alpha.5] - 2026-10-18
 

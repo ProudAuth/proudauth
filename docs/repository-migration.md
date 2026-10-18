@@ -16,8 +16,8 @@ the website renderer have standalone owners and release lifecycles.
 
 The CLI imports the admin client from `github.com/proudauth/proudauth-sdk-go`;
 service end-to-end tests import its admin, verifier and OIDC packages.
-`go.mod` pins `v0.0.0-20261015160744-4c3faf77751b`, corresponding to public
-commit `4c3faf77751ba493eba31de28897869350c74c54`; `go.sum` verifies the module.
+`go.mod` pins `v0.2.0`, the SDK's first release tag (2026-10-18), on public
+commit `1be1ba206169694c17267b9a840812c7086954a1`; `go.sum` verifies the module.
 No local `replace` directive, Go workspace or sibling checkout is required.
 SDK implementation sources are absent from this repository.
 

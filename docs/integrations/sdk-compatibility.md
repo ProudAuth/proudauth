@@ -24,9 +24,10 @@ The source API version is **0.2.0**. Registry publication differs per SDK
 - **npm:** `@proudauth/sdk` 0.2.0 is published (2026-10-16).
 - **pub.dev, Packagist and NuGet:** `proudauth_sdk`, `proudauth/sdk` and
   `ProudAuth.Sdk` are not published; use the Dart, PHP and .NET SDKs from source.
-- **Go:** `proudauth-sdk-go` has no version tag yet, so
-  `go get github.com/proudauth/proudauth-sdk-go@latest` resolves to a
-  pseudo-version of `main`.
+- **Go:** `proudauth-sdk-go` is tagged `v0.2.0` (2026-10-18); install it with
+  `go get github.com/proudauth/proudauth-sdk-go@v0.2.0`. Go modules have no
+  registry: the tag is fetched through the Go module proxy and its checksum
+  recorded in `go.sum`.
 
 Public source availability does not establish registry publication. PHP's
 Composer manifest now lives at its repository root, so a VCS repository can
