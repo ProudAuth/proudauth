@@ -112,6 +112,17 @@ func (s *Service) ByName(ctx context.Context, name string) (*Realm, error) {
 	return r, nil
 }
 
+// Cached returns the realm ByName last loaded for name, however old, without
+// querying the database; ok is false when none is cached. It serves cheap
+// decisions taken before authentication, such as admission to the reserved
+// request pool (NFR-002); anything that grants access uses ByName.
+func (s *Service) Cached(name string) (r *Realm, ok bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	c, ok := s.cache[name]
+	return c.r, ok
+}
+
 // Invalidate drops cached state for a realm.
 func (s *Service) Invalidate(name string) {
 	s.mu.Lock()

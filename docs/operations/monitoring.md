@@ -4,26 +4,63 @@ Requirements: OPS-001, OPS-002, OPS-003, OPS-004, OPS-011, OPS-012, OPS-015, SEC
 AUD-011, AUD-012, AUD-013, AUD-014, EXT-005, EXT-015, EXT-017, DEP-009. Code:
 `internal/observability/observability.go`, `internal/server/server.go`
 (`InternalHandler`, `refreshGauges`), `internal/httpapi/protocol.go` (`live`,
-`ready`), `internal/httpapi/middleware.go`, `internal/worker/worker.go`
+`Ready`), `internal/httpapi/middleware.go` (`reserveCredential`), `internal/worker/worker.go`
 (`VerifyRecentAudit`), `internal/platform/tracing` (span export).
 
 ## Endpoints
 
 | Listener | Path | Auth | Response |
 | --- | --- | --- | --- |
-| Public | `GET /health/live` | none | `200 {"status":"ok"}`; never touches dependencies. Use for liveness. |
-| Public | `GET /health/ready` | none | `200 {"status":"ready"}` when the database answers, the schema is current and every active realm has a usable active signing key; otherwise `503 {"status":"unavailable"}` (database or schema) `503 {"status":"degraded"}` (signing key), or `503 {"status":"degraded","reason":"clock_skew"}` when the server clock differs from the database clock by more than `observability.max_clock_skew`. During shutdown it answers `503 {"status":"draining"}` for `server.drain_delay` before the listeners close (OPS-012). Maintenance mode does not change it. Use for readiness/load balancing. |
-| Internal | `GET /health/live` | none | `200`, empty body. |
+| Public | `GET /health/live` | none | `200 {"status":"ok"}`; never touches dependencies. Served from the reserved request pool, so it answers `503` while that pool is full; orchestrator probes use the internal listener ([Probes and load shedding](#probes-and-load-shedding)). |
+| Public | `GET /health/ready` | none | `200 {"status":"ready"}` when the database answers, the schema is current and every active realm has a usable active signing key; otherwise `503 {"status":"unavailable"}` (database or schema) `503 {"status":"degraded"}` (signing key), or `503 {"status":"degraded","reason":"clock_skew"}` when the server clock differs from the database clock by more than `observability.max_clock_skew`. During shutdown it answers `503 {"status":"draining"}` for `server.drain_delay` before the listeners close (OPS-012). Maintenance mode does not change it. Use for load balancing; like liveness it is served from the reserved pool. |
+| Internal | `GET /health/live` | none | `200`, empty body. Use for liveness and startup probes. |
+| Internal | `GET /health/ready` | none | The public readiness check: same statuses and bodies. Use for readiness probes. |
 | Internal | `GET /metrics` | `Authorization: Bearer <server.metrics_token>` when configured | Prometheus text format (version 0.0.4). 404 when `observability.metrics_enabled: false`. Each scrape first refreshes the database, queue-age, clock-skew, worker-lease and audit-backlog gauges. |
 | Internal | `GET /status` | `Authorization: Bearer <server.metrics_token>` when configured | Operator status JSON (OPS-015), see [below](#operator-status). |
 
 The internal listener (`server.internal_listen`) must be on a private network:
 `/metrics` and `/status` are protected only when `server.metrics_token` is set
 (if that reference cannot be resolved at startup, both answer 401 to every
-request), and `/health/live` never is. `identity-worker` has no listener unless
-`workers.metrics_listen` is set; it then serves the same `/metrics`, `/status` and
-`/health/live` on that private address, under the same token and
-`metrics_enabled` rules.
+request), and `/health/live` and `/health/ready` never are. `identity-worker` has
+no listener unless `workers.metrics_listen` is set; it then serves the same
+`/metrics`, `/status`, `/health/live` and `/health/ready` on that private
+address, under the same token and `metrics_enabled` rules.
+
+### Probes and load shedding
+
+Point orchestrator probes at the internal listener: the Kubernetes manifests
+probe `/health/live` (liveness, startup) and `/health/ready` (readiness) on
+port `internal` (`:9090`, DEP-009, DEP-013). It has no load shedding, so a
+probe answers however busy the public listener is. `server.internal_listen`
+must then listen on an address the kubelet reaches (`":9090"`, as in
+`deploy/kubernetes/overlays/example/config.yaml`), not the default
+`127.0.0.1:9090`.
+
+On the public listener every request takes one of `limits.max_inflight_requests`
+ordinary slots, or a slot of the separate reserve (a quarter of that, plus
+one); a request that finds its pool full is refused at once with `503` and
+`Retry-After: 2` (NFR-002). The reserve admits:
+
+- `GET /health/live` and `GET /health/ready` (and every other `/health/*`
+  path), for load balancers and operators that probe the public listener;
+- requests to administrative paths (`/api/v1/realms/{realm}/...` containing
+  `/users`, `/settings`, `/signing-key`, `/emergency/`, `/sessions`,
+  `/clients` or `/role-assignments`, not `/me/` paths) whose `Authorization`
+  header carries, with the `Bearer` or `DPoP` scheme, a JWT whose header
+  names a signing key of that realm with the key's algorithm. The check reads
+  only the realm and its key set as this process has cached them (any request
+  that resolves the realm caches it; token signing and verification load its
+  keys, and every readiness check loads the keys of each active realm); it
+  does not verify the signature or query the database. Requests without
+  credentials, with any other value (opaque, `Basic`, malformed, a key of
+  another realm or an unknown key), or for a realm whose name or keys this
+  process has not cached yet, use the ordinary pool.
+
+Signing key IDs are public (JWKS), so a client that copies one into a forged
+token still reaches the reserve; the reserve is bounded and authentication
+then refuses the request. Public health probes share the reserve with
+administrators, so a full reserve answers them `503` too: that is why the
+orchestrator probes use the internal listener.
 
 ### Operator status
 
@@ -82,7 +119,7 @@ combinations and each histogram 500; further combinations are dropped.
 | `proudauth_authentications_total` | counter | `outcome` (`success`, `failure`) | Transaction steps that completed a login, and steps rejected with `invalid_credentials`. |
 | `proudauth_tokens_total` | counter | `grant_type`, `outcome` (`success` or the OAuth error code, e.g. `invalid_grant`) | Token endpoint results. |
 | `proudauth_rate_limited_total` | counter | `surface` (holds the route label) | Requests rejected by abuse budgets (`rate_limited`). The token endpoint's own budget (`slow_down`) is counted in `proudauth_tokens_total` instead. |
-| `proudauth_load_shed_total` | counter | `pool` (holds the route label) | Requests shed with 503 at `limits.max_inflight_requests`. |
+| `proudauth_load_shed_total` | counter | `pool` (holds the route label) | Requests shed with 503 because their pool was full ([Probes and load shedding](#probes-and-load-shedding)). |
 | `proudauth_database_up` | gauge | — | 1/0; refreshed on every `/metrics` scrape and on every `/health/ready` request. |
 | `proudauth_outbox_oldest_pending_seconds` | gauge | — | Age of the oldest pending outbox event (0 when none); refreshed on every scrape. |
 | `proudauth_notification_oldest_due_seconds` | gauge | — | How long the oldest due notification job (`queued`/`attempted`) has waited since it became due (0 when none, or when the query fails); refreshed on every scrape (OPS-002). |

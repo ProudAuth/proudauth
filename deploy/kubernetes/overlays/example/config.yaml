@@ -1,7 +1,7 @@
 mode: production
 server:
   public_listen: ":8080"
-  internal_listen: ":9090"            # reachable only through proudauth-internal + NetworkPolicy
+  internal_listen: ":9090"            # proudauth-internal + NetworkPolicy, and the kubelet probes
   public_origin: "https://id.example.com"
   trusted_proxies: ["10.0.0.0/8"]     # your ingress controller's pod CIDR
   metrics_token: "file:/run/secrets/metrics_token"

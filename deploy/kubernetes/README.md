@@ -23,9 +23,19 @@ deploy/kubernetes/
   pod from traffic without restarting it. At shutdown it reports `draining` for
   `server.drain_delay` (default 5 s) before the listeners close, so keep
   `terminationGracePeriodSeconds` above `drain_delay + shutdown_deadline`.
-- Metrics and status listen on `:9090`, exposed only through the
-  `proudauth-internal` Service and allowed only from the `monitoring` namespace.
-- Workers serve `/health/live`, `/metrics` and `/status` on
+- The liveness, startup and readiness probes use the internal listener (port
+  `internal`, `:9090`), which has no load shedding. On `:8080` the health
+  routes share the reserved request pool with administrators, and a full pool
+  would answer liveness with `503` and restart pods mid-incident. The probes
+  need `server.internal_listen: ":9090"` (as in the example configuration),
+  not the default `127.0.0.1:9090`; custom overlays should point their probes
+  at port `internal` too. The NetworkPolicy does not list the kubelet, as for
+  the worker's probes on `:9091`; if your network plugin filters probe traffic
+  from the node, allow it to port 9090.
+- Metrics, status and the health checks listen on `:9090`, exposed only through
+  the `proudauth-internal` Service and allowed only from the `monitoring`
+  namespace.
+- Workers serve `/health/live`, `/health/ready`, `/metrics` and `/status` on
   `workers.metrics_listen` (`:9091` in the example configuration); the worker's
   liveness and startup probes use it, so keep it set.
 

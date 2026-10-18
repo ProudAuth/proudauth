@@ -1,7 +1,12 @@
 # Public/protocol/admin listener (:8080) and private operator listener (:9090,
-# metrics and status). Liveness checks only the process; readiness removes the
-# pod from traffic when the database, schema, signing keys or clock are unsafe,
-# without restart loops that destroy diagnostic state (DEP-009).
+# metrics, status and health). Liveness checks only the process; readiness removes
+# the pod from traffic when the database, schema, signing keys or clock are unsafe,
+# without restart loops that destroy diagnostic state (DEP-009). The probes use
+# the internal listener, which has no load shedding: on :8080 they would share
+# the reserved request pool with administrators (NFR-002), and a full pool would
+# answer liveness with 503 and restart pods mid-incident. The probes need
+# server.internal_listen on a pod address (":9090" in overlays/example/config.yaml),
+# not the default 127.0.0.1:9090.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -41,15 +46,15 @@ spec:
             - {name: http, containerPort: 8080}
             - {name: internal, containerPort: 9090}
           livenessProbe:
-            httpGet: {path: /health/live, port: http}
+            httpGet: {path: /health/live, port: internal}
             periodSeconds: 10
             failureThreshold: 6
           readinessProbe:
-            httpGet: {path: /health/ready, port: http}
+            httpGet: {path: /health/ready, port: internal}
             periodSeconds: 5
             failureThreshold: 2
           startupProbe:
-            httpGet: {path: /health/live, port: http}
+            httpGet: {path: /health/live, port: internal}
             periodSeconds: 2
             failureThreshold: 30
           securityContext:

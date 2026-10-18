@@ -257,6 +257,22 @@ func (m *KeyManager) Lookup(ctx context.Context, realmID, kid string) (PublicKey
 	return pk, ok, nil
 }
 
+// CachedKey resolves a kid in the realm's key set as this process last loaded
+// it, however old, without querying the database: ok is false when the
+// realm's keys are not cached or the kid is unknown, retired or compromised.
+// It serves cheap decisions taken before authentication, such as admission
+// to the reserved request pool (NFR-002); token verification uses Lookup.
+func (m *KeyManager) CachedKey(realmID, kid string) (PublicKey, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	rk, ok := m.cache[realmID]
+	if !ok || rk.compromised[kid] {
+		return PublicKey{}, false
+	}
+	pk, ok := rk.byKID[kid]
+	return pk, ok
+}
+
 // JWKS returns the public JWK set document (TOK-011). Private material is never included.
 func (m *KeyManager) JWKS(ctx context.Context, realmID string) ([]byte, error) {
 	pub, err := m.Published(ctx, realmID)

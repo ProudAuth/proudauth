@@ -220,13 +220,15 @@ func (a *App) middleware(next http.Handler) http.Handler {
 			}
 		}()
 		// Load shedding with a reserved pool for administration and health (NFR-002).
-		// The reserve serves health probes and credentialed administration only:
-		// anonymous floods against administrative paths compete in the ordinary
-		// pool (they would be rejected by authentication anyway). Refusals
-		// here use the route's error format (writeError): OAuth errors on
-		// protocol endpoints, problem details elsewhere.
+		// The reserve serves the public /health/* routes and administrative
+		// requests whose bearer is shaped like an administration token
+		// (reserveCredential): anonymous requests and junk or unknown
+		// credentials against administrative paths compete in the ordinary
+		// pool (authentication would reject them anyway). Refusals here use
+		// the route's error format (writeError): OAuth errors on protocol
+		// endpoints, problem details elsewhere.
 		pool := a.inflight
-		if isHealthPath(r.URL.Path) || (isAdminPath(r.URL.Path) && r.Header.Get("Authorization") != "") {
+		if isHealthPath(r.URL.Path) || (isAdminPath(r.URL.Path) && a.reserveCredential(r)) {
 			pool = a.adminSlots
 		}
 		select {
@@ -255,6 +257,64 @@ func (a *App) middleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(sw, r)
 	})
+}
+
+// reserveCredential reports whether a request to an administrative path
+// carries a credential shaped like one the administration APIs accept, which
+// admits it to the reserved pool (NFR-002). authenticate accepts only JWT
+// access tokens there (refresh, code and support tokens are refused, opaque
+// ones never verify), so the bearer (Bearer or DPoP scheme) must be a compact
+// JWS within limits.max_token_bytes whose header names a key ID, with that
+// key's algorithm, from the signing key set of the realm in the path.
+//
+// The check runs before a pool slot is held, so it reads only what this
+// process already caches (the realm by name, loaded by any request that
+// resolves the realm; the realm's key set, loaded by token issuance and
+// verification and by every readiness check) and verifies nothing: no
+// database query, no signature check. A missing, malformed or opaque value,
+// an unknown key ID, a key of another realm, or a realm whose name or keys
+// this process has not loaded yet leaves the request in the ordinary pool.
+// Key IDs are published in JWKS, so a client that copies one into a forged
+// header still reaches the reserve; the reserve stays bounded and
+// authentication rejects the request there.
+func (a *App) reserveCredential(r *http.Request) bool {
+	if a.Realms == nil || a.KeyMgr == nil {
+		return false
+	}
+	raw := bearer(r)
+	max := a.D.Cfg.Limits.MaxTokenBytes
+	if max <= 0 {
+		max = 8192
+	}
+	if raw == "" || len(raw) > max {
+		return false
+	}
+	head, rest, ok := strings.Cut(raw, ".")
+	if !ok {
+		return false
+	}
+	payload, sig, ok := strings.Cut(rest, ".")
+	if !ok || payload == "" || sig == "" || strings.Contains(sig, ".") {
+		return false
+	}
+	b, err := base64.RawURLEncoding.DecodeString(head)
+	if err != nil {
+		return false
+	}
+	var h struct {
+		Alg string `json:"alg"`
+		Kid string `json:"kid"`
+	}
+	if json.Unmarshal(b, &h) != nil || h.Kid == "" {
+		return false
+	}
+	name, _, _ := strings.Cut(strings.TrimPrefix(r.URL.Path, "/api/v1/realms/"), "/")
+	rlm, ok := a.Realms.Cached(name)
+	if !ok {
+		return false
+	}
+	pk, ok := a.KeyMgr.CachedKey(rlm.ID, h.Kid)
+	return ok && pk.Algorithm == h.Alg
 }
 
 // routeOf is the bounded label of a request's route for metrics, spans, logs

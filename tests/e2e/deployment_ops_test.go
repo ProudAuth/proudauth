@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -102,6 +103,17 @@ func snapshotDatabase(t *testing.T, h *Harness, suffix string) *storage.DB {
 func probe(h *Harness, path string) (int, map[string]any) {
 	r := h.Do(Req{Method: "GET", Path: path})
 	return r.Status, r.Body
+}
+
+// internalProbe answers path from the harness's internal listener
+// (server.InternalHandler), where the Kubernetes probes go.
+func internalProbe(h *Harness, path string) (int, map[string]any) {
+	env := &server.Env{Cfg: h.Cfg, Log: h.App.D.Log, DB: h.App.D.DB, Keys: h.App.D.Keys, Deps: h.App.D, Metrics: h.App.Metrics}
+	w := httptest.NewRecorder()
+	server.InternalHandler(env, h.App).ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+	var body map[string]any
+	_ = json.Unmarshal(w.Body.Bytes(), &body)
+	return w.Code, body
 }
 
 // TestBootstrapIsOperatorOnly covers DEP-007: the first administrator is
@@ -282,7 +294,9 @@ func jwtHeaderKID(t *testing.T, tok string) string {
 // dependency, while readiness takes the instance out of traffic (503) when
 // it is draining, its database is unreachable, the schema is behind the
 // binary or its signing keys are unusable, and returns to ready once the
-// dependency recovers, so no restart is needed.
+// dependency recovers, so no restart is needed. The internal listener,
+// where the Kubernetes probes go (DEP-013), answers both checks with the
+// same status and body as the public one in every state.
 func TestHealthContracts(t *testing.T) {
 	h := NewHarness(t)
 	h.CreateRealm(nil)
@@ -292,8 +306,15 @@ func TestHealthContracts(t *testing.T) {
 		if st, body := probe(n, "/health/live"); st != 200 {
 			t.Fatalf("%s: liveness %d %v", what, st, body)
 		}
-		if st, body := probe(n, "/health/ready"); st != ready || body["status"] != status {
+		if st, _ := internalProbe(n, "/health/live"); st != 200 {
+			t.Fatalf("%s: internal liveness %d", what, st)
+		}
+		st, body := probe(n, "/health/ready")
+		if st != ready || body["status"] != status {
 			t.Fatalf("%s: readiness %d %v, want %d %s", what, st, body, ready, status)
+		}
+		if ist, ibody := internalProbe(n, "/health/ready"); ist != st || !reflect.DeepEqual(ibody, body) {
+			t.Fatalf("%s: internal readiness %d %v, public %d %v; want the same answer", what, ist, ibody, st, body)
 		}
 	}
 	expect(h, "healthy", 200, "ready")
