@@ -29,9 +29,33 @@ transport/status fallback remains as documented.
   server and the worker at startup when `storage.migrate_on_start: true`. Other
   operator commands never apply migrations.
 - The runner holds a PostgreSQL advisory lock, so concurrent migrators serialize.
-- Each migration runs in its own transaction and is recorded with a SHA-256 checksum
-  in `schema_migrations`. If an applied migration's checksum differs from the
-  binary's copy, `migrate` stops with an error.
+- Each migration runs in its own transaction (except a
+  [no-transaction migration](#no-transaction-migrations)) and is recorded with a
+  SHA-256 checksum in `schema_migrations`. If an applied migration's checksum
+  differs from the binary's copy, `migrate` stops with an error.
+- **Lock and statement bounds (OPS-008, DEP-012).** DDL takes table locks, and
+  a statement waiting for a lock holds up every later query on that table
+  behind it: an `ALTER TABLE` queued behind a long query on `sessions` stops
+  sign-ins until the migration commits. Each migration therefore runs with
+  `lock_timeout` set to `storage.migration_lock_timeout` (default `5s`) and
+  `statement_timeout` set to `storage.migration_statement_timeout` (default
+  `10m`), for the migration's own statements only: runtime traffic keeps
+  `storage.statement_timeout`, and migrations no longer inherit it (an index
+  build over the runtime connection was cut off after 10 seconds; over
+  `storage.migration_database_url` statements had no limit and now stop after
+  10 minutes). A migration that gives up waiting for a lock (SQLSTATE `55P03`)
+  is rolled back and retried up to 5 times, after pauses of 0.5, 1, 2, 4 and
+  8 seconds; then `migrate` fails with "canceling statement due to lock
+  timeout ... (gave up after 6 attempts ...)", nothing of that migration is
+  applied, and running `migrate` again later is safe. For one run,
+  `identity-cli migrate -lock-timeout 30s -lock-retries 10 -statement-timeout 1h`
+  overrides the bounds (`0` means no limit or no retry); in the Compose stacks
+  add the flags as the `command:` of the `migrate` service. The bound limits
+  how long queries wait behind a migration's lock *request*; a lock the
+  migration holds still blocks them until it commits, so keep migrations on
+  hot tables short. Concurrent index builds are the exception: they block
+  no query and run without `lock_timeout`
+  ([no-transaction migrations](#no-transaction-migrations)).
 - If the database contains a migration the binary does not know (the database is
   newer), `migrate` refuses to run.
 - There are **no down migrations**.
@@ -56,6 +80,47 @@ transport/status fallback remains as documented.
 - With `storage.migration_database_url` set, migrations run as that
   (schema-owner) role and `storage.runtime_role` is granted data privileges
   after each run ([installation.md](installation.md#database-roles)).
+
+### No-transaction migrations
+
+`CREATE INDEX CONCURRENTLY` builds an index without blocking writes, but
+PostgreSQL refuses it inside a transaction. A migration file with a
+`-- proudauth:no-transaction` line runs one statement at a time outside a
+transaction:
+
+- The runner splits the file at semicolons outside string literals, quoted
+  identifiers, comments, dollar quotes and parentheses. It refuses a file it
+  cannot split with certainty, `BEGIN ATOMIC` function bodies, transaction
+  control, `CREATE INDEX` without `IF NOT EXISTS` and a name, and `DROP INDEX`
+  without `IF EXISTS`, before applying any migration of the run;
+  `migrate -plan` reports the same error, and marks such migrations
+  `no-transaction`.
+- The file is not atomic: a run interrupted part-way keeps the statements
+  that completed. Every statement must therefore be repeatable
+  (`IF NOT EXISTS`, `IF EXISTS`), so running `migrate` again completes the
+  file. The migration is recorded in `schema_migrations` only after every
+  statement succeeded.
+- `CREATE INDEX CONCURRENTLY` and `DROP INDEX CONCURRENTLY`, and the
+  runner's own drop of an invalid index, run without `lock_timeout`. They
+  wait for every transaction that started before them, read-only ones
+  included, but take only `SHARE UPDATE EXCLUSIVE` on the table, which the
+  service's reads and writes never wait for, so a long export or report only
+  delays them. `storage.migration_statement_timeout` (default `10m`, which
+  includes that waiting) is their only bound: a build that reaches it fails
+  the run, and its invalid index is dropped then or by the next run (below).
+  Raise `-statement-timeout` for a large table or for a deployment whose
+  transactions run longer; `-lock-timeout` does not apply to these
+  statements. Every other statement of the file keeps the lock bound and is
+  retried when it gives up waiting for a lock.
+- An interrupted concurrent build (session killed, statement timeout,
+  duplicate rows for a unique index) leaves an *invalid* index
+  (`pg_index.indisvalid = false`) that queries ignore, that every write
+  maintains, and that may already enforce uniqueness. The runner drops it at
+  once when its session still works; otherwise the next run drops it
+  (`DROP INDEX CONCURRENTLY`) before building the index again, where
+  `IF NOT EXISTS` alone would keep the invalid one. Before recording the
+  migration, the runner checks that every index the file creates exists and
+  is valid, and fails naming the index otherwise.
 
 Readiness and startup checks:
 
@@ -214,8 +279,15 @@ Migrations `0043`–`0046` are expand-only:
   `dpop_proof_jtis`, `pushed_authorization_requests`, `device_codes`,
   `idempotency_records`, `outbox_events`, `sessions`, `notification_jobs`)
   is locked against writes (`SHARE`) until the whole migration commits.
-  Brief on small tables; on large deployments run it in a quiet period
-  ([capacity.md](capacity.md#storage-growth)).
+  The [lock bounds](#how-migrations-work) stop it from queuing behind a long
+  query (it is rolled back and retried instead), but once it holds a table's
+  lock, writes to that table wait until it commits. Brief on small tables; on
+  large deployments still run it in a quiet period
+  ([capacity.md](capacity.md#storage-growth)), with `-statement-timeout`
+  raised if one index takes longer than 10 minutes to build. Later index
+  builds on existing tables use `CREATE INDEX CONCURRENTLY` in
+  [no-transaction migrations](#no-transaction-migrations), which hold no lock
+  that blocks writes.
 - `0046_event_stream_horizon.sql` adds `event_stream_horizon`. Older workers
   do not record it, so cursors of realms they prune keep the old expiry rule
   (a cursor older than the oldest retained event expires); older servers

@@ -80,6 +80,33 @@ func TestValidateRejectsUnsafeSettings(t *testing.T) {
 	}
 }
 
+// TestMigrationBounds covers OPS-008: migrations wait at most 5s for a lock
+// and run each statement at most 10m unless configured otherwise; 0 (no
+// limit) is accepted, negative values and values PostgreSQL cannot hold are
+// refused.
+func TestMigrationBounds(t *testing.T) {
+	c := validDev()
+	if c.Storage.MigrationLockTimeout != 5*time.Second || c.Storage.MigrationStatementTimeout != 10*time.Minute {
+		t.Fatalf("defaults: %v %v", c.Storage.MigrationLockTimeout, c.Storage.MigrationStatementTimeout)
+	}
+	c.Storage.MigrationLockTimeout, c.Storage.MigrationStatementTimeout = 0, 0
+	if err := c.Validate(); err != nil {
+		t.Fatalf("0 (no limit) refused: %v", err)
+	}
+	for _, d := range []time.Duration{-time.Second, 25 * time.Hour} {
+		c := validDev()
+		c.Storage.MigrationLockTimeout = d
+		if err := c.Validate(); err == nil || !strings.Contains(err.Error(), "storage.migration_lock_timeout") {
+			t.Errorf("migration_lock_timeout %v: %v", d, err)
+		}
+		c = validDev()
+		c.Storage.MigrationStatementTimeout = d
+		if err := c.Validate(); err == nil || !strings.Contains(err.Error(), "storage.migration_statement_timeout") {
+			t.Errorf("migration_statement_timeout %v: %v", d, err)
+		}
+	}
+}
+
 // TestRedactedHidesSecretValues covers OPS-010: the configuration summary in
 // support bundles and config diffs carries no literal secret, including the
 // schema owner's migration connection.

@@ -110,6 +110,16 @@ type StorageConfig struct {
 	MinConns         int32         `yaml:"min_conns"`
 	MigrateOnStart   bool          `yaml:"migrate_on_start"`
 	StatementTimeout time.Duration `yaml:"statement_timeout"`
+	// MigrationLockTimeout bounds every lock wait of a migration
+	// (PostgreSQL lock_timeout), so DDL queued behind a long query cannot
+	// block the service's queries on that table for longer (OPS-008);
+	// concurrent index builds, which block no query, run without it. 0
+	// waits without limit.
+	MigrationLockTimeout time.Duration `yaml:"migration_lock_timeout"`
+	// MigrationStatementTimeout bounds each migration statement in place
+	// of statement_timeout, which never applies to migrations; 0 runs
+	// without limit.
+	MigrationStatementTimeout time.Duration `yaml:"migration_statement_timeout"`
 }
 
 type KeyRef struct {
@@ -548,7 +558,8 @@ func Defaults() Config {
 			WriteTimeout: 30 * time.Second,
 		},
 		Identity: IdentityConfig{DefaultRealm: "main"},
-		Storage:  StorageConfig{MaxConns: 20, MinConns: 2, StatementTimeout: 10 * time.Second},
+		Storage: StorageConfig{MaxConns: 20, MinConns: 2, StatementTimeout: 10 * time.Second,
+			MigrationLockTimeout: 5 * time.Second, MigrationStatementTimeout: 10 * time.Minute},
 		Keys: KeysConfig{
 			ActiveVersion:    1,
 			SigningAlgorithm: "RS256",
@@ -825,6 +836,13 @@ func (c *Config) Validate() error {
 	}
 	if r := c.Storage.RuntimeRole; r != "" && !runtimeRoleName.MatchString(r) {
 		add("storage.runtime_role must be a lowercase PostgreSQL role name (letters, digits, underscore)")
+	}
+	// PostgreSQL accepts at most 2^31-1 ms (about 24.8 days) for either.
+	if d := c.Storage.MigrationLockTimeout; d < 0 || d > 24*time.Hour {
+		add("storage.migration_lock_timeout must be between 0 (no limit) and 24h")
+	}
+	if d := c.Storage.MigrationStatementTimeout; d < 0 || d > 24*time.Hour {
+		add("storage.migration_statement_timeout must be between 0 (no limit) and 24h")
 	}
 	if _, ok := canonicalRealmName(c.Identity.DefaultRealm); !ok {
 		add("identity.default_realm must be a lower-case realm name (letters, digits, dashes)")

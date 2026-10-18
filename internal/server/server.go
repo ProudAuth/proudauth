@@ -146,6 +146,15 @@ func initEnv(ctx context.Context, configPath string, migrate, honorMigrateOnStar
 // otherwise with the runtime connection, then grants the runtime role its
 // data privileges when storage.runtime_role is set.
 func MigrateAsOwner(ctx context.Context, cfg *configuration.Config, runtimeDB *storage.DB, opt storage.MigrateOptions) ([]string, error) {
+	// Bounds the caller left unset come from storage.migration_lock_timeout
+	// and storage.migration_statement_timeout, where 0 means no limit
+	// (negative in MigrateOptions, where zero selects the default).
+	if opt.LockTimeout == 0 {
+		opt.LockTimeout = MigrationBound(cfg.Storage.MigrationLockTimeout)
+	}
+	if opt.StatementTimeout == 0 {
+		opt.StatementTimeout = MigrationBound(cfg.Storage.MigrationStatementTimeout)
+	}
 	db := runtimeDB
 	if cfg.Storage.MigrationDatabaseURL != "" {
 		dsn, err := configuration.ResolveSecret(cfg.Storage.MigrationDatabaseURL)
@@ -169,6 +178,15 @@ func MigrateAsOwner(ctx context.Context, cfg *configuration.Config, runtimeDB *s
 		}
 	}
 	return ran, nil
+}
+
+// MigrationBound converts a configured or flag migration bound, where 0
+// means no limit, to its storage.MigrateOptions value.
+func MigrationBound(d time.Duration) time.Duration {
+	if d == 0 {
+		return -1
+	}
+	return d
 }
 
 // InternalHandler serves metrics and operator status on the private listener. When a

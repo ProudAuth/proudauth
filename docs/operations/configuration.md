@@ -173,7 +173,9 @@ access; prefer `file:` references to mounted secrets where that matters.
 | `max_conns` | `20` | Pool maximum per process. |
 | `min_conns` | `2` | Pool minimum per process. |
 | `migrate_on_start` | `false` | `identity-server` and `identity-worker` apply pending migrations at startup (never contract migrations), audited as `operations.migrations.applied` with `trigger: migrate_on_start`. `identity-cli` operator commands never apply migrations; only `identity-cli migrate` does. Prefer `false` and an explicit `identity-cli migrate` after a backup. |
-| `statement_timeout` | `10s` | PostgreSQL `statement_timeout` for every connection. |
+| `statement_timeout` | `10s` | PostgreSQL `statement_timeout` for every connection. Migration statements use `migration_statement_timeout` instead. |
+| `migration_lock_timeout` | `5s` | Longest wait for each lock a migration takes (PostgreSQL `lock_timeout`, set for the migration's own statements only), so DDL queued behind a long query cannot hold up the service's queries on that table for longer (OPS-008). A migration that gives up is rolled back and retried up to 5 times with pauses growing from 0.5 s to 8 s ([upgrades.md](upgrades.md#how-migrations-work)). `CREATE INDEX CONCURRENTLY` and `DROP INDEX CONCURRENTLY` in a no-transaction migration run without it, since they block no query ([upgrades.md](upgrades.md#no-transaction-migrations)). `0` waits without limit; at most `24h`. `identity-cli migrate -lock-timeout` overrides it for one run. |
+| `migration_statement_timeout` | `10m` | Longest run of each migration statement (PostgreSQL `statement_timeout`, set for the migration's own statements only, over `database_url` or `migration_database_url`). It is the only bound of concurrent index builds, including their wait for older transactions. `0` runs without limit; at most `24h`. `identity-cli migrate -statement-timeout` overrides it for one run. |
 
 ## `keys`
 
