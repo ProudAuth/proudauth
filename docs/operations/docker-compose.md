@@ -150,7 +150,7 @@ Save this as `.env` next to it, as is:
 # The same variables as production; only the values differ. Every value here is
 # a public development default, never a real secret.
 
-PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:0.2.0-alpha.4
+PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:0.2.0-alpha.5
 
 # Public address of the identity API (the issuer of new realms).
 PROUDAUTH_PUBLIC_ORIGIN=http://localhost:8080
@@ -302,7 +302,7 @@ Save this as `.env` next to it, then fill in the empty values:
 ```dotenv
 # Fill in the empty values. Keep this file private (chmod 600 .env).
 
-PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:0.2.0-alpha.4
+PROUDAUTH_IMAGE=ghcr.io/proudauth/proudauth:0.2.0-alpha.5
 
 # Your HTTPS address, for example https://id.example.com (choose it once)
 PROUDAUTH_PUBLIC_ORIGIN=

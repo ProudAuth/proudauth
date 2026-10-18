@@ -19,16 +19,16 @@ and creates the first administrator through the local operator channel
 All three binaries are in the container image (`/usr/local/bin/`), built by the
 `Dockerfile` as static binaries on a distroless, non-root (UID 65532) base. The
 image works with a read-only root filesystem. The
-[v0.2.0-alpha.4 pre-release](https://github.com/proudauth/proudauth/releases/tag/v0.2.0-alpha.4)
+[v0.2.0-alpha.5 pre-release](https://github.com/proudauth/proudauth/releases/tag/v0.2.0-alpha.5)
 provides Linux/macOS binaries, checksums and source-free installation assets.
 For a single-machine installation, follow the
 [Docker Compose guide](docker-compose.md) and [complete `.env` reference](environment.md).
-Pull `ghcr.io/proudauth/proudauth:0.2.0-alpha.4`; GHCR is the only registry
+Pull `ghcr.io/proudauth/proudauth:0.2.0-alpha.5`; GHCR is the only registry
 this project publishes to (the earlier Docker Hub mirror is not updated). The
 published registry image supports Linux amd64 and arm64; the offline release image archive is amd64,
 with binaries supplied for both Linux architectures. This is pre-release
 software with no completed external security review or certification.
-To build locally, use `make image VERSION=0.2.0-alpha.4` or `go build ./cmd/...`.
+To build locally, use `make image VERSION=0.2.0-alpha.5` or `go build ./cmd/...`.
 
 ### Verifying a release
 

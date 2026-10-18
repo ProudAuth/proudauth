@@ -38,8 +38,8 @@ On the server, outside any Git checkout:
 
 ```sh
 mkdir proudauth && cd proudauth
-curl -fsSLO https://raw.githubusercontent.com/proudauth/proudauth/v0.2.0-alpha.4/deploy/prod/docker-compose.yaml
-curl -fsSLO https://raw.githubusercontent.com/proudauth/proudauth/v0.2.0-alpha.4/deploy/prod/.env
+curl -fsSLO https://raw.githubusercontent.com/proudauth/proudauth/v0.2.0-alpha.5/deploy/prod/docker-compose.yaml
+curl -fsSLO https://raw.githubusercontent.com/proudauth/proudauth/v0.2.0-alpha.5/deploy/prod/.env
 # Fill every empty value in .env (the root key: openssl rand -hex 32), then:
 chmod 600 .env
 docker compose pull
