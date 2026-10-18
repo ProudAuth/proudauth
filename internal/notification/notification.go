@@ -74,6 +74,12 @@ const (
 	// revoked (CRED-008, MCH-007), so the owner knows which automation stops
 	// working and why.
 	TplCredentialsRevoked = "credentials_revoked"
+	// TplSecondFactorFailures warns the owner once that many code-factor
+	// proofs (TOTP, HOTP, recovery codes, emailed or texted sign-in codes)
+	// failed in a row (security.second_factor.failure_notice_at; SEC-006,
+	// owner decision 10), and says how to get back in once code factors are
+	// turned off.
+	TplSecondFactorFailures = "second_factor_failures"
 )
 
 // Message is a message to enqueue. Data values are untrusted and are always escaped.

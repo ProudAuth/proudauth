@@ -91,6 +91,12 @@ func (s *Service) CompletePasswordReset(ctx context.Context, realmID, resetID, c
 			proofErr = problem.ErrInvalidProof
 			return nil // commit the attempt counter
 		}
+		// An email-verified recovery turns code factors back on (owner
+		// decision 10, SEC-006). Before the account row is locked, in the
+		// order sign-in steps take these locks.
+		if err := s.resetCodeFactorFailures(ctx, tx, realmID, c.UserID, "password_reset", audit.Ref{Type: "user", ID: c.UserID}); err != nil {
+			return err
+		}
 		u, err := s.Users.LockUser(ctx, tx, realmID, c.UserID)
 		if err != nil {
 			return err
@@ -237,7 +243,17 @@ func (s *Service) ChangePassword(ctx context.Context, realmID, userID, currentSe
 	if ctx, err = s.directoryOnce(ctx, realmID); err != nil {
 		return err
 	}
-	return s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
+	// The current password is checked under the account's sign-in failure
+	// lock (owner decision 10, SEC-006): a wrong one counts against the same
+	// budget a wrong sign-in password does, and while it is spent the
+	// password is not checked here either, so a recently authenticated
+	// session cannot guess the current password without bound.
+	rl := s.d.Cfg.Security.RateLimits
+	lockOn := rl.FailuresBeforeLock > 0 && rl.TemporaryLock > 0
+	lock := ratelimit.Budget{Key: "pwd-fail:" + realmID + ":user:" + userID, Limit: rl.FailuresBeforeLock, Window: rl.TemporaryLock}
+	var failure error
+	err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
+		failure = nil
 		u, err := s.Users.LockUser(ctx, tx, realmID, userID)
 		if err != nil {
 			return err
@@ -262,14 +278,36 @@ func (s *Service) ChangePassword(ctx context.Context, realmID, userID, currentSe
 				return problem.ErrStepUpRequired.WithExtension("obligations", []map[string]any{{"type": "reauthenticate", "required_profile": "mfa"}})
 			}
 		}
+		if lockOn {
+			allowed, err := s.Limiter.Peek(ctx, lock)
+			if err != nil {
+				return err
+			}
+			if !allowed {
+				if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "credential.password.change_failed", RealmID: realmID,
+					Actor: audit.Ref{Type: "user", ID: userID, SessionID: currentSessionID}, Subject: &audit.Ref{Type: "user", ID: userID},
+					Outcome: audit.Denied, ReasonCode: "TEMPORARY_LOCK"}); err != nil {
+					return err
+				}
+				failure = problem.ErrRateLimited.WithRetryAfter(rl.TemporaryLock)
+				return nil // commit the evidence
+			}
+		}
 		ok, err := s.VerifyPassword(ctx, tx, userID, currentPassword)
 		if err != nil {
 			return err
 		}
 		if !ok {
-			_, _ = s.d.Audit.Record(ctx, tx, audit.Event{Type: "credential.password.change_failed", RealmID: realmID, Actor: audit.Ref{Type: "user", ID: userID},
-				Subject: &audit.Ref{Type: "user", ID: userID}, Outcome: audit.Failure})
-			return problem.ErrInvalidCredentials
+			if lockOn {
+				_, _ = s.Limiter.Hit(ctx, lock)
+			}
+			if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "credential.password.change_failed", RealmID: realmID,
+				Actor: audit.Ref{Type: "user", ID: userID, SessionID: currentSessionID}, Subject: &audit.Ref{Type: "user", ID: userID},
+				Outcome: audit.Failure, ReasonCode: "INVALID_CREDENTIALS"}); err != nil {
+				return err
+			}
+			failure = problem.ErrInvalidCredentials
+			return nil // commit the evidence
 		}
 		words := []string{u.Username()}
 		if e := u.PrimaryEmail(); e != nil {
@@ -302,6 +340,10 @@ func (s *Service) ChangePassword(ctx context.Context, realmID, userID, currentSe
 		}
 		return s.notifySecurity(ctx, tx, realmID, userID, notification.TplPasswordChanged, "password changed")
 	})
+	if err != nil {
+		return err
+	}
+	return failure
 }
 
 // IdentifierChallenge starts proof of a new identifier for an authenticated user

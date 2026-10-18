@@ -470,6 +470,16 @@ func (s *Service) SendOTP(ctx context.Context, realmID, id string, p Proof, purp
 			if err == nil && (u.CanAuthenticate(s.d.Now()) || u.MayCancelDeletion(s.d.Now())) {
 				userID = u.ID
 			}
+			if userID != "" {
+				// Code factors turned off after consecutive failures (owner
+				// decision 10): nothing is sent, exactly as for an address
+				// without an account (SEC-005, API-009).
+				if off, err := s.codeFactorsDisabled(ctx, tx, userID); err != nil {
+					return nil, err
+				} else if off {
+					userID = ""
+				}
+			}
 			// While an external identity waits to be linked, the code is bound
 			// to that link and its message says so (PWDLESS-008).
 			tpl, data, meta, err := s.linkProof(ctx, tx, t, notification.TplLoginCode, map[string]string{"realm": rlm.DisplayName,
@@ -572,10 +582,44 @@ func (s *Service) VerifyOTP(ctx context.Context, realmID, id string, p Proof, co
 				return nil, errProof(problem.ErrInvalidProof)
 			}
 		}
+		// An emailed or texted sign-in code counts toward the consecutive
+		// code-factor failures of the account its challenge was issued for
+		// (owner decision 10, SEC-006). Once that account's code factors are
+		// off, a code is refused like one for an address without an account:
+		// no backoff and no distinct refusal here, since either would tell
+		// accounts from unknown addresses (SEC-005, API-009).
+		codeAccount, codeFactor := "", "email_code"
+		if purpose == PurposeLoginOTP {
+			var idType string
+			if err := tx.QueryRow(ctx, `SELECT coalesce(user_id,''), coalesce(identifier_type,'') FROM challenges
+				WHERE realm_id=$1 AND id=$2 AND transaction_id=$3 AND purpose=$4`, t.RealmID, challengeID, t.ID, PurposeLoginOTP).Scan(&codeAccount, &idType); err != nil &&
+				!storage.IsNoRows(err) {
+				return nil, err
+			}
+			if idType == "phone" {
+				codeFactor = "sms_code"
+			}
+			if codeAccount != "" {
+				off, err := s.codeFactorsDisabled(ctx, tx, codeAccount)
+				if err != nil {
+					return nil, err
+				}
+				if off {
+					_, _ = s.d.Audit.Record(ctx, tx, audit.Event{Type: "authentication.otp.failed", RealmID: t.RealmID, Actor: actorFor(t), Outcome: audit.Denied,
+						ReasonCode: "CODE_FACTORS_DISABLED", Subject: &audit.Ref{Type: "user", ID: codeAccount}, Metadata: map[string]any{"purpose": purpose}})
+					return nil, errProof(problem.ErrInvalidProof)
+				}
+			}
+		}
 		c, err := s.ConsumeChallengeTx(ctx, tx, t.RealmID, challengeID, purpose, strings.TrimSpace(code))
 		if err != nil {
 			_, _ = s.d.Audit.Record(ctx, tx, audit.Event{Type: "authentication.otp.failed", RealmID: t.RealmID, Actor: actorFor(t), Outcome: audit.Failure,
 				Metadata: map[string]any{"purpose": purpose}})
+			if codeAccount != "" && IsProofFailure(err) {
+				if ferr := s.codeFactorFailed(ctx, tx, t.RealmID, codeAccount, codeFactor); ferr != nil {
+					return nil, ferr
+				}
+			}
 			return nil, err
 		}
 		if c.TransactionID != t.ID {
@@ -654,6 +698,11 @@ func (s *Service) TOTP(ctx context.Context, realmID, id string, p Proof, code st
 		if err := s.offered(ctx, tx, t, "totp"); err != nil {
 			return nil, err
 		}
+		// The consecutive-failure ceiling and backoff come before the
+		// windowed budgets: a refusal here consumes nothing (SEC-006).
+		if err := s.gateCodeFactor(ctx, tx, t.RealmID, t.UserID); err != nil {
+			return nil, err
+		}
 		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
@@ -664,10 +713,16 @@ func (s *Service) TOTP(ctx context.Context, realmID, id string, p Proof, code st
 		if !ok {
 			_, _ = s.d.Audit.Record(ctx, tx, audit.Event{Type: "mfa.totp.failed", RealmID: t.RealmID, Actor: actorFor(t),
 				Subject: &audit.Ref{Type: "user", ID: t.UserID}, Outcome: audit.Failure})
+			if err := s.codeFactorFailed(ctx, tx, t.RealmID, t.UserID, "totp"); err != nil {
+				return nil, err
+			}
 			return nil, errProof(problem.ErrInvalidProof)
 		}
 		if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "mfa.totp.used", RealmID: t.RealmID, Actor: actorFor(t),
 			Subject: &audit.Ref{Type: "user", ID: t.UserID}, Metadata: map[string]any{"credential_id": credID, "upgrade_proof": r.upgrade}}); err != nil {
+			return nil, err
+		}
+		if err := s.resetCodeFactorFailures(ctx, tx, t.RealmID, t.UserID, "totp", actorFor(t)); err != nil {
 			return nil, err
 		}
 		if r.upgrade {
@@ -704,6 +759,9 @@ func (s *Service) HOTP(ctx context.Context, realmID, id string, p Proof, code st
 		if err := s.offered(ctx, tx, t, "hotp"); err != nil {
 			return nil, err
 		}
+		if err := s.gateCodeFactor(ctx, tx, t.RealmID, t.UserID); err != nil {
+			return nil, err
+		}
 		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
@@ -714,10 +772,16 @@ func (s *Service) HOTP(ctx context.Context, realmID, id string, p Proof, code st
 		if !ok {
 			_, _ = s.d.Audit.Record(ctx, tx, audit.Event{Type: "mfa.hotp.failed", RealmID: t.RealmID, Actor: actorFor(t),
 				Subject: &audit.Ref{Type: "user", ID: t.UserID}, Outcome: audit.Failure})
+			if err := s.codeFactorFailed(ctx, tx, t.RealmID, t.UserID, "hotp"); err != nil {
+				return nil, err
+			}
 			return nil, errProof(problem.ErrInvalidProof)
 		}
 		if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "mfa.hotp.used", RealmID: t.RealmID, Actor: actorFor(t),
 			Subject: &audit.Ref{Type: "user", ID: t.UserID}, Metadata: map[string]any{"credential_id": credID, "upgrade_proof": r.upgrade}}); err != nil {
+			return nil, err
+		}
+		if err := s.resetCodeFactorFailures(ctx, tx, t.RealmID, t.UserID, "hotp", actorFor(t)); err != nil {
 			return nil, err
 		}
 		if r.upgrade {
@@ -750,6 +814,9 @@ func (s *Service) RecoveryCode(ctx context.Context, realmID, id string, p Proof,
 		if err := s.offered(ctx, tx, t, "recovery_code"); err != nil {
 			return nil, err
 		}
+		if err := s.gateCodeFactor(ctx, tx, t.RealmID, t.UserID); err != nil {
+			return nil, err
+		}
 		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
@@ -760,10 +827,16 @@ func (s *Service) RecoveryCode(ctx context.Context, realmID, id string, p Proof,
 		if !ok {
 			_, _ = s.d.Audit.Record(ctx, tx, audit.Event{Type: "mfa.recovery_code.failed", RealmID: t.RealmID, Actor: actorFor(t),
 				Subject: &audit.Ref{Type: "user", ID: t.UserID}, Outcome: audit.Failure})
+			if err := s.codeFactorFailed(ctx, tx, t.RealmID, t.UserID, "recovery_code"); err != nil {
+				return nil, err
+			}
 			return nil, errProof(problem.ErrInvalidProof)
 		}
 		if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "mfa.recovery_code.used", RealmID: t.RealmID, Actor: actorFor(t),
 			Subject: &audit.Ref{Type: "user", ID: t.UserID}, Metadata: map[string]any{"recovery_codes_remaining": remaining, "upgrade_proof": r.upgrade}}); err != nil {
+			return nil, err
+		}
+		if err := s.resetCodeFactorFailures(ctx, tx, t.RealmID, t.UserID, "recovery_code", actorFor(t)); err != nil {
 			return nil, err
 		}
 		if r.upgrade {
@@ -1162,6 +1235,15 @@ func BuildRedirect(base string, params map[string]string) string {
 // complete creates/reuses the session, persists the grant and issues the
 // authorization code, all in the caller's transaction (AUT-006).
 func (s *Service) complete(ctx context.Context, tx pgx.Tx, t *Transaction) (*Completion, error) {
+	// A completed sign-in proved everything the account needs, so its
+	// consecutive code-factor failures start again from zero (owner decision
+	// 10); this is the reset for emailed and texted sign-in codes, which do
+	// not reset the count on their own. It comes first, in the lock order of
+	// the factor steps (the count's row before the realm and account rows),
+	// and is undone with everything else if the completion fails.
+	if err := s.resetCodeFactorFailures(ctx, tx, t.RealmID, t.UserID, "sign_in", audit.Ref{Type: "user", ID: t.UserID}); err != nil {
+		return nil, err
+	}
 	rlm, err := s.Realms.LockActive(ctx, tx, t.RealmID)
 	if err != nil {
 		return nil, err

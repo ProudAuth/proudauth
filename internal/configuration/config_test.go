@@ -261,3 +261,61 @@ func TestValidateRateLimits(t *testing.T) {
 		t.Errorf("all rate limits disabled refused: %v", err)
 	}
 }
+
+// TestSecondFactorCeilingConfig covers SEC-006 and MFA-002 (owner decision 10
+// of 0.2.0-alpha.6): the code-factor failure ceiling defaults to a backoff
+// after 10 failures capped at an hour, a notice at 20 and code factors off at
+// 100; 0 turns each threshold off; negative values, a backoff without a cap of
+// at least the first delay, a cap above a day and a notice at or after the
+// disable are refused. The delay starts at 2 s, doubles per failure and stops
+// at the cap, so it never locks an account out for longer than the cap.
+func TestSecondFactorCeilingConfig(t *testing.T) {
+	d := Defaults().Security.SecondFactor
+	if d != (SecondFactorConfig{FailureBackoffAfter: 10, FailureBackoffMax: time.Hour, FailureNoticeAt: 20, FailureDisableAt: 100}) {
+		t.Fatalf("defaults: %+v", d)
+	}
+	for n, want := range map[int]time.Duration{0: 0, 9: 0, 10: 2 * time.Second, 11: 4 * time.Second, 12: 8 * time.Second,
+		20: 2048 * time.Second, 21: time.Hour, 99: time.Hour, 1 << 20: time.Hour} {
+		if got := d.BackoffDelay(n); got != want {
+			t.Errorf("delay after %d failures: %s, want %s", n, got, want)
+		}
+	}
+	if d.CodeFactorsDisabled(99) || !d.CodeFactorsDisabled(100) || !d.CodeFactorsDisabled(150) {
+		t.Error("code factors must be off from failure_disable_at on")
+	}
+	off := SecondFactorConfig{}
+	if off.BackoffDelay(1000) != 0 || off.CodeFactorsDisabled(1000) {
+		t.Error("0 must turn the backoff and the disable off")
+	}
+	c := validDev()
+	c.Security.SecondFactor = off
+	if err := c.Validate(); err != nil {
+		t.Fatalf("every threshold at 0 refused: %v", err)
+	}
+	for name, tc := range map[string]struct {
+		set  func(*SecondFactorConfig)
+		want string
+	}{
+		"negative backoff":    {func(s *SecondFactorConfig) { s.FailureBackoffAfter = -1 }, "failure_backoff_after must not be negative"},
+		"negative notice":     {func(s *SecondFactorConfig) { s.FailureNoticeAt = -1 }, "failure_notice_at must not be negative"},
+		"negative disable":    {func(s *SecondFactorConfig) { s.FailureDisableAt = -1 }, "failure_disable_at must not be negative"},
+		"negative cap":        {func(s *SecondFactorConfig) { s.FailureBackoffMax = -time.Second }, "failure_backoff_max must not be negative"},
+		"cap above a day":     {func(s *SecondFactorConfig) { s.FailureBackoffMax = 25 * time.Hour }, "failure_backoff_max must be at most 24h"},
+		"backoff without cap": {func(s *SecondFactorConfig) { s.FailureBackoffMax = 0 }, "failure_backoff_max of at least 2s"},
+		"notice at disable":   {func(s *SecondFactorConfig) { s.FailureNoticeAt = 100 }, "failure_notice_at must be below failure_disable_at"},
+	} {
+		c := validDev()
+		tc.set(&c.Security.SecondFactor)
+		if err := c.Validate(); err == nil || !strings.Contains(err.Error(), "security.second_factor."+tc.want) && !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%s: want %q, got %v", name, tc.want, err)
+		}
+	}
+	// A notice without a disable, and a disable without a notice, are fine.
+	for _, s := range []SecondFactorConfig{{FailureNoticeAt: 20}, {FailureDisableAt: 5}, {FailureBackoffAfter: 3, FailureBackoffMax: 2 * time.Second}} {
+		c := validDev()
+		c.Security.SecondFactor = s
+		if err := c.Validate(); err != nil {
+			t.Errorf("%+v refused: %v", s, err)
+		}
+	}
+}

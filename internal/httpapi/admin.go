@@ -234,7 +234,15 @@ func (a *App) adminRoutes(mux *http.ServeMux) {
 			writeJSON(w, http.StatusOK, identity.MaskedView(u))
 			return nil
 		}
-		writeJSON(w, http.StatusOK, adminUserView(u, a.schemaFor(p.Realm.ID)))
+		v := adminUserView(u, a.schemaFor(p.Realm.ID))
+		// Consecutive code-factor failures: the backoff and whether code
+		// factors are off (owner decision 10, SEC-006).
+		sf, err := a.Auth.SecondFactorFailureState(r.Context(), p.Realm.ID, u.ID)
+		if err != nil {
+			return err
+		}
+		v["second_factor_failures"] = sf
+		writeJSON(w, http.StatusOK, v)
 		return nil
 	}))
 	mux.HandleFunc("PATCH "+R+"/users/{user}", a.admin(func(w http.ResponseWriter, r *http.Request, p *Principal) error {

@@ -51,3 +51,22 @@ func TestCredentialsRevokedTemplate(t *testing.T) {
 		t.Errorf("credentials_revoked does not say how to replace the credentials: %q", tpl.Text)
 	}
 }
+
+// TestSecondFactorFailuresTemplate covers SEC-006 and MSG-003 (owner decision
+// 10 of 0.2.0-alpha.6): the notice sent at the failure threshold says how
+// many code proofs failed and when, which factors count, and how the owner
+// gets back in once code factors are turned off.
+func TestSecondFactorFailuresTemplate(t *testing.T) {
+	tpl, ok := DefaultCatalog().lookup(TplSecondFactorFailures, "en")
+	if !ok {
+		t.Fatal("no English second_factor_failures template")
+	}
+	for _, v := range []string{"{{.count}}", "{{.time}}", "authenticator app", "recovery codes", "passkey", "reset your password"} {
+		if !strings.Contains(tpl.Text, v) {
+			t.Errorf("second_factor_failures does not mention %s: %q", v, tpl.Text)
+		}
+	}
+	if !strings.Contains(tpl.Subject, "{{.realm}}") {
+		t.Errorf("subject does not name the realm: %q", tpl.Subject)
+	}
+}

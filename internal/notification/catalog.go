@@ -39,6 +39,7 @@ var Variables = map[string][]string{
 	TplRecovery:             {"realm", "change", "time"},
 	TplCredentialExpiry:     {"realm", "credential", "expires"},
 	TplCredentialsRevoked:   {"realm", "change", "credentials", "time"},
+	TplSecondFactorFailures: {"realm", "count", "time"},
 	TplTest:                 {"realm", "time"},
 	TplJoinRequest:          {"realm", "organization"},
 	TplDeletion:             {"realm", "scheduled"},
@@ -100,6 +101,8 @@ func DefaultCatalog() *Catalog {
 		"The credential {{.credential}} expires at {{.expires}}. Rotate it before it expires.")
 	add(TplCredentialsRevoked, "en", "Your {{.realm}} personal access tokens were revoked",
 		"These personal access tokens and API keys of your account were revoked at {{.time}} after {{.change}}: {{.credentials}}.\n\nScripts and integrations that use them stop working. If you still need them, sign in and create new ones. If you did not expect this, contact your administrator.")
+	add(TplSecondFactorFailures, "en", "Failed sign-in codes on your {{.realm}} account",
+		"{{.count}} attempts in a row to sign in to your account with a one-time code failed, the latest at {{.time}}: codes from an authenticator app or security token, recovery codes, or codes sent by email or text message. Someone who knows your password or your address may be trying to guess a code.\n\nIf this was not you, change your password and review your sign-in methods. If the failed attempts go on, sign-in with codes is turned off for your account until you sign in with a passkey or reset your password from this email address.")
 	add(TplTest, "en", "{{.realm}} delivery test", "This is a configuration test sent at {{.time}}. Provider acceptance does not prove inbox delivery.")
 	add(TplRegistrationReview, "en", "Your {{.realm}} registration was reviewed",
 		"Your registration was {{.decision}}. If it was approved you can now sign in.")

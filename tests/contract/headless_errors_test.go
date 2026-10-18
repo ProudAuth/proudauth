@@ -42,7 +42,7 @@ func TestHeadlessErrorCodesDocumented(t *testing.T) {
 
 	// The transaction API: its HTTP layer and the step implementation.
 	files := []string{"internal/httpapi/interaction.go", "internal/authentication/steps.go",
-		"internal/authentication/transaction.go", "internal/authentication/flow.go"}
+		"internal/authentication/transaction.go", "internal/authentication/flow.go", "internal/authentication/secondfactor.go"}
 	for _, f := range files {
 		for _, v := range returnedProblems(t, filepath.Join(repoRoot, f)) {
 			code, ok := byVar[v]

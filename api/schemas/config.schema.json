@@ -893,6 +893,36 @@
         }
       }
     },
+    "SecondFactorConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Consecutive failed code-factor proofs per account (owner decision 10 of 0.2.0-alpha.6; SEC-006, MFA-002, TEST-021). Code factors are TOTP, HOTP, recovery codes and emailed or texted sign-in codes; passkeys never count and are never blocked. One persistent count per account grows with each failed proof and goes back to zero after a successful TOTP, HOTP, recovery-code or passkey proof, a completed sign-in, a password reset or an assisted recovery. 0 turns a threshold off; a negative value, a positive failure_backoff_after with failure_backoff_max below 2s, failure_backoff_max above 24h, or failure_notice_at at or above failure_disable_at (both positive) stops startup.",
+      "properties": {
+        "failure_backoff_after": {
+          "description": "Consecutive failures from which every further TOTP, HOTP or recovery-code proof waits: 2s after the last failure, doubling with each further failure, at most failure_backoff_max; earlier attempts answer 429 rate_limited with Retry-After. The default equals the default per-window proof budget (rate_limits.otp_verify_per_account), so the backoff takes over where that budget's first window ends.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 10
+        },
+        "failure_backoff_max": {
+          "description": "Longest backoff delay, so the backoff never locks an account out for longer (at most 24h).",
+          "$ref": "#/$defs/nonNegativeDuration",
+          "default": "1h"
+        },
+        "failure_notice_at": {
+          "description": "Consecutive failures at which the account owner receives one mandatory second_factor_failures notice (audit mfa.code_factors.failure_notice); the next one only after the count was reset.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 20
+        },
+        "failure_disable_at": {
+          "description": "Consecutive failures at which the account's code factors are turned off (audit mfa.code_factors.disabled): TOTP, HOTP and recovery-code steps answer 403 code_factors_disabled, and sign-in codes are no longer sent and are refused like those of an unknown address, until a passkey sign-in, a password reset or an assisted recovery.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 100
+        }
+      }
+    },
     "SecurityConfig": {
       "type": "object",
       "additionalProperties": false,
@@ -981,6 +1011,9 @@
         },
         "rate_limits": {
           "$ref": "#/$defs/RateLimitConfig"
+        },
+        "second_factor": {
+          "$ref": "#/$defs/SecondFactorConfig"
         },
         "min_auth_response": {
           "description": "Minimum response time for credential checks, recovery starts and sign-in code and magic-link sends, to blunt account enumeration by timing.",
