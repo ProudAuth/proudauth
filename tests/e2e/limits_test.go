@@ -126,8 +126,10 @@ func TestExplicitRequestLimits(t *testing.T) {
 // details, or an OAuth temporarily_unavailable error on a protocol
 // endpoint, API-007), while health
 // probes and authenticated administration still run from the reserved pool.
-// Anonymous requests to administrative paths do not get the reserve. Once
-// the load is gone, ordinary requests are served again.
+// Anonymous requests to administrative paths, and requests whose bearer is
+// not a token of the realm, do not get the reserve. The internal listener's
+// health checks, which the Kubernetes probes use, are never shed. Once the
+// load is gone, ordinary requests are served again.
 func TestLoadShedding(t *testing.T) {
 	f := limitsFixture(t, func(c *configuration.Config) { c.Limits.MaxInflightRequests = 1 })
 	h := f.H
@@ -205,10 +207,20 @@ func TestLoadShedding(t *testing.T) {
 	// working during the overload.
 	mustStatus(t, h.Do(Req{Method: "GET", Path: "/health/live"}), 200, "liveness under load")
 	mustStatus(t, f.AdminAPI("GET", "/users", nil), 200, "authenticated administration under load")
-	// Without credentials an administrative path competes for the ordinary
-	// pool and is shed like any other request.
+	// Without credentials, or with a bearer that is not one of the realm's
+	// tokens, an administrative path competes for the ordinary pool and is
+	// shed like any other request.
 	if r := h.Do(Req{Method: "GET", Path: "/api/v1/realms/main/users"}); r.Status != 503 || r.Header.Get("Retry-After") == "" {
 		t.Fatalf("anonymous administrative request used the reserve: %d", r.Status)
+	}
+	if r := h.Do(Req{Method: "GET", Path: "/api/v1/realms/main/users", Token: "junk"}); r.Status != 503 || r.Header.Get("Retry-After") == "" {
+		t.Fatalf("administrative request with a junk bearer used the reserve: %d", r.Status)
+	}
+	// Probes on the internal listener do not go through load shedding.
+	for _, path := range []string{"/health/live", "/health/ready"} {
+		if st, body := internalProbe(h, path); st != 200 {
+			t.Fatalf("internal %s under load: %d %v", path, st, body)
+		}
 	}
 	// Ordinary requests are served again once the load is gone.
 	release()

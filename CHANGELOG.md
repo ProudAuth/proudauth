@@ -104,6 +104,20 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   read a `429` from `POST .../invitations/{id}/resend` as the cap should
   handle `409` by creating a new invitation; a `429` from that route now only
   means the organization's invitation budget and carries `Retry-After`.
+- The Kubernetes server Deployment probes the internal listener (port
+  `internal`, `:9090`) instead of the public one: liveness and startup
+  `GET /health/live`, readiness `GET /health/ready`, which the internal
+  listener now serves with the public check's statuses and bodies (DEP-009,
+  DEP-013). On `:8080` the probes shared the administration reserve
+  (NFR-002), so a full reserve answered liveness with `503` and Kubernetes
+  restarted pods mid-incident. The public `/health/*` routes stay for
+  Compose, load balancers and operators, and `workers.metrics_listen` serves
+  `/health/ready` too ([monitoring.md](docs/operations/monitoring.md#probes-and-load-shedding)).
+  Regression tests `TestDeployKubernetesManifests`, `TestHealthContracts`,
+  `TestLoadShedding`. **Operators:** custom overlays should point their
+  probes at port `internal` and bind `server.internal_listen` to the pod's
+  addresses (`":9090"`, as `overlays/example` does), not the default
+  `127.0.0.1:9090`.
 
 ### Fixed
 
@@ -203,6 +217,22 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   `TestNoTransactionMigrationLockBounds`,
   `TestNoTransactionMigrationFailures`, `TestSplitSQL`,
   `TestParseNoTransaction`, `TestMigrationBounds`.
+- The reserved request pool for administration and health admits an
+  administrative request only when its `Bearer` or `DPoP` credential is a JWT
+  whose header names a signing key of the path's realm with that key's
+  algorithm, checked against the process's realm and key caches without a
+  database query or signature check (NFR-002). Any non-empty `Authorization`
+  header was enough before, so anonymous clients sending a junk header to
+  `/api/v1/realms/{realm}/users` and the other administrative paths competed
+  with operators for the reserve. Requests without credentials or with any
+  other value (opaque, `Basic`, malformed, another realm's key or an unknown
+  key) now use the ordinary pool; the reserve size and
+  `limits.max_inflight_requests` are unchanged
+  ([monitoring.md](docs/operations/monitoring.md#probes-and-load-shedding)).
+  Key IDs are published in JWKS, so a forged token that copies one still
+  reaches the reserve, where authentication refuses it. Regression tests
+  `TestReservedPoolAdmission`, `TestLoadShedding`. Affects 0.2.0-alpha.5 and
+  earlier.
 
 ### Security
 

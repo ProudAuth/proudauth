@@ -73,7 +73,7 @@ func (a *App) routes(mux *http.ServeMux) {
 	a.directoryRoutes(mux)
 	// Health.
 	mux.HandleFunc("GET /health/live", a.live)
-	mux.HandleFunc("GET /health/ready", a.ready)
+	mux.HandleFunc("GET /health/ready", a.Ready)
 }
 
 // extraRoutes is extended by optional modules.

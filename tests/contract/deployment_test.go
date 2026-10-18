@@ -14,10 +14,13 @@ import (
 	"io"
 	"io/fs"
 	"maps"
+	"net"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -407,6 +410,32 @@ func TestDeployKubernetesManifests(t *testing.T) {
 	ready, _ := deployDig(server, "readinessProbe", "httpGet", "path").(string)
 	if live != "/health/live" || ready != "/health/ready" || deployDig(server, "startupProbe") == nil {
 		t.Errorf("server probes: liveness %q, readiness %q, startup %v; want separate /health/live and /health/ready and a startup probe", live, ready, deployDig(server, "startupProbe") != nil)
+	}
+	// The probes use the internal listener, which has no load shedding: on the
+	// public port they share the reserved pool with administrators, and a full
+	// reserve answers liveness with 503 and restarts pods (NFR-002). The
+	// example configuration must bind that listener to a pod address the
+	// kubelet reaches, on the declared port.
+	for _, probe := range []string{"livenessProbe", "readinessProbe", "startupProbe"} {
+		if port := deployDig(server, probe, "httpGet", "port"); port != "internal" {
+			t.Errorf("server %s uses port %v; probes belong on the internal listener (port internal)", probe, port)
+		}
+	}
+	internalPort := 0
+	for _, p := range deployList(deployDig(server, "ports")) {
+		if deployDig(p, "name") == "internal" {
+			internalPort, _ = deployDig(p, "containerPort").(int)
+		}
+	}
+	example, err := configuration.Load(filepath.Join(repoRoot, "deploy/kubernetes/overlays/example/config.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	host, port, err := net.SplitHostPort(example.Server.InternalListen)
+	ip, ipErr := netip.ParseAddr(host)
+	if err != nil || port != strconv.Itoa(internalPort) || host == "localhost" || (ipErr == nil && ip.IsLoopback()) {
+		t.Errorf("overlays/example server.internal_listen %q must listen on the pod's addresses at the server's internal port %d, or the probes fail",
+			example.Server.InternalListen, internalPort)
 	}
 	if mu := deployDig(workloads["server"], "spec", "strategy", "rollingUpdate", "maxUnavailable"); mu != 0 {
 		t.Errorf("server rollouts must keep every ready pod (maxUnavailable 0), got %v", mu)

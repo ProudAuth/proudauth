@@ -359,7 +359,10 @@ increase these settings. For systemd, set `TimeoutStopSec` accordingly.
 Readiness: `GET /health/ready` on the public listener returns 200 only when the
 database is reachable, the schema is current and every active realm has a usable
 active signing key, and the process is not shutting down
-([monitoring.md](monitoring.md)).
+([monitoring.md](monitoring.md)). The internal listener answers the same check;
+point orchestrator probes there, because the public health routes are load-shed
+with the administration reserve
+([monitoring.md](monitoring.md#probes-and-load-shedding)).
 
 ## 6. Create a realm
 

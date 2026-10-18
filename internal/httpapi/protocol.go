@@ -607,7 +607,11 @@ func (a *App) live(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func (a *App) ready(w http.ResponseWriter, r *http.Request) {
+// Ready answers GET /health/ready. The public listener serves it through the
+// middleware (in the reserved pool, NFR-002); the internal listener serves
+// the same handler without load shedding, for orchestrator probes
+// (server.InternalHandler).
+func (a *App) Ready(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if a.Draining.Load() {
 		// Shutting down (OPS-012): report not-ready so load balancers stop

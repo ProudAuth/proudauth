@@ -203,8 +203,12 @@ func MigrationBound(d time.Duration) time.Duration {
 	return d
 }
 
-// InternalHandler serves metrics and operator status on the private listener. When a
-// metrics token is configured it is required (OPS-002 restricted metrics).
+// InternalHandler serves metrics, operator status and the health checks on the
+// private listener. When a metrics token is configured it is required for
+// metrics and status (OPS-002 restricted metrics); the health checks need no
+// credential. Orchestrator probes use this listener (DEP-009, DEP-013): it has
+// no load shedding, so a full reserved pool on the public listener (NFR-002)
+// never fails a liveness or readiness probe.
 func InternalHandler(env *Env, app *httpapi.App) http.Handler {
 	mux := http.NewServeMux()
 	token := ""
@@ -233,6 +237,8 @@ func InternalHandler(env *Env, app *httpapi.App) http.Handler {
 		env.Metrics.Registry.WriteText(w)
 	})
 	mux.HandleFunc("GET /health/live", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+	// The same readiness check as the public GET /health/ready.
+	mux.HandleFunc("GET /health/ready", app.Ready)
 	if env.Cfg.Mode == "development" {
 		// Development mail sink viewer (MSG-011). It exists only in development
 		// mode and only on the private operator listener: message bodies carry

@@ -98,12 +98,17 @@ excluded by default; an explicit `state` filter can list it.
   `processes × max_conns` below PostgreSQL's `max_connections` minus
   administrative headroom.
 - `limits.max_inflight_requests` (2000) bounds concurrent requests per server
-  process. A separate pool of a quarter of that (plus one) serves `/health/*` and
-  requests carrying an `Authorization` header to administrative paths (users,
-  settings, signing keys, emergency actions, sessions, clients, role assignments)
-  so operators can act during overload (NFR-002). Excess requests get 503 with
-  `Retry-After: 2` (`unavailable` problem details, or an OAuth
-  `temporarily_unavailable` error on the OAuth and OIDC endpoints).
+  process. A separate pool of a quarter of that (plus one) serves the public
+  `/health/*` routes and requests to administrative paths (users, settings,
+  signing keys, emergency actions, sessions, clients, role assignments) whose
+  bearer is a JWT naming a signing key of the path's realm, so operators can
+  act during overload (NFR-002); anonymous requests and other credentials
+  use the main pool
+  ([monitoring.md](monitoring.md#probes-and-load-shedding)). Excess requests
+  get 503 with `Retry-After: 2` (`unavailable` problem details, or an OAuth
+  `temporarily_unavailable` error on the OAuth and OIDC endpoints). The
+  internal listener's `/health/live` and `/health/ready`, which the
+  Kubernetes probes use, are not load-shed.
 - Requests are cancelled after 30 s; statements after `storage.statement_timeout`.
 - Each worker process runs its tasks one after another every
   `workers.poll_interval`; outbox, notifications and webhooks claim up to
