@@ -129,7 +129,7 @@ var safeKeys = map[string]bool{
 	"token_family_id": true, "recovery_method": true, "code_length": true, "secret_version": true,
 	"recovery_codes_remaining": true, "password_changed": true, "token_endpoint_auth_method": true,
 	"key_id": true, "display_prefix": true, "authorization_revision": true, "secret_kind": true,
-	"recovery_restricted": true, "recovery_id": true,
+	"recovery_restricted": true, "recovery_id": true, "secret_rotated": true,
 }
 
 var bearerLike = regexp.MustCompile(`pa_(rt|ac|at|it|hc|inv|tx|csrf|ses|cs|key|pat|lnk|dc|rat|dl|rmd|scim)_[A-Za-z0-9_\-]{8,}`)

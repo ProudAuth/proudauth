@@ -1,9 +1,11 @@
 # Dynamic client registration
 
 Requirements: APP-016, APP-017, ADV-003 (RFC 7591, RFC 7592). Code:
-`internal/application/dcr.go`, `internal/httpapi/dcr.go`, migration `0052`.
-Tests: `TestDynamicClientRegistration` (`tests/e2e/dcr_test.go`) and
-`TestDynamicClientRegistrationBounds` (`tests/e2e/dcr_bounds_test.go`).
+`internal/application/dcr.go`, `internal/httpapi/dcr.go`, migrations `0052`
+and `0090`. Tests: `TestDynamicClientRegistration` and
+`TestDynamicRegistrationReapproval` (`tests/e2e/dcr_test.go`),
+`TestDynamicClientRegistrationBounds` (`tests/e2e/dcr_bounds_test.go`) and
+`TestReviewedChanges` (`internal/application`).
 
 Dynamic registration lets software register its own OAuth client at
 `/realms/{realm}/oauth/register` instead of asking an administrator to create
@@ -161,21 +163,72 @@ the registration.
 A registration without an initial access token, or any registration while
 `require_approval` is set, is created with `proudauth_approval_state:
 pending` and the client `suspended`: it can do nothing until an
-administrator decides (its registrant can still read and update it).
+administrator decides (its registrant can still read and update it). While
+a registration requires approval (it was made without an initial access
+token, or `require_approval` is set), its later changes of reviewed
+metadata go back to review ([below](#re-approval-of-changed-registrations)).
 
 | Method and path | Permission | Effect |
 | --- | --- | --- |
-| `GET /client-registrations?approval_state=pending\|approved\|rejected` | `realm.clients.read` | Dynamically registered clients (at most 500): `client_ref`, `client_id`, `name`, `client_type`, `approval_state`, `initial_token_id`, `software_id`, `software_version`, `redirect_uris`, `created_at` |
-| `POST /client-registrations/{client}/approve` | `realm.clients.write` | Activates the client (`204`; audited `client.registration.approved`) |
+| `GET /client-registrations?approval_state=pending\|approved\|rejected` | `realm.clients.read` | Dynamically registered clients (at most 500): `client_ref`, `client_id`, `name`, `client_type`, `client_state`, `version`, `approval_state`, `initial_token_id`, `software_id`, `software_version`, `redirect_uris`, `post_logout_redirect_uris`, `grant_types`, `client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, `reviewed_version`, `requeued_at`, `created_at` |
+| `POST /client-registrations/{client}/approve` | `realm.clients.write` | Body `{"reviewed_version": N}`, required: the client version that was reviewed. Activates the client (`204`; audited `client.registration.approved` with `reviewed_version`) and records `reviewed_version`. `409` when the client is no longer at version `N`; `422` without `reviewed_version` |
 | `POST /client-registrations/{client}/reject` | `realm.clients.write` | Decommissions it (`204`; `client.registration.rejected`) |
 
-`{client}` is the client's internal reference (`client_ref`). Deciding a
-registration that is not pending is `409`, an unknown one `404`. The address
-the registration came from is kept with it for review. Only the approval
-activates a pending registration: `POST /clients/{client}/reactivate` (and
-the emergency control's `enable` for the client) answers `409` ("the
-client's dynamic registration is pending approval ...") while the
-registration is pending.
+`{client}` is the client's internal reference (`client_ref`). Each listed
+item is one consistent read: `version` is the client version that the
+listed metadata belongs to, and the approval takes it back as
+`reviewed_version`. Every update of the client gives it a new version: a
+registrant `PUT` (also one that changes nothing), an administrator's change
+through the client API, and every state change. So when the registrant
+changes the client after the administrator looked, even while the
+registration is pending, the approval of the version reviewed is `409`
+(`conflict`, "the client changed after the reviewed version ...") and
+changes nothing; list it again, review what changed and approve the new
+version. `reviewed_version` and `requeued_at` stay empty for approvals made
+before 0.2.0-alpha.6.
+
+Deciding a registration that is not pending is `409`, an unknown one
+`404`. The address the registration came from is kept with it for review.
+Only the approval activates a pending registration: `POST
+/clients/{client}/reactivate` (and the emergency control's `enable` for the
+client) answers `409` ("the client's dynamic registration is pending
+approval ...") while the registration is pending.
+
+### Re-approval of changed registrations
+
+An approval covers what users see at consent and where the client may send
+them. Where a registration requires approval (open registration, or
+`require_approval` set now), a registrant `PUT` that changes any of these
+fields of an approved registration returns it to review (0.2.0-alpha.6
+[decision 14](../releases/2026-10-alpha.6-decisions.md)):
+
+- `client_name`;
+- `redirect_uris` and `post_logout_redirect_uris`;
+- `grant_types`;
+- `client_uri`, `logo_uri`, `policy_uri` and `tos_uri`.
+
+The registration becomes `pending` again (`requeued_at` records when), and
+the client is suspended in the same transaction, like `POST
+/clients/{client}/suspend`: its refresh tokens, grants and opaque access
+tokens end, its JWT access tokens are revoked by client, and token requests
+fail client authentication (`401 invalid_client`) until an administrator
+approves the new version. Users who signed in before sign in again
+afterwards. The `PUT` response says so (`proudauth_approval_state: pending`,
+`proudauth_client_state: suspended`). A client an administrator had
+already suspended stays suspended; the approval activates it.
+
+Lists compare as sets, so the same URIs or grant types in another order are
+no change. A secret rotation (`rotate_secret`), a `PUT` that repeats the
+current values, and changes of other metadata (`contacts`, `software_id`,
+`software_version`, the authentication method, front-channel logout,
+response signing and encryption) keep the approval. Where approval is not
+required (registrations made with an initial access token while
+`require_approval` is off), changes keep the client approved and active, as
+before; their audit record still names them.
+
+The registrant cannot get around the review by changing the client again:
+each change gives it a new version, and an approval names the version
+reviewed.
 
 ## Managing a registration (RFC 7592)
 
@@ -189,7 +242,7 @@ replaced by an update, or any token of a decommissioned client, is
 | Method | Effect |
 | --- | --- |
 | `GET` | `200` with the current metadata and granted `scope`, without client secret or registration access token |
-| `PUT` | Replaces the registrant's metadata with the body, checked like a registration (`client_id` must match; `400 invalid_client_metadata` otherwise). The client type cannot change, the granted scopes do not change (`scope` in the body is ignored), and settings an administrator controls are kept (below). Returns `200` with a new `registration_access_token`; the old one stops working. The update is one transaction: when any part of it fails, nothing changes and the presented token stays valid |
+| `PUT` | Replaces the registrant's metadata with the body, checked like a registration (`client_id` must match; `400 invalid_client_metadata` otherwise). The client type cannot change, the granted scopes do not change (`scope` in the body is ignored), and settings an administrator controls are kept (below). Returns `200` with a new `registration_access_token`; the old one stops working. The update is one transaction: when any part of it fails, nothing changes and the presented token stays valid. Where the registration requires approval, a change of reviewed metadata returns it to review and suspends the client ([re-approval](#re-approval-of-changed-registrations)) |
 | `DELETE` | `204`. Decommissions the client: its grants, refresh tokens and opaque tokens are revoked, its secrets end, and management stops |
 
 `PUT` with the extension member `rotate_secret: true` also returns a new
@@ -231,8 +284,17 @@ token's ID or `open`), `client.registration.updated`, `.approved` and
 `.rejected`; `client_registration.initial_token.created` and `.revoked`; plus
 the ordinary events of the changes they cause (`client.created`,
 `client.resource_grant.set`, `client.updated`, `client.credential.issued`,
-`client.active`, `client.decommissioned`). All are in category
-`configuration`.
+`client.active`, `client.suspended`, `client.decommissioned`). All
+registration events are in category `configuration`.
+
+`client.registration.updated` (actor type `registration`, ID the client ID)
+records `client_id`, `secret_rotated`, `approval_state` after the update,
+`requeued` (whether it returned the registration to review) and, when any
+reviewed field changed, `changes`: per field `{"before": ..., "after": ...}`,
+URI and grant-type lists as stored (sorted), at most 20 entries each with
+`"truncated": true` beyond that. A re-queue also records `client.suspended`
+with reason `registration_requeued`. `client.registration.approved` records
+the `reviewed_version`.
 
 ## Limits and known issues
 

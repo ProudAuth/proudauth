@@ -22623,7 +22623,7 @@ paths:
       tags:
         - OAuth
       summary: Update a registered client (RFC 7592)
-      description: "Replaces the registrant's metadata (client_id must match): client_name, redirect and post-logout redirect URIs, grant types, the authentication method within the client type, contacts, software_id/version and the protocol options. The client type and granted scopes cannot change, and settings an administrator controls through the client API (description, security profile and consent settings, offline access, remember-me, default resource, environment, project, owner, subject_type and sector_identifier, login UI and back-channel logout URIs, allowed origins, claim mappings, token_policy) are kept, not reset; metadata that conflicts with them is refused (for example redirect URIs outside a pairwise sector). A new registration_access_token is returned and the old one stops working; rotate_secret=true issues a new secret. The update is one transaction: when any part fails (invalid metadata, or a rotation beyond limits.client_secrets_max, which counts only secrets not yet expired: 409), nothing changes and the presented registration access token stays valid."
+      description: "Replaces the registrant's metadata (client_id must match): client_name, redirect and post-logout redirect URIs, grant types, the authentication method within the client type, contacts, software_id/version and the protocol options. The client type and granted scopes cannot change, and settings an administrator controls through the client API (description, security profile and consent settings, offline access, remember-me, default resource, environment, project, owner, subject_type and sector_identifier, login UI and back-channel logout URIs, allowed origins, claim mappings, token_policy) are kept, not reset; metadata that conflicts with them is refused (for example redirect URIs outside a pairwise sector). A new registration_access_token is returned and the old one stops working; rotate_secret=true issues a new secret. The update is one transaction: when any part fails (invalid metadata, or a rotation beyond limits.client_secrets_max, which counts only secrets not yet expired: 409), nothing changes and the presented registration access token stays valid. Where the realm requires approval for the registration (client_registration.require_approval, or a registration made without an initial access token), a change of client_name, redirect_uris, post_logout_redirect_uris, grant_types, client_uri, logo_uri, policy_uri or tos_uri returns an approved registration to review: the response has proudauth_approval_state pending and proudauth_client_state suspended, and the client can do nothing until an administrator approves the new version (0.2.0-alpha.6 decision 14). Lists compare as sets; a secret rotation or an update that changes none of these fields keeps the approval."
       security:
         - registrationAccessToken: []
       x-trust-class: public-protocol-initiation
@@ -22962,7 +22962,7 @@ paths:
       tags:
         - Clients
       summary: List dynamically registered clients
-      description: "Filter with approval_state=pending, approved or rejected."
+      description: "Filter with approval_state=pending, approved or rejected. Each item carries the metadata an approval reviews and the client version it was read at (one consistent read); approve that version (POST .../approve with reviewed_version)."
       security:
         - adminToken: []
       x-trust-class: administrative
@@ -22995,6 +22995,13 @@ paths:
                           type: string
                         client_type:
                           type: string
+                        client_state:
+                          type: string
+                          description: "active, suspended (also while pending) or decommissioned (rejected)."
+                        version:
+                          type: integer
+                          format: int64
+                          description: "The client version the listed metadata belongs to; send it as reviewed_version to approve."
                         approval_state:
                           type: string
                         initial_token_id:
@@ -23007,6 +23014,30 @@ paths:
                           type: array
                           items:
                             type: string
+                        post_logout_redirect_uris:
+                          type: array
+                          items:
+                            type: string
+                        grant_types:
+                          type: array
+                          items:
+                            type: string
+                        client_uri:
+                          type: string
+                        logo_uri:
+                          type: string
+                        policy_uri:
+                          type: string
+                        tos_uri:
+                          type: string
+                        reviewed_version:
+                          type: integer
+                          format: int64
+                          description: "The client version the last approval reviewed (absent before the first approval and for approvals before 0.2.0-alpha.6)."
+                        requeued_at:
+                          type: string
+                          format: date-time
+                          description: "When a registrant's change of reviewed metadata last returned the approved registration to pending."
                         created_at:
                           type: string
                           format: date-time
@@ -23034,7 +23065,7 @@ paths:
       tags:
         - Clients
       summary: Approve a pending registration
-      description: "Activates the client (audited client.registration.approved)."
+      description: "Activates the client (audited client.registration.approved with reviewed_version) and records reviewed_version. The approval names the client version the administrator reviewed (version in GET /client-registrations); it is refused with 409 when the client changed since, for example when its registrant updated it while under review, so a change made after the review is never approved unseen (0.2.0-alpha.6 decision 14). Also 409 when the registration is not pending."
       security:
         - adminToken: []
       x-trust-class: administrative
@@ -23052,6 +23083,14 @@ paths:
             schema:
               type: object
               additionalProperties: false
+              required:
+                - reviewed_version
+              properties:
+                reviewed_version:
+                  type: integer
+                  format: int64
+                  minimum: 1
+                  description: "The client version that was reviewed. Missing or below 1: 422."
       responses:
         "204":
           description: No Content

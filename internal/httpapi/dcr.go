@@ -76,15 +76,25 @@ func (a *App) dcrRoutes(mux *http.ServeMux) {
 		}
 		return a.writeList(w, r, list)
 	}))
+	// An approval names the client version the administrator reviewed
+	// (alpha.6 decision 14): 409 when the client changed since, so a
+	// registrant's change made after the review is never approved unseen.
 	decide := func(approve bool) http.HandlerFunc {
 		return a.admin(func(w http.ResponseWriter, r *http.Request, p *Principal) error {
 			if err := a.requirePerm(r, p, "realm.clients.write"); err != nil {
 				return err
 			}
-			if err := decode(r, &struct{}{}); err != nil {
+			var b struct {
+				ReviewedVersion int64 `json:"reviewed_version"`
+			}
+			var body any = &struct{}{}
+			if approve {
+				body = &b
+			}
+			if err := decode(r, body); err != nil {
 				return err
 			}
-			if err := a.Apps.DecideRegistration(r.Context(), p.Realm.ID, r.PathValue("client"), approve, p.AuditRef()); err != nil {
+			if err := a.Apps.DecideRegistration(r.Context(), p.Realm.ID, r.PathValue("client"), approve, b.ReviewedVersion, p.AuditRef()); err != nil {
 				return err
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -179,7 +189,9 @@ func (a *App) dcrManage(w http.ResponseWriter, r *http.Request, rlm *realm.Realm
 		if writeRegistrationError(w, err) {
 			return nil
 		}
-		reg, err := a.Apps.UpdateRegistration(r.Context(), rlm.ID, c, *m, m.RotateSecret)
+		// A change of the reviewed metadata returns an approved registration
+		// to review where the realm requires approval (decision 14).
+		reg, err := a.Apps.UpdateRegistration(r.Context(), rlm.ID, c, *m, m.RotateSecret, rlm.Policy.ClientRegistration.RequireApproval)
 		if writeRegistrationError(w, err) {
 			return nil
 		}
