@@ -890,6 +890,22 @@
         "invitation_window": {
           "description": "Window for the invitation budgets.",
           "$ref": "#/$defs/nonNegativeDuration"
+        },
+        "join_requests_per_user": {
+          "description": "Join requests one user files per join request window, across the organizations of the realm (INV-013, REG-012); withdrawing a request never refunds it. 0 disables it.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 10
+        },
+        "join_requests_per_organization": {
+          "description": "Join requests filed to one organization per join request window (INV-013, TEN-018); a request the per-user budget refuses does not count. 0 disables it.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 100
+        },
+        "join_request_window": {
+          "description": "Window for the join-request budgets; a user's repeat request to the same organization within it does not notify the reviewers again. 0 also turns that de-duplication off.",
+          "$ref": "#/$defs/nonNegativeDuration"
         }
       }
     },

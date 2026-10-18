@@ -236,6 +236,13 @@ type RateLimitConfig struct {
 	InvitationsPerOrganization int           `yaml:"invitations_per_organization"`
 	InvitationsPerRecipient    int           `yaml:"invitations_per_recipient"`
 	InvitationWindow           time.Duration `yaml:"invitation_window"`
+	// Join-request budgets (INV-013, REG-012, TEN-018): per requester across
+	// the realm and per organization; withdrawing a request never refunds
+	// them. The window also bounds reviewer-notice de-duplication: a repeat
+	// request within it does not notify the reviewers again.
+	JoinRequestsPerUser         int           `yaml:"join_requests_per_user"`
+	JoinRequestsPerOrganization int           `yaml:"join_requests_per_organization"`
+	JoinRequestWindow           time.Duration `yaml:"join_request_window"`
 }
 
 // validate checks the abuse budgets (SEC-006): 0 disables a budget, a negative
@@ -265,6 +272,8 @@ func (rl RateLimitConfig) validate() []string {
 		{"temporary_lock", rl.TemporaryLock, []limit{{"failures_before_lock", rl.FailuresBeforeLock}}},
 		{"invitation_window", rl.InvitationWindow, []limit{{"invitations_per_organization", rl.InvitationsPerOrganization},
 			{"invitations_per_recipient", rl.InvitationsPerRecipient}}},
+		{"join_request_window", rl.JoinRequestWindow, []limit{{"join_requests_per_user", rl.JoinRequestsPerUser},
+			{"join_requests_per_organization", rl.JoinRequestsPerOrganization}}},
 	} {
 		if w.d < 0 {
 			errs = append(errs, fmt.Sprintf("security.rate_limits.%s must not be negative", w.key))
@@ -696,6 +705,7 @@ func Defaults() Config {
 				LoginPerClient:             20000,
 				LoginPerOrganization:       10000,
 				InvitationsPerOrganization: 500, InvitationsPerRecipient: 10, InvitationWindow: 24 * time.Hour,
+				JoinRequestsPerUser: 10, JoinRequestsPerOrganization: 100, JoinRequestWindow: 24 * time.Hour,
 			},
 			// Ten failures, the default per-window proof budget, before the
 			// backoff starts; a notice at 20; code factors off at 100.

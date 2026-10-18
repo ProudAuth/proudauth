@@ -935,6 +935,9 @@ func (s *Service) RequestJoin(ctx context.Context, realmID, orgID, userID, reaso
 	if len(reason) > 500 {
 		return nil, problem.ErrValidation.WithField("reason", "too long")
 	}
+	if err := s.joinBudget(ctx, realmID, orgID, userID); err != nil {
+		return nil, err
+	}
 	jr := &JoinRequest{ID: ids.New(ids.JoinRequest), OrgID: orgID, UserID: userID, Reason: reason, State: "pending",
 		ExpiresAt: s.d.Now().Add(14 * 24 * time.Hour), CreatedAt: s.d.Now()}
 	err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
@@ -956,14 +959,24 @@ func (s *Service) RequestJoin(ctx context.Context, realmID, orgID, userID, reaso
 		if _, err := s.createMembershipTx(ctx, tx, realmID, orgID, userID, "self_join", jr.ID, "pending_approval"); err != nil {
 			return err
 		}
-		_, err = s.d.Audit.Record(ctx, tx, audit.Event{Type: "organization.join_request.created", RealmID: realmID, OrgID: orgID, Actor: auditActor,
-			Target: &audit.Ref{Type: "join_request", ID: jr.ID}})
+		repeat, err := s.repeatJoinRequestTx(ctx, tx, jr)
 		if err != nil {
+			return err
+		}
+		ev := audit.Event{Type: "organization.join_request.created", RealmID: realmID, OrgID: orgID, Actor: auditActor,
+			Target: &audit.Ref{Type: "join_request", ID: jr.ID}}
+		if repeat {
+			ev.Metadata = map[string]any{"reviewer_notice": "suppressed_repeat"}
+		}
+		if _, err := s.d.Audit.Record(ctx, tx, ev); err != nil {
 			return err
 		}
 		if _, err := s.d.Outbox.Publish(ctx, tx, events.Event{EventType: "organization.join_request.created", RealmID: realmID, OrgID: orgID,
 			AggregateType: "join_request", AggregateID: jr.ID, Data: map[string]any{"join_request_id": jr.ID}}); err != nil {
 			return err
+		}
+		if repeat {
+			return nil
 		}
 		// Reviewers learn that a request waits; the notice names no requester,
 		// and the requester never learns who the reviewers are.

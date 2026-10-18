@@ -115,6 +115,14 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   `mfa.code_factors.failure_notice`, `.disabled` and `.restored`, and
   `second_factor_failures` in `GET /users/{user}`
   ([configuration.md](docs/operations/configuration.md#security)).
+- Configuration keys `security.rate_limits.join_requests_per_user` (default
+  `10`), `join_requests_per_organization` (default `100`) and
+  `join_request_window` (default `24h`) for the join-request budgets
+  (INV-013, REG-012, TEN-018); `0` disables a budget, and a zero window also
+  turns the reviewer-notice de-duplication off. Validation refuses negative
+  values and a positive limit with a zero window, as for the other
+  `rate_limits` keys ([configuration.md](docs/operations/configuration.md)).
+  Regression test `TestValidateRateLimits`.
 
 ### Changed
 
@@ -571,6 +579,25 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   evidence, which the rolled-back transaction used to discard, is now kept
   (owner decision 10; CRED-006, SEC-006). Affected: every earlier 0.2.0
   prerelease; regression test `TestChangePasswordUnderSignInLock`.
+- Join requests have abuse budgets. `POST /organizations/{org}/join-requests`
+  spends the requester's budget across the realm
+  (`security.rate_limits.join_requests_per_user`, 10 by default) and then the
+  organization's (`join_requests_per_organization`, 100) per
+  `join_request_window` (`24h`); an exhausted budget answers `429
+  rate_limited` with `Retry-After` and writes no audit event, and withdrawing
+  a request refunds neither. A request the requester's budget refuses does not
+  count toward the organization's, so one account cannot use up an
+  organization's budget for everyone else. A user's repeat request to the same
+  organization within the window is still recorded and audited
+  (`organization.join_request.created`, with `reviewer_notice:
+  suppressed_repeat`) but no longer notifies the reviewers again. Join
+  requests had no budget: any signed-in user of the realm could request to
+  join an organization that accepts join requests, withdraw at once and
+  request again without limit, and every request emailed up to 20 reviewers
+  and wrote membership, audit and outbox rows, where invitations were already
+  capped (REG-012, TEN-018, INV-013). Affected: every earlier 0.2.0
+  prerelease; regression tests `TestJoinRequestBudgets`,
+  `TestJoinRequestReviewerNotices`.
 
 ## [0.2.0-alpha.5] - 2026-10-18
 
