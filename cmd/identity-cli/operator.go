@@ -33,7 +33,7 @@ func init() {
 		fs := flag.NewFlagSet("migrate", flag.ExitOnError)
 		cfg := fs.String("config", os.Getenv("PROUDAUTH_CONFIG"), "config file")
 		status := fs.Bool("status", false, "only show status")
-		plan := fs.Bool("plan", false, "show pending migrations, their compatibility class, no-transaction mode and precondition results without applying (OPS-008)")
+		plan := fs.Bool("plan", false, "show pending migrations, their compatibility class, no-transaction mode, whether they run out of order and precondition results without applying (OPS-008)")
 		backup := fs.String("backup-reference", "", "identifier of the verified backup taken before this run; required for contract (destructive) migrations")
 		lockTimeout := fs.Duration("lock-timeout", 0, "longest wait for each lock a migration takes (PostgreSQL lock_timeout) before the migration gives up and is retried; concurrent index builds run without it; 0 waits without limit (default storage.migration_lock_timeout, 5s)")
 		lockRetries := fs.Int("lock-retries", storage.DefaultMigrationLockRetries, "how often a migration that gave up waiting for a lock is retried, after a pause that doubles from 0.5s up to 8s; 0 does not retry")
@@ -76,27 +76,23 @@ func init() {
 			return nil
 		}
 		var ran []string
-		var pending []storage.MigrationPlanItem
+		var items []storage.MigrationPlanItem
 		if *plan {
-			ran, pending, err = env.DB.MigrateWith(ctx, storage.MigrateOptions{BackupReference: *backup, Plan: true})
+			ran, items, err = env.DB.MigrateWith(ctx, storage.MigrateOptions{BackupReference: *backup, Plan: true})
 		} else {
 			// Applied as the schema owner when storage.migration_database_url is
 			// set, then the runtime role gets data privileges only (OPS-013).
-			ran, err = server.MigrateAsOwner(ctx, env.Cfg, env.DB, opt)
+			ran, items, err = server.MigrateAsOwner(ctx, env.Cfg, env.DB, opt)
 		}
 		if *plan {
 			if err != nil {
 				return err
 			}
-			if len(pending) == 0 {
+			if len(items) == 0 {
 				fmt.Println("schema is current")
 			}
-			for _, m := range pending {
-				class := m.Compat
-				if m.NoTransaction {
-					class += ", no-transaction"
-				}
-				fmt.Printf("%-48s %s\n", m.Name, class)
+			for _, m := range items {
+				fmt.Println(planLine(m))
 				for _, p := range m.Preconditions {
 					state := "holds"
 					if !p.Held {
@@ -109,6 +105,11 @@ func init() {
 		}
 		for _, m := range ran {
 			fmt.Println("applied", m)
+		}
+		for _, m := range items {
+			if m.OutOfOrder {
+				fmt.Fprint(warnings, outOfOrderWarning(m))
+			}
 		}
 		if err == nil && len(ran) == 0 {
 			fmt.Println("schema is current")
@@ -474,3 +475,24 @@ func recordOperatorEvent(ctx context.Context, env *server.Env, typ string, meta 
 }
 
 func operatorRef() audit.Ref { return audit.Ref{Type: "operator", ID: "local:" + operatorName()} }
+
+// planLine renders a pending migration for migrate -plan: its name, its
+// compatibility class, and whether it runs outside a transaction or out of
+// order (OPS-008).
+func planLine(m storage.MigrationPlanItem) string {
+	class := m.Compat
+	if m.NoTransaction {
+		class += ", no-transaction"
+	}
+	if m.OutOfOrder {
+		class += ", out-of-order (sorts before " + m.NewestApplied + ", already applied)"
+	}
+	return fmt.Sprintf("%-48s %s", m.Name, class)
+}
+
+// outOfOrderWarning is the warning migrate prints for a migration it
+// applied out of order (storage.MigrationPlanItem.OutOfOrder).
+func outOfOrderWarning(m storage.MigrationPlanItem) string {
+	return fmt.Sprintf("warning: migration %s was applied out of order: it sorts before %s, which the database had applied already; check that it does not depend on the schema before that migration (a reviewed file says so with \"-- proudauth:allow-out-of-order: <reason>\")\n",
+		m.Name, m.NewestApplied)
+}

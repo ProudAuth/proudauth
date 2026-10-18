@@ -289,6 +289,64 @@ The runner records a SHA-256 checksum per file.
   every index the file creates is valid
   (`TestNoTransactionMigrationRebuildsInvalidIndex`,
   [upgrades.md](docs/operations/upgrades.md#no-transaction-migrations)).
+- **Migration lint** (OPS-008, DEP-012, TEST-061). `TestMigrationLint`
+  (`tests/contract`, run by CI's `test` job, no database needed) reads every
+  migration with the runner's statement splitter and fails on these
+  findings, unless the statement acts on a table the same file creates:
+  - `blocking-index`: plain `CREATE INDEX` on an existing table, which blocks
+    its writes for the whole build, and `ADD UNIQUE`, `ADD PRIMARY KEY`,
+    `ADD ... EXCLUDE` or a `UNIQUE` column, which build an index under
+    `ACCESS EXCLUSIVE`. Use `CREATE INDEX CONCURRENTLY IF NOT EXISTS` in a
+    no-transaction file (then `ADD CONSTRAINT ... USING INDEX` for a
+    constraint);
+  - `concurrently-in-transaction`: `CONCURRENTLY` in a file without
+    `-- proudauth:no-transaction`, which the runner refuses;
+  - `table-rewrite`: `ALTER COLUMN ... TYPE` and stored generated columns,
+    which rewrite the table under `ACCESS EXCLUSIVE` (a type change is also
+    a `column-type` finding, below);
+  - `volatile-default`: `ADD COLUMN` with a default that is not a constant
+    (`now()`, `CURRENT_TIMESTAMP`, `gen_random_uuid()`, `nextval(...)`, any
+    function call but a few constant builders such as
+    `jsonb_build_object`), a `serial` type or an identity. A constant
+    default, `NOT NULL DEFAULT 0` or `DEFAULT '{}'::jsonb` included, changes
+    the catalog only (PostgreSQL 11+) and passes. Add the column with a
+    constant default or none, then `SET DEFAULT` and backfill in batches;
+  - destructive or contracting DDL: `drop-table`, `drop-column`,
+    `drop-index`, `drop-constraint`, `drop-object` (any other `DROP`),
+    `drop-not-null`, `set-not-null`, `drop-default`, `column-type`,
+    `rename` (tables, columns, constraints, indexes, `SET SCHEMA`),
+    `alter-type` (`ALTER TYPE`, `ALTER DOMAIN`) and `truncate`. These pass in
+    a file marked `-- proudauth:compat=contract` (applied only with a backup
+    reference, above) or in an expand migration that says why older
+    binaries keep working:
+
+    ```sql
+    -- proudauth:reviewed-expand: the wider check below replaces it in the same transaction; every value older binaries write stays valid
+    ALTER TABLE hooks DROP CONSTRAINT hooks_kind_check;
+    ALTER TABLE hooks ADD CONSTRAINT hooks_kind_check CHECK (kind IN (...)) NOT VALID;
+    ```
+
+  A lock finding that is safe in a particular case is allowed by a
+  `-- proudauth:allow-<rule>: <reason>` line for `blocking-index`,
+  `table-rewrite` or `volatile-default`, for example
+  `-- proudauth:allow-blocking-index: system_state has exactly one row`.
+  Markers without a reason after the colon do not count, and the reviewers
+  check the reasons. `migrations/lint-baseline.txt` lists the findings of
+  migrations `0001`–`0087`, which shipped before the lint and cannot change
+  (their checksums are verified), with the reason each was acceptable. The
+  baseline is for history only: never add an entry for a new migration (the
+  test refuses entries after `0087_restore_marker.sql`); fix the migration
+  or use a marker. The baseline is exact, so an entry that matches no
+  finding fails the test as well (`TestLintMigrationRules`,
+  `TestLintBaseline`).
+- **Number new migrations after the newest one** on `main`. A pending
+  migration that sorts before one already applied still runs, but
+  `migrate -plan` marks it `out-of-order` and `migrate` and the server warn
+  when they apply it, since it was written against an older schema. When a
+  backported fix has to sort earlier, check that it does not depend on the
+  schema before the newer migrations and say so in the file:
+  `-- proudauth:allow-out-of-order: <reason>` (`TestOutOfOrderMigrations`,
+  [upgrades.md](docs/operations/upgrades.md#how-migrations-work)).
 - Every tenant-owned table carries `realm_id` (and `organization_id` where
   relevant) with composite foreign keys (DB-001). Bearer secrets are stored only as
   digests; recoverable secrets only as AES-GCM ciphertext with a key version

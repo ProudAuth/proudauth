@@ -315,11 +315,7 @@ func loadMigrations() ([]MigrationStatus, map[string]string, error) {
 			return nil, nil, err
 		}
 		sum := sha256.Sum256(b)
-		compat := "expand"
-		if strings.Contains(string(b), "-- proudauth:compat=contract") {
-			compat = "contract"
-		}
-		out = append(out, MigrationStatus{Name: e.Name(), Checksum: hex.EncodeToString(sum[:]), Compat: compat,
+		out = append(out, MigrationStatus{Name: e.Name(), Checksum: hex.EncodeToString(sum[:]), Compat: migrationCompat(string(b)),
 			NoTransaction: hasLine(string(b), noTransactionDirective)})
 		bodies[e.Name()] = string(b)
 	}
@@ -460,12 +456,22 @@ func withLockRetry(ctx context.Context, b migrationBounds, lockTimeout time.Dura
 	}
 }
 
-// MigrationPlanItem is one pending migration in a plan.
+// MigrationPlanItem is one pending migration in a plan, or one migration a
+// run applied.
 type MigrationPlanItem struct {
 	Name          string
 	Compat        string
 	NoTransaction bool
 	Preconditions []PreconditionResult
+	// OutOfOrder is set when the migration sorts before NewestApplied, the
+	// newest migration the database had applied before the run (a
+	// backported fix, or a file merged after a later one shipped), unless
+	// the file carries a "-- proudauth:allow-out-of-order: <reason>" line.
+	// It was written against a schema without the newer migrations, which
+	// review should confirm. It still runs: the numbering has gaps, and
+	// refusing would block hotfix backports (OPS-008).
+	OutOfOrder    bool
+	NewestApplied string
 }
 
 // PreconditionResult is one declared precondition and whether it holds.
@@ -518,6 +524,11 @@ func (db *DB) Migrate(ctx context.Context) ([]string, error) {
 // StatementTimeout), and a migration that gives up waiting for a lock is
 // retried a bounded number of times (LockRetries), so DDL never queues
 // indefinitely in front of the service's queries (DEP-012).
+//
+// It returns the names of the migrations applied and, for a plan, the
+// pending migrations; otherwise the migrations applied (also when the run
+// fails part-way), so the caller can warn about those applied out of order
+// (MigrationPlanItem.OutOfOrder).
 func (db *DB) MigrateWith(ctx context.Context, opt MigrateOptions) ([]string, []MigrationPlanItem, error) {
 	ran, plan, err := db.migrate(ctx, opt)
 	return ran, plan, err
@@ -599,27 +610,37 @@ func (db *DB) migrate(ctx context.Context, opt MigrateOptions) ([]string, []Migr
 		}
 		noTx[m.Name] = stmts
 	}
+	// A pending migration that sorts before the newest applied one runs out
+	// of order (MigrationPlanItem.OutOfOrder).
+	newest := ""
+	for name := range applied {
+		newest = max(newest, name)
+	}
 	bounds := opt.bounds()
 	var ran []string
-	var plan []MigrationPlanItem
+	var items []MigrationPlanItem
 	for _, m := range all {
 		if sum, ok := applied[m.Name]; ok {
 			if sum != m.Checksum {
-				return ran, nil, fmt.Errorf("migration %s checksum mismatch: applied %s, binary %s", m.Name, sum[:12], m.Checksum[:12])
+				return ran, items, fmt.Errorf("migration %s checksum mismatch: applied %s, binary %s", m.Name, sum[:12], m.Checksum[:12])
 			}
 			continue
 		}
-		pre := checkPreconditions(ctx, conn, bodies[m.Name])
+		item := MigrationPlanItem{Name: m.Name, Compat: m.Compat, NoTransaction: m.NoTransaction,
+			Preconditions: checkPreconditions(ctx, conn, bodies[m.Name])}
+		if m.Name < newest && markerReason(bodies[m.Name], allowOutOfOrderMarker) == "" {
+			item.OutOfOrder, item.NewestApplied = true, newest
+		}
 		if opt.Plan {
-			plan = append(plan, MigrationPlanItem{Name: m.Name, Compat: m.Compat, NoTransaction: m.NoTransaction, Preconditions: pre})
+			items = append(items, item)
 			continue
 		}
 		if m.Compat == "contract" && strings.TrimSpace(opt.BackupReference) == "" {
-			return ran, nil, fmt.Errorf("%w: %s (run migrate with -backup-reference after taking and verifying a backup)", ErrBackupRequired, m.Name)
+			return ran, items, fmt.Errorf("%w: %s (run migrate with -backup-reference after taking and verifying a backup)", ErrBackupRequired, m.Name)
 		}
-		for _, p := range pre {
+		for _, p := range item.Preconditions {
 			if !p.Held {
-				return ran, nil, fmt.Errorf("migration %s precondition failed: %s %s", m.Name, p.SQL, p.Err)
+				return ran, items, fmt.Errorf("migration %s precondition failed: %s %s", m.Name, p.SQL, p.Err)
 			}
 		}
 		if m.NoTransaction {
@@ -628,11 +649,12 @@ func (db *DB) migrate(ctx context.Context, opt MigrateOptions) ([]string, []Migr
 			err = applyInTx(ctx, conn, m, bodies[m.Name], bounds, opt.BackupReference)
 		}
 		if err != nil {
-			return ran, nil, err
+			return ran, items, err
 		}
 		ran = append(ran, m.Name)
+		items = append(items, item)
 	}
-	return ran, plan, nil
+	return ran, items, nil
 }
 
 func recordMigration(ctx context.Context, q Querier, m MigrationStatus, backupReference string) error {
