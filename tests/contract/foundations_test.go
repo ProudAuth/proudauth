@@ -233,12 +233,6 @@ func TestReleaseSupplyChain(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(repoRoot, "go.sum")); err != nil {
 		t.Error("go.sum missing: module versions are not locked")
 	}
-	dependabot := readRepoFile(t, ".github/dependabot.yml")
-	for _, eco := range []string{"gomod", "github-actions", "docker"} {
-		if !strings.Contains(dependabot, "package-ecosystem: "+eco) {
-			t.Errorf("dependabot does not update %s pins", eco)
-		}
-	}
 	if tm := readRepoFile(t, "docs/threat-models/system.md"); !strings.Contains(tm, "not reproducibly verified") {
 		t.Error("the threat model no longer states the reproducibility limit")
 	}

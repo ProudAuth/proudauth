@@ -25,7 +25,7 @@ page need a security reviewer (`.github/CODEOWNERS`).
 | SDK contract ownership | `TestSDKRepositoryBoundaries` | Normal pinned Go module, successful immutable SDK CI snapshots and matching synthetic contract hashes ([evidence](../integrations/sdk-repositories.json)) | A local replacement, missing pipeline check, stale source/workflow metadata or mismatched fixture |
 | Image smoke test | CI job `image` (`scripts/smoke-test.sh`) | The image starts read-only in the Compose stack: liveness, readiness, discovery, JWKS, and the password grant refused | Any failure |
 | Contribution provenance | CI job `dco` | Every commit of a pull request carries `Signed-off-by` | A missing sign-off |
-| Dependency updates | `.github/dependabot.yml`; each SDK owns its update rules | Service Go modules (including the pinned Go SDK), GitHub Actions, Docker base images; language dependency manifests in standalone SDKs | Reviewed pull requests, not a gate |
+| Dependency updates | Reviewed pull requests raised by the maintainer; Dependabot was cancelled on 2026-10-18 (owner decision) and each SDK repository likewise | Service Go modules (including the pinned Go SDK), GitHub Actions, Docker base images; language dependency manifests in standalone SDKs | Not a gate; `govulncheck`, the pinned-tool check and `TestReleaseToolchainPinned` fail CI on a vulnerable, unpinned or drifting dependency |
 
 ## Exceptions
 
@@ -37,7 +37,7 @@ page need a security reviewer (`.github/CODEOWNERS`).
 | No automated license check for npm, pub and Composer dependencies | Independent Node, Dart and PHP SDK repositories | Node.js and PHP have no runtime dependencies; Dart's are `crypto` and `http` (BSD-3-Clause, Dart team) | Dependency changes are reviewed in the owning SDK repository | Any SDK gains a runtime dependency |
 | No dedicated vulnerability scanner for Dart and PHP in CI | Independent Dart and PHP SDK repositories | PHP has none; Dart dependencies receive advisory/update review | Owning SDK dependency alerts and pull requests | Either SDK gains further runtime dependencies |
 | No static analyser for PHP beyond `php -l` | Independent `proudauth-sdk-php` | No additional PHP analysis tool is pinned yet | `declare(strict_types=1)`; warnings/deprecations fail tests on PHP 8.2 and 8.5 | Before a PHP package registry release |
-| CI does not scan the image's OS layer | `gcr.io/distroless/static-debian12:nonroot` | The base has no package manager or shell; the binaries are static | The local Grype profile below found zero OS-package matches; release SBOM attestations and Dependabot retain their separate controls | Before each release |
+| CI does not scan the image's OS layer | `gcr.io/distroless/static-debian12:nonroot` | The base has no package manager or shell; the binaries are static | The local Grype profile below found zero OS-package matches; release SBOM attestations and reviewed base-image digest updates retain their separate controls | Before each release |
 
 ## Base-image pins — 2026-10-13
 
@@ -54,7 +54,7 @@ workflow; both descriptors are OCI indexes. No registry lookup or image
 download was used. `TestReleaseToolchainPinned` checks version alignment
 and immutable base references. Pinning is not a current vulnerability scan,
 an image build/smoke result or independent reproduction; those retain their
-separate gates. Dependabot should review digest updates with the version tags.
+separate gates. Digest updates are raised by hand together with the version tags.
 
 ## Two-OS binary reproduction — 2026-10-13
 
