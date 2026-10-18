@@ -162,9 +162,10 @@ func (s *Service) completeGuestUpgradeTx(ctx context.Context, tx pgx.Tx, realmID
 // guestBudget bounds guest creation like self-registration (SEC-006).
 func (s *Service) guestBudget(ctx context.Context, t *Transaction) error {
 	rl := s.d.Cfg.Security.RateLimits
-	d, err := s.Limiter.Hit(ctx, ratelimit.Budget{Key: "guest-ip:" + t.RealmID + ":" + t.ClientIP, Limit: rl.SignupPerIP, Window: rl.SignupWindow},
+	budgets := append(ratelimit.PerNetwork("guest-ip:"+t.RealmID+":", chargeIP(ctx, t), rl.SignupPerIP, rl.SignupWindow, rl.NetworkCoarseFactor),
 		ratelimit.Budget{Key: "guest-client:" + t.ClientRef, Limit: rl.SignupPerClient, Window: rl.SignupWindow},
 		ratelimit.Budget{Key: "guest-realm:" + t.RealmID, Limit: rl.SignupPerRealm, Window: rl.SignupWindow})
+	d, err := s.Limiter.Hit(ctx, budgets...)
 	if err != nil {
 		return err
 	}

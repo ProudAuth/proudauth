@@ -218,13 +218,18 @@ func TestValidateRateLimits(t *testing.T) {
 		limits []string
 	}{
 		"login_window": {func(r *RateLimitConfig, d time.Duration) { r.LoginWindow = d },
-			[]string{"login_per_identifier", "login_per_ip", "login_per_realm", "login_per_client", "login_per_organization"}},
+			[]string{"login_per_identifier", "login_per_ip", "login_per_realm", "login_per_client", "login_per_organization",
+				"start_per_network", "known_login_per_network", "known_login_per_device", "known_login_per_identifier",
+				"device_per_network", "user_code_failures_per_network"}},
 		"send_window": {func(r *RateLimitConfig, d time.Duration) { r.SendWindow = d },
 			[]string{"send_per_identifier", "send_per_ip", "send_per_client", "send_per_organization", "send_per_realm"}},
 		"otp_verify_window": {func(r *RateLimitConfig, d time.Duration) { r.OTPVerifyWindow = d }, []string{"otp_verify_per_account"}},
 		"signup_window": {func(r *RateLimitConfig, d time.Duration) { r.SignupWindow = d },
 			[]string{"signup_per_ip", "signup_per_client", "signup_per_realm"}},
-		"token_window":   {func(r *RateLimitConfig, d time.Duration) { r.TokenWindow = d }, []string{"token_per_client", "organization_per_window"}},
+		"token_window": {func(r *RateLimitConfig, d time.Duration) { r.TokenWindow = d },
+			[]string{"token_per_client", "organization_per_window", "token_failures_per_network", "token_per_network_client", "par_failures_per_network", "par_per_client",
+				"api_token_failures_per_network"}},
+		"dcr_window":     {func(r *RateLimitConfig, d time.Duration) { r.DCRWindow = d }, []string{"dcr_per_network"}},
 		"temporary_lock": {func(r *RateLimitConfig, d time.Duration) { r.TemporaryLock = d }, []string{"failures_before_lock"}},
 		"invitation_window": {func(r *RateLimitConfig, d time.Duration) { r.InvitationWindow = d },
 			[]string{"invitations_per_organization", "invitations_per_recipient"}},
@@ -261,6 +266,75 @@ func TestValidateRateLimits(t *testing.T) {
 	c.Security.RateLimits = RateLimitConfig{}
 	if err := c.Validate(); err != nil {
 		t.Errorf("all rate limits disabled refused: %v", err)
+	}
+}
+
+// TestNetworkBudgetConfig covers SEC-006 and ABU-001 (owner decision 9 of
+// 0.2.0-alpha.6): the transaction-start budget defaults to 300 per network
+// per login window, the wider /24 and /48 budgets to 10 times each
+// per-network limit, and the known-device quota to facts of the last 30 days
+// with 50 attempts per known network, 20 per remembered device and 10 per
+// identifier per login window. The factor stops at 1000 and the days at
+// 365; both refuse negative values and 0 turns each off.
+func TestNetworkBudgetConfig(t *testing.T) {
+	rl := Defaults().Security.RateLimits
+	if rl.StartPerNetwork != 300 || rl.NetworkCoarseFactor != 10 || rl.KnownQuotaDays != 30 || rl.KnownLoginPerNetwork != 50 ||
+		rl.KnownLoginPerDevice != 20 || rl.KnownLoginPerIdentifier != 10 {
+		t.Fatalf("defaults: %+v", rl)
+	}
+	for _, c := range []struct {
+		set  func(*RateLimitConfig)
+		want string
+	}{
+		{func(r *RateLimitConfig) { r.NetworkCoarseFactor = MaxNetworkCoarseFactor + 1 }, "security.rate_limits.network_coarse_factor must be at most 1000"},
+		{func(r *RateLimitConfig) { r.KnownQuotaDays = MaxKnownQuotaDays + 1 }, "security.rate_limits.known_quota_days must be at most 365"},
+	} {
+		cfg := validDev()
+		c.set(&cfg.Security.RateLimits)
+		if err := cfg.Validate(); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("want %q, got %v", c.want, err)
+		}
+	}
+	cfg := validDev()
+	cfg.Security.RateLimits.NetworkCoarseFactor, cfg.Security.RateLimits.KnownQuotaDays = MaxNetworkCoarseFactor, MaxKnownQuotaDays
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("maximum factor and days refused: %v", err)
+	}
+	cfg.Security.RateLimits.NetworkCoarseFactor, cfg.Security.RateLimits.KnownQuotaDays = 0, 0
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("factor and days 0 (off) refused: %v", err)
+	}
+}
+
+// TestProtocolEndpointBudgetConfig covers SEC-006, ABU-001 and REG-012
+// (owner decision 9 of 0.2.0-alpha.6, the finding
+// core-oauth-oidc/token-endpoint-rate-limit): token_per_client rises from 600
+// to 2000 per minute, consistent with login_per_client; the token endpoint
+// and PAR bound failed requests to 300 per network per token_window, checked
+// before client authentication, and a public client's failed grants to 100
+// per network per token_window; PAR 2000 per public client per token_window; device
+// authorization 300 per network and wrong user codes 30 per network per
+// login_window; dynamic client registration 20 per network per dcr_window
+// (1h), which used to be fixed in code; support tokens presented to the
+// identity and administration APIs 300 per network per token_window (the
+// finding httpapi-surface/unauth-audit-amplification). Every new limit
+// refuses a zero window while positive and validates at 0
+// (TestValidateRateLimits walks them all).
+func TestProtocolEndpointBudgetConfig(t *testing.T) {
+	rl := Defaults().Security.RateLimits
+	if rl.TokenPerClient != 2000 || rl.TokenWindow != time.Minute || rl.TokenFailuresPerNetwork != 300 || rl.TokenPerNetworkClient != 100 ||
+		rl.PARFailuresPerNetwork != 300 || rl.PARPerClient != 2000 || rl.DevicePerNetwork != 300 || rl.UserCodeFailuresPerNetwork != 30 ||
+		rl.DCRPerNetwork != 20 || rl.DCRWindow != time.Hour || rl.APITokenFailuresPerNetwork != 300 {
+		t.Fatalf("defaults: %+v", rl)
+	}
+	c := validDev()
+	r := &c.Security.RateLimits
+	r.TokenFailuresPerNetwork, r.TokenPerNetworkClient, r.PARFailuresPerNetwork, r.PARPerClient, r.DevicePerNetwork, r.UserCodeFailuresPerNetwork, r.DCRPerNetwork =
+		0, 0, 0, 0, 0, 0, 0
+	r.APITokenFailuresPerNetwork = 0
+	r.DCRWindow = 0
+	if err := c.Validate(); err != nil {
+		t.Errorf("protocol endpoint budgets at 0 (off) refused: %v", err)
 	}
 }
 

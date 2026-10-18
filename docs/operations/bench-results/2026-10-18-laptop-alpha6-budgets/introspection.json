@@ -1,0 +1,209 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "introspection",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-18T16:47:46.564494Z",
+  "duration_s": 60.00060875,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 111350,
+  "outcomes": {
+    "ok": 111350
+  },
+  "throughput_per_s": 1855.8145045486726,
+  "latency_ms": {
+    "mean": 17.23988303547373,
+    "p50": 17.408,
+    "p90": 19.456,
+    "p99": 25.6,
+    "p999": 47.104,
+    "max": 74.319
+  },
+  "histogram": [
+    {
+      "le_ms": 12.288,
+      "count": 1
+    },
+    {
+      "le_ms": 12.8,
+      "count": 1
+    },
+    {
+      "le_ms": 13.312,
+      "count": 18
+    },
+    {
+      "le_ms": 13.824,
+      "count": 131
+    },
+    {
+      "le_ms": 14.336,
+      "count": 672
+    },
+    {
+      "le_ms": 14.848,
+      "count": 2619
+    },
+    {
+      "le_ms": 15.36,
+      "count": 6892
+    },
+    {
+      "le_ms": 15.872,
+      "count": 12480
+    },
+    {
+      "le_ms": 16.384,
+      "count": 16991
+    },
+    {
+      "le_ms": 17.408,
+      "count": 32706
+    },
+    {
+      "le_ms": 18.432,
+      "count": 19637
+    },
+    {
+      "le_ms": 19.456,
+      "count": 9822
+    },
+    {
+      "le_ms": 20.48,
+      "count": 4533
+    },
+    {
+      "le_ms": 21.504,
+      "count": 2019
+    },
+    {
+      "le_ms": 22.528,
+      "count": 883
+    },
+    {
+      "le_ms": 23.552,
+      "count": 480
+    },
+    {
+      "le_ms": 24.576,
+      "count": 286
+    },
+    {
+      "le_ms": 25.6,
+      "count": 191
+    },
+    {
+      "le_ms": 26.624,
+      "count": 136
+    },
+    {
+      "le_ms": 27.648,
+      "count": 128
+    },
+    {
+      "le_ms": 28.672,
+      "count": 108
+    },
+    {
+      "le_ms": 29.696,
+      "count": 93
+    },
+    {
+      "le_ms": 30.72,
+      "count": 64
+    },
+    {
+      "le_ms": 31.744,
+      "count": 52
+    },
+    {
+      "le_ms": 32.768,
+      "count": 37
+    },
+    {
+      "le_ms": 34.816,
+      "count": 68
+    },
+    {
+      "le_ms": 36.864,
+      "count": 52
+    },
+    {
+      "le_ms": 38.912,
+      "count": 32
+    },
+    {
+      "le_ms": 40.96,
+      "count": 36
+    },
+    {
+      "le_ms": 43.008,
+      "count": 31
+    },
+    {
+      "le_ms": 45.056,
+      "count": 22
+    },
+    {
+      "le_ms": 47.104,
+      "count": 25
+    },
+    {
+      "le_ms": 49.152,
+      "count": 18
+    },
+    {
+      "le_ms": 51.2,
+      "count": 13
+    },
+    {
+      "le_ms": 53.248,
+      "count": 13
+    },
+    {
+      "le_ms": 55.296,
+      "count": 11
+    },
+    {
+      "le_ms": 57.344,
+      "count": 15
+    },
+    {
+      "le_ms": 59.392,
+      "count": 8
+    },
+    {
+      "le_ms": 61.44,
+      "count": 8
+    },
+    {
+      "le_ms": 63.488,
+      "count": 2
+    },
+    {
+      "le_ms": 65.536,
+      "count": 7
+    },
+    {
+      "le_ms": 69.632,
+      "count": 6
+    },
+    {
+      "le_ms": 73.728,
+      "count": 2
+    },
+    {
+      "le_ms": 77.824,
+      "count": 1
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "laptop",
+    "os": "darwin"
+  },
+  "complete": true
+}

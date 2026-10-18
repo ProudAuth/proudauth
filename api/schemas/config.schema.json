@@ -750,7 +750,7 @@
           "default": 10
         },
         "login_per_ip": {
-          "description": "Login attempts per client IP per login_window; also the hourly budget for setup links per IP.",
+          "description": "Login attempts per client network (IPv4 /32, IPv6 /64) per login_window; also the hourly budget for setup links per network.",
           "type": "integer",
           "minimum": 0,
           "default": 100
@@ -766,7 +766,7 @@
           "default": 5
         },
         "send_per_ip": {
-          "description": "Messages per client IP per send_window.",
+          "description": "Messages per client network (IPv4 /32, IPv6 /64) per send_window.",
           "type": "integer",
           "minimum": 0,
           "default": 50
@@ -791,7 +791,7 @@
           "default": "15m"
         },
         "signup_per_ip": {
-          "description": "Registrations per client IP per signup_window.",
+          "description": "Registrations per client network (IPv4 /32, IPv6 /64) per signup_window.",
           "type": "integer",
           "minimum": 0,
           "default": 20
@@ -801,10 +801,10 @@
           "default": "1h"
         },
         "token_per_client": {
-          "description": "Token endpoint requests per client per token_window.",
+          "description": "Token endpoint budget per client per token_window (owner decision 9 of 0.2.0-alpha.6; SEC-006, REG-012): every request of a confidential client counts, and only the failed grants of a public client (invalid_request, invalid_grant, invalid_client, invalid_scope, invalid_target, unauthorized_client, unsupported_grant_type, invalid_dpop_proof; not device-flow polling). Once spent, the client's requests answer 429 slow_down with Retry-After until the window ends; 0 disables.",
           "type": "integer",
           "minimum": 0,
-          "default": 600
+          "default": 2000
         },
         "token_window": {
           "$ref": "#/$defs/nonNegativeDuration",
@@ -906,6 +906,97 @@
         "join_request_window": {
           "description": "Window for the join-request budgets; a user's repeat request to the same organization within it does not notify the reviewers again. 0 also turns that de-duplication off.",
           "$ref": "#/$defs/nonNegativeDuration"
+        },
+        "start_per_network": {
+          "description": "Authentication transactions one network (IPv4 /32, IPv6 /64) starts per login_window, at the headless start, the browser authorization endpoint, device approval and SAML sign-in (SEC-006, ABU-001). A start that reuses a valid SSO session is not counted. Excess answers 429 rate_limited with Retry-After (the authorization endpoint redirects with error=temporarily_unavailable); 0 disables.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 300
+        },
+        "network_coarse_factor": {
+          "description": "Every configurable per-network budget (login_per_ip, send_per_ip, signup_per_ip, start_per_network, token_failures_per_network, token_per_network_client, par_failures_per_network, device_per_network, user_code_failures_per_network, dcr_per_network, api_token_failures_per_network and the proof and setup budgets that use login_per_ip) also counts the wider network, IPv4 /24 or IPv6 /48, with this many times its limit (ABU-001); 0 disables the wider budgets.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 10
+        },
+        "known_quota_days": {
+          "description": "Known-device quota (owner decision 9 of 0.2.0-alpha.6): when an aggregate password or proof budget (login_per_client, login_per_realm, login_per_organization) is exhausted, a sign-in from a network, remembered device or identifier with a successful sign-in in this many days proceeds under its own quota; everyone else gets 429. 0 turns the quota off (nothing is recorded and the worker deletes stored facts).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 365,
+          "default": 30
+        },
+        "known_login_per_network": {
+          "description": "Password and proof attempts per known network (IPv4 /32, IPv6 /64) per login_window while an aggregate budget is exhausted; 0 admits nobody by network.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 50
+        },
+        "known_login_per_device": {
+          "description": "Password and proof attempts per known remembered device per login_window while an aggregate budget is exhausted; 0 admits nobody by device.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 20
+        },
+        "known_login_per_identifier": {
+          "description": "Password and proof attempts per known identifier per login_window while an aggregate budget is exhausted; an identifier is known only from the wider network (IPv4 /24, IPv6 /48) it signed in from. 0 admits nobody by identifier.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 10
+        },
+        "token_failures_per_network": {
+          "description": "Failed token endpoint, introspection and revocation requests per network (IPv4 /32, IPv6 /64) per token_window, one budget for the three: failed client authentications (a client_id over 255 bytes included) and failed grants of any client, as for token_per_client (owner decision 9 of 0.2.0-alpha.6: about 300 per minute per network, bounding failures; SEC-006, ABU-001). Read before client authentication and before anything is audited; a network that has spent it gets 429 slow_down with Retry-After for every request at the three endpoints until the window ends, and writes no audit record. Successful requests never count. The wider /24 or /48 counts network_coarse_factor times as many; an unavailable limiter answers 503 temporarily_unavailable. 0 disables.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 300
+        },
+        "token_per_network_client": {
+          "description": "Failed grants one network makes through one public client per token_window (with the wider /24 or /48 at network_coarse_factor times), so one network cannot use up the client's token_per_client budget for everyone; excess answers 429 slow_down with Retry-After for that network and client. 0 disables.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 100
+        },
+        "par_failures_per_network": {
+          "description": "Failed pushed authorization requests per network (IPv4 /32, IPv6 /64) per token_window: failed client authentications and pushed requests refused as invalid. Read before client authentication (with the wider /24 or /48 at network_coarse_factor times); a network that has spent it gets 429 slow_down with Retry-After for every push until the window ends. Successful pushes never count. 0 disables.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 300
+        },
+        "par_per_client": {
+          "description": "Pushed authorization requests per public client per token_window, from every network (aggregate, fails closed); confidential clients are not counted. Excess answers 429 slow_down with Retry-After. 0 disables.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 2000
+        },
+        "device_per_network": {
+          "description": "Device authorization requests per network (IPv4 /32, IPv6 /64) per login_window, counted before client authentication (with the wider /24 or /48 at network_coarse_factor times); excess answers 429 slow_down with Retry-After. 0 disables.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 300
+        },
+        "user_code_failures_per_network": {
+          "description": "Device-approval user-code lookups that find no pending code (wrong, malformed or expired codes) per network per login_window, with the wider /24 or /48 at network_coarse_factor times; once spent, the network's lookups answer 429 rate_limited with Retry-After before the code is looked up. Lookups that find their code do not count. 0 disables.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 30
+        },
+        "dcr_per_network": {
+          "description": "Dynamic client registrations per network (IPv4 /32, IPv6 /64) per dcr_window, counted before the request is authenticated (with the wider /24 or /48 at network_coarse_factor times); excess answers 429 slow_down with Retry-After. 0 disables.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 20
+        },
+        "dcr_window": {
+          "description": "Window for dcr_per_network.",
+          "$ref": "#/$defs/nonNegativeDuration",
+          "default": "1h"
+        },
+        "api_token_failures_per_network": {
+          "description": "Support tokens (pa_it_) presented to the identity and administration APIs per network (IPv4 /32, IPv6 /64) per token_window, with the wider /24 or /48 at network_coarse_factor times. Every presentation is refused (403 impersonation_restricted) and audited as support.token.rejected; each one counts before the token is looked up, and once the budget is spent the network's presentations answer 429 rate_limited with Retry-After and write no audit record until the window ends. Other bearer tokens from the network are unaffected. An unavailable limiter answers 503. 0 disables (SEC-006, IMP-012).",
+          "type": "integer",
+          "minimum": 0,
+          "default": 300
         }
       }
     },

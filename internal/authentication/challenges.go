@@ -143,7 +143,9 @@ func (s *Service) ConsumeLinkTx(ctx context.Context, tx pgx.Tx, realmID, purpose
 }
 
 // sendBudget applies cooldown and aggregate send budgets per identifier and network
-// (REG-012, PWDLESS-004). Resend limits never reset the aggregate budget.
+// (REG-012, PWDLESS-004). Resend limits never reset the aggregate budget. The
+// network is the IPv4 /32 or IPv6 /64 of ip, with its wider /24 or /48
+// (SEC-006, ABU-001); aggregate send budgets have no known-device quota.
 //
 // clientRef and orgID, when known, add per-client and per-organization budgets;
 // a realm-wide budget always applies (SEC-006).
@@ -161,11 +163,9 @@ func (s *Service) sendBudget(ctx context.Context, realmID, identifier, ip string
 	if !d.Allowed {
 		return problem.ErrRateLimited.WithRetryAfter(d.RetryAfter)
 	}
-	budgets := []ratelimit.Budget{
-		{Key: "send-id:" + realmID + ":" + identifier, Limit: rl.SendPerIdentifier, Window: rl.SendWindow},
-		{Key: "send-ip:" + realmID + ":" + ip, Limit: rl.SendPerIP, Window: rl.SendWindow},
-		{Key: "send-realm:" + realmID, Limit: rl.SendPerRealm, Window: rl.SendWindow},
-	}
+	budgets := append([]ratelimit.Budget{{Key: "send-id:" + realmID + ":" + identifier, Limit: rl.SendPerIdentifier, Window: rl.SendWindow}},
+		ratelimit.PerNetwork("send-ip:"+realmID+":", ip, rl.SendPerIP, rl.SendWindow, rl.NetworkCoarseFactor)...)
+	budgets = append(budgets, ratelimit.Budget{Key: "send-realm:" + realmID, Limit: rl.SendPerRealm, Window: rl.SendWindow})
 	if len(clientOrg) > 0 && clientOrg[0] != "" {
 		budgets = append(budgets, ratelimit.Budget{Key: "send-client:" + clientOrg[0], Limit: rl.SendPerClient, Window: rl.SendWindow})
 	}
@@ -187,30 +187,25 @@ func (s *Service) sendBudget(ctx context.Context, realmID, identifier, ip string
 //
 // clientOrg names the client and organization when known: their budgets and
 // a realm-wide one apply too, so one integration or tenant cannot exhaust
-// the realm's verification capacity (REG-012, SEC-006).
-func (s *Service) verifyBudget(ctx context.Context, realmID, subject, ip string, clientOrg ...string) error {
+// the realm's verification capacity (REG-012, SEC-006). The network is the
+// IPv4 /32 or IPv6 /64 of the request, with its wider /24 or /48 (ABU-001).
+// When only the aggregate budgets are exhausted, a known requester proceeds
+// under the known-device quota (owner decision 9, hitBudgets).
+func (s *Service) verifyBudget(ctx context.Context, realmID, subject string, who requester, clientOrg ...string) error {
 	rl := s.d.Cfg.Security.RateLimits
-	budgets := []ratelimit.Budget{
-		{Key: "verify-subject:" + realmID + ":" + subject, Limit: rl.OTPVerifyPerAccount, Window: rl.OTPVerifyWindow},
-		{Key: "verify-ip:" + realmID + ":" + ip, Limit: rl.LoginPerIP, Window: rl.LoginWindow},
-	}
+	own := append([]ratelimit.Budget{{Key: "verify-subject:" + realmID + ":" + subject, Limit: rl.OTPVerifyPerAccount, Window: rl.OTPVerifyWindow}},
+		ratelimit.PerNetwork("verify-ip:"+realmID+":", who.ip, rl.LoginPerIP, rl.LoginWindow, rl.NetworkCoarseFactor)...)
+	var shared []ratelimit.Budget
 	if rl.LoginPerRealm > 0 {
-		budgets = append(budgets, ratelimit.Budget{Key: "verify-realm:" + realmID, Limit: rl.LoginPerRealm, Window: rl.LoginWindow})
+		shared = append(shared, ratelimit.Budget{Key: "verify-realm:" + realmID, Limit: rl.LoginPerRealm, Window: rl.LoginWindow})
 	}
 	if len(clientOrg) > 0 && clientOrg[0] != "" && rl.LoginPerClient > 0 {
-		budgets = append(budgets, ratelimit.Budget{Key: "verify-client:" + clientOrg[0], Limit: rl.LoginPerClient, Window: rl.LoginWindow})
+		shared = append(shared, ratelimit.Budget{Key: "verify-client:" + clientOrg[0], Limit: rl.LoginPerClient, Window: rl.LoginWindow})
 	}
 	if len(clientOrg) > 1 && clientOrg[1] != "" && rl.LoginPerOrganization > 0 {
-		budgets = append(budgets, ratelimit.Budget{Key: "verify-org:" + clientOrg[1], Limit: rl.LoginPerOrganization, Window: rl.LoginWindow})
+		shared = append(shared, ratelimit.Budget{Key: "verify-org:" + clientOrg[1], Limit: rl.LoginPerOrganization, Window: rl.LoginWindow})
 	}
-	d, err := s.Limiter.Hit(ctx, budgets...)
-	if err != nil {
-		return err
-	}
-	if !d.Allowed {
-		return problem.ErrRateLimited.WithRetryAfter(d.RetryAfter)
-	}
-	return nil
+	return s.hitBudgets(ctx, realmID, who, own, shared)
 }
 
 // CleanupChallenges removes expired and consumed challenges (REG-011, OPS-009).

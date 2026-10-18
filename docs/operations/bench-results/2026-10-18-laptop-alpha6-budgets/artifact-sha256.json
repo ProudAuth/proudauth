@@ -1,0 +1,27 @@
+{
+  "format_version": "1",
+  "hash_algorithm": "sha256",
+  "source_digest_sha256_16": "5518509d1b5e3928",
+  "artifacts": {
+    "binary-sha256.txt": "7e9a00846f81512a5cb044941cce0b009db59d8f35a576b8085af530f934f1a6",
+    "build-info.txt": "0cfa38ed9842657adb3b5781331cc6edafc367e24030444aece17d21b749b054",
+    "client-credentials.json": "73f72e5873fa8ff5ae864c87b89fae53448074469e29a7a8046c525f1a6977fa",
+    "effective-config-redacted.json": "48cc93c4e9e6dda04943d36d76858f0075d50f73247d43d644730960acadf6cf",
+    "environment.json": "1e0c1af7b4881be3ffce749389ef064129df549589b9db8824b882815455e425",
+    "introspection.json": "6424056f39edec32ddc552fac1f5409ee4911ede5272d055c671e32f5cc178fe",
+    "password-login.json": "43f0b24b44734465e1c179714b32bcfc0d68d24f099ef5fbefab8861d66c639f",
+    "postgres/client-credentials-top-statements.tsv": "b72c75a28c6710a7161afe9bdc0c19812fb541ab4e1ac3b75a3d145b3d0c38d1",
+    "postgres/database-size-bytes.txt": "92b3bce9e6e19a599e41ea62ef3bd1cd757fdf8c56837fd9dc624815443baee4",
+    "postgres/introspection-top-statements.tsv": "17f1388ca6d9ea3d359c73762fa32d5d6cff7aa657ab27372e599f9154a4462a",
+    "postgres/largest-tables.tsv": "a68a5e4d774a5bd3f055886ef63c8e07e538bda5b4656d0b9402dc7255055fd5",
+    "postgres/password-login-top-statements.tsv": "b96be442bc3ad4b7c3e4ea765616710a8edbcdbd11a1d634bacce8076d0b2035",
+    "postgres/refresh-top-statements.tsv": "67d53e4e4fa4d923e24927c3f5144a8817580dd4bef65f2f59ca35d3e474f7fe",
+    "postgres/settings.tsv": "f181e2ac46f522c90ac3aaa6d589309eacac1f8e2d9ef25786cd9883ba35c73b",
+    "proudauth-config-node-1.yaml": "d984e2d1cc13506a61cfdc0ee69dd2ed65b5d86029f70158d10b3761d94340c5",
+    "proudauth-config.yaml": "d984e2d1cc13506a61cfdc0ee69dd2ed65b5d86029f70158d10b3761d94340c5",
+    "refresh.json": "4f3acd4944d8d2ed9450aacfb9f6bcd88f24950cc53293e0b40eb10adbe73ba0",
+    "seed-spec.json": "f7a543dc32c6613873a437fdcb5b97c3e7001e0e7978d4d0f8e3032a6c0dee6b",
+    "summary.json": "949a90fe8c40c76bf9cb5b8bf7498f26fa0d6c8f010ed54e5a18ed7a82a96da6"
+  },
+  "note": "0.2.0-alpha.6 budget-chain comparison (password-login, refresh, client-credentials, introspection) on one cohosted laptop against the alpha.5 baselines of the same day; the eleven abuse budgets the bench can trip are raised to 1000000 (environment.json raised_budgets); the private runner temp directory is replaced by $WORK; private seed and administrator authority excluded; not a sizing guarantee."
+}

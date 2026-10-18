@@ -1,13 +1,16 @@
 package oauth
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"net/url"
 	"strings"
 	"testing"
 
 	"github.com/proudauth/proudauth/internal/application"
 	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/runtime"
 	"github.com/proudauth/proudauth/internal/token"
 )
 
@@ -148,5 +151,66 @@ func TestFirstNonEmpty(t *testing.T) {
 		if got := firstNonEmpty(tc.in...); got != tc.want {
 			t.Errorf("firstNonEmpty(%q) = %q, want %q", tc.in, got, tc.want)
 		}
+	}
+}
+
+// TestFailedRequestClassification covers REG-012 and SEC-006 (owner decision
+// 9 of 0.2.0-alpha.6): the errors that count against the failure budgets of
+// the token endpoint and PAR (per network, and a public client's) are those
+// of a failed client authentication or an invalid request or grant;
+// device-flow polling answers, budget refusals (429 slow_down, the same code
+// as device polling with another status) and server errors do not.
+func TestFailedRequestClassification(t *testing.T) {
+	for _, e := range []*Error{ErrInvalidClient, ErrInvalidRequest("x"), ErrInvalidGrant("x"), ErrInvalidScope("x"), ErrInvalidTarget("x"),
+		ErrUnauthorizedClient("x"), ErrUnsupportedGrantType, oerr(400, "invalid_dpop_proof", "x"), oerr(400, "unsupported_response_type", "x"),
+		oerr(400, "request_not_supported", "x")} {
+		if !failedRequest(e) {
+			t.Errorf("%s does not count as a failed request", e.Code)
+		}
+	}
+	slow := oerr(429, "slow_down", "budget")
+	for _, e := range []*Error{nil, ErrAuthorizationPending, ErrSlowDown, ErrExpiredToken, ErrAccessDenied, slow, ErrServerError,
+		ErrTemporarilyUnavailable, oerr(503, "invalid_request", "x")} {
+		if failedRequest(e) {
+			t.Errorf("%+v counts as a failed request", e)
+		}
+	}
+}
+
+// TestOversizedClientIDRefusedBeforeAuthentication covers SEC-006 and AUD-001
+// (the finding httpapi-surface/unauth-audit-amplification): a token request
+// whose client_id, in the form or as the Basic user name, is longer than any
+// client can have (application.MaxClientIDBytes, 255 bytes) is refused with
+// invalid_client in the OAuth form before the client is looked up or the
+// failure is audited; Token counts it against the network's failure budget
+// like any failed client authentication. The service here has no client
+// store and no audit recorder: reaching either would panic.
+func TestOversizedClientIDRefusedBeforeAuthentication(t *testing.T) {
+	s := &Service{d: &runtime.Deps{}}
+	rlm := &realm.Realm{ID: "rlm_1", State: "active", Issuer: "https://id.test/realms/main"}
+	long := strings.Repeat("c", application.MaxClientIDBytes+1)
+	for name, auth := range map[string]application.ClientAuthInput{
+		"form client_id":    {FormClientID: long},
+		"10 KB client_id":   {FormClientID: strings.Repeat("c", 10*1024), FormSecret: "pa_cs_x"},
+		"Basic user name":   {HasBasic: true, BasicID: long, BasicSecret: "pa_cs_x"},
+		"with an assertion": {FormClientID: long, AssertionType: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer", Assertion: "x.y.z"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			defer func() {
+				if p := recover(); p != nil {
+					t.Fatalf("the request reached client authentication or the audit: %v", p)
+				}
+			}()
+			_, c, oe := s.token(context.Background(), rlm, TokenRequest{Form: url.Values{"grant_type": {"client_credentials"}}, Auth: auth})
+			if oe != ErrInvalidClient || oe.Status != 401 || c != nil {
+				t.Fatalf("got %+v, client %v", oe, c)
+			}
+			if !failedRequest(oe) {
+				t.Fatal("the refusal does not count against the failure budget")
+			}
+		})
+	}
+	if (application.ClientAuthInput{FormClientID: strings.Repeat("c", application.MaxClientIDBytes)}).ClientIDTooLong() {
+		t.Fatal("a 255-byte client_id is refused")
 	}
 }

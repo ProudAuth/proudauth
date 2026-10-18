@@ -34,7 +34,7 @@ func (s *Service) Certificate(ctx context.Context, realmID, id string, p Proof, 
 		if cert == nil {
 			return nil, problem.ErrBadRequest.WithDetail("no client certificate was presented; use the mutual-TLS endpoint")
 		}
-		if err := s.verifyBudget(ctx, t.RealmID, certificateBudgetSubject(t, cert), t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+		if err := s.verifyBudget(ctx, t.RealmID, certificateBudgetSubject(ctx, t, cert), requesterOf(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
 		fail := func(reason string) (map[string]any, error) {
@@ -83,9 +83,9 @@ func (s *Service) Certificate(ctx context.Context, realmID, id string, p Proof, 
 // counted against the certificate (its thumbprint) from the client's network
 // (/24 or /48): one certificate, or one network, cannot use up a budget that
 // every other person of the realm shares.
-func certificateBudgetSubject(t *Transaction, cert *x509.Certificate) string {
+func certificateBudgetSubject(ctx context.Context, t *Transaction, cert *x509.Certificate) string {
 	if t.UserID != "" {
 		return t.UserID
 	}
-	return "x509:" + certauth.Thumbprint(cert) + ":" + reqctx.NetworkContext(t.ClientIP, false)
+	return "x509:" + certauth.Thumbprint(cert) + ":" + reqctx.NetworkContext(chargeIP(ctx, t), false)
 }

@@ -43,6 +43,18 @@ type ClientAuthInput struct {
 	Intermediates []*x509.Certificate
 }
 
+// MaxClientIDBytes bounds the client_id a protocol request presents, in the
+// form or as the Basic user name. Registered client IDs have at most 128
+// characters (ClientInput.Normalize), so a longer one names no client: it is
+// refused before anything is looked up or audited (SEC-006; the finding
+// httpapi-surface/unauth-audit-amplification).
+const MaxClientIDBytes = 255
+
+// ClientIDTooLong reports a presented client_id longer than MaxClientIDBytes.
+func (in ClientAuthInput) ClientIDTooLong() bool {
+	return len(in.FormClientID) > MaxClientIDBytes || len(in.BasicID) > MaxClientIDBytes
+}
+
 // AsymmetricAlgorithms accepted for client assertions (no HMAC: the server must not
 // hold a secret that can mint assertions for the client).
 var AsymmetricAlgorithms = []jose.SignatureAlgorithm{jose.RS256, jose.PS256, jose.ES256, jose.EdDSA}
@@ -52,6 +64,9 @@ const jwtBearerAssertion = "urn:ietf:params:oauth:client-assertion-type:jwt-bear
 // Authenticate validates client authentication at a token-type endpoint. Exactly one
 // method may be used, and it must be the client's registered method.
 func (s *Service) Authenticate(ctx context.Context, realmID, issuer, endpoint string, in ClientAuthInput) (*Client, error) {
+	if in.ClientIDTooLong() {
+		return nil, ErrClientAuth
+	}
 	c, err := s.authenticate(ctx, realmID, issuer, endpoint, in)
 	if err == nil && c.Protocol == ProtocolSAML {
 		// A SAML application's backing client exists for consent, session and

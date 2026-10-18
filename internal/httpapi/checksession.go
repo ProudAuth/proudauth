@@ -110,7 +110,7 @@ func (a *App) checkSessionOrigin(w http.ResponseWriter, r *http.Request, rlm *re
 	if !rlm.Policy.Sessions.CheckSessionIframe {
 		return problem.ErrNotFound
 	}
-	d, err := a.Limiter.Hit(r.Context(), ratelimit.Budget{Key: "check-session-origin:" + reqctx.From(r.Context()).ClientIP, Limit: 300, Window: time.Minute})
+	d, err := a.Limiter.Hit(r.Context(), ratelimit.Budget{Key: "check-session-origin:" + ratelimit.NetworkKey(reqctx.From(r.Context()).ClientIP), Limit: 300, Window: time.Minute})
 	if err != nil {
 		return problem.ErrUnavailable
 	}

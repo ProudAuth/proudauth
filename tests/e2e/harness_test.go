@@ -75,6 +75,14 @@ func newHarnessWithKeyring(t testing.TB, keyring *keys.Keyring, opts ...Option) 
 	cfg.Impersonation.Enabled = true
 	cfg.Security.RateLimits.TokenPerClient = 10000
 	cfg.Security.RateLimits.LoginPerIP = 10000
+	cfg.Security.RateLimits.StartPerNetwork = 10000
+	// Every test request comes from the loopback address: one network.
+	cfg.Security.RateLimits.TokenFailuresPerNetwork = 10000
+	cfg.Security.RateLimits.TokenPerNetworkClient = 10000
+	cfg.Security.RateLimits.PARPerClient = 10000
+	cfg.Security.RateLimits.PARFailuresPerNetwork = 10000
+	cfg.Security.RateLimits.DevicePerNetwork = 10000
+	cfg.Security.RateLimits.APITokenFailuresPerNetwork = 10000
 	cfg.Security.RateLimits.SendPerIP = 10000
 	cfg.Security.RateLimits.SignupPerIP = 10000
 	cfg.Security.RateLimits.SendCooldown = time.Second

@@ -34,6 +34,9 @@ func normalizeUserCode(c string) string {
 }
 
 // DeviceAuthorize starts a device flow for an authenticated (or public device) client.
+// The caller has counted the request against its network's budget
+// (NetworkBudget with EndpointDevice) before reading client credentials:
+// every request stores a device code.
 func (s *Service) DeviceAuthorize(ctx context.Context, rlm *realm.Realm, auth application.ClientAuthInput, endpoint string, f url.Values) (*DeviceAuthorization, *Error) {
 	c, err := s.Apps.Authenticate(ctx, rlm.ID, rlm.Issuer, endpoint, auth)
 	if err != nil {
@@ -79,9 +82,21 @@ func (s *Service) DeviceAuthorize(ctx context.Context, rlm *realm.Realm, auth ap
 // StartDeviceTransaction begins the user-side approval for a user code. The user
 // must explicitly confirm the requesting client (consent is always shown) so a
 // phished code cannot be approved blindly (§18.1 device stance, TEST-068).
+//
+// User codes are short enough to type (8 letters of 20, about 34.6 bits), so
+// guessing them is budgeted per network (SEC-006, ABU-001): a lookup that
+// finds no pending code, a malformed or expired one included, counts against
+// user_code_failures_per_network, and once that is spent the network's
+// lookups answer 429 rate_limited with Retry-After before the code is looked
+// up. A lookup that finds its code costs nothing, so users who type their
+// codes right are never refused by it.
 func (s *Service) StartDeviceTransaction(ctx context.Context, rlm *realm.Realm, userCode, clientIP, ua string) (*authentication.Started, map[string]any, error) {
+	if err := s.checkUserCodeBudget(ctx, rlm, clientIP); err != nil {
+		return nil, nil, err
+	}
 	norm := normalizeUserCode(userCode)
 	if len(norm) != 8 {
+		s.chargeUserCodeFailure(ctx, rlm, clientIP)
 		return nil, nil, problem.ErrInvalidProof
 	}
 	var id, clientRef string
@@ -90,7 +105,11 @@ func (s *Service) StartDeviceTransaction(ctx context.Context, rlm *realm.Realm, 
 	var expires time.Time
 	err := s.d.DB.Pool.QueryRow(ctx, `SELECT id, client_ref, scopes, resource_ids, requested_org_id, expires_at FROM device_codes
 		WHERE realm_id=$1 AND user_code_digest=$2 AND state='pending'`, rlm.ID, secret.Digest(norm)).Scan(&id, &clientRef, &scopes, &resources, &org, &expires)
+	if err != nil && !storage.IsNoRows(err) {
+		return nil, nil, err
+	}
 	if err != nil || !s.d.Now().Before(expires) {
+		s.chargeUserCodeFailure(ctx, rlm, clientIP)
 		return nil, nil, problem.ErrInvalidProof
 	}
 	c, err := s.Apps.ClientByRef(ctx, nil, rlm.ID, clientRef)

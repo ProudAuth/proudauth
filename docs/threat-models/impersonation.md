@@ -174,7 +174,11 @@ These are known differences from §16; treat them as limitations.
    `support.impersonation.request_denied` is found by the request ID
    (`target_id`), not by this filter. Any request presenting a `pa_it_`-shaped
    bearer to an IdP API writes a `support.token.rejected` event, including
-   unknown tokens.
+   unknown tokens, until its network has presented
+   `security.rate_limits.api_token_failures_per_network` of them (300 per
+   `token_window` by default) in the window: further ones get
+   `429 rate_limited` and are neither looked up nor recorded, so a refusal
+   from a flooding network can be missing from the evidence (SEC-006).
 8. **Grant inventory filters** are actor, target, organization, state and
    `ticket_reference` (IMP-023); results are cursor-paginated, but the underlying
    query still returns at most the 500 newest matching grants.

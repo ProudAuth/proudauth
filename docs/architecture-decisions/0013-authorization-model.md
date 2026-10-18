@@ -180,6 +180,10 @@ restrict:
   when the token is known, the actor is the support operator (type `user`),
   the subject the customer, with the support grant and organization; an
   unknown token is recorded with actor type `support_token`, ID `unknown`.
+  Every such presentation first counts against its network's budget
+  (`security.rate_limits.api_token_failures_per_network`); once it is spent,
+  support tokens from that network get `429 rate_limited` and are neither
+  looked up nor recorded until the window ends.
 
 - **Decision cache contract** (AZ-019, `internal/httpapi/decision.go`
   `cacheHint`, `TestDecisionCacheContract`): a decision made by RBAC alone (a

@@ -16,6 +16,7 @@ import (
 	"github.com/proudauth/proudauth/internal/platform/reqctx"
 	"github.com/proudauth/proudauth/internal/platform/secret"
 	"github.com/proudauth/proudauth/internal/provision"
+	"github.com/proudauth/proudauth/internal/ratelimit"
 	"github.com/proudauth/proudauth/internal/realm"
 	"github.com/proudauth/proudauth/internal/session"
 	"github.com/proudauth/proudauth/internal/token"
@@ -165,7 +166,12 @@ func (a *App) authenticate(r *http.Request, rlm *realm.Realm, kinds ...string) (
 	if strings.HasPrefix(raw, secret.PrefixImpersonation) {
 		// Support tokens never reach identity or administration APIs (IMP-012,
 		// TEST-042). The refusal names the operator, the customer and the
-		// support grant when the token is known (IMP-006, IMP-024).
+		// support grant when the token is known (IMP-006, IMP-024). Anyone
+		// can send a bearer with this prefix, and each one costs a lookup
+		// and an audit record, so the network's budget comes first (SEC-006).
+		if err := a.supportTokenBudget(r, rlm); err != nil {
+			return nil, err
+		}
 		ev := audit.Event{Type: "support.token.rejected", RealmID: rlm.ID, Actor: audit.Ref{Type: "support_token", ID: "unknown"},
 			Outcome: audit.Denied, ReasonCode: "IMPERSONATION_RESTRICTED", Category: "support", Metadata: map[string]any{"route": a.routeOf(r)}}
 		if t, err := a.Sessions.Opaque(r.Context(), nil, rlm.ID, raw); err == nil {
@@ -260,6 +266,29 @@ func (a *App) authenticate(r *http.Request, rlm *realm.Realm, kinds ...string) (
 		return nil, problem.ErrForbidden.WithDetail("token lacks the " + need + " scope")
 	}
 	return p, nil
+}
+
+// supportTokenBudget counts a support token presented to an identity or
+// administration API against its network's budget
+// (security.rate_limits.api_token_failures_per_network per token_window,
+// with the wider network), before the token is looked up or the refusal is
+// audited. Every such presentation is refused, so every one counts, in one
+// statement; once the budget is spent the network's presentations answer 429
+// rate_limited with Retry-After and write no audit record until the window
+// ends, and an unavailable limiter answers 503 (budgets fail closed). Other
+// bearer tokens from the network are not affected (the finding
+// httpapi-surface/unauth-audit-amplification).
+func (a *App) supportTokenBudget(r *http.Request, rlm *realm.Realm) error {
+	rl := a.D.Cfg.Security.RateLimits
+	d, err := a.Limiter.Hit(r.Context(), ratelimit.PerNetwork("api-token-ip:"+rlm.ID+":", reqctx.From(r.Context()).ClientIP,
+		rl.APITokenFailuresPerNetwork, rl.TokenWindow, rl.NetworkCoarseFactor)...)
+	if err != nil {
+		return problem.ErrUnavailable
+	}
+	if !d.Allowed {
+		return problem.ErrRateLimited.WithRetryAfter(d.RetryAfter)
+	}
+	return nil
 }
 
 // requireMFASession enforces that administrative users act from an MFA session that

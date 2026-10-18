@@ -56,9 +56,10 @@ func (s *Service) Register(ctx context.Context, realmID, id string, p Proof, in 
 			return nil, err
 		}
 		rl := s.d.Cfg.Security.RateLimits
-		d, err := s.Limiter.Hit(ctx, ratelimit.Budget{Key: "signup-ip:" + t.RealmID + ":" + t.ClientIP, Limit: rl.SignupPerIP, Window: rl.SignupWindow},
+		budgets := append(ratelimit.PerNetwork("signup-ip:"+t.RealmID+":", chargeIP(ctx, t), rl.SignupPerIP, rl.SignupWindow, rl.NetworkCoarseFactor),
 			ratelimit.Budget{Key: "signup-client:" + t.ClientRef, Limit: rl.SignupPerClient, Window: rl.SignupWindow},
 			ratelimit.Budget{Key: "signup-realm:" + t.RealmID, Limit: rl.SignupPerRealm, Window: rl.SignupWindow})
+		d, err := s.Limiter.Hit(ctx, budgets...)
 		if err != nil {
 			return nil, err
 		}
@@ -135,7 +136,7 @@ func (s *Service) Register(ctx context.Context, realmID, id string, p Proof, in 
 			// prevent restore/import resurrection. Nothing to do here.
 			_ = tomb
 		}
-		if err := s.sendBudget(ctx, t.RealmID, canon, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+		if err := s.sendBudget(ctx, t.RealmID, canon, chargeIP(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
 		existing, err := s.Users.VerifiedEmailOwner(ctx, tx, t.RealmID, canon)

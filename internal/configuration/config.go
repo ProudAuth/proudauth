@@ -243,7 +243,71 @@ type RateLimitConfig struct {
 	JoinRequestsPerUser         int           `yaml:"join_requests_per_user"`
 	JoinRequestsPerOrganization int           `yaml:"join_requests_per_organization"`
 	JoinRequestWindow           time.Duration `yaml:"join_request_window"`
+	// Per-network budgets count IPv4 /32 and IPv6 /64 networks (SEC-006,
+	// ABU-001). StartPerNetwork bounds the authentication transactions one
+	// network starts per login_window; a start that reuses a valid SSO
+	// session is not counted.
+	StartPerNetwork int `yaml:"start_per_network"`
+	// NetworkCoarseFactor adds to every configurable per-network budget a
+	// budget on the wider network (IPv4 /24, IPv6 /48) of this many times
+	// its limit; 0 disables the wider budgets.
+	NetworkCoarseFactor int `yaml:"network_coarse_factor"`
+	// Known-device quota (owner decision 9 of 0.2.0-alpha.6): when an
+	// aggregate sign-in budget (password or proof attempts per client,
+	// organization or realm) is exhausted, a sign-in from a network, a
+	// remembered device or an identifier (from the wider network it signed
+	// in from) with a successful sign-in in the last KnownQuotaDays days
+	// proceeds under its own budget per login_window; everyone else gets
+	// 429. 0 days turns the quota off, a per-kind limit of 0 admits nobody
+	// through that kind.
+	KnownQuotaDays          int `yaml:"known_quota_days"`
+	KnownLoginPerNetwork    int `yaml:"known_login_per_network"`
+	KnownLoginPerDevice     int `yaml:"known_login_per_device"`
+	KnownLoginPerIdentifier int `yaml:"known_login_per_identifier"`
+	// Pre-authentication budgets of the protocol endpoints (owner decision 9
+	// of 0.2.0-alpha.6; SEC-006, ABU-001, REG-012), per network with the
+	// wider network at network_coarse_factor times the limit, checked before
+	// the client is authenticated and before anything is audited.
+	// TokenFailuresPerNetwork and PARFailuresPerNetwork bound the failed
+	// requests (client authentication, invalid grants or pushed requests)
+	// one network makes per token_window: successful requests never count.
+	// DevicePerNetwork bounds every device authorization request per
+	// login_window. The browser authorization endpoint and the headless
+	// start are bounded by start_per_network.
+	TokenFailuresPerNetwork int `yaml:"token_failures_per_network"`
+	// TokenPerNetworkClient bounds the failed grants one network makes
+	// through one public client per token_window, so one network cannot use
+	// up the client's token_per_client budget, which counts only the failed
+	// grants of a public client, for everyone.
+	TokenPerNetworkClient int `yaml:"token_per_network_client"`
+	PARFailuresPerNetwork int `yaml:"par_failures_per_network"`
+	// PARPerClient bounds the pushed authorization requests made through one
+	// public client per token_window, from every network.
+	PARPerClient     int `yaml:"par_per_client"`
+	DevicePerNetwork int `yaml:"device_per_network"`
+	// UserCodeFailuresPerNetwork bounds the device-approval user-code
+	// lookups that find no pending code, per network per login_window.
+	UserCodeFailuresPerNetwork int `yaml:"user_code_failures_per_network"`
+	// DCRPerNetwork bounds dynamic client registrations per network per
+	// DCRWindow.
+	DCRPerNetwork int           `yaml:"dcr_per_network"`
+	DCRWindow     time.Duration `yaml:"dcr_window"`
+	// APITokenFailuresPerNetwork bounds the support tokens (pa_it_) one
+	// network presents to the identity and administration APIs per
+	// token_window, with the wider network: every presentation is refused
+	// and audited, and once the budget is spent the network's are refused
+	// with 429 before the token is looked up or anything is audited
+	// (SEC-006, IMP-012; the finding
+	// httpapi-surface/unauth-audit-amplification).
+	APITokenFailuresPerNetwork int `yaml:"api_token_failures_per_network"`
 }
+
+// MaxKnownQuotaDays bounds security.rate_limits.known_quota_days: how long
+// the facts behind the known-device quota are kept (PRV-004).
+const MaxKnownQuotaDays = 365
+
+// MaxNetworkCoarseFactor bounds security.rate_limits.network_coarse_factor.
+const MaxNetworkCoarseFactor = 1000
 
 // validate checks the abuse budgets (SEC-006): 0 disables a budget, a negative
 // limit or duration is refused (it used to disable the budget silently), and a
@@ -261,14 +325,21 @@ func (rl RateLimitConfig) validate() []string {
 		limits []limit
 	}{
 		{"login_window", rl.LoginWindow, []limit{{"login_per_identifier", rl.LoginPerIdentifier}, {"login_per_ip", rl.LoginPerIP},
-			{"login_per_realm", rl.LoginPerRealm}, {"login_per_client", rl.LoginPerClient}, {"login_per_organization", rl.LoginPerOrganization}}},
+			{"login_per_realm", rl.LoginPerRealm}, {"login_per_client", rl.LoginPerClient}, {"login_per_organization", rl.LoginPerOrganization},
+			{"start_per_network", rl.StartPerNetwork}, {"known_login_per_network", rl.KnownLoginPerNetwork},
+			{"known_login_per_device", rl.KnownLoginPerDevice}, {"known_login_per_identifier", rl.KnownLoginPerIdentifier},
+			{"device_per_network", rl.DevicePerNetwork}, {"user_code_failures_per_network", rl.UserCodeFailuresPerNetwork}}},
 		{"send_window", rl.SendWindow, []limit{{"send_per_identifier", rl.SendPerIdentifier}, {"send_per_ip", rl.SendPerIP},
 			{"send_per_client", rl.SendPerClient}, {"send_per_organization", rl.SendPerOrganization}, {"send_per_realm", rl.SendPerRealm}}},
 		{"send_cooldown", rl.SendCooldown, nil},
 		{"otp_verify_window", rl.OTPVerifyWindow, []limit{{"otp_verify_per_account", rl.OTPVerifyPerAccount}}},
 		{"signup_window", rl.SignupWindow, []limit{{"signup_per_ip", rl.SignupPerIP}, {"signup_per_client", rl.SignupPerClient},
 			{"signup_per_realm", rl.SignupPerRealm}}},
-		{"token_window", rl.TokenWindow, []limit{{"token_per_client", rl.TokenPerClient}, {"organization_per_window", rl.OrganizationPerWindow}}},
+		{"token_window", rl.TokenWindow, []limit{{"token_per_client", rl.TokenPerClient}, {"organization_per_window", rl.OrganizationPerWindow},
+			{"token_failures_per_network", rl.TokenFailuresPerNetwork}, {"token_per_network_client", rl.TokenPerNetworkClient},
+			{"par_failures_per_network", rl.PARFailuresPerNetwork}, {"par_per_client", rl.PARPerClient},
+			{"api_token_failures_per_network", rl.APITokenFailuresPerNetwork}}},
+		{"dcr_window", rl.DCRWindow, []limit{{"dcr_per_network", rl.DCRPerNetwork}}},
 		{"temporary_lock", rl.TemporaryLock, []limit{{"failures_before_lock", rl.FailuresBeforeLock}}},
 		{"invitation_window", rl.InvitationWindow, []limit{{"invitations_per_organization", rl.InvitationsPerOrganization},
 			{"invitations_per_recipient", rl.InvitationsPerRecipient}}},
@@ -285,6 +356,17 @@ func (rl RateLimitConfig) validate() []string {
 			case l.v > 0 && w.d <= 0:
 				errs = append(errs, fmt.Sprintf("security.rate_limits.%s needs a positive security.rate_limits.%s (set it to 0 to disable it)", l.key, w.key))
 			}
+		}
+	}
+	for _, b := range []struct {
+		key    string
+		v, max int
+	}{{"network_coarse_factor", rl.NetworkCoarseFactor, MaxNetworkCoarseFactor}, {"known_quota_days", rl.KnownQuotaDays, MaxKnownQuotaDays}} {
+		switch {
+		case b.v < 0:
+			errs = append(errs, fmt.Sprintf("security.rate_limits.%s must not be negative (0 disables it)", b.key))
+		case b.v > b.max:
+			errs = append(errs, fmt.Sprintf("security.rate_limits.%s must be at most %d", b.key, b.max))
 		}
 	}
 	return errs
@@ -696,7 +778,10 @@ func Defaults() Config {
 				SendPerIdentifier: 5, SendPerIP: 50, SendWindow: time.Hour, SendCooldown: 30 * time.Second,
 				OTPVerifyPerAccount: 10, OTPVerifyWindow: 15 * time.Minute,
 				SignupPerIP: 20, SignupWindow: time.Hour,
-				TokenPerClient: 600, TokenWindow: time.Minute,
+				// Token requests per client per minute, consistent with
+				// login_per_client (owner decision 9 of 0.2.0-alpha.6); a
+				// public client's budget counts only its failed grants.
+				TokenPerClient: 2000, TokenWindow: time.Minute,
 				OrganizationPerWindow: 2000,
 				TemporaryLock:         15 * time.Minute, FailuresBeforeLock: 10,
 				SignupPerClient: 500, SignupPerRealm: 2000,
@@ -706,6 +791,18 @@ func Defaults() Config {
 				LoginPerOrganization:       10000,
 				InvitationsPerOrganization: 500, InvitationsPerRecipient: 10, InvitationWindow: 24 * time.Hour,
 				JoinRequestsPerUser: 10, JoinRequestsPerOrganization: 100, JoinRequestWindow: 24 * time.Hour,
+				// Network-normalized budgets and the known-device quota
+				// (owner decision 9 of 0.2.0-alpha.6).
+				StartPerNetwork: 300, NetworkCoarseFactor: 10,
+				KnownQuotaDays: 30, KnownLoginPerNetwork: 50, KnownLoginPerDevice: 20, KnownLoginPerIdentifier: 10,
+				// Pre-authentication budgets of the protocol endpoints
+				// (owner decision 9): about 300 failed requests per minute
+				// per network at the token endpoint and PAR.
+				TokenFailuresPerNetwork: 300, TokenPerNetworkClient: 100, PARFailuresPerNetwork: 300, PARPerClient: 2000,
+				DevicePerNetwork: 300, UserCodeFailuresPerNetwork: 30, DCRPerNetwork: 20, DCRWindow: time.Hour,
+				// Support tokens presented to the identity and
+				// administration APIs, per network (all refused).
+				APITokenFailuresPerNetwork: 300,
 			},
 			// Ten failures, the default per-window proof budget, before the
 			// backoff starts; a notice at 20; code factors off at 100.

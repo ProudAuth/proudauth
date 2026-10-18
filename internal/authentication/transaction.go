@@ -34,6 +34,7 @@ import (
 	"github.com/proudauth/proudauth/internal/passkey"
 	"github.com/proudauth/proudauth/internal/platform/ids"
 	"github.com/proudauth/proudauth/internal/platform/problem"
+	"github.com/proudauth/proudauth/internal/platform/reqctx"
 	"github.com/proudauth/proudauth/internal/platform/secret"
 	"github.com/proudauth/proudauth/internal/ratelimit"
 	"github.com/proudauth/proudauth/internal/realm"
@@ -338,6 +339,20 @@ func (s *Service) Start(ctx context.Context, in StartInput) (*Started, error) {
 			at := sess.AuthTime
 			authTime = &at
 			reused = &sess.ID
+		}
+	}
+	// Starting a transaction is budgeted per network (start_per_network,
+	// SEC-006, ABU-001), so a fresh transaction per attempt buys no fresh
+	// budgets and a flood of starts cannot fill auth_transactions. A start
+	// that reuses a valid SSO session is not counted: it proves an earlier
+	// sign-in, and SSO through a busy network must keep working.
+	if reused == nil {
+		ip := in.ClientIP
+		if ip == "" {
+			ip = reqctx.From(ctx).ClientIP
+		}
+		if err := s.startBudget(ctx, in.RealmID, ip); err != nil {
+			return nil, err
 		}
 	}
 	fj, _ := json.Marshal(nonNilFactors(factors))

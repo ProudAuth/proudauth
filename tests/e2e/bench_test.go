@@ -29,6 +29,8 @@ func TestBenchSuiteSmoke(t *testing.T) {
 	h := NewHarness(t, func(c *configuration.Config) {
 		c.Delivery.EgressAllowlist = []string{"127.0.0.1/32"}
 		c.Security.RateLimits.LoginPerIP = 100000
+		c.Security.RateLimits.StartPerNetwork = 100000
+		c.Security.RateLimits.TokenFailuresPerNetwork = 100000
 		c.Security.RateLimits.LoginPerRealm = 100000
 		c.Security.RateLimits.TokenPerClient = 100000
 	})
@@ -242,6 +244,8 @@ func onlyOK(o map[string]int64) bool { return o["ok"] > 0 && len(o) == 1 }
 func TestTokenIssuanceBeyondConnectionPool(t *testing.T) {
 	h := NewHarness(t, func(c *configuration.Config) {
 		c.Security.RateLimits.LoginPerIP = 100000
+		c.Security.RateLimits.StartPerNetwork = 100000
+		c.Security.RateLimits.TokenFailuresPerNetwork = 100000
 		c.Security.RateLimits.LoginPerRealm = 100000
 		c.Security.RateLimits.LoginPerClient = 100000
 		c.Security.RateLimits.TokenPerClient = 100000

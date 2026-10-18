@@ -22,12 +22,18 @@ const parTTL = 60 * time.Second
 
 // PushAuthorizationRequest stores a validated authorization request submitted by an
 // authenticated client and returns a single-use request reference (RFC 9126).
+// It is called by PAR, which authenticates the client and counts a failed
+// request against the network's failure budget; a public client's request
+// also counts against par_per_client (parClientBudget).
 //
 // dpopProof is the request's DPoP header, verified for POST to htu when
 // present (RFC 9449 §10.1): the code is then bound to the proof's key as if
 // the request had named it in dpop_jkt, and a dpop_jkt naming another key
 // is refused.
 func (s *Service) PushAuthorizationRequest(ctx context.Context, rlm *realm.Realm, c *application.Client, v url.Values, dpopProof, htu string) (*PARResponse, *Error) {
+	if oe := s.parClientBudget(ctx, rlm, c); oe != nil {
+		return nil, oe
+	}
 	if v.Get("request_uri") != "" {
 		return nil, ErrInvalidRequest("request_uri is not allowed in a pushed request")
 	}

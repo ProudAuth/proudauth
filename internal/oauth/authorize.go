@@ -2,6 +2,8 @@ package oauth
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
@@ -339,7 +341,14 @@ func (s *Service) Authorize(ctx context.Context, rlm *realm.Realm, req Authorize
 		ACRValues: res.ACRValues, LoginHint: req.LoginHint, UILocales: req.UILocales, OrgID: res.OrgID, ClientIP: clientIP, UserAgent: ua,
 		ReuseSession: reuse, ClaimsRequest: res.ClaimsRequest, DPoPJKT: req.DPoPJKT})
 	if err != nil {
-		return &AuthorizeResult{Redirect: s.respond(ctx, rlm, req, res.Client, map[string]string{"error": "server_error", "state": req.State, "iss": rlm.Issuer})}
+		// A spent transaction-start budget of the browser's network
+		// (start_per_network, SEC-006) is a temporary overload in OAuth
+		// terms (RFC 6749 section 4.1.2.1); anything else is a server error.
+		code := "server_error"
+		if pe := (*problem.Error)(nil); errors.As(err, &pe) && pe.Status == http.StatusTooManyRequests {
+			code = "temporarily_unavailable"
+		}
+		return &AuthorizeResult{Redirect: s.respond(ctx, rlm, req, res.Client, map[string]string{"error": code, "state": req.State, "iss": rlm.Issuer})}
 	}
 	proof := authentication.Proof{Continuation: started.Continuation}
 	if started.Transaction.UserID != "" {

@@ -14,6 +14,12 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 
 ### Added
 
+- Reference measurements of the four core token flows on the alpha.6 budget
+  chain, against the alpha.5 baselines of the same day: throughput between
+  2.5 and 7.8 percent lower, inside the phase's ten-percent gate, with the
+  cost of the new pre-authentication budget statement visible in p99
+  ([benchmarks.md](docs/operations/benchmarks.md#alpha6-budget-chain-comparison-nfr-003-nfr-008),
+  `docs/operations/bench-results/2026-10-18-laptop-alpha6-budgets/`).
 - [0.2.0-alpha.6 owner decisions](docs/releases/2026-10-alpha.6-decisions.md):
   the known-device quota and budget defaults, the second-factor failure
   ceiling, personal-access-token revocation, organization-switch consent,
@@ -123,9 +129,80 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   values and a positive limit with a zero window, as for the other
   `rate_limits` keys ([configuration.md](docs/operations/configuration.md)).
   Regression test `TestValidateRateLimits`.
+- The network-normalized abuse budgets and the known-device quota of
+  [owner decision 9](docs/releases/2026-10-alpha.6-decisions.md) (see
+  Security): migration `0091_known_device_quota.sql` (expand only, a new
+  table `known_sign_ins` of keyed digests that the worker's retention task
+  sweeps), the configuration keys `security.rate_limits.start_per_network`
+  (default `300` per `login_window`), `network_coarse_factor` (`10`, at most
+  `1000`), `known_quota_days` (`30`, at most `365`),
+  `known_login_per_network` (`50`), `known_login_per_device` (`20`) and
+  `known_login_per_identifier` (`10`), each `0` to disable, and the gauge
+  `proudauth_rate_budget_utilization{budget}` over the fixed aggregate
+  budget families, for an alert near the cap
+  ([monitoring.md](docs/operations/monitoring.md#metrics)). Load generators
+  raise `start_per_network` along with `login_per_ip`
+  ([benchmarks.md](docs/operations/benchmarks.md)). Regression tests
+  `TestNetworkBudgetConfig`, `TestGaugeVecFixedLabels`.
+- The protocol-endpoint budgets of
+  [owner decision 9](docs/releases/2026-10-alpha.6-decisions.md) (see
+  Security): the configuration keys
+  `security.rate_limits.token_failures_per_network` (default `300` failed
+  token requests per network per `token_window`),
+  `token_per_network_client` (`100` failed grants per network per public
+  client per `token_window`), `par_failures_per_network` (`300` failed
+  pushed requests per network per `token_window`), `par_per_client` (`2000`
+  per public client per `token_window`), `device_per_network` (`300` per
+  `login_window`), `user_code_failures_per_network` (`30` per
+  `login_window`), `dcr_per_network` (`20`) and `dcr_window` (`1h`), each
+  `0` to disable, validated like the other `rate_limits` keys (a positive
+  limit needs a positive window); every per-network one also counts the wider
+  /24 or /48 at `network_coarse_factor` times its limit. The aggregate family
+  `par-client` joins `proudauth_rate_budget_utilization{budget}`
+  ([monitoring.md](docs/operations/monitoring.md#metrics)).
+  `scripts/bench-local.sh` raises every budget a benchmark workload can trip
+  to 1000000: the four it raised before, `start_per_network` and these
+  (`BENCH_*` variables override each), and records them in
+  `environment.json` ([benchmarks.md](docs/operations/benchmarks.md)).
+  Regression tests `TestProtocolEndpointBudgetConfig`,
+  `TestValidateRateLimits`, `TestUtilizationOfAggregateBudgets`,
+  `TestCheckConsumesNothing`, `TestFailedRequestClassification`.
+- The configuration key `security.rate_limits.api_token_failures_per_network`
+  (default `300` support tokens presented to the identity and administration
+  APIs per network per `token_window`, with the wider /24 or /48 at
+  `network_coarse_factor` times; `0` disables it), validated like the other
+  `rate_limits` keys (see Security). The counter
+  `proudauth_metrics_series_dropped_total{metric}`, one series per counter
+  and histogram, `0` until it drops an update at its series cap, with a
+  suggested alert ([monitoring.md](docs/operations/monitoring.md)); see
+  Fixed. Regression tests `TestProtocolEndpointBudgetConfig`,
+  `TestValidateRateLimits`, `TestDroppedSeriesCounted`.
 
 ### Changed
 
+- `security.rate_limits.token_per_client` defaults to `2000` token requests
+  per client per minute instead of `600`, consistent with `login_per_client`
+  (20000 sign-ins per 15 minutes, about 1333 a minute, so a busy client no
+  longer signs users in faster than it can exchange their codes), and for a
+  public client it counts only failed grants: `invalid_client`,
+  `invalid_request`, `invalid_grant`, `invalid_scope`, `invalid_target`,
+  `unauthorized_client`, `unsupported_grant_type` and `invalid_dpop_proof`
+  from a request whose client is identified, not its successful grants,
+  device-flow polling answers, budget refusals or server errors
+  ([decision 9](docs/releases/2026-10-alpha.6-decisions.md); REG-012,
+  SEC-006). A confidential client's budget counts every request, as before.
+  Once a public client's failed grants spend it, every token request of the
+  client answers `429 slow_down` until the window ends. Migration: a
+  configuration that sets `token_per_client` keeps its value, which now caps
+  only the failed grants of public clients. The new per-network budgets of
+  the token endpoint and PAR count failures only, so a confidential
+  client's backend sending many successful requests from one address is not
+  refused by them; a network whose requests fail more than
+  `token_failures_per_network` times a minute is refused for every client
+  until the window ends ([configuration.md](docs/operations/configuration.md),
+  [upgrades.md](docs/operations/upgrades.md)). Regression tests
+  `TestPublicClientTokenBudgetCountsFailedGrants`,
+  `TestProtocolEndpointBudgetConfig`.
 - The service depends on `github.com/proudauth/proudauth-sdk-go` `v0.2.0`, the
   SDK's first release tag, instead of a pseudo-version of its `main` branch
   (SDK-009); `docs/integrations/sdk-repositories.json` pins that revision.
@@ -372,6 +449,20 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   [exit-and-export.md](docs/operations/exit-and-export.md#user-import-request)).
   Affected: every earlier 0.2.0 prerelease; regression test
   `TestLegacySHA256TypedPassword`.
+- `proudauth_tokens_total` no longer takes label values from the request
+  (finding `httpapi-surface/metrics-silent-drops`, parts 1 and 2). Its
+  `grant_type` label was the request's raw `grant_type` (up to 64
+  characters), counted even when client authentication failed, so an
+  unauthenticated caller could fill the counter's 1000-series cap with junk,
+  after which every new legitimate series was dropped, silently, until a
+  restart. `grant_type` is now one of the six grants the endpoint implements
+  or `other`, and `outcome` is `success`, one of the known OAuth error codes
+  or `other`, at most 7 × 19 series. Updates that a counter (1000 series) or
+  histogram (500) drops at its cap are now counted in the new
+  `proudauth_metrics_series_dropped_total{metric}`, and the first one of each
+  metric logs a warning ([monitoring.md](docs/operations/monitoring.md#metrics))
+  (OPS-002, SEC-006). Affected: every earlier 0.2.0 prerelease; regression
+  tests `TestTokenMetricFixedLabels`, `TestDroppedSeriesCounted`.
 
 ### Security
 
@@ -598,6 +689,126 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   capped (REG-012, TEN-018, INV-013). Affected: every earlier 0.2.0
   prerelease; regression tests `TestJoinRequestBudgets`,
   `TestJoinRequestReviewerNotices`.
+- Abuse budgets count networks instead of addresses, and an exhausted
+  aggregate sign-in budget no longer refuses everyone
+  ([decision 9](docs/releases/2026-10-alpha.6-decisions.md)). The per-IP
+  budgets (`login-ip`, `pwd-ip`, `verify-ip`, `send-ip`, `signup-ip`,
+  `guest-ip`, `wan-ip`, `setup-ip`, and the fixed `dcr-ip`, registry,
+  shared-signals and check-session budgets) were keyed by the full client
+  address, each step was charged to the address its transaction started
+  from, and starting a transaction had no budget. With one IPv6 /64, an
+  attacker started every attempt from a new address with random identifiers
+  and passed every per-IP and per-identifier limit, leaving only the
+  aggregate caps, which then failed for everyone: about 22 requests per
+  second through one public client used up `pwd-client` (20000 per 15
+  minutes) and refused every password sign-in through that client, and
+  about 55 per second through three clients did the same for `pwd-realm`
+  across the realm, window after window. A network is now an IPv4 /32 or an
+  IPv6 /64; every configurable per-network budget also counts the wider /24
+  or /48 at `network_coarse_factor` times its limit; each step is charged to
+  the network of the request that makes it; and starting a transaction is
+  budgeted per network (`start_per_network`; a start that reuses an SSO
+  session is not counted, and the browser authorization endpoint redirects
+  with `error=temporarily_unavailable`). When an aggregate password or proof
+  budget (per client, organization or realm) is exhausted, networks,
+  remembered devices and identifiers with a successful sign-in in the last
+  `known_quota_days` keep a quota of their own; everyone else gets
+  `429 rate_limited` with `Retry-After`, with no CAPTCHA and no
+  proof-of-work. An identifier counts only from the /24 or /48 it signed in
+  from, so outside it the `429` still does not tell recently active accounts
+  from others (SEC-005, API-009). Aggregate send and registration budgets
+  have no such quota (SEC-006, ABU-001, REG-012, TEN-018, SEC-001).
+  Affected: every earlier 0.2.0 prerelease; regression tests
+  `TestNetworkNormalizedBudgets`, `TestTransactionStartBudget`,
+  `TestKnownDeviceQuota`, `TestPerNetworkBudgets`,
+  `TestUtilizationOfAggregateBudgets`, `TestNetworkPrefix`.
+- The token endpoint and PAR bound the failed requests of each network,
+  checked before the client is authenticated, device authorization counts
+  every request per network, and one network can no longer put every user of
+  a public client into `429`
+  ([decision 9](docs/releases/2026-10-alpha.6-decisions.md); finding
+  `core-oauth-oidc/token-endpoint-rate-limit`). The token endpoint had one
+  budget, `token_per_client` (600 per minute), checked after client
+  authentication and counting every request, failed ones included. A public
+  client authenticates with its `client_id` alone, so one unauthenticated
+  sender at about 10 requests per second (bad `code` or `refresh_token`
+  values) put every user of an SPA or native app into `429 slow_down`,
+  window after window: cheap denial of service for code exchange and
+  refresh. Each failing client authentication also wrote an audit record
+  without any per-network bound. PAR, device authorization, the device
+  approval's user-code entry and the per-network budget of dynamic client
+  registration (fixed in code) had no configurable per-network budget. Now
+  every token request first reads its network's failure budget
+  (`token_failures_per_network`: decision 9's 300 per minute per IPv4
+  address or IPv6 /64, which bounds failures, with the wider /24 or /48 at
+  `network_coarse_factor` times), before client credentials are read or
+  checked and before anything is audited, and a network that has spent it
+  is refused; a failed client authentication or failed grant counts against
+  it, a successful request never does, so a confidential client's backend
+  or a busy NAT is not throttled for its volume while a flood of junk
+  client IDs, wrong secrets, bad codes or stolen tokens from one network is
+  cut off before client authentication. A public client's budget counts only
+  failed grants, and each network's failed grants through it are bounded by
+  `token_per_network_client` (100 per minute), past which that network is
+  refused before its grant runs and stops counting against the client, so
+  spending a public client's budget takes many networks. PAR keeps the same
+  failure budget per network (`par_failures_per_network`) and counts a
+  public client's pushes against `par_per_client`; device authorization,
+  which stores a row per request, counts every request against
+  `device_per_network`; user-code lookups that
+  find no pending code against `user_code_failures_per_network` (30 per 15
+  minutes), after which the network's lookups answer `429 rate_limited`
+  before any code is looked up; dynamic client registration against
+  `dcr_per_network` per `dcr_window`. The browser authorization endpoint and
+  the headless start write a row only by starting a transaction, which
+  `start_per_network` already counts, so they gain no second budget. Spent
+  protocol budgets answer `429 slow_down` with `Retry-After` in the OAuth
+  error format, and every new budget fails closed (`503
+  temporarily_unavailable`) when the limiter is unreachable. No CAPTCHA and
+  no proof-of-work: someone holding many networks can still spend a public
+  client's failure budget, and the aggregate caps then refuse everyone until
+  the window ends (SEC-006, REG-012, TEN-018, ABU-001, TOK-001, APP-016,
+  SEC-001). Affected: every earlier 0.2.0 prerelease; regression tests
+  `TestTokenEndpointNetworkBudgets`,
+  `TestPublicClientTokenBudgetCountsFailedGrants`,
+  `TestPARAndDeviceNetworkBudgets`,
+  `TestDynamicClientRegistrationNetworkBudget`,
+  `TestTokenEndpointLimiterFailsClosed`, `TestCheckConsumesNothing`,
+  `TestFailedRequestClassification`.
+- Unauthenticated requests can no longer write unbounded audit records
+  (finding `httpapi-surface/unauth-audit-amplification`). Every failed client
+  authentication at the token endpoint recorded `client.authentication.failed`
+  with the presented `client_id` or Basic user name as `actor_id`, stored
+  unbounded (up to the 256 KiB body or the 16 KiB header) in an indexed column
+  for 400 days; an incompressible one past the index row limit (about 2.7 KB)
+  made the insert fail and raised a false `audit_write_failed` signal. Every
+  bearer starting with `pa_it_` on the identity and administration APIs cost a
+  token lookup and a `support.token.rejected` record, with no budget, and
+  introspection and revocation had no budget at all. Now audit records store
+  actor, subject and target IDs as at most 128 printable bytes, followed by
+  `~` and 16 hexadecimal digits of the SHA-256 of the whole value when
+  anything was cut or dropped, so the same junk still correlates and control
+  characters are never stored (identifiers ProudAuth issues are unchanged;
+  audit searches by `actor_id`, `subject_id` and `target_id` bound their value
+  the same way); a `client_id` longer than 255 bytes is `invalid_client`
+  before it is looked up or audited and counts as a failed request;
+  introspection and revocation read the token endpoint's failure budget per
+  network (`token_failures_per_network`) before client authentication and
+  count their failed client authentications against it, so once a network
+  has spent it, its token, introspection and revocation requests get `429
+  slow_down` and write no audit record; support tokens on the APIs count
+  against the new `api_token_failures_per_network` (300 per `token_window`
+  per network) before they are looked up, after which the network's get `429
+  rate_limited` and write nothing, while its other bearer tokens are
+  unaffected. Each budget fails closed. Within its budgets one network still
+  writes up to about 300 records of each kind per minute
+  ([threat model](docs/threat-models/system.md)) (SEC-006, AUD-001, AUD-014,
+  IMP-012, ABU-001). Affected: every earlier 0.2.0 prerelease; regression
+  tests `TestFailureBudgetsStopAuditAmplification`,
+  `TestRecordBoundsIdentifiers`, `TestQueryFilterUsesBoundIdentifiers`,
+  `TestOversizedClientIDRefusedBeforeAuthentication`,
+  `TestAuthenticateRefusesOversizedClientID`,
+  `TestTokenEndpointLimiterFailsClosed`.
 
 ## [0.2.0-alpha.5] - 2026-10-18
 

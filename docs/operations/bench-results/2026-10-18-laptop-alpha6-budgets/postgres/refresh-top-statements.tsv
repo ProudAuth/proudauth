@@ -1,0 +1,13 @@
+calls	total_ms	mean_ms	rows	query
+47501	23326.0	0.491	47949	INSERT INTO rate_limit_counters (bucket, window_start, count, expires_at) SELECT b.bucket, b.window_start, b.n, b.expires_at FROM unnest($1::text[], $2::timestamptz[], $3::int4[], $4::timestamptz[]) A
+47309	10622.2	0.225	47309	UPDATE client_credentials SET last_used_at=$2 WHERE id=$1
+47339	3285.7	0.069	47339	INSERT INTO audit_events (id, schema_version, type, occurred_at, recorded_at, realm_id, organization_id, actor_type, actor_id, actor_session_id, subject_type, subject_id, target_type, target_id, outco
+47222	3035.4	0.064	47222	INSERT INTO refresh_tokens (id, realm_id, family_id, generation, token_digest, parent_id, issued_at) VALUES ($1,$2,$3,$4,$5,$6,$7)
+47238	1464.6	0.031	47238	SELECT t.id, t.family_id, t.generation, t.consumed_at, t.revoked_at, coalesce(g.session_id,$3), g.offline, f.client_ref FROM refresh_tokens t JOIN refresh_families f ON f.id=t.family_id JOIN authoriza
+94763	1238.8	0.013	94763	SELECT id, realm_id, state, coalesce(display_name,$3), coalesce(given_name,$4), coalesce(family_name,$5), coalesce(locale,$6), coalesce(zoneinfo,$7), profile, admin_metadata, internal_metadata, protec
+94823	1066.0	0.011	94823	SELECT id, type, original_value, canonical_value, verified_at, is_primary, source FROM user_identifiers WHERE user_id=$1 ORDER BY created_at, id
+47217	1045.8	0.022	47217	UPDATE refresh_families SET current_generation=current_generation+$4, idle_expires_at=$2, last_rotated_at=$3 WHERE id=$1
+47228	1023.2	0.022	47228	UPDATE refresh_tokens SET consumed_at=$2 WHERE id=$1 AND consumed_at IS NULL
+141953	945.0	0.007	189356	SELECT id, coalesce(resource_id,$3), name, coalesce(description,$4), coalesce(consent_text,$5), sensitivity, is_default, kind, required_permissions, coalesce(step_up_acr,$6), coalesce(max_auth_age_sec
+47236	625.5	0.013	47236	SELECT id, grant_id, client_ref, current_generation, state, idle_expires_at, absolute_expires_at, idle_window_seconds, cnf_jkt, cnf_x5t_s256 FROM refresh_families WHERE id=$1 FOR UPDATE
+47299	613.9	0.013	47299	SELECT id, realm_id, subject_type, subject_id, client_ref, coalesce(organization_id,$2), coalesce(session_id,$3), resource_ids, scopes, offline, coalesce(consent_id,$4), auth_time, amr, coalesce(acr,$

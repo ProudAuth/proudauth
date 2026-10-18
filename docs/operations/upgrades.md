@@ -399,6 +399,90 @@ servers refuse the `reviewed_version` member (`400`) and new ones require
 it (`422`), so approve pending registrations after the rollout, and do not
 rely on re-approval until every server runs the new version.
 
+Migration `0091_known_device_quota.sql` is expand-only: it creates the
+`known_sign_ins` table, keyed digests of the networks, remembered devices
+and identifiers that completed a sign-in, for the known-device quota (owner
+decision 9). Older binaries ignore it. New binaries also change the abuse
+budgets in ways an upgrade notices
+([configuration.md](configuration.md#security)):
+
+- Per-network budgets count networks, not addresses: an IPv4 address (/32)
+  or an IPv6 /64, plus the wider /24 or /48 at
+  `security.rate_limits.network_coarse_factor` (10) times the limit. Every
+  address of one /64 now shares one budget, and budget keys change, so the
+  counters of the window in progress start again from zero at the upgrade.
+  In the mixed-version window, older servers keep counting full addresses
+  under the old keys, so the per-network bound holds only once every server
+  runs the new version.
+- Each step is charged to the network of the request that makes it, no
+  longer to the address the transaction started from.
+- Starting a transaction is budgeted: `start_per_network` (300 per
+  `login_window` per network; starts that reuse an SSO session are not
+  counted). Behind a large NAT or a proxy missing from
+  `server.trusted_proxies`, raise it together with `login_per_ip`, or every
+  user behind it shares one budget; load generators must raise it too.
+- While an aggregate password or proof budget is exhausted, requesters
+  without a recent successful sign-in get `429`, and known ones keep a
+  quota. Facts are recorded only by new servers, so right after the upgrade
+  nobody is known yet: until users have signed in through a new server, an
+  exhausted aggregate budget still refuses everyone, as before.
+- Older binaries reject the new keys `security.rate_limits.start_per_network`,
+  `network_coarse_factor`, `known_quota_days`, `known_login_per_network`,
+  `known_login_per_device` and `known_login_per_identifier`; add them only
+  for new processes (the defaults apply without them).
+
+The protocol endpoints gain budgets of their own (owner decision 9, no
+migration; [configuration.md](configuration.md#security)):
+
+- The token endpoint and PAR keep a failure budget per network
+  (`token_failures_per_network` and `par_failures_per_network`, 300 per
+  `token_window` per IPv4 address or IPv6 /64): failed client
+  authentications and failed grants or pushed requests count, successful
+  requests never do. A network that has spent it gets `429 slow_down` for
+  every request until the window ends, valid clients included, so a backend
+  that shares its address with a source of many failures (a misconfigured
+  client sending a wrong secret, an expired-code retry loop) is refused with
+  it; fix the failing client or raise the budget.
+- `token_per_client` defaults to `2000` instead of `600` and counts only the
+  failed grants of public clients; confidential clients count every request
+  as before. A configuration that sets it keeps its value.
+- Device authorization counts against `device_per_network`, wrong device
+  user codes against `user_code_failures_per_network`, a public client's
+  pushed requests against `par_per_client`, and dynamic client registration
+  against `dcr_per_network` per `dcr_window` (20 per hour, as the fixed
+  budget it replaces, now with the wider /24 or /48 budget).
+- In the mixed-version window, older servers keep the old token budget
+  (every request of every client against 600 per minute) and none of the
+  per-network ones, so the new bounds hold only once every server runs the
+  new version.
+- Older binaries reject the new keys `token_failures_per_network`,
+  `token_per_network_client`, `par_failures_per_network`, `par_per_client`,
+  `device_per_network`, `user_code_failures_per_network`, `dcr_per_network`
+  and `dcr_window`; add them only for new processes.
+- Introspection and revocation share the token endpoint's failure budget:
+  a resource server or backend sending a wrong secret to
+  `POST /oauth/introspect` or `POST /oauth/revoke` spends its network's
+  `token_failures_per_network` like a failing token request, and once it is
+  spent its introspection, revocation and token requests get `429 slow_down`
+  until the window ends. A `client_id` longer than 255 bytes is refused as
+  `invalid_client` without being looked up or audited (registered client IDs
+  have at most 128 characters).
+- Support tokens (`pa_it_`) presented to the identity and administration
+  APIs count against the new `api_token_failures_per_network` (300 per
+  `token_window` per network); older binaries reject the key.
+- Audit records store actor, subject and target IDs of at most 128 printable
+  bytes; a longer value, or one with control characters (only an unknown
+  `client_id` or Basic user name from a request can be one), is cut and
+  followed by `~` and 16 hexadecimal digits of its SHA-256. Records written by
+  older binaries are unchanged, and `actor_id`, `subject_id` and `target_id`
+  filters of `GET /audit-events` bound their value the same way, so the
+  original value still finds new records.
+- `proudauth_tokens_total` labels `grant_type` values the endpoint does not
+  implement, and outcomes that are not known OAuth error codes, as `other`
+  (they used to be the request's own value), and the new counter
+  `proudauth_metrics_series_dropped_total{metric}` appears; adjust dashboards
+  that matched unknown grant types.
+
 New binaries also change the user ownership transfer: `POST
 /users/{user}/ownership-transfer` moves hooks, webhook subscriptions and
 authorization policies too and so also needs `realm.hooks.write`,

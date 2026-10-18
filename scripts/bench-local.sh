@@ -64,8 +64,12 @@
 #   BENCH_ORGS (500), BENCH_LARGE (5000), BENCH_CLIENTS (20),
 #   BENCH_GROUP_MEMBERS (1000), BENCH_SCENARIOS (space-separated subset, in
 #   the order given), BENCH_LOGIN_PER_IP / BENCH_LOGIN_PER_REALM /
-#   BENCH_TOKEN_PER_CLIENT / BENCH_LOGIN_PER_CLIENT (raised budgets,
-#   1000000 each), BENCH_OUT (results directory, default
+#   BENCH_TOKEN_PER_CLIENT / BENCH_LOGIN_PER_CLIENT / BENCH_START_PER_NETWORK /
+#   BENCH_TOKEN_FAILURES_PER_NETWORK / BENCH_TOKEN_PER_NETWORK_CLIENT /
+#   BENCH_PAR_FAILURES_PER_NETWORK / BENCH_PAR_PER_CLIENT /
+#   BENCH_DEVICE_PER_NETWORK / BENCH_USER_CODE_FAILURES_PER_NETWORK (raised
+#   budgets, 1000000 each: every load comes from one address and one web
+#   client, so every budget a workload can trip is raised), BENCH_OUT (results directory, default
 #   bench-results/<UTC time> in the checkout), BENCH_HOST_LABEL (replaces the
 #   load generator's host name in the results), BENCH_BIN (directory with
 #   prebuilt identity-server, identity-worker, identity-cli and
@@ -109,6 +113,13 @@ LOGIN_PER_IP=${BENCH_LOGIN_PER_IP:-1000000}
 LOGIN_PER_REALM=${BENCH_LOGIN_PER_REALM:-1000000}
 TOKEN_PER_CLIENT=${BENCH_TOKEN_PER_CLIENT:-1000000}
 LOGIN_PER_CLIENT=${BENCH_LOGIN_PER_CLIENT:-1000000}
+START_PER_NETWORK=${BENCH_START_PER_NETWORK:-1000000}
+TOKEN_FAILURES_PER_NETWORK=${BENCH_TOKEN_FAILURES_PER_NETWORK:-1000000}
+TOKEN_PER_NETWORK_CLIENT=${BENCH_TOKEN_PER_NETWORK_CLIENT:-1000000}
+PAR_FAILURES_PER_NETWORK=${BENCH_PAR_FAILURES_PER_NETWORK:-1000000}
+PAR_PER_CLIENT=${BENCH_PAR_PER_CLIENT:-1000000}
+DEVICE_PER_NETWORK=${BENCH_DEVICE_PER_NETWORK:-1000000}
+USER_CODE_FAILURES_PER_NETWORK=${BENCH_USER_CODE_FAILURES_PER_NETWORK:-1000000}
 OUT=${BENCH_OUT:-$ROOT/bench-results/$(date -u +%Y%m%dT%H%M%SZ)}
 HOST_LABEL=${BENCH_HOST_LABEL:-}
 KEEP=${BENCH_KEEP:-0}
@@ -768,6 +779,13 @@ security:
     login_per_realm: $LOGIN_PER_REALM
     login_per_client: $LOGIN_PER_CLIENT
     token_per_client: $TOKEN_PER_CLIENT
+    start_per_network: $START_PER_NETWORK
+    token_failures_per_network: $TOKEN_FAILURES_PER_NETWORK
+    token_per_network_client: $TOKEN_PER_NETWORK_CLIENT
+    par_failures_per_network: $PAR_FAILURES_PER_NETWORK
+    par_per_client: $PAR_PER_CLIENT
+    device_per_network: $DEVICE_PER_NETWORK
+    user_code_failures_per_network: $USER_CODE_FAILURES_PER_NETWORK
 delivery:
 $WEBHOOK_EGRESS
   email:
@@ -894,7 +912,10 @@ jq -n --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg machine "$MACHINE" --arg
 	--arg imageid "$(docker image inspect -f '{{.Id}}' "$IMAGE")" \
 	--arg version "$(jq -r 'select(.msg == "public listener starting") | .version' "$WORK/server.log" 2>/dev/null | head -n 1)" \
 	--argjson c "$CONCURRENCY" --arg d "$DURATION" --arg w "$WARMUP" --arg soak "$SOAK" --arg win "$SOAK_WINDOW" --arg soakscenario "$SOAK_SCENARIO" \
-	--argjson ip "$LOGIN_PER_IP" --argjson realm "$LOGIN_PER_REALM" --argjson client "$LOGIN_PER_CLIENT" --argjson tok "$TOKEN_PER_CLIENT" '{
+	--argjson ip "$LOGIN_PER_IP" --argjson realm "$LOGIN_PER_REALM" --argjson client "$LOGIN_PER_CLIENT" --argjson tok "$TOKEN_PER_CLIENT" \
+	--argjson start "$START_PER_NETWORK" --argjson tokfail "$TOKEN_FAILURES_PER_NETWORK" --argjson toknetclient "$TOKEN_PER_NETWORK_CLIENT" \
+	--argjson parfail "$PAR_FAILURES_PER_NETWORK" --argjson parclient "$PAR_PER_CLIENT" --argjson device "$DEVICE_PER_NETWORK" \
+	--argjson usercode "$USER_CODE_FAILURES_PER_NETWORK" '{
 	date:$date,
 	machine:{model:$machine, cpu:$cpu, logical_cpus:$ncpu, cores:$cores, memory_bytes:$mem, os:$os, power:$power},
 	go:$go, docker:{server:$docker, vm:$dockervm},
@@ -903,7 +924,11 @@ jq -n --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg machine "$MACHINE" --arg
 		source_digest_sha256_16:$digest, git_commit:$commit, configuration:"proudauth-config.yaml",
 		processes:"one identity-server and one identity-worker on the host, plain HTTP on 127.0.0.1"},
 	raised_budgets:{"security.rate_limits.login_per_ip":$ip, "security.rate_limits.login_per_realm":$realm,
-		"security.rate_limits.login_per_client":$client, "security.rate_limits.token_per_client":$tok},
+		"security.rate_limits.login_per_client":$client, "security.rate_limits.token_per_client":$tok,
+		"security.rate_limits.start_per_network":$start, "security.rate_limits.token_failures_per_network":$tokfail,
+		"security.rate_limits.token_per_network_client":$toknetclient, "security.rate_limits.par_failures_per_network":$parfail,
+		"security.rate_limits.par_per_client":$parclient, "security.rate_limits.device_per_network":$device,
+		"security.rate_limits.user_code_failures_per_network":$usercode},
 	load_generator:{tool:"identity-bench", host:"the same machine", concurrency:$c, duration:$d, warmup:$w, soak:$soak, soak_window:$win,soak_scenario:$soakscenario}}' >"$OUT/environment.json"
 if [ -n "$SMTP_PID" ]; then
 	jq --argjson port "$SMTP_PORT" '. + {email_delivery:{adapter:"smtp",host:"127.0.0.1",port:$port,tls:"none (development only)",authentication:"none",receiver:"identity-bench smtp-sink on the same host; counts only, no message persistence or onward relay",bootstrap:"development mailbox only for the first administrator verification, then server/worker restart with SMTP"}}' "$OUT/environment.json" >"$WORK/environment-smtp.json"

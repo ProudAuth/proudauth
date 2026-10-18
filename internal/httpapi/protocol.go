@@ -351,19 +351,27 @@ func (a *App) tokenEndpoint(w http.ResponseWriter, r *http.Request, rlm *realm.R
 		writeJSON(w, http.StatusBadRequest, oauth.ErrInvalidRequest("parameters must be sent in the request body"))
 		return nil
 	}
-	endpoint := rlm.Issuer + "/oauth/token"
-	res, oe := a.OAuth.Token(r.Context(), rlm, oauth.TokenRequest{Form: r.PostForm, Auth: a.clientAuthFrom(r), Endpoint: endpoint,
-		DPoPProof: r.Header.Get("DPoP"), HTTPMethod: r.Method, HTTPURL: endpoint, ClientIP: reqctx.From(r.Context()).ClientIP})
+	// The metric's labels come from fixed sets (TokenResult): the request's
+	// grant_type is "other" unless the endpoint implements it.
 	grant := r.PostForm.Get("grant_type")
-	if len(grant) > 64 {
-		grant = "invalid"
-	}
-	if oe != nil {
-		a.Metrics.Tokens.Inc(grant, oe.Code)
+	// The network's failure budget comes first, before client credentials
+	// are read or checked and before anything is audited (SEC-006, owner
+	// decision 9); Token counts the request against it if it fails.
+	ip := reqctx.From(r.Context()).ClientIP
+	if oe := a.OAuth.NetworkBudget(r.Context(), rlm, oauth.EndpointToken, ip); oe != nil {
+		a.Metrics.TokenResult(grant, oe.Code)
 		a.writeOAuthError(w, oe)
 		return nil
 	}
-	a.Metrics.Tokens.Inc(grant, "success")
+	endpoint := rlm.Issuer + "/oauth/token"
+	res, oe := a.OAuth.Token(r.Context(), rlm, oauth.TokenRequest{Form: r.PostForm, Auth: a.clientAuthFrom(r), Endpoint: endpoint,
+		DPoPProof: r.Header.Get("DPoP"), HTTPMethod: r.Method, HTTPURL: endpoint, ClientIP: ip})
+	if oe != nil {
+		a.Metrics.TokenResult(grant, oe.Code)
+		a.writeOAuthError(w, oe)
+		return nil
+	}
+	a.Metrics.TokenResult(grant, "success")
 	writeJSON(w, http.StatusOK, res)
 	return nil
 }
@@ -373,12 +381,20 @@ func (a *App) introspect(w http.ResponseWriter, r *http.Request, rlm *realm.Real
 		writeJSON(w, http.StatusBadRequest, oauth.ErrInvalidRequest("form encoding required"))
 		return nil
 	}
+	// Introspection shares the token endpoint's failure budget, read before
+	// client credentials are read or checked (SEC-006); a failed client
+	// authentication counts against it.
+	ip := reqctx.From(r.Context()).ClientIP
+	if oe := a.OAuth.NetworkBudget(r.Context(), rlm, oauth.EndpointToken, ip); oe != nil {
+		a.writeOAuthError(w, oe)
+		return nil
+	}
 	raw := r.PostForm.Get("token")
 	endpoint := rlm.Issuer + "/oauth/introspect"
 	if strings.HasPrefix(raw, "pa_key_") || strings.HasPrefix(raw, "pa_pat_") {
-		caller, err := a.Apps.Authenticate(r.Context(), rlm.ID, rlm.Issuer, endpoint, a.clientAuthFrom(r))
-		if err != nil || caller.Public() {
-			a.writeOAuthError(w, oauth.ErrInvalidClient)
+		caller, oe := a.OAuth.IntrospectionCaller(r.Context(), rlm, a.clientAuthFrom(r), endpoint, ip)
+		if oe != nil {
+			a.writeOAuthError(w, oe)
 			return nil
 		}
 		allowed, err := a.Apps.IntrospectableResources(r.Context(), caller.Ref)
@@ -388,7 +404,7 @@ func (a *App) introspect(w http.ResponseWriter, r *http.Request, rlm *realm.Real
 		writeJSON(w, http.StatusOK, a.Machine.Introspect(r.Context(), rlm.ID, rlm.Issuer, raw, allowed))
 		return nil
 	}
-	res, oe := a.OAuth.Introspect(r.Context(), rlm, a.clientAuthFrom(r), endpoint, raw)
+	res, oe := a.OAuth.Introspect(r.Context(), rlm, a.clientAuthFrom(r), endpoint, raw, ip)
 	if oe != nil {
 		a.writeOAuthError(w, oe)
 		return nil
@@ -403,7 +419,14 @@ func (a *App) revoke(w http.ResponseWriter, r *http.Request, rlm *realm.Realm) e
 		writeJSON(w, http.StatusBadRequest, oauth.ErrInvalidRequest("form encoding required"))
 		return nil
 	}
-	if oe := a.OAuth.Revoke(r.Context(), rlm, a.clientAuthFrom(r), rlm.Issuer+"/oauth/revoke", r.PostForm.Get("token"), r.PostForm.Get("token_type_hint")); oe != nil {
+	// Revocation shares the token endpoint's failure budget, read before
+	// client credentials are read or checked (SEC-006).
+	ip := reqctx.From(r.Context()).ClientIP
+	if oe := a.OAuth.NetworkBudget(r.Context(), rlm, oauth.EndpointToken, ip); oe != nil {
+		a.writeOAuthError(w, oe)
+		return nil
+	}
+	if oe := a.OAuth.Revoke(r.Context(), rlm, a.clientAuthFrom(r), rlm.Issuer+"/oauth/revoke", r.PostForm.Get("token"), r.PostForm.Get("token_type_hint"), ip); oe != nil {
 		a.writeOAuthError(w, oe)
 		return nil
 	}
@@ -564,6 +587,12 @@ func (a *App) deviceAuthorization(w http.ResponseWriter, r *http.Request, rlm *r
 		writeJSON(w, http.StatusBadRequest, oauth.ErrInvalidRequest("form encoding required"))
 		return nil
 	}
+	// Every request stores a device code: counted per network before client
+	// authentication (SEC-006, ABU-001).
+	if oe := a.OAuth.NetworkBudget(r.Context(), rlm, oauth.EndpointDevice, reqctx.From(r.Context()).ClientIP); oe != nil {
+		a.writeOAuthError(w, oe)
+		return nil
+	}
 	res, oe := a.OAuth.DeviceAuthorize(r.Context(), rlm, a.clientAuthFrom(r), rlm.Issuer+"/oauth/device_authorization", r.PostForm)
 	if oe != nil {
 		a.writeOAuthError(w, oe)
@@ -582,13 +611,15 @@ func (a *App) par(w http.ResponseWriter, r *http.Request, rlm *realm.Realm) erro
 		writeJSON(w, http.StatusBadRequest, &oauth.Error{Code: "invalid_dpop_proof", Description: "one DPoP proof header is required", Status: http.StatusBadRequest})
 		return nil
 	}
-	endpoint := rlm.Issuer + "/oauth/par"
-	c, err := a.Apps.Authenticate(r.Context(), rlm.ID, rlm.Issuer, endpoint, a.clientAuthFrom(r))
-	if err != nil {
-		a.writeOAuthError(w, oauth.ErrInvalidClient)
+	// The network's failure budget, before client authentication (SEC-006,
+	// ABU-001); PAR counts the request against it if it fails.
+	ip := reqctx.From(r.Context()).ClientIP
+	if oe := a.OAuth.NetworkBudget(r.Context(), rlm, oauth.EndpointPAR, ip); oe != nil {
+		a.writeOAuthError(w, oe)
 		return nil
 	}
-	res, oe := a.OAuth.PushAuthorizationRequest(r.Context(), rlm, c, r.PostForm, r.Header.Get("DPoP"), endpoint)
+	endpoint := rlm.Issuer + "/oauth/par"
+	res, oe := a.OAuth.PAR(r.Context(), rlm, a.clientAuthFrom(r), endpoint, r.PostForm, r.Header.Get("DPoP"), ip)
 	if oe != nil {
 		a.writeOAuthError(w, oe)
 		return nil
