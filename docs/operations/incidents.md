@@ -916,10 +916,12 @@ identity-cli maintenance -mode off
   at most every 2 seconds, so a change applies to the whole deployment within
   that time. If the database cannot be read, a server keeps the last state it
   saw.
-- Refusals are `503` problem documents with code `maintenance`, a `Retry-After`
-  header (`-retry-after`, default 300 seconds, at most 86400) and, as `detail`,
-  the `-message` (plain text, at most 200 characters, no `<`, `>` or line
-  breaks). The message is shown to anonymous clients; do not put internal
+- Refusals are `503` problem documents with code `maintenance` (on the OAuth
+  and OIDC endpoints under `/realms/{realm}/oauth/` and `/oidc/`, an OAuth
+  `temporarily_unavailable` error with the message as `error_description`), a
+  `Retry-After` header (`-retry-after`, default 300 seconds, at most 86400;
+  `0` sends the 2-second default) and, as `detail`, the `-message` (plain
+  text, at most 200 characters, no `<`, `>` or line breaks). The message is shown to anonymous clients; do not put internal
   details in it. Running the command with `-mode` but without `-message` clears
   the message.
 - Readiness is not affected: instances stay in load balancing and answer with

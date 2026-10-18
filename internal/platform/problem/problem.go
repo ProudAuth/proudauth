@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -153,6 +154,25 @@ var (
 	ErrUpstreamUnavailable = newErr(http.StatusServiceUnavailable, "upstream_unavailable", "The upstream identity provider is unavailable. Retry later.")
 )
 
+// DefaultRetryAfter is the Retry-After of a 429 or 503 response that names no
+// delay of its own, so every throttled or unavailable answer tells the client
+// when to try again (API-009).
+const DefaultRetryAfter = 2 * time.Second
+
+// SetRetryAfter sets the Retry-After header of a response with this status:
+// d in whole seconds, rounded up, or DefaultRetryAfter for a 429 or 503 that
+// names no positive delay. Any other status without a delay gets no header.
+// Every error writer, problem details and the protocol formats alike, uses it.
+func SetRetryAfter(h http.Header, status int, d time.Duration) {
+	if d <= 0 {
+		if status != http.StatusTooManyRequests && status != http.StatusServiceUnavailable {
+			return
+		}
+		d = DefaultRetryAfter
+	}
+	h.Set("Retry-After", strconv.Itoa(int(math.Ceil(d.Seconds()))))
+}
+
 // As extracts a *Error from err.
 func As(err error) (*Error, bool) {
 	var pe *Error
@@ -198,9 +218,7 @@ func Write(w http.ResponseWriter, requestID string, err error) {
 	h := w.Header()
 	h.Set("Content-Type", "application/problem+json")
 	h.Set("Cache-Control", "no-store")
-	if pe.RetryAfter > 0 {
-		h.Set("Retry-After", strconv.Itoa(int(pe.RetryAfter.Seconds()+0.999)))
-	}
+	SetRetryAfter(h, pe.Status, pe.RetryAfter)
 	if pe.Status == http.StatusUnauthorized {
 		if pe.noCredentials {
 			h.Set("WWW-Authenticate", `Bearer`)

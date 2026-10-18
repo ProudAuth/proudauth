@@ -23,6 +23,12 @@ import (
 	"github.com/proudauth/proudauth/internal/token"
 )
 
+// DPoPSigningAlgorithms are the DPoP proof algorithms the server verifies
+// (the asymmetric algorithms of application.AsymmetricAlgorithms): discovery
+// advertises them as dpop_signing_alg_values_supported and a DPoP challenge
+// names them in algs (RFC 9449 §5.1, §7.1).
+var DPoPSigningAlgorithms = []string{"RS256", "PS256", "ES256", "EdDSA"}
+
 // Features enabled for discovery. Only implemented and enabled capabilities are
 // advertised (APP-020, OIDC-015).
 type Features struct {
@@ -129,7 +135,7 @@ func (s *Service) Discovery(ctx context.Context, rlm *realm.Realm, f Features) (
 		m["require_pushed_authorization_requests"] = false
 	}
 	if f.DPoP {
-		m["dpop_signing_alg_values_supported"] = []string{"RS256", "PS256", "ES256", "EdDSA"}
+		m["dpop_signing_alg_values_supported"] = slices.Clone(DPoPSigningAlgorithms)
 	}
 	if f.Registration {
 		m["registration_endpoint"] = iss + "/oauth/register"

@@ -405,9 +405,10 @@ func (s *Service) ResendInvitation(ctx context.Context, realmID, orgID, id strin
 			return problem.ErrConflict.WithDetail("this invitation has no delivery address")
 		}
 		// send_count includes the first send; limits.invitation_resends
-		// counts the sends after it.
+		// counts the sends after it. The cap never resets, so it is a
+		// conflict with the invitation's state, not a throttle to wait out.
 		if inv.SendCount-1 >= s.d.Cfg.Limits.InvitationResends {
-			return problem.ErrRateLimited.WithDetail("resend limit reached for this invitation")
+			return problem.ErrConflict.WithDetail("resend limit reached for this invitation; create a new invitation")
 		}
 		if err := s.inviteBudget(ctx, realmID, orgID, inv.targetCanonical); err != nil {
 			return err

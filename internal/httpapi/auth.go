@@ -83,33 +83,70 @@ func bearer(r *http.Request) string {
 	return ""
 }
 
+// authScheme is the lower-cased scheme of the Authorization header.
+func authScheme(r *http.Request) string {
+	return strings.ToLower(strings.SplitN(r.Header.Get("Authorization"), " ", 2)[0])
+}
+
+// Sender-constraint refusals (TOK-019). The custom APIs render them as
+// problems; UserInfo answers the DPoP ones with a DPoP challenge
+// (senderChallenge).
+var (
+	errCertificateBinding = problem.ErrUnauthenticated.WithDetail("this token is bound to a TLS client certificate; present it with the same certificate")
+	errNotSenderBound     = problem.ErrUnauthenticated.WithDetail("the token is not sender-constrained; use the Bearer scheme")
+	errDPoPScheme         = problem.ErrUnauthenticated.WithDetail("this token is DPoP-bound; present it with the DPoP scheme and a proof")
+	errDPoPProof          = problem.ErrUnauthenticated.WithDetail("invalid DPoP proof for this request")
+	errDPoPKey            = problem.ErrUnauthenticated.WithDetail("the DPoP proof is not signed with the key the token is bound to")
+)
+
+// senderChallenge is the WWW-Authenticate challenge for a sender-constraint
+// refusal at a protected resource (RFC 9449 §7.1): a DPoP-bound token
+// presented without the DPoP scheme, or with a proof of another key, is
+// DPoP invalid_token; a missing or invalid proof is DPoP invalid_dpop_proof;
+// anything else is Bearer invalid_token.
+func senderChallenge(err error) string {
+	switch err {
+	case errDPoPScheme, errDPoPKey:
+		return dpopChallenge("invalid_token", err.(*problem.Error).Detail)
+	case errDPoPProof:
+		return dpopChallenge("invalid_dpop_proof", errDPoPProof.Detail)
+	}
+	return `Bearer error="invalid_token"`
+}
+
 // checkSenderConstraint enforces DPoP for sender-constrained tokens on the
 // IdP's own APIs (RFC 9449 §7, TOK-019): a token bound to a key is usable only
 // with the "DPoP" scheme and a fresh proof for this request and token.
 func (a *App) checkSenderConstraint(r *http.Request, rlm *realm.Realm, raw string, cnf *token.Confirmation) error {
-	scheme := strings.ToLower(strings.SplitN(r.Header.Get("Authorization"), " ", 2)[0])
+	scheme := authScheme(r)
 	if cnf != nil && cnf.X5TS256 != "" {
 		// Certificate-bound (RFC 8705 §3): the request must come with the
 		// same TLS client certificate.
 		cert, _ := a.peerCertificate(r)
 		if cert == nil || certauth.Thumbprint(cert) != cnf.X5TS256 {
-			return problem.ErrUnauthenticated.WithDetail("this token is bound to a TLS client certificate; present it with the same certificate")
+			return errCertificateBinding
 		}
 		return nil
 	}
 	if cnf == nil || cnf.JKT == "" {
 		if scheme == "dpop" {
-			return problem.ErrUnauthenticated.WithDetail("the token is not sender-constrained; use the Bearer scheme")
+			return errNotSenderBound
 		}
 		return nil
 	}
-	if scheme != "dpop" || len(r.Header.Values("DPoP")) != 1 {
-		return problem.ErrUnauthenticated.WithDetail("this token is DPoP-bound; present it with the DPoP scheme and a proof")
+	if scheme != "dpop" {
+		return errDPoPScheme
+	}
+	if len(r.Header.Values("DPoP")) != 1 {
+		return errDPoPProof
 	}
 	htu := strings.TrimSuffix(a.D.Cfg.Server.PublicOrigin, "/") + r.URL.Path
 	jkt, oe := a.OAuth.VerifyDPoPProof(r.Context(), rlm, r.Header.Get("DPoP"), r.Method, htu, raw)
-	if oe != nil || jkt != cnf.JKT {
-		return problem.ErrUnauthenticated.WithDetail("invalid DPoP proof for this request")
+	if oe != nil {
+		return errDPoPProof
+	}
+	if jkt != cnf.JKT {
+		return errDPoPKey
 	}
 	return nil
 }
@@ -379,5 +416,5 @@ func (a *App) fail(w http.ResponseWriter, r *http.Request, err error) {
 	if ok && pe.Code == problem.ErrRateLimited.Code {
 		a.Metrics.RateLimited.Inc(a.routeOf(r))
 	}
-	problem.Write(w, reqctx.From(r.Context()).RequestID, err)
+	a.writeError(w, r, err)
 }

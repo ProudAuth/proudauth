@@ -27,6 +27,14 @@ has been run ([interoperability.md](../integrations/interoperability.md)).
 | Return from an upstream logout | `GET I/oidc/logout/upstream-return` | Redirect target registered at upstream providers ([Upstream logout](#upstream-logout-fed-013)) |
 | Check-session iframe (OIDC Session Management 1.0) | `GET I/oidc/check-session` | Only when the realm turns it on ([Session management](#session-management-oidc-014)); `404` otherwise |
 
+Every error on the `I/oauth/` and `I/oidc/` endpoints is an OAuth error
+(`error`, `error_description`) with its HTTP status, also when it is decided
+before the endpoint runs (load shedding and maintenance `503
+temporarily_unavailable`, a body over `limits.max_body_bytes` `413
+invalid_request`, the host policy `421`, an unknown realm `404`), and every
+`429` and `503` carries `Retry-After`
+([API conventions](api-conventions.md)).
+
 With mutual TLS deployed ([mutual-tls.md](mutual-tls.md)), the token,
 introspection, revocation, UserInfo, PAR and device authorization endpoints
 are also reachable on `server.mtls_origin` and listed in discovery as
@@ -471,6 +479,14 @@ never yields a user token. Trusts, profiles and verification:
   receive `request_uri` (`urn:ietf:params:oauth:request_uri:` + random) valid 60 s,
   single use, bound to the pushing client. `request_uri` inside a pushed request is
   rejected. The same validation as the authorization endpoint applies at push time.
+- The `client_id` presented with a `request_uri` (at the authorization endpoint
+  or the headless API) is resolved before the reference is touched, and the
+  reference is consumed only for the client that pushed it: with another
+  client's `client_id`, an unknown one or none the request is `400
+  invalid_request` ("invalid or expired request_uri", the same answer as for an
+  unknown or expired reference; "client_id is required with request_uri"
+  without one) and the reference stays usable by its own client
+  (`TestDeviceFlowAndPAR`).
 - Clients with `token_policy.require_par` (always for `high_assurance` and
   `fapi2`) must use it; an authorization request without it is
   `invalid_request` ("this client must use pushed authorization requests").
@@ -490,10 +506,22 @@ never yields a user token. Trusts, profiles and verification:
 - The IdP's own APIs (account, organization and administration) and UserInfo
   enforce the binding (TOK-019): a DPoP-bound token is accepted only with the
   `DPoP` scheme and a fresh proof for that request whose `htu` is the
-  public-origin URL (`401` otherwise; UserInfo answers `401` with
-  `WWW-Authenticate: Bearer error="invalid_token"`), and a token that is not
-  bound is refused with the `DPoP` scheme. Device-code and token-exchange
-  grants bind the token they issue to the proof of their own request.
+  public-origin URL (`401` otherwise), and a token that is not bound is
+  refused with the `DPoP` scheme. Device-code and token-exchange grants bind
+  the token they issue to the proof of their own request.
+- UserInfo answers these refusals with a DPoP challenge (RFC 9449 §7.1) that
+  names the accepted proof algorithms: a DPoP-bound token presented with the
+  `Bearer` scheme or with a proof signed by another key gets `401` with
+  `WWW-Authenticate: DPoP error="invalid_token", error_description="...",
+  algs="RS256 PS256 ES256 EdDSA"`; a missing, malformed, stale, replayed or
+  mismatched proof (method, URI, `ath`) gets `DPoP
+  error="invalid_dpop_proof"` with the same `algs`. An invalid token
+  presented with the `DPoP` scheme gets `DPoP error="invalid_token"`; every
+  other refusal keeps `Bearer error="invalid_token"`, and a request without
+  credentials gets both a `Bearer` and a `DPoP algs="..."` challenge
+  (`TestUserInfoDPoPChallenge`). The account, organization and
+  administration APIs still answer these refusals as `401` problem details
+  with a `Bearer` challenge.
 - **Limits:** DPoP nonces are not supported; refresh tokens are not bound to the
   key. The Go resource SDK checks proofs through `SenderVerifier`; token-only
   methods in all SDKs reject bound tokens. Node.js, Dart and PHP have no
@@ -593,6 +621,12 @@ where PAR, the 60-second code lifetime and the other rules above apply.
 
 - Any authenticated client (public clients authenticate with `client_id` only).
   The response is `200` whether or not the token existed or belonged to the caller.
+- When the revocation cannot be recorded (the database write or, for a JWT,
+  the `token.access.revoked` audit event, which commits in the same
+  transaction, fails) the response is `503 temporarily_unavailable` with
+  `Retry-After` (RFC 7009 §2.2.1) and the token stays valid: the client must
+  retry. An unknown token or another client's token is never an error, so the
+  `503` reveals nothing about the token (`TestRevocationStorageFailure`).
 - Refresh token (`pa_rt_`): revokes the grant, its refresh families and opaque
   tokens, only if it belongs to the caller. Linked user/exchanged JWTs are then
   inactive at online consumers; unrelated grants and the SSO session survive.

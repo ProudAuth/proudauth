@@ -107,8 +107,11 @@ Errors are RFC 7591 JSON (`error`, `error_description`) with status `400`:
 | `invalid_redirect_uri` | No or more than 20 redirect URIs, or any redirect or post-logout redirect URI that fails the registration rules |
 | `invalid_client_metadata` | `jwks_uri` (ProudAuth fetches no client metadata), other grant or response types, an unsupported authentication method (including the mutual-TLS methods), `private_key_jwt` without `jwks`, a wrong body, and any other failed client validation |
 
-Other failures are problem details: `404` when registration is disabled or
-the realm is not active, `429` and `503` (budgets, below).
+Other failures are OAuth errors too, like every error under
+`/realms/{realm}/oauth/` ([API conventions](../protocols/api-conventions.md)):
+`404 invalid_request` when registration is disabled or the realm is not
+active, `429 slow_down` and `503 temporarily_unavailable` (budgets, below),
+both with `Retry-After`. Before 0.2.0-alpha.6 these were problem details.
 
 **What the client becomes.** Every registered client is created with:
 
@@ -128,8 +131,9 @@ response's `scope` lists what was granted (it can be empty).
 
 **Budgets.** 20 registration requests per hour per client address and 500
 per hour per realm, in fixed hourly windows; every `POST` counts, also
-refused ones. Beyond them `429` with `Retry-After`. The budgets fail closed:
-when the limiter is unavailable the answer is `503`.
+refused ones. Beyond them `429 slow_down` with `Retry-After`. The budgets
+fail closed: when the limiter is unavailable the answer is `503
+temporarily_unavailable`, also with `Retry-After`.
 
 **Response** `201`:
 
@@ -194,7 +198,7 @@ clients; otherwise the member is ignored). The previous secrets stay valid
 for at most one hour. `limits.client_secrets_max` (3 by default) bounds the
 secrets that are still valid; secrets past their expiry do not count. A
 rotation beyond it (for example a third rotation within the hour) is
-`409` (problem details) and changes nothing: the metadata stays as it was,
+`409 invalid_request` and changes nothing: the metadata stays as it was,
 no secret is issued, and the registration access token presented stays
 valid; retry once the older secrets expired, or have an administrator
 revoke one (`DELETE /clients/{client}/credentials/{id}`).

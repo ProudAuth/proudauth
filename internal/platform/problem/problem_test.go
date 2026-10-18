@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func render(t *testing.T, err error) (*httptest.ResponseRecorder, map[string]any) {
@@ -87,5 +89,47 @@ func TestAuthenticationErrorStatuses(t *testing.T) {
 		if got := strings.HasPrefix(rec.Header().Get("WWW-Authenticate"), "Bearer"); got != tc.challenge {
 			t.Errorf("%s: WWW-Authenticate %q", tc.err.Code, rec.Header().Get("WWW-Authenticate"))
 		}
+	}
+}
+
+// TestRetryAfterOnThrottlingAndUnavailable covers API-009 and the API
+// conventions' rule that 429 and 503 responses include Retry-After: a
+// problem that names a delay keeps it (rounded up to whole seconds), a 429 or
+// 503 that names none gets DefaultRetryAfter, and other statuses get no
+// header unless they name a delay.
+func TestRetryAfterOnThrottlingAndUnavailable(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		err  *Error
+		want string
+	}{
+		{"429 without a delay", ErrRateLimited.WithDetail("verification was requested too recently"), "2"},
+		{"503 without a delay", ErrUnavailable, "2"},
+		{"maintenance without a delay", ErrMaintenance, "2"},
+		{"upstream unavailable without a delay", ErrUpstreamUnavailable, "2"},
+		{"429 with a delay", ErrRateLimited.WithRetryAfter(90 * time.Second), "90"},
+		{"503 with a fractional delay rounds up", ErrUnavailable.WithRetryAfter(1500 * time.Millisecond), "2"},
+		{"a delay under a second is one second", ErrRateLimited.WithRetryAfter(time.Nanosecond), "1"},
+		{"a negative delay is the default", ErrRateLimited.WithRetryAfter(-time.Second), "2"},
+		{"409 without a delay", ErrConflict, ""},
+		{"404 without a delay", ErrNotFound, ""},
+		{"500 without a delay", ErrInternal, ""},
+	} {
+		rec, _ := render(t, tc.err)
+		if got := rec.Header().Get("Retry-After"); got != tc.want {
+			t.Errorf("%s: Retry-After %q, want %q", tc.name, got, tc.want)
+		}
+	}
+	if DefaultRetryAfter < time.Second || DefaultRetryAfter > 5*time.Second {
+		t.Fatalf("DefaultRetryAfter %v is outside 1-5 s", DefaultRetryAfter)
+	}
+	h := http.Header{}
+	SetRetryAfter(h, http.StatusBadRequest, 0)
+	if h.Get("Retry-After") != "" {
+		t.Fatalf("400 without a delay got Retry-After %q", h.Get("Retry-After"))
+	}
+	SetRetryAfter(h, http.StatusServiceUnavailable, 0)
+	if h.Get("Retry-After") != "2" {
+		t.Fatalf("503 without a delay got Retry-After %q", h.Get("Retry-After"))
 	}
 }

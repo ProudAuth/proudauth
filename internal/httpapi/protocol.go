@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -151,20 +150,109 @@ func (a *App) originAllowed(r *http.Request, rlm *realm.Realm) bool {
 	return slices.Contains(a.allowedOrigins(r, rlm.ID), origin)
 }
 
+// ---------- error format by route class (API-001, API-007) ----------
+
+// protocolRoute reports a path on an OAuth/OIDC protocol endpoint of a
+// realm's issuer, /realms/{realm}/oauth/... or /realms/{realm}/oidc/...
+// Every error there answers in the OAuth error format (RFC 6749 §5.2),
+// including those decided before a handler runs: load shedding, the body
+// limit, maintenance, the host policy and an unknown realm. Everything else,
+// the custom APIs and the issuer's metadata documents, answers with problem
+// details.
+func protocolRoute(path string) bool {
+	rest, ok := strings.CutPrefix(path, "/realms/")
+	if !ok {
+		return false
+	}
+	_, rest, ok = strings.Cut(rest, "/")
+	if !ok {
+		return false
+	}
+	seg, _, _ := strings.Cut(rest, "/")
+	return seg == "oauth" || seg == "oidc"
+}
+
+// oauthErrorFor renders an error for a protocol endpoint. A problem keeps its
+// HTTP status, Retry-After and client-safe detail (its title when it has
+// none) under the nearest OAuth error code: 401 invalid_token, 403
+// access_denied, 429 slow_down, 503 temporarily_unavailable, other 5xx
+// server_error, anything else invalid_request. Unknown errors are
+// server_error without a description.
+func oauthErrorFor(err error) *oauth.Error {
+	var oe *oauth.Error
+	if errors.As(err, &oe) {
+		return oe
+	}
+	pe, ok := problem.As(err)
+	if !ok {
+		return oauth.ErrServerError
+	}
+	code := "invalid_request"
+	switch {
+	case pe.Status == http.StatusUnauthorized:
+		code = "invalid_token"
+	case pe.Status == http.StatusForbidden:
+		code = "access_denied"
+	case pe.Status == http.StatusTooManyRequests:
+		code = "slow_down"
+	case pe.Status == http.StatusServiceUnavailable:
+		code = "temporarily_unavailable"
+	case pe.Status >= 500:
+		return oauth.ErrServerError
+	}
+	desc := pe.Detail
+	if desc == "" {
+		desc = pe.Title
+	}
+	return &oauth.Error{Code: code, Description: desc, Status: pe.Status, RetryAfter: pe.RetryAfter}
+}
+
+// writeError renders err in the format of the request's route class: the
+// OAuth error format on protocol endpoints (protocolRoute), problem details
+// everywhere else. Both send Retry-After on every 429 and 503.
+func (a *App) writeError(w http.ResponseWriter, r *http.Request, err error) {
+	if protocolRoute(r.URL.Path) {
+		a.writeOAuthError(w, oauthErrorFor(err))
+		return
+	}
+	problem.Write(w, reqctx.From(r.Context()).RequestID, err)
+}
+
 // ---------- protocol endpoints ----------
 
+// writeOAuthError writes an OAuth error response (RFC 6749 §5.2): a 401
+// invalid_client carries the Basic challenge of client authentication, a 401
+// invalid_token a Bearer challenge (RFC 6750 §3), and every 429 and 503
+// carries Retry-After (problem.DefaultRetryAfter when the error names none).
 func (a *App) writeOAuthError(w http.ResponseWriter, e *oauth.Error) {
-	if e.Status == http.StatusUnauthorized {
-		w.Header().Set("WWW-Authenticate", `Basic realm="token", error="invalid_client"`)
-	}
-	if e.RetryAfter > 0 {
-		w.Header().Set("Retry-After", strconv.Itoa(int(e.RetryAfter.Seconds())+1))
-	}
 	status := e.Status
 	if status == 0 {
 		status = 400
 	}
+	if status == http.StatusUnauthorized {
+		if e.Code == "invalid_token" {
+			w.Header().Set("WWW-Authenticate", `Bearer error="invalid_token"`)
+		} else {
+			w.Header().Set("WWW-Authenticate", `Basic realm="token", error="invalid_client"`)
+		}
+	}
+	problem.SetRetryAfter(w.Header(), status, e.RetryAfter)
 	writeJSON(w, status, e)
+}
+
+// dpopChallenge is a DPoP WWW-Authenticate challenge (RFC 9449 §7.1) naming
+// the accepted proof algorithms; code and desc are empty for a request that
+// carried no credentials. desc must not contain quotes.
+func dpopChallenge(code, desc string) string {
+	params := []string{}
+	if code != "" {
+		params = append(params, `error="`+code+`"`)
+	}
+	if desc != "" {
+		params = append(params, `error_description="`+desc+`"`)
+	}
+	params = append(params, `algs="`+strings.Join(oauth.DPoPSigningAlgorithms, " ")+`"`)
+	return "DPoP " + strings.Join(params, ", ")
 }
 
 func (a *App) clientAuthFrom(r *http.Request) application.ClientAuthInput {
@@ -327,15 +415,18 @@ func (a *App) userinfo(w http.ResponseWriter, r *http.Request, rlm *realm.Realm)
 	a.applyCORS(w, r, rlm, false)
 	raw := bearer(r)
 	if raw == "" {
+		// Both schemes are accepted (RFC 6750 §3, RFC 9449 §7.1).
 		w.Header().Set("WWW-Authenticate", `Bearer`)
+		w.Header().Add("WWW-Authenticate", dpopChallenge("", ""))
 		w.WriteHeader(http.StatusUnauthorized)
 		return nil
 	}
 	body, ctype, cnf, err := a.OAuth.UserInfoResponse(r.Context(), rlm, raw)
 	if err == nil {
 		// A sender-constrained token is usable only by its holder (TOK-019).
+		// A refused DPoP binding or proof is answered with a DPoP challenge.
 		if cerr := a.checkSenderConstraint(r, rlm, raw, cnf); cerr != nil {
-			w.Header().Set("WWW-Authenticate", `Bearer error="invalid_token"`)
+			w.Header().Set("WWW-Authenticate", senderChallenge(cerr))
 			w.WriteHeader(http.StatusUnauthorized)
 			return nil
 		}
@@ -347,7 +438,12 @@ func (a *App) userinfo(w http.ResponseWriter, r *http.Request, rlm *realm.Realm)
 	if err != nil {
 		var pe *problem.Error
 		if errors.As(err, &pe) {
-			w.Header().Set("WWW-Authenticate", `Bearer error="invalid_token"`)
+			// The challenge follows the scheme the token was presented with.
+			challenge := `Bearer error="invalid_token"`
+			if authScheme(r) == "dpop" {
+				challenge = dpopChallenge("invalid_token", "")
+			}
+			w.Header().Set("WWW-Authenticate", challenge)
 			w.WriteHeader(http.StatusUnauthorized)
 			return nil
 		}

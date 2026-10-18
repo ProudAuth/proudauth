@@ -3,7 +3,23 @@ package oauth
 import (
 	"net/url"
 	"testing"
+
+	"github.com/proudauth/proudauth/internal/application"
 )
+
+// TestDPoPSigningAlgorithms pins the algorithms discovery advertises as
+// dpop_signing_alg_values_supported and a DPoP challenge names in algs
+// (RFC 9449 §5.1, §7.1) to the ones VerifyDPoPProof accepts, in order.
+func TestDPoPSigningAlgorithms(t *testing.T) {
+	if len(DPoPSigningAlgorithms) != len(application.AsymmetricAlgorithms) {
+		t.Fatalf("advertised %v, verified %v", DPoPSigningAlgorithms, application.AsymmetricAlgorithms)
+	}
+	for i, alg := range application.AsymmetricAlgorithms {
+		if DPoPSigningAlgorithms[i] != string(alg) {
+			t.Fatalf("advertised %v, verified %v", DPoPSigningAlgorithms, application.AsymmetricAlgorithms)
+		}
+	}
+}
 
 // TestURLEscape pins the escaping of values appended to logout redirects:
 // the characters that would end or alter a query parameter are encoded

@@ -54,8 +54,64 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   password lock off sets `failures_before_lock: 0` instead.
   `api/schemas/config.schema.json` marks the limits and windows
   non-negative. Regression test `TestValidateRateLimits`.
+- The invitation resend cap (`limits.invitation_resends`) answers `409
+  conflict` ("resend limit reached for this invitation; create a new
+  invitation") instead of `429 rate_limited`: the cap never resets, so a
+  `429` told clients to wait for a retry that could never succeed (INV-009,
+  API-009, `TestInvitationLimitsAndExpiry`). **Migration:** a client that
+  read a `429` from `POST .../invitations/{id}/resend` as the cap should
+  handle `409` by creating a new invitation; a `429` from that route now only
+  means the organization's invitation budget and carries `Retry-After`.
 
 ### Fixed
+
+- Errors on the OAuth and OIDC endpoints (`/realms/{realm}/oauth/*` and
+  `/realms/{realm}/oidc/*`) are always OAuth errors (`error` and
+  `error_description` only), as the API conventions promise, also when the
+  refusal is decided before the endpoint runs: load shedding and maintenance
+  answer `503 temporarily_unavailable`, a body over `limits.max_body_bytes`
+  `413 invalid_request`, the host policy `421 invalid_request` and an unknown
+  realm `404 invalid_request`. These, and other problems an endpoint raised
+  (for example dynamic client registration's `404` and `429`), came back as
+  `application/problem+json` without an `error` member, which OAuth client
+  libraries cannot read. HTTP statuses are unchanged; the custom APIs and the
+  discovery and JWKS documents keep problem details (API-001, API-007,
+  `TestProtocolErrorFormat`, `TestLoadShedding`,
+  `TestProtocolRouteErrorFormat`). Clients that parsed problem details from
+  these routes should read `error` instead.
+- Every `429` and `503` carries `Retry-After`, as the API conventions state:
+  a refusal that names no delay gets 2 seconds (`problem.DefaultRetryAfter`)
+  in problem details, OAuth errors, SCIM and the registry token endpoint, and
+  maintenance with `retry_after_seconds` `0` sends that default instead of no
+  header. The `503`s of JWKS, dynamic client registration, the session check
+  and an inactive identity domain, the Shared Signals verification `429` (now
+  the rest of its interval) and maintenance with `0` had none (API-009,
+  OPS-015, `TestRetryAfterOnThrottlingAndUnavailable`,
+  `TestRetryAfterClampsZero`, `TestProtocolErrorFormat`).
+- Token revocation answers `503 temporarily_unavailable` with `Retry-After`
+  when the revocation cannot be recorded, as RFC 7009 §2.2.1 recommends; the
+  errors of the refresh-token, opaque-token and JWT revocation writes and of
+  the JWT path's audit event were dropped, so the endpoint answered `200`
+  while the token stayed valid. A JWT's revocation record and its
+  `token.access.revoked` audit event now commit in one transaction. Unknown
+  tokens and other clients' tokens still answer `200`, so the `503` reveals
+  nothing about a token (TOK-010, `TestRevocationStorageFailure`). Affects
+  0.2.0-alpha.5 and earlier.
+- A pushed authorization request is consumed only by the client that pushed
+  it. The `request_uri` was marked used before the presented `client_id` was
+  compared with the pushing client, so a request with another client's or an
+  unknown `client_id` failed and also spent the reference for its own client.
+  The client is now resolved first and the consuming update matches it; the
+  refusal is `400 invalid_request` ("invalid or expired request_uri") either
+  way (RFC 9126 §4, OIDC-001, `TestDeviceFlowAndPAR`). Affects 0.2.0-alpha.5
+  and earlier.
+- UserInfo answers a refused DPoP binding with a `DPoP` challenge naming the
+  accepted proof algorithms (RFC 9449 §7.1) instead of `Bearer
+  error="invalid_token"`: `invalid_token` for a DPoP-bound token sent with
+  the `Bearer` scheme or with another key's proof, `invalid_dpop_proof` for a
+  missing or invalid proof. A request without credentials gets a `Bearer` and
+  a `DPoP` challenge (TOK-019, `TestUserInfoDPoPChallenge`,
+  `TestSenderConstraintChallenges`).
 
 - Accepting a resource share no longer rewrites a relationship tuple the
   share did not create, and revoking a share no longer deletes one (AZ-021,

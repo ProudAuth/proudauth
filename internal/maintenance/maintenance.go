@@ -9,8 +9,9 @@
 //     logout are served, so resource servers keep validating existing tokens
 //     and users can still end sessions.
 //
-// Refusals are a generic 503 problem with Retry-After and the operator's
-// public message; they never describe internal topology.
+// Refusals are a generic 503 with Retry-After and the operator's public
+// message (problem details, or the OAuth error format on protocol
+// endpoints); they never describe internal topology.
 package maintenance
 
 import (
@@ -43,6 +44,16 @@ type State struct {
 	// (SEC-015); every node applies it on its next refresh.
 	DebugUntil     *time.Time `json:"debug_until,omitempty"`
 	DebugComponent string     `json:"debug_component,omitempty"`
+}
+
+// RetryAfter is the Retry-After of a refusal in this state: the operator's
+// retry_after_seconds, or problem.DefaultRetryAfter when that is 0, so a
+// refusal always tells clients when to try again (API-009).
+func (s State) RetryAfter() time.Duration {
+	if s.RetryAfterSeconds <= 0 {
+		return problem.DefaultRetryAfter
+	}
+	return time.Duration(s.RetryAfterSeconds) * time.Second
 }
 
 // Get reads the state.

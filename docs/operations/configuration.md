@@ -478,7 +478,7 @@ every request that uses them.
 | `max_batch_size` | `100` | Maximum items in `POST /authorization/check-batch` and in bulk invitations (`POST /organizations/{org}/invitations/batch`; the error names the configured maximum, "1..<max> invitations (limits.max_batch_size)"). `1`–`10000`. |
 | `max_group_depth` | `8` | Maximum group nesting depth (`422` when a change would exceed it). `1`–`32`. |
 | `max_role_expansion` | `64` | Maximum roles reached through composite expansion; a role graph beyond it is refused at creation and evaluates to deny. `8`–`1024`. |
-| `invitation_resends` | `5` | Times one invitation can be resent after its first send (INV-009): the default allows 5 resends (6 sends in all), `0` allows none; beyond it `429 rate_limited` ("resend limit reached for this invitation"). `0`–`20`. |
+| `invitation_resends` | `5` | Times one invitation can be resent after its first send (INV-009): the default allows 5 resends (6 sends in all), `0` allows none; beyond it `409 conflict` ("resend limit reached for this invitation; create a new invitation"; `429` before 0.2.0-alpha.6). `0`–`20`. |
 | `shared_invitation_max_uses` | `100` | Highest `max_uses` of a shared invitation link (`422` on `max_uses` above it). `1`–`10000`. |
 | `shared_invitation_max_ttl` | `72h` | Longest lifetime of a shared invitation link: a `ttl_hours` of `0` or above it gets 24 hours (or this value, if shorter) instead of an error. `1h`–`720h`. |
 | `client_secrets_max` | `3` | Active (overlapping) secrets per client; issuing one more answers `409 conflict` ("revoke an old secret first"). `1`–`10`. |

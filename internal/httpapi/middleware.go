@@ -183,7 +183,7 @@ func (a *App) middleware(next http.Handler) http.Handler {
 		defer func() {
 			if rec := recover(); rec != nil {
 				a.D.Log.Error("panic", "request_id", reqID, "route", route, "panic", rec)
-				problem.Write(sw, reqID, problem.ErrInternal)
+				a.writeError(sw, r, problem.ErrInternal)
 			}
 			status := sw.status
 			if status == 0 {
@@ -222,7 +222,9 @@ func (a *App) middleware(next http.Handler) http.Handler {
 		// Load shedding with a reserved pool for administration and health (NFR-002).
 		// The reserve serves health probes and credentialed administration only:
 		// anonymous floods against administrative paths compete in the ordinary
-		// pool (they would be rejected by authentication anyway).
+		// pool (they would be rejected by authentication anyway). Refusals
+		// here use the route's error format (writeError): OAuth errors on
+		// protocol endpoints, problem details elsewhere.
 		pool := a.inflight
 		if isHealthPath(r.URL.Path) || (isAdminPath(r.URL.Path) && r.Header.Get("Authorization") != "") {
 			pool = a.adminSlots
@@ -232,21 +234,22 @@ func (a *App) middleware(next http.Handler) http.Handler {
 			defer func() { <-pool }()
 		default:
 			a.Metrics.Shed.Inc(route)
-			problem.Write(sw, reqID, problem.ErrUnavailable.WithDetail("server is shedding load").WithRetryAfter(2*time.Second))
+			a.writeError(sw, r, problem.ErrUnavailable.WithDetail("server is shedding load").WithRetryAfter(2*time.Second))
 			return
 		}
 		if r.ContentLength > a.D.Cfg.Limits.MaxBodyBytes {
-			problem.Write(sw, reqID, problem.ErrTooLarge)
+			a.writeError(sw, r, problem.ErrTooLarge)
 			return
 		}
 		r.Body = http.MaxBytesReader(sw, r.Body, a.D.Cfg.Limits.MaxBodyBytes)
 		if a.Maintenance != nil {
 			if st := a.Maintenance.Current(ctx, a.D.DB.Pool); !maintenance.Allowed(st.Mode, r.Method, r.URL.Path) {
-				pe := problem.ErrMaintenance.WithRetryAfter(time.Duration(st.RetryAfterSeconds) * time.Second)
+				// retry_after_seconds 0 is clamped to the default delay.
+				pe := problem.ErrMaintenance.WithRetryAfter(st.RetryAfter())
 				if st.Message != "" {
 					pe = pe.WithDetail(st.Message)
 				}
-				problem.Write(sw, reqID, pe)
+				a.writeError(sw, r, pe)
 				return
 			}
 		}

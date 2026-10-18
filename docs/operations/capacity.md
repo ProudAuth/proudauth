@@ -102,7 +102,8 @@ excluded by default; an explicit `state` filter can list it.
   requests carrying an `Authorization` header to administrative paths (users,
   settings, signing keys, emergency actions, sessions, clients, role assignments)
   so operators can act during overload (NFR-002). Excess requests get 503 with
-  `Retry-After: 2`.
+  `Retry-After: 2` (`unavailable` problem details, or an OAuth
+  `temporarily_unavailable` error on the OAuth and OIDC endpoints).
 - Requests are cancelled after 30 s; statements after `storage.statement_timeout`.
 - Each worker process runs its tasks one after another every
   `workers.poll_interval`; outbox, notifications and webhooks claim up to

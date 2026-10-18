@@ -257,7 +257,8 @@ func TestInvitationDecline(t *testing.T) {
 }
 
 // TestInvitationLimitsAndExpiry covers INV-009 and INV-001 edges: the resend
-// limit counts resends (not the first send), a negative lifetime is refused
+// limit counts resends (not the first send) and beyond it is 409 conflict
+// (the cap never resets, so it is not a 429), a negative lifetime is refused
 // instead of falling back to a default that may exceed the maximum, the list
 // cursor is bound to its state filter, and an expired invitation can no
 // longer be declined.
@@ -273,7 +274,11 @@ func TestInvitationLimitsAndExpiry(t *testing.T) {
 	for i := 1; i <= 2; i++ {
 		mustStatus(t, h.API("POST", inviteURL+"/"+inv.Str("invitation.id")+"/resend", alice, nil), 200, fmt.Sprintf("resend %d", i))
 	}
-	mustStatus(t, h.API("POST", inviteURL+"/"+inv.Str("invitation.id")+"/resend", alice, nil), 429, "resend beyond the limit")
+	// The cap never resets: a conflict, not a throttle with a delay to wait out.
+	if r := h.API("POST", inviteURL+"/"+inv.Str("invitation.id")+"/resend", alice, nil); r.Status != 409 || r.Str("code") != "conflict" ||
+		r.Header.Get("Retry-After") != "" || !strings.Contains(r.Str("detail"), "resend limit") {
+		t.Fatalf("resend beyond the limit: %d %s Retry-After=%q", r.Status, r.Raw, r.Header.Get("Retry-After"))
+	}
 
 	mustStatus(t, h.API("POST", inviteURL, alice, map[string]any{"email": "negative@example.test", "ttl_hours": -5}), 422, "negative lifetime")
 	mustStatus(t, h.API("POST", inviteURL, alice, map[string]any{"purpose": "shared_link", "max_uses": 5, "allowed_domains": []string{"example.test"},

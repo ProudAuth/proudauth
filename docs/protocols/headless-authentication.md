@@ -47,7 +47,9 @@ not allowed here):
 Other start fields: `prompt`, `max_age`, `acr_values`, `claims` (the OIDC claims
 request as a JSON string; see
 [oauth-oidc-profile.md](oauth-oidc-profile.md#claims-parameter)), `request_uri` (a
-PAR reference), `intent: "register"`, `device_user_code` (see Device flow), and
+PAR reference, usable once and only with the `client_id` that pushed it; with
+another client's it is refused without being spent,
+[oauth-oidc-profile.md](oauth-oidc-profile.md#par-rfc-9126)), `intent: "register"`, `device_user_code` (see Device flow), and
 `response_mode` (`query`, the default, or `query.jwt`/`jwt`: `redirect_to`
 then carries one signed `response` parameter, JARM, ADV-002,
 [response-security.md](response-security.md#jarm-adv-002); other values are

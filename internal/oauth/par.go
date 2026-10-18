@@ -49,21 +49,29 @@ func (s *Service) PushAuthorizationRequest(ctx context.Context, rlm *realm.Realm
 	return &PARResponse{RequestURI: ref, ExpiresIn: int(parTTL.Seconds())}, nil
 }
 
+// consumePAR redeems a pushed request reference for the client presenting it
+// (RFC 9126 §4). The client is resolved before the reference is touched, and
+// the consuming UPDATE matches the pushing client (client_ref), so a
+// request_uri presented with another client's client_id, an unknown one or
+// none is refused without spending it: only its own client can use it, once.
+// The refusal is the same whether or not the reference exists.
 func (s *Service) consumePAR(ctx context.Context, rlm *realm.Realm, clientID, ref string) (AuthorizeRequest, *Error) {
+	if clientID == "" {
+		return AuthorizeRequest{}, ErrInvalidRequest("client_id is required with request_uri")
+	}
+	c, err := s.Apps.ClientByClientID(ctx, nil, rlm.ID, clientID)
+	if err != nil {
+		return AuthorizeRequest{}, ErrInvalidRequest("invalid or expired request_uri")
+	}
 	var params []byte
-	var clientRef string
-	err := s.d.DB.Pool.QueryRow(ctx, `UPDATE pushed_authorization_requests SET consumed_at=$3 WHERE realm_id=$1 AND request_uri_digest=$2
-		AND consumed_at IS NULL AND expires_at > $3 RETURNING parameters, client_ref`, rlm.ID, secret.Digest(ref), s.d.Now()).Scan(&params, &clientRef)
+	err = s.d.DB.Pool.QueryRow(ctx, `UPDATE pushed_authorization_requests SET consumed_at=$3 WHERE realm_id=$1 AND request_uri_digest=$2
+		AND client_ref=$4 AND consumed_at IS NULL AND expires_at > $3 RETURNING parameters`, rlm.ID, secret.Digest(ref), s.d.Now(), c.Ref).Scan(&params)
 	if err != nil {
 		return AuthorizeRequest{}, ErrInvalidRequest("invalid or expired request_uri")
 	}
 	var req AuthorizeRequest
 	if err := json.Unmarshal(params, &req); err != nil {
 		return AuthorizeRequest{}, ErrInvalidRequest("invalid request_uri")
-	}
-	c, err := s.Apps.ClientByClientID(ctx, nil, rlm.ID, clientID)
-	if err != nil || c.Ref != clientRef {
-		return AuthorizeRequest{}, ErrInvalidRequest("request_uri was issued to another client")
 	}
 	req.RequestURI = ref // marks the request as pushed for RequirePAR clients
 	return req, nil

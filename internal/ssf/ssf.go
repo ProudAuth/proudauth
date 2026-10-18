@@ -487,7 +487,8 @@ func (s *Service) Verify(ctx context.Context, rlm *realm.Realm, clientRef, id, s
 		}
 		now := s.d.Now()
 		if st.LastVerificationAt != nil && now.Sub(*st.LastVerificationAt) < minVerificationInterval {
-			return problem.ErrRateLimited.WithDetail("verification was requested too recently")
+			return problem.ErrRateLimited.WithDetail("verification was requested too recently").
+				WithRetryAfter(minVerificationInterval - now.Sub(*st.LastVerificationAt))
 		}
 		if _, err := tx.Exec(ctx, `UPDATE ssf_streams SET last_verification_at=$2 WHERE id=$1`, st.ID, now); err != nil {
 			return err
