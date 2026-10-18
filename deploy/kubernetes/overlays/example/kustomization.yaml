@@ -14,7 +14,15 @@ configMapGenerator:
   - name: proudauth-config
     files:
       - config.yaml
-# Expected secret keys (mounted at /run/secrets): database_url, root_key_v1,
-# metrics_token, smtp_password. Example (do not commit):
+# The schema owner's connection reaches the migrate Job only (OPS-013).
+patches:
+  - path: migrate-job-secrets.yaml
+# Expected secret keys (mounted at /run/secrets): database_url (the runtime
+# role, proudauth_app), root_key_v1, metrics_token, smtp_password. The
+# migrate Job also mounts proudauth-migration-secrets at /run/migration-secrets
+# with key migration_database_url (the schema owner, proudauth_owner).
+# Example (do not commit):
 #   kubectl -n proudauth create secret generic proudauth-secrets \
 #     --from-file=database_url=./database_url --from-file=root_key_v1=./root_key_v1 ...
+#   kubectl -n proudauth create secret generic proudauth-migration-secrets \
+#     --from-file=migration_database_url=./migration_database_url

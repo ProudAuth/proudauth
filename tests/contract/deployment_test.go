@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
@@ -352,8 +353,10 @@ func TestDeployReleaseArtifacts(t *testing.T) {
 // account token and size-limited explicit writable volumes; resource
 // requests and limits; secrets referenced from a Secret, never embedded;
 // separate liveness and readiness probes; disruption budgets; a migration
-// Job with rollout guidance; and background work in its own Deployment so it
-// cannot starve interactive sign-in.
+// Job with a deadline and rollout guidance; separate schema-owner and runtime
+// database roles in the example overlay, with the owner's connection mounted
+// into the migration Job only (OPS-013); and background work in its own
+// Deployment so it cannot starve interactive sign-in.
 func TestDeployKubernetesManifests(t *testing.T) {
 	base := "deploy/kubernetes/base"
 	kust := deployDocs(t, base+"/kustomization.yaml")[0]
@@ -447,8 +450,71 @@ func TestDeployKubernetesManifests(t *testing.T) {
 			t.Errorf("no PodDisruptionBudget for the %s pods", c)
 		}
 	}
+	// The Job's deadline covers every attempt. It must leave room for a
+	// statement that runs to storage.migration_statement_timeout, the only
+	// bound of a concurrent index build, or the build is killed with the pod.
+	deadline, _ := deployDig(workloads["migrate"], "spec", "activeDeadlineSeconds").(int)
+	if st := example.Storage.MigrationStatementTimeout; st <= 0 || time.Duration(deadline)*time.Second <= st {
+		t.Errorf("migration Job activeDeadlineSeconds %d must exceed overlays/example storage.migration_statement_timeout %v, which must be bounded", deadline, st)
+	}
+
+	// The example overlay separates the schema owner from the runtime role
+	// (OPS-013). The owner's connection is a file in a Secret of its own that
+	// an overlay patch mounts into the migration Job alone: the server and
+	// worker never hold it, and the base does not need it, so other overlays
+	// need no second Secret.
+	const overlayDir, migrationSecret = "deploy/kubernetes/overlays/example", "proudauth-migration-secrets"
+	if example.Storage.RuntimeRole == "" {
+		t.Error("overlays/example must set storage.runtime_role so the server and worker get data privileges only")
+	}
+	if example.Storage.MigrateOnStart {
+		t.Error("overlays/example must not set storage.migrate_on_start: the server and worker cannot read the migration connection")
+	}
+	migrationFile, isFile := strings.CutPrefix(example.Storage.MigrationDatabaseURL, "file:")
+	if !isFile {
+		t.Errorf("overlays/example storage.migration_database_url %q must be a file: reference into %s", example.Storage.MigrationDatabaseURL, migrationSecret)
+	}
+	pods := slices.Collect(maps.Values(workloads))
+	for _, w := range pods {
+		for _, v := range deployList(deployDig(w, "spec", "template", "spec", "volumes")) {
+			if deployDig(v, "secret", "secretName") == migrationSecret {
+				t.Errorf("%s %v mounts %s in the base; mount it from an overlay", w["kind"], deployDig(w, "metadata", "name"), migrationSecret)
+			}
+		}
+	}
+	for _, p := range deployList(deployDig(deployDocs(t, overlayDir+"/kustomization.yaml")[0], "patches")) {
+		if path, _ := deployDig(p, "path").(string); path != "" {
+			pods = append(pods, deployDocs(t, overlayDir+"/"+path)...)
+		} else {
+			t.Errorf("overlays/example patch %v: give patches as files (path:) so this test reads them", p)
+		}
+	}
+	// Where each Secret is mounted, over the base and the overlay's patches.
+	workload := func(w map[string]any) string { return fmt.Sprint(w["kind"], " ", deployDig(w, "metadata", "name")) }
+	secretOf := map[string]any{} // "<workload>/<volume>" -> Secret name
+	for _, w := range pods {
+		for _, v := range deployList(deployDig(w, "spec", "template", "spec", "volumes")) {
+			if s := deployDig(v, "secret", "secretName"); s != nil {
+				secretOf[fmt.Sprint(workload(w), "/", deployDig(v, "name"))] = s
+			}
+		}
+	}
+	var migrationMounts []string
+	for _, w := range pods {
+		for _, c := range deployList(deployDig(w, "spec", "template", "spec", "containers")) {
+			for _, m := range deployList(deployDig(c, "volumeMounts")) {
+				if secretOf[fmt.Sprint(workload(w), "/", deployDig(m, "name"))] == migrationSecret {
+					migrationMounts = append(migrationMounts, fmt.Sprint(workload(w), ":", deployDig(m, "mountPath")))
+				}
+			}
+		}
+	}
+	if want := []string{"Job proudauth-migrate:" + filepath.Dir(migrationFile)}; !slices.Equal(migrationMounts, want) {
+		t.Errorf("%s is mounted at %v; want %v only, the directory of overlays/example storage.migration_database_url", migrationSecret, migrationMounts, want)
+	}
+
 	readme := deployRead(t, "deploy/kubernetes/README.md")
-	for _, want := range []string{"Kubernetes is\noptional", "## Rollout procedure", "migration Job", "proudauth-secrets"} {
+	for _, want := range []string{"Kubernetes is\noptional", "## Rollout procedure", "migration Job", "proudauth-secrets", migrationSecret, "activeDeadlineSeconds"} {
 		if !strings.Contains(readme, want) {
 			t.Errorf("deploy/kubernetes/README.md lacks %q", want)
 		}

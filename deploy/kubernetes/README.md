@@ -7,7 +7,8 @@ optional; the same image runs under Docker Compose (`deploy/dev`, `deploy/prod`)
 deploy/kubernetes/
   base/                 server + worker Deployments, migration Job, Services,
                         PodDisruptionBudgets, NetworkPolicies, ServiceAccount
-  overlays/example/     namespace, image pin, ConfigMap from config.yaml
+  overlays/example/     namespace, image pin, ConfigMap from config.yaml,
+                        migration Secret mounted into the Job only
 ```
 
 ## Secure defaults
@@ -18,6 +19,18 @@ deploy/kubernetes/
 - Secrets are referenced, never generated or embedded: create `proudauth-secrets`
   out of band with keys `database_url`, `root_key_v1` (and any other `file:`
   references in your config). The config uses `file:/run/secrets/...` refs.
+- The example overlay separates database roles (OPS-013,
+  [installation.md](../../docs/operations/installation.md#database-roles)):
+  `database_url` in `proudauth-secrets` is the runtime role's connection
+  (`storage.runtime_role: proudauth_app`), and a second Secret,
+  `proudauth-migration-secrets` with key `migration_database_url` (the schema
+  owner's connection), is mounted at `/run/migration-secrets` into the
+  migration Job only (`overlays/example/migrate-job-secrets.yaml`). Create
+  both roles before the Job first runs: it connects as the runtime role too,
+  and its grants to `runtime_role` fail when that role does not exist. Keep
+  `storage.migrate_on_start` off, since the server and worker cannot read the
+  owner's connection. The base mounts only `proudauth-secrets`; an overlay
+  without separate roles leaves out the patch and the two `storage` keys.
 - `/health/live` is a process check; `/health/ready` fails when the database,
   schema version, active signing keys or clock agreement are unsafe, removing the
   pod from traffic without restarting it. At shutdown it reports `draining` for
@@ -35,6 +48,9 @@ deploy/kubernetes/
 - Metrics, status and the health checks listen on `:9090`, exposed only through
   the `proudauth-internal` Service and allowed only from the `monitoring`
   namespace.
+- The NetworkPolicies allow egress to the database (5432), and for workers to
+  SMTP (587, 465), at any address; `base/networkpolicy.yaml` has commented
+  `to:` examples that restrict them to your database and SMTP relay.
 - Workers serve `/health/live`, `/health/ready`, `/metrics` and `/status` on
   `workers.metrics_listen` (`:9091` in the example configuration); the worker's
   liveness and startup probes use it, so keep it set.
@@ -45,6 +61,12 @@ deploy/kubernetes/
    (`identity-cli revocation-log`), see `docs/operations/`.
 2. Run the migration Job for the new version and wait for completion. Migrations
    in a release are expand-only; old pods keep working against the new schema.
+   Kubernetes stops the Job after `activeDeadlineSeconds: 3600`, retries
+   included. Keep it above `storage.migration_statement_timeout` (default
+   `10m` per statement) times the number of long statements one run may
+   contain, such as concurrent index builds, and raise both together for
+   large tables
+   ([upgrades.md](../../docs/operations/upgrades.md#no-transaction-migrations)).
 3. Update the image of `proudauth-server` and `proudauth-worker` (rolling,
    `maxUnavailable: 0`).
 4. Contract migrations (dropping old columns) ship only in a later release, after
