@@ -8,6 +8,7 @@ import (
 
 	"github.com/proudauth/proudauth/internal/application"
 	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/platform/problem"
 	"github.com/proudauth/proudauth/internal/platform/reqctx"
 	"github.com/proudauth/proudauth/internal/platform/secret"
 	"github.com/proudauth/proudauth/internal/ratelimit"
@@ -94,6 +95,7 @@ func registryError(w http.ResponseWriter, status int, code, message, issuer stri
 	if status == http.StatusUnauthorized {
 		w.Header().Set("WWW-Authenticate", `Basic realm="`+issuer+`"`)
 	}
+	problem.SetRetryAfter(w.Header(), status, 0) // every 429 and 503
 	writeJSON(w, status, map[string]any{"errors": []map[string]string{{"code": code, "message": message}}})
 }
 

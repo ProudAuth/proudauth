@@ -40,7 +40,6 @@ import (
 	"github.com/proudauth/proudauth/internal/organization"
 	"github.com/proudauth/proudauth/internal/passkey"
 	"github.com/proudauth/proudauth/internal/platform/problem"
-	"github.com/proudauth/proudauth/internal/platform/reqctx"
 	"github.com/proudauth/proudauth/internal/platform/slots"
 	"github.com/proudauth/proudauth/internal/plugin"
 	"github.com/proudauth/proudauth/internal/provision"
@@ -363,7 +362,7 @@ func (a *App) hostPolicy(next http.Handler) http.Handler {
 				}
 			}
 		}
-		problem.Write(w, reqctx.From(r.Context()).RequestID, problem.ErrMisdirected)
+		a.writeError(w, r, problem.ErrMisdirected)
 	})
 }
 

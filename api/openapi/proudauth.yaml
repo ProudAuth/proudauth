@@ -344,11 +344,11 @@ paths:
         "400":
           "$ref": "#/components/responses/OAuthError"
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
     post:
       operationId: authorizePost
       tags:
@@ -442,13 +442,13 @@ paths:
         "400":
           "$ref": "#/components/responses/OAuthError"
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "415":
-          "$ref": "#/components/responses/UnsupportedMediaType"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
   "/realms/{realm}/oauth/token":
     post:
       operationId: token
@@ -556,13 +556,13 @@ paths:
         "401":
           "$ref": "#/components/responses/OAuthError"
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "429":
           "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
   "/realms/{realm}/oauth/introspect":
     post:
       operationId: introspect
@@ -619,18 +619,18 @@ paths:
         "401":
           "$ref": "#/components/responses/OAuthError"
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
   "/realms/{realm}/oauth/revoke":
     post:
       operationId: revoke
       tags:
         - OAuth
       summary: Token revocation (RFC 7009)
-      description: Returns 200 with an empty body for valid and unknown tokens alike.
+      description: "Returns 200 with an empty body for valid and unknown tokens alike, and for tokens of another client. A revocation that could not be recorded (storage or audit failure) returns 503 temporarily_unavailable with Retry-After (RFC 7009 §2.2.1); the token stays valid and the client should retry."
       security:
         - clientSecretBasic: []
         - {}
@@ -679,11 +679,11 @@ paths:
         "401":
           "$ref": "#/components/responses/OAuthError"
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
   "/realms/{realm}/oauth/device_authorization":
     post:
       operationId: deviceAuthorization
@@ -740,13 +740,13 @@ paths:
         "401":
           "$ref": "#/components/responses/OAuthError"
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "429":
           "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
   "/realms/{realm}/oauth/par":
     post:
       operationId: pushAuthorizationRequest
@@ -849,18 +849,18 @@ paths:
         "401":
           "$ref": "#/components/responses/OAuthError"
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
   "/realms/{realm}/oidc/userinfo":
     get:
       operationId: userinfoGet
       tags:
         - OIDC
       summary: UserInfo (GET)
-      description: Returns claims permitted by the access token. Missing or invalid tokens return 401 with an empty body and a WWW-Authenticate Bearer challenge.
+      description: "Returns claims permitted by the access token. Missing or invalid tokens return 401 with an empty body and a WWW-Authenticate Bearer challenge; a request without credentials gets a Bearer and a DPoP challenge. A refused DPoP binding gets a DPoP challenge with algs (RFC 9449 §7.1): invalid_token for a DPoP-bound token sent with the Bearer scheme or with another key's proof, or an invalid token sent with the DPoP scheme; invalid_dpop_proof for a missing or invalid proof."
       security:
         - userAccessToken: []
       x-trust-class: public-protocol-initiation
@@ -884,22 +884,22 @@ paths:
         "400":
           description: "The client registered response encryption but has no registered public key that can receive it (error invalid_request)."
         "401":
-          description: Missing or invalid access token (empty body).
+          description: Missing or invalid access token, or a refused sender constraint (empty body; Bearer or DPoP challenge).
           headers:
             WWW-Authenticate:
               "$ref": "#/components/headers/WWW-Authenticate"
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
     post:
       operationId: userinfoPost
       tags:
         - OIDC
       summary: UserInfo (POST)
-      description: Returns claims permitted by the access token. Missing or invalid tokens return 401 with an empty body and a WWW-Authenticate Bearer challenge.
+      description: "Returns claims permitted by the access token. Missing or invalid tokens return 401 with an empty body and a WWW-Authenticate Bearer challenge; a request without credentials gets a Bearer and a DPoP challenge. A refused DPoP binding gets a DPoP challenge with algs (RFC 9449 §7.1): invalid_token for a DPoP-bound token sent with the Bearer scheme or with another key's proof, or an invalid token sent with the DPoP scheme; invalid_dpop_proof for a missing or invalid proof."
       security:
         - userAccessToken: []
       x-trust-class: public-protocol-initiation
@@ -923,16 +923,16 @@ paths:
         "400":
           description: "The client registered response encryption but has no registered public key that can receive it (error invalid_request)."
         "401":
-          description: Missing or invalid access token (empty body).
+          description: Missing or invalid access token, or a refused sender constraint (empty body; Bearer or DPoP challenge).
           headers:
             WWW-Authenticate:
               "$ref": "#/components/headers/WWW-Authenticate"
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
   "/realms/{realm}/oidc/check-session":
     get:
       operationId: checkSessionIframe
@@ -956,9 +956,9 @@ paths:
               schema:
                 type: string
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
   "/realms/{realm}/oidc/check-session/origin":
     get:
       operationId: checkSessionOrigin
@@ -998,9 +998,9 @@ paths:
                   allowed:
                     type: boolean
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
   "/realms/{realm}/oidc/logout":
     get:
       operationId: logoutGet
@@ -1092,11 +1092,11 @@ paths:
             Set-Cookie:
               "$ref": "#/components/headers/Set-Cookie"
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
     post:
       operationId: logoutPost
       tags:
@@ -1174,15 +1174,15 @@ paths:
             Set-Cookie:
               "$ref": "#/components/headers/Set-Cookie"
         "400":
-          "$ref": "#/components/responses/BadRequest"
+          "$ref": "#/components/responses/OAuthError"
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "415":
-          "$ref": "#/components/responses/UnsupportedMediaType"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
   "/realms/{realm}/oidc/logout/upstream-return":
     get:
       operationId: logoutUpstreamReturn
@@ -1226,11 +1226,11 @@ paths:
             Location:
               "$ref": "#/components/headers/Location"
         "400":
-          "$ref": "#/components/responses/BadRequest"
+          "$ref": "#/components/responses/OAuthError"
         "404":
-          "$ref": "#/components/responses/NotFound"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
   "/realms/{realm}/":
     options:
       operationId: corsPreflightProtocol
@@ -6962,7 +6962,7 @@ paths:
       tags:
         - Invitations
       summary: Rotate and resend an invitation
-      description: Any request body is ignored.
+      description: "Any request body is ignored. Beyond limits.invitation_resends resends the answer is 409 conflict (the cap never resets; 429 before 0.2.0-alpha.6); 429 rate_limited with Retry-After is the organization's invitation budget."
       security:
         - accountToken: []
         - adminToken: []
@@ -22499,11 +22499,11 @@ paths:
         "404":
           description: Dynamic registration is not enabled in this realm.
         "429":
-          "$ref": "#/components/responses/TooManyRequests"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
   "/realms/{realm}/oauth/register/{client_id}":
     get:
       operationId: readClientRegistration
@@ -22571,11 +22571,11 @@ paths:
         "404":
           description: Dynamic registration is not enabled in this realm.
         "429":
-          "$ref": "#/components/responses/TooManyRequests"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
     put:
       operationId: updateClientRegistration
       tags:
@@ -22696,13 +22696,13 @@ paths:
         "404":
           description: Dynamic registration is not enabled in this realm.
         "409":
-          "$ref": "#/components/responses/Conflict"
+          "$ref": "#/components/responses/OAuthError"
         "429":
-          "$ref": "#/components/responses/TooManyRequests"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
     delete:
       operationId: deleteClientRegistration
       tags:
@@ -22741,11 +22741,11 @@ paths:
         "404":
           description: Dynamic registration is not enabled in this realm.
         "429":
-          "$ref": "#/components/responses/TooManyRequests"
+          "$ref": "#/components/responses/OAuthError"
         "500":
-          "$ref": "#/components/responses/InternalError"
+          "$ref": "#/components/responses/OAuthError"
         "503":
-          "$ref": "#/components/responses/ServiceUnavailable"
+          "$ref": "#/components/responses/OAuthError"
   "/api/v1/realms/{realm}/client-registration-tokens":
     get:
       operationId: listInitialAccessTokens
@@ -33437,7 +33437,7 @@ components:
           schema:
             "$ref": "#/components/schemas/Problem"
     ServiceUnavailable:
-      description: "Load shedding, realm unavailable or dependency failure, or a full per-process bound on password hashing or directory sign-in (code unavailable, upstream_unavailable). May include Retry-After."
+      description: "Load shedding, maintenance, realm unavailable or dependency failure, or a full per-process bound on password hashing or directory sign-in (code unavailable, maintenance, upstream_unavailable). Includes Retry-After (2 seconds when the refusal names no delay of its own)."
       headers:
         X-Request-Id:
           "$ref": "#/components/headers/X-Request-Id"
@@ -33453,7 +33453,7 @@ components:
         X-Request-Id:
           "$ref": "#/components/headers/X-Request-Id"
     OAuthError:
-      description: "OAuth 2.0 error (RFC 6749). invalid_client responses use 401 with WWW-Authenticate; throttled requests include Retry-After."
+      description: "OAuth 2.0 error (RFC 6749 §5.2): error and, when there is one, error_description, nothing else. Every error on /realms/{realm}/oauth/* and /realms/{realm}/oidc/* uses it with its HTTP status, including refusals decided before the endpoint runs: load shedding and maintenance (503 temporarily_unavailable), a body over limits.max_body_bytes (413 invalid_request), the host policy (421 invalid_request) and an unknown realm (404 invalid_request). Other 4xx without a protocol code are invalid_request, 401 invalid_token, 403 access_denied, 429 slow_down, other 5xx server_error. invalid_client responses use 401 with a Basic WWW-Authenticate challenge; every 429 and 503 includes Retry-After."
       headers:
         Retry-After:
           "$ref": "#/components/headers/Retry-After"

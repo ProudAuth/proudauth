@@ -350,6 +350,9 @@ func scimBody(r *http.Request) (map[string]any, error) {
 func writeSCIM(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/scim+json")
 	w.Header().Set("Cache-Control", "no-store")
+	if w.Header().Get("Retry-After") == "" {
+		problem.SetRetryAfter(w.Header(), status, 0) // every 429 and 503
+	}
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(body)
 }

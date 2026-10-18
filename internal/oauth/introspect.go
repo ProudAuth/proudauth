@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/proudauth/proudauth/internal/application"
 	"github.com/proudauth/proudauth/internal/audit"
 	"github.com/proudauth/proudauth/internal/platform/secret"
@@ -230,7 +232,11 @@ func (s *Service) introspectOpaque(ctx context.Context, rlm *realm.Realm, raw st
 }
 
 // Revoke implements RFC 7009 with caller binding (TOK-010). The response is the
-// same whether or not the token existed or belonged to the caller.
+// same whether or not the token existed or belonged to the caller: an unknown
+// token, or another client's, changes nothing and is not an error. A
+// revocation the server could not record (the database or the audit write
+// failed) is 503 temporarily_unavailable with Retry-After (RFC 7009 §2.2.1),
+// so the client retries instead of treating the token as revoked.
 func (s *Service) Revoke(ctx context.Context, rlm *realm.Realm, auth application.ClientAuthInput, endpoint, raw, hint string) *Error {
 	c, err := s.Apps.Authenticate(ctx, rlm.ID, rlm.Issuer, endpoint, auth)
 	if err != nil {
@@ -239,18 +245,29 @@ func (s *Service) Revoke(ctx context.Context, rlm *realm.Realm, auth application
 	actor := audit.Ref{Type: "client", ID: c.Ref}
 	switch {
 	case strings.HasPrefix(raw, secret.PrefixRefresh):
-		_ = s.Sessions.RevokeRefresh(ctx, rlm.ID, raw, c.Ref, actor)
+		err = s.Sessions.RevokeRefresh(ctx, rlm.ID, raw, c.Ref, actor)
 	case strings.HasPrefix(raw, secret.PrefixOpaqueAccess), strings.HasPrefix(raw, secret.PrefixImpersonation):
-		_ = s.Sessions.RevokeOpaque(ctx, rlm.ID, raw, c.Ref)
+		err = s.Sessions.RevokeOpaque(ctx, rlm.ID, raw, c.Ref)
 	case strings.Count(raw, ".") == 2:
-		claims, err := s.verifyAnyAudience(ctx, rlm, raw)
-		if err == nil && claims.ClientID == c.ClientID {
-			_ = s.Sessions.RevokeJTITx(ctx, s.d.DB.Pool, rlm.ID, claims.JTI, "client_revocation", time.Unix(claims.Expiry, 0).Add(s.d.Cfg.Tokens.ClockSkew))
-			_, _ = s.d.Audit.Record(ctx, s.d.DB.Pool, audit.Event{Type: "token.access.revoked", RealmID: rlm.ID, Actor: actor,
-				Subject: &audit.Ref{Type: "user", ID: claims.Subject}, Metadata: map[string]any{"jti": claims.JTI}})
+		claims, verr := s.verifyAnyAudience(ctx, rlm, raw)
+		if verr == nil && claims.ClientID == c.ClientID {
+			// The revocation record and its audit event commit together.
+			err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
+				if err := s.Sessions.RevokeJTITx(ctx, tx, rlm.ID, claims.JTI, "client_revocation",
+					time.Unix(claims.Expiry, 0).Add(s.d.Cfg.Tokens.ClockSkew)); err != nil {
+					return err
+				}
+				_, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "token.access.revoked", RealmID: rlm.ID, Actor: actor,
+					Subject: &audit.Ref{Type: "user", ID: claims.Subject}, Metadata: map[string]any{"jti": claims.JTI}})
+				return err
+			})
 		}
 	}
 	_ = hint
+	if err != nil {
+		s.d.Log.Error("token revocation failed", "realm_id", rlm.ID, "client_ref", c.Ref, "error", err)
+		return ErrTemporarilyUnavailable
+	}
 	return nil
 }
 

@@ -405,6 +405,11 @@ func TestBrowserFlowCSRFSSOAndLogout(t *testing.T) {
 	})
 }
 
+// TestDeviceFlowAndPAR covers the device authorization grant (TEST-068:
+// device codes are single use, bound to their client, throttled with
+// slow_down and expire) and pushed authorization requests: a request_uri is
+// single use and bound to the pushing client, and another client presenting
+// it neither uses nor spends it.
 func TestDeviceFlowAndPAR(t *testing.T) {
 	f := NewFixture(t, func(p *realm.Policy) { p.Interaction.LoginUIURL = "https://login.test/ui" })
 	h := f.H
@@ -463,7 +468,20 @@ func TestDeviceFlowAndPAR(t *testing.T) {
 	use := func() *Resp {
 		return h.API("POST", "/auth/transactions", "", map[string]any{"client_id": "web-bff", "request_uri": ref})
 	}
-	mustStatus(t, use(), 201, "use request_uri")
+	// Presented with another client's client_id, an unknown one or none, the
+	// reference is refused without being spent (RFC 9126 §4), at the
+	// headless API and at the authorization endpoint alike: the pushing
+	// client can still use it, once.
+	for _, other := range []string{"proudauth-cli", "no-such-client", ""} {
+		if r := h.API("POST", "/auth/transactions", "", map[string]any{"client_id": other, "request_uri": ref}); r.Status != 400 {
+			t.Fatalf("request_uri presented with client_id %q: %d %s", other, r.Status, r.Raw)
+		}
+		az := h.Do(Req{Method: "GET", Path: "/realms/main/oauth/authorize?" + url.Values{"client_id": {other}, "request_uri": {ref}}.Encode()})
+		if az.Status != 400 || az.Str("error") != "invalid_request" || az.Header.Get("Location") != "" {
+			t.Fatalf("authorization request with request_uri and client_id %q: %d %s", other, az.Status, az.Raw)
+		}
+	}
+	mustStatus(t, use(), 201, "use request_uri after another client's attempts")
 	if r := use(); r.Status == 201 {
 		t.Fatal("request_uri reused")
 	}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -121,7 +122,9 @@ func TestExplicitRequestLimits(t *testing.T) {
 
 // TestLoadShedding covers NFR-002: when every ordinary request slot
 // (limits.max_inflight_requests) is taken, further ordinary requests are
-// refused at once with 503 and Retry-After instead of queueing, while health
+// refused at once with 503 and Retry-After instead of queueing (problem
+// details, or an OAuth temporarily_unavailable error on a protocol
+// endpoint, API-007), while health
 // probes and authenticated administration still run from the reserved pool.
 // Anonymous requests to administrative paths do not get the reserve. Once
 // the load is gone, ordinary requests are served again.
@@ -190,6 +193,13 @@ func TestLoadShedding(t *testing.T) {
 	}
 	if shed.Str("code") != "unavailable" || shed.Header.Get("Retry-After") != "2" || !strings.Contains(shed.Str("detail"), "shedding load") {
 		t.Fatalf("shed response lacks retry guidance: %s Retry-After=%q", shed.Raw, shed.Header.Get("Retry-After"))
+	}
+	// On a protocol endpoint the same refusal is an OAuth error (API-007),
+	// so relying-party retry logic sees temporarily_unavailable.
+	tok := h.Do(Req{Method: "POST", Path: "/realms/main/oauth/token", Form: url.Values{"grant_type": {"client_credentials"}}})
+	if tok.Status != 503 || tok.Str("error") != "temporarily_unavailable" || tok.Str("error_description") != "server is shedding load" ||
+		tok.Header.Get("Retry-After") != "2" || tok.Get("code") != nil || tok.Header.Get("Content-Type") != "application/json" {
+		t.Fatalf("shed token request: %d %q %s Retry-After=%q", tok.Status, tok.Header.Get("Content-Type"), tok.Raw, tok.Header.Get("Retry-After"))
 	}
 	// The reserve keeps health probes and authenticated administration
 	// working during the overload.
