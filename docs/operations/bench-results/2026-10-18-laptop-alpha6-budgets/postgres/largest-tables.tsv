@@ -1,0 +1,15 @@
+audit_events	142467	144269312
+outbox_events	28591	30834688
+refresh_tokens	50287	30531584
+memberships	15000	10518528
+role_assignments	15002	8798208
+user_identifiers	10002	7307264
+auth_transactions	3138	5627904
+users	10001	4997120
+credentials	10002	4759552
+jobs	14	3497984
+import_mappings	10000	2981888
+authorization_grants	3083	2310144
+authorization_codes	3082	2097152
+sessions	3083	2056192
+refresh_families	3076	1613824

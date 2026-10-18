@@ -1707,6 +1707,90 @@ to 2026-10-13 results above. Directory-backed sign-in under
 `directory.sign_in_timeout` and `max_concurrent_binds`, and the password
 hash bound, are covered by tests, not measured here.
 
+### Alpha.6 budget-chain comparison (NFR-003, NFR-008)
+
+On **2026-10-18 local time** (started `2026-10-18T16:41:23Z`, the same
+laptop and PostgreSQL image as the alpha.5 baselines above, after the same
+seed of 10000 users, 500 organizations, a 5000-member organization, 20
+machine clients and a 1000-member group, seed 1) the four core token flows
+were measured on the alpha.6 budget-chain tree (`alpha6-integration` at
+commit `dfd7be6`, source digest **`5518509d1b5e3928`**): network-keyed
+budgets with the wider /24 and /48 budgets, the transaction-start budget,
+the known-device quota, the pre-authentication failure budgets on the token,
+PAR, introspection and revocation endpoints, and the bounded audit
+identifiers. Each scenario ran 60 measured seconds at concurrency 32 after a
+five-second warm-up; the eleven budgets the bench can trip were raised to
+1000000 (`environment.json`, `raised_budgets`), so the run measures the
+code paths and not `429`s. Latencies are milliseconds from the histogram's
+upper bucket bounds.
+
+| Scenario | Operations/s | Alpha.5 ops/s | Change | p50 ms | Alpha.5 p50 | p99 ms | Alpha.5 p99 | Outcomes | Criterion |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| password-login | 46.6 | 47.8 | −2.5% | 688.13 | 655.36 | 884.74 | 851.97 | `ok`: 2797 | Pass |
+| refresh | 740.3 | 795.4 | −6.9% | 40.96 | 38.91 | 65.54 | 57.34 | `ok`: 44418 | Pass |
+| client-credentials | 960.9 | 1008.2 | −4.7% | 32.77 | 31.74 | 55.30 | 38.91 | `ok`: 57653 | Pass |
+| introspection | 1855.8 | 2012.9 | −7.8% | 17.41 | 15.87 | 25.60 | 20.48 | `ok`: 111350 | Pass |
+
+Throughput is between 2.5 and 7.8 percent below the alpha.5 baselines in
+every flow, inside the alpha.6 exit gate of no more than ten percent. p50
+latency rose by 2 to 10 percent and p99 by 4 to 42 percent, most on
+`client-credentials` (38.91 to 55.30 ms) and `introspection` (20.48 to
+25.60 ms). The cost has a known source: every token, introspection and
+revocation request now runs one read-only statement before client
+authentication (`Limiter.Check` on the per-network failure budget and its
+wider budget), `password-login` adds the transaction-start budget to the
+start request and refreshes the sign-in's known-device facts at most once an
+hour, and the budgets of a hit are still one statement. The known-device
+quota costs nothing on this path: its lookup runs only when an aggregate
+budget is exhausted, which the raised budgets never are. Both runs share
+one laptop with the load generator and the database, so part of the p99
+change is run-to-run noise; the throughput change is the number to watch.
+`password-login` again measured first sign-ins with SHA-256-to-Argon2id
+rehashing: 3019 verifiers were Argon2id afterwards and 6982 remained
+imported SHA-256. The database ended at 284645055 bytes (271 MiB) with
+142467 audit rows.
+
+**Environment:** the alpha.5 machine (Mac16,8 / Apple M4 Pro, 12 CPUs,
+25769803776 bytes RAM, AC power; macOS 27.0.1, Darwin 27.0.0; Go 1.27.1
+`darwin/arm64`; Docker 29.7.2 with a 12-CPU VM; PostgreSQL **18.6**,
+image `sha256:74935e72…`, in one container on the same laptop with the
+reference settings). Server, worker and load generator run on the host over
+loopback HTTP. Development mode, Argon2id 64 MiB/three passes, RSA 3072-bit
+signing keys, minimum authentication response 250 ms.
+
+[Per-scenario results](bench-results/2026-10-18-laptop-alpha6-budgets/),
+[summary/CPU](bench-results/2026-10-18-laptop-alpha6-budgets/summary.json),
+[environment and raised budgets](bench-results/2026-10-18-laptop-alpha6-budgets/environment.json),
+[PostgreSQL settings](bench-results/2026-10-18-laptop-alpha6-budgets/postgres/settings.tsv),
+top statements per scenario, [redacted
+configuration](bench-results/2026-10-18-laptop-alpha6-budgets/proudauth-config.yaml)
+and [artifact hashes](bench-results/2026-10-18-laptop-alpha6-budgets/artifact-sha256.json)
+identify the measured build; the runner's private work directory appears as
+`$WORK`. CPU accounting per scenario covers 65 wall seconds including
+warm-up: `password-login` server 414.15, PostgreSQL 43.92; `refresh` server
+184.97, PostgreSQL 90.40; `client-credentials` server 202.84, PostgreSQL
+89.13; `introspection` server 121.60, PostgreSQL 100.91 CPU seconds, each
+with roughly 190–450 Docker VM/proxy seconds on top.
+
+To reproduce, choose unused ports and a fresh output directory:
+
+```sh
+GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local \
+  GOFLAGS='-mod=readonly -buildvcs=false' \
+  BENCH_PG_IMAGE=postgres:18.6 \
+  BENCH_SCENARIOS="password-login refresh client-credentials introspection" \
+  BENCH_SOAK=0 BENCH_OUT="$PWD/bench-results-private/alpha6-budgets" \
+  BENCH_HOST_LABEL=laptop make bench-local
+```
+
+**One laptop; load generator and database share it. These numbers are not
+guarantees or sizing advice.** They are a before/after check of the alpha.6
+budget chain on the four most common flows against the alpha.5 baselines of
+the same day, not a repeat of the full 13-scenario reference, the soak or the
+adversarial profiles; those keep their 2026-10-11 to 2026-10-13 results
+above. The new budgets' refusals (`429` with `Retry-After`) are covered by
+tests, not measured here.
+
 ## Not covered yet
 
 - **SCIM** bulk and real-directory load remain outside the

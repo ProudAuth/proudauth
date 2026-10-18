@@ -14,6 +14,12 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 
 ### Added
 
+- Reference measurements of the four core token flows on the alpha.6 budget
+  chain, against the alpha.5 baselines of the same day: throughput between
+  2.5 and 7.8 percent lower, inside the phase's ten-percent gate, with the
+  cost of the new pre-authentication budget statement visible in p99
+  ([benchmarks.md](docs/operations/benchmarks.md#alpha6-budget-chain-comparison-nfr-003-nfr-008),
+  `docs/operations/bench-results/2026-10-18-laptop-alpha6-budgets/`).
 - [0.2.0-alpha.6 owner decisions](docs/releases/2026-10-alpha.6-decisions.md):
   the known-device quota and budget defaults, the second-factor failure
   ceiling, personal-access-token revocation, organization-switch consent,
