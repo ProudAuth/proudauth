@@ -1310,32 +1310,17 @@ func (s *Service) complete(ctx context.Context, tx pgx.Tx, t *Transaction) (*Com
 		}
 	}
 	if !t.ConsentDecided && client.ConsentMode == "required" {
-		// Covered by an administrative pre-authorization: record it as the
-		// user's consent basis, so revoking the pre-authorization ends grants
-		// that relied on it (APP-013).
-		if pre, err := s.consentPreauthorization(ctx, tx, t, client); err != nil {
+		// Covered without asking: the grant rests on the user's own live
+		// consent, or on a consent recorded for the administrative
+		// pre-authorization that covers it, so revoking either ends the grant
+		// (APP-013; ConsentBasisTx, shared with the organization switch).
+		req := t.consentRequest(client, t.UserID, granted)
+		cov, err := s.CheckConsentCoverage(ctx, tx, req)
+		if err != nil {
 			return nil, err
-		} else if pre != "" {
-			// A live consent of the user's own that covers the request stays the
-			// basis; one that no longer covers it (other terms, fewer scopes) is
-			// replaced, so revoking the pre-authorization ends this grant.
-			var live bool
-			if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM consents WHERE user_id=$1 AND client_ref=$2 AND revoked_at IS NULL
-				AND scopes @> $3 AND coalesce(terms_version,'') = $4)`, t.UserID, t.ClientRef, nonNil(granted), client.ConsentTermsVersion).Scan(&live); err != nil {
-				return nil, err
-			}
-			if !live {
-				if _, err := tx.Exec(ctx, `UPDATE consents SET revoked_at=$3 WHERE user_id=$1 AND client_ref=$2 AND revoked_at IS NULL`,
-					t.UserID, t.ClientRef, now); err != nil {
-					return nil, err
-				}
-				consentID = ids.New(ids.Consent)
-				if _, err := tx.Exec(ctx, `INSERT INTO consents (id, realm_id, user_id, client_ref, scopes, resource_ids, granted_at, terms_version, mode,
-					preauthorization_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'preauthorized',$9)`, consentID, t.RealmID, t.UserID, t.ClientRef, granted,
-					nonNil(t.ResourceIDs), now, nilIfEmpty(client.ConsentTermsVersion), pre); err != nil {
-					return nil, err
-				}
-			}
+		}
+		if consentID, err = s.ConsentBasisTx(ctx, tx, req, cov, t.ResourceIDs); err != nil {
+			return nil, err
 		}
 	}
 	// A transient session ("this is a shared computer") never yields offline

@@ -392,10 +392,13 @@ resources and that terms version, replacing the previous one.
 - **Coverage.** Consent is needed for clients with `consent_mode: required`,
   for `prompt=consent`, and when a third-party client (not `first_party`) that
   is allowed offline access requests `offline_access`. Except with
-  `prompt=consent`, which always asks, a live consent covers the request when it
-  includes every requested scope and was given for the client's current
-  `consent_terms_version`. A new version therefore asks again; grants made under
-  the old one are not revoked.
+  `prompt=consent`, which always asks, the user's own live consent (`mode:
+  user`) covers the request when it includes every requested scope and was
+  given for the client's current `consent_terms_version`. A new version
+  therefore asks again; grants made under the old one are not revoked. One
+  check (`CheckConsentCoverage` in `internal/authentication/consent_coverage.go`)
+  decides coverage for the transaction and for an organization switch
+  (below).
 - **Pre-authorization.** An administrator with `realm.clients.write` consents on
   behalf of the realm or one organization:
   `POST /api/v1/realms/{realm}/clients/{client}/consent-preauthorizations
@@ -407,7 +410,14 @@ resources and that terms version, replacing the previous one.
   every requested scope, unless it uses `prompt=consent` or needs the user's own
   consent for `offline_access`; for clients with `consent_mode: required`,
   completion then records a consent with `mode: preauthorized` and its
-  `preauthorization_id` when the user has no live consent. `GET` on the same path
+  `preauthorization_id` (replacing the user's live consent) unless the user's
+  own consent covers the request or the live consent already rests on a
+  pre-authorization that covers it. Such a consent is the grant's basis, not the user's
+  decision: it covers a later request only while its pre-authorization does,
+  so an organization's pre-authorization never covers a sign-in to, or a
+  switch into, another organization (`TestOrganizationSwitchPreauthorization`).
+  With `consent_mode: required`, a grant issued without asking records the
+  consent it rests on, the user's own or that one. `GET` on the same path
   (`realm.clients.read`) lists the client's pre-authorizations, and
   `DELETE .../consent-preauthorizations/{id}` revokes one together with every
   consent based on it and the client's grants for those users. Audited
@@ -421,6 +431,18 @@ resources and that terms version, replacing the previous one.
   `DELETE /me/consents/{id}` and `DELETE /users/{user}/consents/{id}`
   (`realm.users.write`) revoke a consent and the client's grants for the user
   (audit `consent.revoked`).
+- **Organization switch.** `POST /me/organization-grants` (ADR
+  [0012](../architecture-decisions/0012-one-organization-per-token.md)) runs
+  the same coverage for the target organization and the scopes of the new
+  grant (never `offline_access`) before creating it. When neither the user's
+  own consent nor a pre-authorization for the realm or that organization covers
+  them, it answers `403 consent_required` with the obligation
+  `{"type": "authorize", "organization_id": "org_...", "scope": "..."}`: the
+  client sends the user through an authorization request naming the
+  organization, where the `consent` action appears. A covered switch records
+  the consent its grant rests on as above, so revoking the consent or the
+  pre-authorization ends the grant (`TestOrganizationSwitchConsent`,
+  `TestOrganizationSwitchPreauthorization`).
 
 ## Authentication flow policy
 

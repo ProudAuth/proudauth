@@ -5030,7 +5030,7 @@ paths:
       tags:
         - Self-service
       summary: Switch organization context
-      description: "Issues a new authorization code for the calling client bound to the current session after checking active membership and organization MFA/SSO requirements (TEN-005). offline_access is never included. A client that must use pushed authorization requests (security_profile fapi2 or high_assurance, or token_policy.require_par) is refused with 403: the code would be issued outside PAR (and, for fapi2, the profile's 60-second code lifetime), so it switches with a new pushed authorization request naming the organization (ADV-001)."
+      description: "Issues a new authorization code for the calling client bound to the current session after checking active membership and organization MFA/SSO requirements (TEN-005). offline_access is never included. The client's token_policy.max_session_age_seconds applies to the session's auth_time (403 step_up_required with a reauthenticate obligation carrying max_age_seconds, SES-002), and the request runs the consent coverage of an authorization for the target organization (APP-013, TOK-008): for a client with consent_mode required, the user's own live consent at the client's consent_terms_version, otherwise a live pre-authorization for the realm or that organization, must cover every scope, or the switch is refused with 403 consent_required and an authorize obligation naming organization_id and scope. The new grant rests on that consent, so revoking the consent or the pre-authorization ends it. A client that must use pushed authorization requests (security_profile fapi2 or high_assurance, or token_policy.require_par) is refused with 403: the code would be issued outside PAR (and, for fapi2, the profile's 60-second code lifetime), so it switches with a new pushed authorization request naming the organization (ADV-001)."
       security:
         - accountToken: []
       x-trust-class: user-self-service
@@ -33336,7 +33336,7 @@ components:
           schema:
             "$ref": "#/components/schemas/Problem"
     Forbidden:
-      description: "Authenticated but not allowed (code forbidden, mfa_required, step_up_required, recent_authentication_required, grant_ceiling_exceeded, impersonation_restricted, account_unavailable, sso_required, recovery_restricted). Step-up problems carry obligations."
+      description: "Authenticated but not allowed (code forbidden, mfa_required, step_up_required, recent_authentication_required, consent_required, grant_ceiling_exceeded, impersonation_restricted, account_unavailable, sso_required, recovery_restricted). Step-up and consent problems carry obligations."
       headers:
         X-Request-Id:
           "$ref": "#/components/headers/X-Request-Id"
@@ -35916,16 +35916,23 @@ components:
         - error
     Obligation:
       type: object
-      description: A mandatory condition the caller must satisfy (or deny).
+      description: "A mandatory condition the caller must satisfy (or deny): reauthenticate (sign in again, to the required profile or within max_age_seconds) or authorize (send the user through an authorization request for organization_id and scope, where they can consent)."
       properties:
         type:
           type: string
           enum:
             - reauthenticate
+            - authorize
         required_profile:
           type: string
         max_age_seconds:
           type: integer
+        organization_id:
+          type: string
+          description: "authorize: the organization the authorization request names."
+        scope:
+          type: string
+          description: "authorize: the space-separated scopes the authorization request asks for."
       required:
         - type
     OpenIDConfiguration:
@@ -40134,6 +40141,7 @@ components:
             - unsupported_media_type
             - step_up_required
             - recent_authentication_required
+            - consent_required
             - mfa_required
             - recovery_restricted
             - transaction_invalid
@@ -40169,7 +40177,7 @@ components:
           type: array
           items:
             "$ref": "#/components/schemas/Obligation"
-          description: Present on step-up / recent-authentication / MFA problems.
+          description: Present on step-up / recent-authentication / MFA / consent problems.
         original_status:
           type: integer
           description: Present when an idempotent replay is refused because the original response carried a one-time secret.

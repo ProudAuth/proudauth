@@ -38,6 +38,21 @@ switch.
     it has passed, `403 step_up_required` with obligation
     `{"type": "reauthenticate"}`.
 
+  It also holds the request to the client's rules as an authorization for
+  the organization would:
+  - the client's `token_policy.max_session_age_seconds` (SES-002): a session
+    authenticated longer ago gets `403 step_up_required` with obligation
+    `{"type": "reauthenticate", "max_age_seconds": N}`;
+  - consent (APP-013, TOK-008; alpha.6 decision 12): for a client with
+    `consent_mode: required`, the user's own live consent at the client's
+    terms version, otherwise a pre-authorization for the realm or the target
+    organization, must cover every scope of the new grant, otherwise
+    `403 consent_required` with obligation
+    `{"type": "authorize", "organization_id": "...", "scope": "..."}`. The
+    grant records the consent it rests on, so revoking the consent or the
+    pre-authorization ends it
+    ([headless-authentication.md](../protocols/headless-authentication.md#consent)).
+
   On success it creates a new grant (without `offline_access`), records
   `organization.context.switched` and returns `{"redirect_to": ...}` carrying
   an authorization code for the requesting client. `session_idle_seconds` is

@@ -101,7 +101,9 @@ issuer and endpoints, and tokens, DPoP proofs (`htu`) and client assertions
 - Per-client `token_policy`: `access_token_ttl_seconds` (cap), `refresh_idle_seconds`,
   `refresh_absolute_seconds`, `require_dpop`, `require_par`, `require_mfa`,
   `max_session_age_seconds` (an SSO session whose authentication is older than this
-  is not reused for the client; `prompt=none` then returns `login_required`).
+  is not reused for the client; `prompt=none` then returns `login_required`, and
+  an organization switch, `POST /me/organization-grants`, is refused with
+  `403 step_up_required`).
 - Consent (APP-013): `consent_mode` is `preauthorized` (default for first-party
   clients) or `required` (default otherwise). `consent_terms_version` (at most 64
   characters) names the client's current terms; a user's consent covers the
@@ -109,7 +111,10 @@ issuer and endpoints, and tokens, DPoP proofs (`htu`) and client assertions
   at their next authorization (existing grants stay valid). Administrators can
   consent on behalf of the realm or one organization with
   `POST /clients/{client}/consent-preauthorizations` (see
-  [headless-authentication.md](headless-authentication.md#consent)).
+  [headless-authentication.md](headless-authentication.md#consent)). An
+  organization switch (`POST /me/organization-grants`) runs the same consent
+  coverage as an authorization for the target organization (`403
+  consent_required` otherwise).
 - Pairwise subjects (`subject_type: pairwise`, OIDC-010): `sector_identifier` is
   a host name; when omitted it is the host all redirect URIs share, and it is
   required when they span several hosts. Every redirect URI must be the sector
