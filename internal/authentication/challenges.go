@@ -147,10 +147,21 @@ func (s *Service) ConsumeLinkTx(ctx context.Context, tx pgx.Tx, realmID, purpose
 //
 // clientRef and orgID, when known, add per-client and per-organization budgets;
 // a realm-wide budget always applies (SEC-006).
+//
+// The cooldown is checked on its own first: it paces resends by legitimate
+// users rather than signalling abuse, so a resend it refuses consumes nothing
+// but the cooldown. The aggregate budgets are then counted together, each of
+// them consumed even when another one is exhausted.
 func (s *Service) sendBudget(ctx context.Context, realmID, identifier, ip string, clientOrg ...string) error {
 	rl := s.d.Cfg.Security.RateLimits
+	d, err := s.Limiter.Hit(ctx, ratelimit.Budget{Key: "send-cooldown:" + realmID + ":" + identifier, Limit: 1, Window: rl.SendCooldown})
+	if err != nil {
+		return err
+	}
+	if !d.Allowed {
+		return problem.ErrRateLimited.WithRetryAfter(d.RetryAfter)
+	}
 	budgets := []ratelimit.Budget{
-		{Key: "send-cooldown:" + realmID + ":" + identifier, Limit: 1, Window: rl.SendCooldown},
 		{Key: "send-id:" + realmID + ":" + identifier, Limit: rl.SendPerIdentifier, Window: rl.SendWindow},
 		{Key: "send-ip:" + realmID + ":" + ip, Limit: rl.SendPerIP, Window: rl.SendWindow},
 		{Key: "send-realm:" + realmID, Limit: rl.SendPerRealm, Window: rl.SendWindow},
@@ -161,7 +172,7 @@ func (s *Service) sendBudget(ctx context.Context, realmID, identifier, ip string
 	if len(clientOrg) > 1 && clientOrg[1] != "" {
 		budgets = append(budgets, ratelimit.Budget{Key: "send-org:" + clientOrg[1], Limit: rl.SendPerOrganization, Window: rl.SendWindow})
 	}
-	d, err := s.Limiter.Hit(ctx, budgets...)
+	d, err = s.Limiter.Hit(ctx, budgets...)
 	if err != nil {
 		return err
 	}

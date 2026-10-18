@@ -731,80 +731,90 @@
     "RateLimitConfig": {
       "type": "object",
       "additionalProperties": false,
+      "description": "Abuse budgets (SEC-006). A limit of 0 disables its budget and send_cooldown 0 disables the cooldown; a negative value, or a positive limit whose window is 0, stops startup.",
       "properties": {
         "login_per_identifier": {
           "description": "Password attempts per identifier per login_window (identifier lookups allow 3x).",
           "type": "integer",
+          "minimum": 0,
           "default": 10
         },
         "login_per_ip": {
           "description": "Login attempts per client IP per login_window; also the hourly budget for setup links per IP.",
           "type": "integer",
+          "minimum": 0,
           "default": 100
         },
         "login_window": {
-          "$ref": "#/$defs/duration",
+          "$ref": "#/$defs/nonNegativeDuration",
           "default": "15m"
         },
         "send_per_identifier": {
           "description": "Messages (OTP, links) per identifier per send_window.",
           "type": "integer",
+          "minimum": 0,
           "default": 5
         },
         "send_per_ip": {
           "description": "Messages per client IP per send_window.",
           "type": "integer",
+          "minimum": 0,
           "default": 50
         },
         "send_window": {
-          "$ref": "#/$defs/duration",
+          "$ref": "#/$defs/nonNegativeDuration",
           "default": "1h"
         },
         "send_cooldown": {
           "description": "Minimum interval between two sends to one identifier.",
-          "$ref": "#/$defs/duration",
+          "$ref": "#/$defs/nonNegativeDuration",
           "default": "30s"
         },
         "otp_verify_per_account": {
           "description": "OTP verification attempts per subject per otp_verify_window.",
           "type": "integer",
+          "minimum": 0,
           "default": 10
         },
         "otp_verify_window": {
-          "$ref": "#/$defs/duration",
+          "$ref": "#/$defs/nonNegativeDuration",
           "default": "15m"
         },
         "signup_per_ip": {
           "description": "Registrations per client IP per signup_window.",
           "type": "integer",
+          "minimum": 0,
           "default": 20
         },
         "signup_window": {
-          "$ref": "#/$defs/duration",
+          "$ref": "#/$defs/nonNegativeDuration",
           "default": "1h"
         },
         "token_per_client": {
-          "description": "Token endpoint requests per client per token_window (password steps per client allow 10x per login_window).",
+          "description": "Token endpoint requests per client per token_window.",
           "type": "integer",
+          "minimum": 0,
           "default": 600
         },
         "token_window": {
-          "$ref": "#/$defs/duration",
+          "$ref": "#/$defs/nonNegativeDuration",
           "default": "1m"
         },
         "organization_per_window": {
           "description": "Access tokens issued in one organization's context per token window, for every grant type (TEN-018, SEC-006). Fails closed when the limiter is unavailable.",
           "type": "integer",
+          "minimum": 0,
           "default": 2000
         },
         "temporary_lock": {
-          "description": "How long password sign-in stays locked for an account (or identifier) after failures_before_lock failures; the lock answers 429 with Retry-After. Both must be positive to enable it.",
-          "$ref": "#/$defs/duration",
+          "description": "How long password sign-in stays locked for an account (or identifier) after failures_before_lock failures, and the window in which failures are counted; the lock answers 429 with Retry-After. Must be positive while failures_before_lock is.",
+          "$ref": "#/$defs/nonNegativeDuration",
           "default": "15m"
         },
         "failures_before_lock": {
-          "description": "Failed password attempts within temporary_lock before the temporary lock applies.",
+          "description": "Failed password attempts within temporary_lock before the temporary lock applies; 0 disables the lock.",
           "type": "integer",
+          "minimum": 0,
           "default": 10
         },
         "login_per_organization": {
@@ -869,7 +879,7 @@
         },
         "invitation_window": {
           "description": "Window for the invitation budgets.",
-          "$ref": "#/$defs/duration"
+          "$ref": "#/$defs/nonNegativeDuration"
         }
       }
     },

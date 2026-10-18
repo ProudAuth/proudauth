@@ -272,16 +272,28 @@ See [keys.md](keys.md) before changing anything here.
 | `rate_limits.token_per_client` | `600` | Token-endpoint requests per client per window. |
 | `rate_limits.token_window` | `1m` | Window for the token budget. |
 | `rate_limits.organization_per_window` | `2000` | Access tokens minted in one organization's context per `token_window`, for every grant type including token exchange; beyond it `429 slow_down` with `Retry-After` (TEN-018). Fails closed: an unreachable limiter gives `503 temporarily_unavailable`. |
-| `rate_limits.temporary_lock` | `15m` | Duration of the temporary password lock. |
+| `rate_limits.temporary_lock` | `15m` | Duration of the temporary password lock, and the window in which `failures_before_lock` counts failures. |
 | `rate_limits.failures_before_lock` | `10` | Failed password attempts that trigger the temporary lock. Each failure counts against the identifier tried and, when it names an account, against the account as well. Once the identifier's count is reached, the password step returns `429` for that identifier and records `authentication.password.temporarily_locked` (each attempt during the lock also counts as a proof failure of the transaction). Once the account's count is reached, no password of the account is checked through any identifier, so guessing stays bounded per account; through an identifier whose own count is not reached yet the step answers `401 invalid_credentials`, exactly as for an identifier without an account (the attempt is recorded as `authentication.password.temporarily_locked` and counts against that identifier), so a lock reached through an account's email address does not reveal its username or phone number (API-009). Other sign-in methods (passkeys, codes, magic links, federation) are not blocked. `0` disables the lock. |
 | `rate_limits.invitations_per_organization` | `500` | Invitations created or resent per organization per `invitation_window` (INV-009). Revoking and re-creating an invitation does not reset it. |
 | `rate_limits.invitations_per_recipient` | `10` | Invitations created or resent to one address per `invitation_window`, across organizations of the realm. |
 | `rate_limits.invitation_window` | `24h` | Window for invitation budgets. |
 
 Rate-limit counters are fixed windows stored in PostgreSQL (`rate_limit_counters`)
-with digested keys, so every node shares them. A budget whose limit (or window) is
-`0` is not applied. Exhausted budgets on the custom APIs return `429 rate_limited`
-with `Retry-After`; the token endpoint answers `429 slow_down`.
+with digested keys, so every node shares them. A limit of `0` disables its budget,
+and `send_cooldown: 0` disables the cooldown. Startup refuses a negative value for
+any `rate_limits` key, and a positive limit whose window is `0`: the `login_*`
+limits use `login_window`, the `send_*` limits `send_window`,
+`otp_verify_per_account` `otp_verify_window`, the `signup_*` limits
+`signup_window`, `token_per_client` and `organization_per_window` `token_window`,
+`failures_before_lock` `temporary_lock`, and the `invitations_*` limits
+`invitation_window` (set the limit to `0` to disable a budget instead). A check
+counts all the budgets of an attempt in one database statement and consumes every
+one of them even when one is exhausted, so a refused attempt still counts toward
+the others. The send cooldown is the exception: it is checked on its own before
+the other send budgets, and a send it refuses consumes nothing but the cooldown
+(no unit of `send_per_identifier`, `send_per_ip` or the client, organization and
+realm send budgets). Exhausted budgets on the custom APIs return
+`429 rate_limited` with `Retry-After`; the token endpoint answers `429 slow_down`.
 
 Fixed budgets (not configurable): shared-signals pushes 600 per minute per
 transmitter and 1200 per minute per address; check-session origin checks 300

@@ -228,6 +228,49 @@ type RateLimitConfig struct {
 	InvitationWindow           time.Duration `yaml:"invitation_window"`
 }
 
+// validate checks the abuse budgets (SEC-006): 0 disables a budget, a negative
+// limit or duration is refused (it used to disable the budget silently), and a
+// positive limit needs a positive window, since the limiter would otherwise
+// skip it without saying so.
+func (rl RateLimitConfig) validate() []string {
+	type limit struct {
+		key string
+		v   int
+	}
+	var errs []string
+	for _, w := range []struct {
+		key    string
+		d      time.Duration
+		limits []limit
+	}{
+		{"login_window", rl.LoginWindow, []limit{{"login_per_identifier", rl.LoginPerIdentifier}, {"login_per_ip", rl.LoginPerIP},
+			{"login_per_realm", rl.LoginPerRealm}, {"login_per_client", rl.LoginPerClient}, {"login_per_organization", rl.LoginPerOrganization}}},
+		{"send_window", rl.SendWindow, []limit{{"send_per_identifier", rl.SendPerIdentifier}, {"send_per_ip", rl.SendPerIP},
+			{"send_per_client", rl.SendPerClient}, {"send_per_organization", rl.SendPerOrganization}, {"send_per_realm", rl.SendPerRealm}}},
+		{"send_cooldown", rl.SendCooldown, nil},
+		{"otp_verify_window", rl.OTPVerifyWindow, []limit{{"otp_verify_per_account", rl.OTPVerifyPerAccount}}},
+		{"signup_window", rl.SignupWindow, []limit{{"signup_per_ip", rl.SignupPerIP}, {"signup_per_client", rl.SignupPerClient},
+			{"signup_per_realm", rl.SignupPerRealm}}},
+		{"token_window", rl.TokenWindow, []limit{{"token_per_client", rl.TokenPerClient}, {"organization_per_window", rl.OrganizationPerWindow}}},
+		{"temporary_lock", rl.TemporaryLock, []limit{{"failures_before_lock", rl.FailuresBeforeLock}}},
+		{"invitation_window", rl.InvitationWindow, []limit{{"invitations_per_organization", rl.InvitationsPerOrganization},
+			{"invitations_per_recipient", rl.InvitationsPerRecipient}}},
+	} {
+		if w.d < 0 {
+			errs = append(errs, fmt.Sprintf("security.rate_limits.%s must not be negative", w.key))
+		}
+		for _, l := range w.limits {
+			switch {
+			case l.v < 0:
+				errs = append(errs, fmt.Sprintf("security.rate_limits.%s must not be negative (0 disables it)", l.key))
+			case l.v > 0 && w.d <= 0:
+				errs = append(errs, fmt.Sprintf("security.rate_limits.%s needs a positive security.rate_limits.%s (set it to 0 to disable it)", l.key, w.key))
+			}
+		}
+	}
+	return errs
+}
+
 // MFAFloor is the operator's MFA safety floor (MFA-005): realm policies can
 // be stricter but never lower it.
 type MFAFloor struct {
@@ -1128,6 +1171,7 @@ func (c *Config) Validate() error {
 			add("%s must be %d..%d", r.key, r.min, r.max)
 		}
 	}
+	errs = append(errs, c.Security.RateLimits.validate()...)
 	errs = append(errs, c.Extensions.validate()...) // plugin publisher keys (EXT-014)
 	errs = append(errs, c.WebAuthn.validate()...)   // passkey metadata (PASS-009)
 	if len(errs) > 0 {

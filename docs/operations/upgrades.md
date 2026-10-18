@@ -307,8 +307,11 @@ limits outside their safe ranges (`limits.max_body_bytes` below 256 KiB,
 `security.decision_cache_ttl` above `10m` or negative,
 `security.dynamic_group_max_staleness` other than `0` or `10m`–`168h`,
 `security.totp_skew_steps` outside `0`–`2` and `security.recovery_code_count`
-outside `5`–`20`. Check the file with the new `identity-cli config-diff`
-before step 2.
+outside `5`–`20`, and negative `security.rate_limits` values or a positive
+limit whose window is `0` (for example `temporary_lock: 0` with the default
+`failures_before_lock`; set the limit to `0` to disable a budget, as
+[configuration.md](configuration.md#security) describes). Check the file with
+the new `identity-cli config-diff` before step 2.
 
 ### Separating database roles
 

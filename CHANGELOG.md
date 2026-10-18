@@ -26,6 +26,31 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 - The service depends on `github.com/proudauth/proudauth-sdk-go` `v0.2.0`, the
   SDK's first release tag, instead of a pseudo-version of its `main` branch
   (SDK-009); `docs/integrations/sdk-repositories.json` pins that revision.
+- The rate limiter counts all the budgets of a check in one database
+  statement (a multi-row `INSERT ... ON CONFLICT` over arrays) instead of one
+  round trip per budget, so the password step's four or five budgets cost one
+  round trip (SEC-006, ARC-006). Every budget of the check is now consumed even
+  when one of them is exhausted: a refused attempt still counts toward the
+  client, organization and realm budgets it would have used (REG-012).
+  Before, the budgets after the first exhausted one were not counted. The
+  send cooldown (`security.rate_limits.send_cooldown`) is checked on its own
+  first, so a resend it refuses consumes nothing but the cooldown: no unit
+  of `send_per_identifier`, `send_per_ip` or the client, organization and
+  realm send budgets (PWDLESS-004). A send costs two round trips instead of
+  four to six. The refusal still names the first exhausted budget in the order
+  the caller lists them, with `Retry-After` the time left in its window.
+  Lock checks treat a disabled budget as not exhausted, as counting does
+  (latent: every caller already skipped disabled locks). Regression tests
+  `TestHitConsumesEveryBudgetInOneStatement`,
+  `TestHitDeniesAndStillConsumesEveryBudget`, `TestDisabledBudgetsPeekLikeHit`,
+  `TestHitSharedCountersConcurrently` and `TestSendCooldownConsumesNothingElse`.
+- Configuration validation covers `security.rate_limits`: a negative value,
+  which disabled its budget silently, and a positive limit whose window is
+  `0`, which the limiter skipped, now stop startup; `0` still disables a
+  budget (SEC-006). A configuration that set `temporary_lock: 0` to turn the
+  password lock off sets `failures_before_lock: 0` instead.
+  `api/schemas/config.schema.json` marks the limits and windows
+  non-negative. Regression test `TestValidateRateLimits`.
 
 ## [0.2.0-alpha.5] - 2026-10-18
 
