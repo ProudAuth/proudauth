@@ -18,6 +18,26 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   SDK's first release tag, instead of a pseudo-version of its `main` branch
   (SDK-009); `docs/integrations/sdk-repositories.json` pins that revision.
 
+### Fixed
+
+- Accepting a resource share no longer rewrites a relationship tuple the
+  share did not create, and revoking a share no longer deletes one (AZ-021,
+  AZ-027). When the recipient already held the relation on the object
+  through a tuple written by the relationships API or by another share,
+  acceptance kept that tuple's `source` but gave it the share's `expires_at`,
+  so a permanent grant became time-boxed and a time-boxed one permanent, and
+  recorded the tuple as the share's, so revoking the share removed access the
+  application had granted. Acceptance now writes a tuple of its own or is
+  refused with `409 conflict` ("you already hold this relation on the object
+  outside this share"), leaving the existing tuple unchanged and the offer
+  pending, also when that tuple has expired but was not removed. Revoking a
+  share removes only a tuple whose `source` is that share's `share:<id>`,
+  which also protects tuples that shares accepted by earlier versions
+  recorded as their own
+  ([relationship-authorization.md](docs/integrations/relationship-authorization.md#sharing)).
+  Affected: every earlier 0.2.0 prerelease; regression test
+  `TestResourceSharesKeepForeignTuples`.
+
 ## [0.2.0-alpha.5] - 2026-10-18
 
 ### Added

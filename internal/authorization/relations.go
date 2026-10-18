@@ -371,7 +371,15 @@ type RelationshipWrite struct {
 	SubjectType string     `json:"subject_type"`
 	SubjectID   string     `json:"subject_id"`
 	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
+	// exclusive makes an add create the tuple or fail with errTupleExists
+	// instead of updating an equivalent tuple (shares, AZ-027). It cannot be
+	// set through the relationships API.
+	exclusive bool
 }
+
+// errTupleExists refuses an exclusive add: an equivalent tuple exists, and
+// it is left as it is.
+var errTupleExists = problem.ErrConflict.WithDetail("the subject already holds this relation on the object")
 
 func validObjectID(id string) bool {
 	return id != "" && len(id) <= 256 && !strings.ContainsFunc(id, func(r rune) bool { return r < 0x20 || r == 0x7f })
@@ -457,12 +465,21 @@ func (s *Service) writeRelationshipsTx(ctx context.Context, tx pgx.Tx, realmID, 
 			if w.ExpiresAt != nil && !w.ExpiresAt.After(s.d.Now()) {
 				return problem.ErrValidation.WithField("expires_at", "in the future")
 			}
-			if _, err := tx.Exec(ctx, `INSERT INTO resource_relationships (id, realm_id, organization_id, subject_type, subject_id, relation, object_type,
+			onConflict := `DO UPDATE SET expires_at=EXCLUDED.expires_at, revision=resource_relationships.revision+1`
+			if w.exclusive {
+				// Atomic also against a concurrent write of the same tuple:
+				// the insert waits for it and then does nothing.
+				onConflict = `DO NOTHING`
+			}
+			tag, err := tx.Exec(ctx, `INSERT INTO resource_relationships (id, realm_id, organization_id, subject_type, subject_id, relation, object_type,
 				object_id, source, expires_at, created_by_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-				ON CONFLICT (organization_id, subject_type, subject_id, relation, object_type, object_id) DO UPDATE SET expires_at=EXCLUDED.expires_at,
-				revision=resource_relationships.revision+1`, ids.New("rel"), realmID, orgID, w.SubjectType, w.SubjectID, w.Relation, w.ObjectType, w.ObjectID,
-				source, w.ExpiresAt, actor.ID); err != nil {
+				ON CONFLICT (organization_id, subject_type, subject_id, relation, object_type, object_id) `+onConflict, ids.New("rel"), realmID, orgID,
+				w.SubjectType, w.SubjectID, w.Relation, w.ObjectType, w.ObjectID, source, w.ExpiresAt, actor.ID)
+			if err != nil {
 				return err
+			}
+			if w.exclusive && tag.RowsAffected() == 0 {
+				return errTupleExists
 			}
 			added++
 		case "remove":
