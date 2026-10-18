@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -151,5 +152,85 @@ func TestLimitRanges(t *testing.T) {
 	cfg.Limits.MaxInflightRequests = 0
 	if err := cfg.Validate(); err != nil {
 		t.Errorf("max_inflight_requests=0 (default) refused: %v", err)
+	}
+}
+
+// TestValidateRateLimits covers SEC-006 (ratelimiter-design-config): every
+// rate_limits key refuses a negative value, which used to disable its budget
+// silently; a positive limit refuses a zero window, which the limiter would
+// skip; 0 still disables a budget, and the defaults validate. The negative
+// cases walk the struct, so a new rate_limits key is covered without editing
+// this test.
+func TestValidateRateLimits(t *testing.T) {
+	for name, c := range map[string]Config{"development": validDev(), "production": validProd()} {
+		if err := c.Validate(); err != nil {
+			t.Fatalf("%s defaults rejected: %v", name, err)
+		}
+	}
+	typ := reflect.TypeOf(RateLimitConfig{})
+	for i := range typ.NumField() {
+		f := typ.Field(i)
+		key := strings.Split(f.Tag.Get("yaml"), ",")[0]
+		c := validDev()
+		v := reflect.ValueOf(&c.Security.RateLimits).Elem().Field(i)
+		switch f.Type {
+		case reflect.TypeOf(time.Duration(0)):
+			v.SetInt(int64(-time.Second))
+		case reflect.TypeOf(0):
+			v.SetInt(-1)
+		default:
+			t.Fatalf("rate_limits.%s has type %s; extend this test", key, f.Type)
+		}
+		err := c.Validate()
+		if want := "security.rate_limits." + key + " must not be negative"; err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("%s=-1: want %q, got %v", key, want, err)
+		}
+	}
+	windows := map[string]struct {
+		set    func(*RateLimitConfig, time.Duration)
+		limits []string
+	}{
+		"login_window": {func(r *RateLimitConfig, d time.Duration) { r.LoginWindow = d },
+			[]string{"login_per_identifier", "login_per_ip", "login_per_realm", "login_per_client", "login_per_organization"}},
+		"send_window": {func(r *RateLimitConfig, d time.Duration) { r.SendWindow = d },
+			[]string{"send_per_identifier", "send_per_ip", "send_per_client", "send_per_organization", "send_per_realm"}},
+		"otp_verify_window": {func(r *RateLimitConfig, d time.Duration) { r.OTPVerifyWindow = d }, []string{"otp_verify_per_account"}},
+		"signup_window": {func(r *RateLimitConfig, d time.Duration) { r.SignupWindow = d },
+			[]string{"signup_per_ip", "signup_per_client", "signup_per_realm"}},
+		"token_window":   {func(r *RateLimitConfig, d time.Duration) { r.TokenWindow = d }, []string{"token_per_client", "organization_per_window"}},
+		"temporary_lock": {func(r *RateLimitConfig, d time.Duration) { r.TemporaryLock = d }, []string{"failures_before_lock"}},
+		"invitation_window": {func(r *RateLimitConfig, d time.Duration) { r.InvitationWindow = d },
+			[]string{"invitations_per_organization", "invitations_per_recipient"}},
+	}
+	for window, w := range windows {
+		c := validDev()
+		w.set(&c.Security.RateLimits, 0)
+		err := c.Validate()
+		for _, l := range w.limits {
+			want := "security.rate_limits." + l + " needs a positive security.rate_limits." + window
+			if err == nil || !strings.Contains(err.Error(), want) {
+				t.Errorf("%s=0 with the default %s: want %q, got %v", window, l, want, err)
+			}
+		}
+		// A zero window is fine once every budget it governs is disabled.
+		c = validDev()
+		w.set(&c.Security.RateLimits, 0)
+		rv := reflect.ValueOf(&c.Security.RateLimits).Elem()
+		for _, l := range w.limits {
+			for i := range rv.NumField() {
+				if strings.Split(rv.Type().Field(i).Tag.Get("yaml"), ",")[0] == l {
+					rv.Field(i).SetInt(0)
+				}
+			}
+		}
+		if err := c.Validate(); err != nil {
+			t.Errorf("%s=0 with its budgets disabled refused: %v", window, err)
+		}
+	}
+	// 0 disables: every key at 0 validates, send_cooldown included.
+	c := validDev()
+	c.Security.RateLimits = RateLimitConfig{}
+	if err := c.Validate(); err != nil {
+		t.Errorf("all rate limits disabled refused: %v", err)
 	}
 }

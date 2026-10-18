@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -213,4 +214,56 @@ func TestPasswordlessAndAbuseBudgets(t *testing.T) {
 		// Another organization's budget is independent.
 		_ = f.Globex
 	})
+}
+
+// TestSendCooldownConsumesNothingElse covers PWDLESS-004, REG-012 and
+// SEC-006: send_cooldown paces resends by legitimate users, so a resend it
+// refuses (429 with the cooldown's Retry-After) consumes no unit of
+// send_per_identifier, send_per_ip or the aggregate send budgets. After the
+// cooldown the identifier still has its whole budget, and the address its
+// own; once spent, both refuse as configured.
+func TestSendCooldownConsumesNothingElse(t *testing.T) {
+	h := NewHarness(t)
+	fixtureOn(t, h, func(p *realm.Policy) { p.Login.EmailOTP = true })
+	// Tight budgets for this test only (the fixture setup sends from the same
+	// loopback address), starting well inside a fresh send window so nothing
+	// the fixture sent counts.
+	rl := &h.App.D.Cfg.Security.RateLimits
+	rl.SendCooldown = 30 * time.Second
+	rl.SendPerIdentifier = 2
+	rl.SendPerIP = 3
+	h.Clock.Set(h.Clock.Now().Truncate(rl.SendWindow).Add(rl.SendWindow + time.Minute))
+	cli := LoginOpts{ClientID: "proudauth-cli", Scope: "proudauth:account", Resources: []string{h.Realm.Issuer + "/account"}}
+	send := func(identifier string) *Resp {
+		t.Helper()
+		start, _, cont := h.StartTx(cli)
+		tx := start.Str("transaction_id")
+		mustStatus(t, h.Step(tx, cont, "identify", map[string]any{"identifier": identifier}), 200, "identify")
+		return h.Step(tx, cont, "otp/send", map[string]any{"purpose": "login"})
+	}
+	mustStatus(t, send("alice@example.test"), 200, "first send")
+	for i := range 3 {
+		h.Clock.Advance(5 * time.Second)
+		r := send("alice@example.test")
+		if r.Status != 429 {
+			t.Fatalf("resend %d inside the cooldown: %d %s", i+1, r.Status, r.Raw)
+		}
+		if s, err := strconv.Atoi(r.Header.Get("Retry-After")); err != nil || s < 1 || s > 31 {
+			t.Fatalf("resend %d inside the cooldown: Retry-After %q, want the cooldown's", i+1, r.Header.Get("Retry-After"))
+		}
+	}
+	// The refused resends left send_per_identifier (2) and send_per_ip (3)
+	// untouched: alice's second send and a send to carol from the same
+	// address go through.
+	h.Clock.Advance(30 * time.Second)
+	mustStatus(t, send("alice@example.test"), 200, "second send to alice after the cooldown")
+	mustStatus(t, send("carol@example.test"), 200, "send to carol from the same address")
+	// Now both are spent: alice's identifier budget, then the address's.
+	h.Clock.Advance(31 * time.Second)
+	if r := send("alice@example.test"); r.Status != 429 {
+		t.Fatalf("third send to alice within send_per_identifier=2: %d %s", r.Status, r.Raw)
+	}
+	if r := send("bob@example.test"); r.Status != 429 {
+		t.Fatalf("send beyond send_per_ip=3: %d %s", r.Status, r.Raw)
+	}
 }
