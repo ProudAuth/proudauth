@@ -85,12 +85,21 @@ func (s *Service) Token(ctx context.Context, rlm *realm.Realm, req TokenRequest)
 		return nil, ErrInvalidRequest("this client requires DPoP-bound tokens")
 	}
 	var cnf *token.Confirmation
+	// proof is what the request proves about its sender, whatever the
+	// client's binding policy: the key of its DPoP proof and the TLS client
+	// certificate of its connection. Sender-bound refresh families are
+	// checked against it (TOK-019).
+	var proof session.SenderBinding
 	if req.DPoPProof != "" {
 		jkt, oe := s.VerifyDPoPProof(ctx, rlm, req.DPoPProof, req.HTTPMethod, req.HTTPURL, "")
 		if oe != nil {
 			return nil, oe
 		}
 		cnf = &token.Confirmation{JKT: jkt}
+		proof.JKT = jkt
+	}
+	if req.Auth.Certificate != nil {
+		proof.X5TS256 = certauth.Thumbprint(req.Auth.Certificate)
 	}
 	// Certificate-bound tokens (RFC 8705, TOK-019): a client registered for
 	// them gets tokens bound to the presented TLS certificate, and none
@@ -108,7 +117,7 @@ func (s *Service) Token(ctx context.Context, rlm *realm.Realm, req TokenRequest)
 	case application.GrantAuthorizationCode:
 		return s.codeGrant(ctx, rlm, c, req.Form, cnf)
 	case application.GrantRefreshToken:
-		return s.refreshGrant(ctx, rlm, c, req.Form, cnf)
+		return s.refreshGrant(ctx, rlm, c, req.Form, cnf, proof)
 	case application.GrantClientCredentials:
 		return s.clientCredentialsGrant(ctx, rlm, c, req.Form, cnf)
 	case application.GrantDeviceCode:
@@ -183,6 +192,18 @@ func (s *Service) codeGrant(ctx context.Context, rlm *realm.Realm, c *applicatio
 				return err
 			}
 			oe = ErrInvalidGrant("authorization code binding failed")
+			return nil
+		}
+		// DPoP binding (RFC 9449 §10, TOK-019): a code whose authorization
+		// request carried dpop_jkt (or whose pushed request carried a DPoP
+		// proof) is redeemed only with a DPoP proof of that key. A failure
+		// is a binding failure like the others: the code is spent and the
+		// grant revoked.
+		if stored.DPoPJKT != "" && (cnf == nil || cnf.JKT != stored.DPoPJKT) {
+			if err := s.Sessions.RevokeGrantTx(ctx, tx, stored.GrantID, "code_binding_failed"); err != nil {
+				return err
+			}
+			oe = ErrInvalidGrant("authorization code binding failed: the code is bound to the DPoP key named by dpop_jkt")
 			return nil
 		}
 		g, err := s.Sessions.GrantTx(ctx, tx, stored.GrantID)
@@ -335,7 +356,14 @@ func (s *Service) issueForUserGrant(ctx context.Context, tx pgx.Tx, rlm *realm.R
 		if p := c.TokenPolicy; p.RefreshAbsoluteSeconds > 0 && time.Duration(p.RefreshAbsoluteSeconds)*time.Second < abs {
 			abs = time.Duration(p.RefreshAbsoluteSeconds) * time.Second
 		}
-		rt, _, err := s.Sessions.IssueRefreshTx(ctx, tx, rlm.ID, g.ID, c.Ref, idle, abs, cap)
+		// The family keeps the sender constraint of this first issuance for
+		// its whole life, whatever require_dpop says (TOK-019, owner decision
+		// 13): every refresh must prove the same DPoP key or certificate.
+		var bind session.SenderBinding
+		if cnf != nil {
+			bind = session.SenderBinding{JKT: cnf.JKT, X5TS256: cnf.X5TS256}
+		}
+		rt, _, err := s.Sessions.IssueRefreshTx(ctx, tx, rlm.ID, g.ID, c.Ref, bind, idle, abs, cap)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -498,7 +526,11 @@ func scopesForResource(ctx context.Context, s *Service, realmID string, res *app
 	return out
 }
 
-func (s *Service) refreshGrant(ctx context.Context, rlm *realm.Realm, c *application.Client, f url.Values, cnf *token.Confirmation) (*IssuedTokens, *Error) {
+// refreshGrant uses a refresh token (SES-006). cnf binds the access token it
+// issues; proof is what the request proves about its sender (its DPoP key and
+// TLS client certificate), which a sender-bound family must match.
+func (s *Service) refreshGrant(ctx context.Context, rlm *realm.Realm, c *application.Client, f url.Values, cnf *token.Confirmation,
+	proof session.SenderBinding) (*IssuedTokens, *Error) {
 	presented := f.Get("refresh_token")
 	if presented == "" {
 		return nil, ErrInvalidRequest("refresh_token is required")
@@ -507,7 +539,7 @@ func (s *Service) refreshGrant(ctx context.Context, rlm *realm.Realm, c *applica
 	var out *IssuedTokens
 	var oe *Error
 	idle := s.d.Cfg.Sessions.IdleTimeout
-	res, err := s.Sessions.UseRefresh(ctx, rlm.ID, presented, c.Ref, idle, c.FAPI2(),
+	res, err := s.Sessions.UseRefresh(ctx, rlm.ID, presented, c.Ref, proof, idle, c.FAPI2(),
 		func(tx pgx.Tx, g *session.Grant) error {
 			// Scope can only narrow on refresh (TOK-008).
 			for _, sc := range requestedScopes {
@@ -561,6 +593,8 @@ func (s *Service) refreshGrant(ctx context.Context, rlm *realm.Realm, c *applica
 			return nil, oe
 		}
 		switch {
+		case errors.Is(err, session.ErrRefreshSender):
+			return nil, ErrInvalidGrant("refresh token is sender-constrained: present a DPoP proof signed with its key, or its TLS client certificate")
 		case errors.Is(err, session.ErrRefreshReuse):
 			return nil, ErrInvalidGrant("refresh token reuse detected; the token family was revoked")
 		case errors.Is(err, session.ErrRefreshInvalid):

@@ -578,12 +578,17 @@ func (a *App) par(w http.ResponseWriter, r *http.Request, rlm *realm.Realm) erro
 		writeJSON(w, http.StatusBadRequest, oauth.ErrInvalidRequest("form encoding required"))
 		return nil
 	}
-	c, err := a.Apps.Authenticate(r.Context(), rlm.ID, rlm.Issuer, rlm.Issuer+"/oauth/par", a.clientAuthFrom(r))
+	if len(r.Header.Values("DPoP")) > 1 {
+		writeJSON(w, http.StatusBadRequest, &oauth.Error{Code: "invalid_dpop_proof", Description: "one DPoP proof header is required", Status: http.StatusBadRequest})
+		return nil
+	}
+	endpoint := rlm.Issuer + "/oauth/par"
+	c, err := a.Apps.Authenticate(r.Context(), rlm.ID, rlm.Issuer, endpoint, a.clientAuthFrom(r))
 	if err != nil {
 		a.writeOAuthError(w, oauth.ErrInvalidClient)
 		return nil
 	}
-	res, oe := a.OAuth.PushAuthorizationRequest(r.Context(), rlm, c, r.PostForm)
+	res, oe := a.OAuth.PushAuthorizationRequest(r.Context(), rlm, c, r.PostForm, r.Header.Get("DPoP"), endpoint)
 	if oe != nil {
 		a.writeOAuthError(w, oe)
 		return nil

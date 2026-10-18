@@ -331,6 +331,14 @@ paths:
             type: string
             description: "Interaction intent hint, e.g. login or register."
           description: "Interaction intent hint, e.g. login or register."
+        - name: dpop_jkt
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: "^[A-Za-z0-9_-]{43}$"
+            description: "RFC 9449 §10: JWK SHA-256 thumbprint of a DPoP key. The authorization code is then redeemed only with a DPoP proof of that key (invalid_grant otherwise); a malformed value is invalid_request."
+          description: "RFC 9449 §10: JWK SHA-256 thumbprint of a DPoP key. The authorization code is then redeemed only with a DPoP proof of that key (invalid_grant otherwise); a malformed value is invalid_request."
       responses:
         "302":
           description: Found (redirect)
@@ -428,6 +436,10 @@ paths:
                 intent:
                   type: string
                   description: "Interaction intent hint, e.g. login or register."
+                dpop_jkt:
+                  type: string
+                  pattern: "^[A-Za-z0-9_-]{43}$"
+                  description: "RFC 9449 §10: JWK SHA-256 thumbprint of a DPoP key. The authorization code is then redeemed only with a DPoP proof of that key (invalid_grant otherwise); a malformed value is invalid_request."
               additionalProperties: false
       responses:
         "302":
@@ -455,7 +467,7 @@ paths:
       tags:
         - OAuth
       summary: Token endpoint
-      description: "Issues tokens for the enabled grants. Parameters must be form-encoded in the body (query parameters are rejected) and must not repeat (except resource). Optional DPoP proof in the DPoP header. When issuance fails for a configuration reason (the client registered response encryption but has no key that can receive it: 400 unauthorized_client; no active signing key: 503 temporarily_unavailable), the issuance is rolled back and the code, device code or refresh token is not consumed, so a retry is not treated as replay."
+      description: "Issues tokens for the enabled grants. Parameters must be form-encoded in the body (query parameters are rejected) and must not repeat (except resource). Optional DPoP proof in the DPoP header. A refresh token whose family was first issued with a DPoP proof or a TLS client certificate is accepted only with a proof of the same key or the same certificate, and a code requested with dpop_jkt only with a proof of that key (400 invalid_grant otherwise). When issuance fails for a configuration reason (the client registered response encryption but has no key that can receive it: 400 unauthorized_client; no active signing key: 503 temporarily_unavailable), the issuance is rolled back and the code, device code or refresh token is not consumed, so a retry is not treated as replay."
       security:
         - clientSecretBasic: []
         - {}
@@ -753,7 +765,7 @@ paths:
       tags:
         - OAuth
       summary: Pushed authorization request (RFC 9126)
-      description: "Requires an authenticated client. request_uri is not allowed in a pushed request; the returned request_uri is single-use and expires after 60 seconds."
+      description: "Requires an authenticated client. request_uri is not allowed in a pushed request; the returned request_uri is single-use and expires after 60 seconds. A DPoP proof in the DPoP header (htu: this endpoint) binds the authorization code to its key as dpop_jkt does (RFC 9449 §10.1)."
       security:
         - clientSecretBasic: []
         - {}
@@ -761,6 +773,12 @@ paths:
       parameters:
         - "$ref": "#/components/parameters/Path_realm"
         - "$ref": "#/components/parameters/RequestId"
+        - name: DPoP
+          in: header
+          required: false
+          schema:
+            type: string
+          description: "DPoP proof JWT (RFC 9449 §10.1) for POST to this endpoint; the authorization code is bound to its key. One header at most (invalid_dpop_proof)."
       requestBody:
         required: true
         content:
@@ -834,6 +852,10 @@ paths:
                 intent:
                   type: string
                   description: "Interaction intent hint, e.g. login or register."
+                dpop_jkt:
+                  type: string
+                  pattern: "^[A-Za-z0-9_-]{43}$"
+                  description: "RFC 9449 §10: JWK SHA-256 thumbprint of a DPoP key. The authorization code is then redeemed only with a DPoP proof of that key (invalid_grant otherwise); a malformed value, or one naming another key than the DPoP header's proof, is invalid_request."
       responses:
         "201":
           description: Created
@@ -1367,6 +1389,10 @@ paths:
                   type: string
                   enum: [query, query.jwt, jwt]
                   description: "query (default), or a JWT-secured authorization response (JARM, ADV-002): redirect_to then carries response=<JWT> (typ oauth-authz-resp+jwt) instead of code, state and iss."
+                dpop_jkt:
+                  type: string
+                  pattern: "^[A-Za-z0-9_-]{43}$"
+                  description: "RFC 9449 §10: JWK SHA-256 thumbprint of a DPoP key. The authorization code is then redeemed only with a DPoP proof of that key (invalid_grant otherwise)."
               additionalProperties: false
       responses:
         "201":

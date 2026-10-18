@@ -70,8 +70,9 @@ recorded atomically (SES-006..SES-009, DB-006, §24.3).
   shortened the shared SSO session for every application. A refresh now only
   moves the session's idle expiry later (`session.Service.TouchFromRefreshTx`)
   and never changes its absolute expiry (`TestRefreshNeverShortensSession`).
-- DPoP-bound refresh requests mint DPoP-bound access tokens, but the refresh token
-  itself is not bound to the DPoP key.
+- **Former limit, fixed (Update 2026-10-18, below):** DPoP-bound refresh
+  requests minted DPoP-bound access tokens, but the refresh token itself was
+  not bound to the DPoP key (nor to a client certificate).
 
 ## Migration implications
 
@@ -80,4 +81,37 @@ migration to or from ProudAuth requires users to sign in again.
 
 ## Related requirement IDs
 
-SES-006, SES-007, SES-008, SES-009, SES-012, SES-021, DB-006, MCH-003, TOK-008, TEST-030, TEST-031, TEST-032, §24.3
+SES-006, SES-007, SES-008, SES-009, SES-012, SES-021, DB-006, MCH-003, TOK-008, TOK-019, TEST-030, TEST-031, TEST-032, TEST-067, §24.3
+
+## Updates
+
+**Update — 2026-10-18.** Refresh families are sender-bound (TOK-019; RFC 9449
+§5, RFC 8705 §3; owner decision 13,
+`docs/releases/2026-10-alpha.6-decisions.md`). Until now only access tokens
+were sender-constrained: a stolen refresh token of a DPoP-bound family could
+be redeemed with the thief's own DPoP key, or, when the client lacked
+`require_dpop`, with no proof at all for a bearer token. Migration
+`0089_refresh_family_binding.sql` adds `refresh_families.cnf_jkt` and
+`cnf_x5t_s256`. `session.Service.IssueRefreshTx` stores the sender
+constraint of the family's first issuance (the DPoP proof key's thumbprint,
+or the client certificate's), whatever `require_dpop` says, and nothing
+changes it afterwards: rotation keeps the family row and its binding.
+`session.Service.UseRefresh` (and `RotateRefresh`) take the request's proof,
+its DPoP key and its TLS client certificate, and refuse a bound family whose
+key or certificate it does not present (`session.ErrRefreshSender`,
+`invalid_grant`), also after the client's own binding policy changed. The
+check runs after the client binding and **before reuse detection**, and is
+not a reuse signal: it neither consumes the generation nor compromises the
+family, and records only a `token.refresh.binding_failed` audit event. This
+is deliberate: a presenter that cannot prove possession cannot use the token,
+of the current generation or an earlier one, so letting its attempt trigger
+reuse detection would only let anyone who saw an old refresh token revoke
+the holder's family, grant and session; reuse detection still applies to
+every presentation that proves possession. Families issued before `0089`, or
+without a sender constraint, have no binding and keep the old behaviour until
+they expire; rotation never binds them later. The same change binds
+authorization codes to a DPoP key named by `dpop_jkt` (RFC 9449 §10,
+`authorization_codes.dpop_jkt`). DPoP nonces remain unsupported (issue #37).
+Tests: `TestSenderBoundRefreshFamilies`, `TestDPoPBoundAuthorizationCodes`,
+`TestSenderBindingRefusal`. The Decision section above is unchanged; this
+update adds the sender binding to it.

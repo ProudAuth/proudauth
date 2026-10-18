@@ -1371,7 +1371,7 @@ func (s *Service) complete(ctx context.Context, tx pgx.Tx, t *Transaction) (*Com
 			codeTTL = time.Minute // FAPI 2.0: codes live at most 60 seconds (ADV-001)
 		}
 		code, err := s.Sessions.IssueCodeTx(ctx, tx, t.RealmID, session.Code{ClientRef: t.ClientRef, TransactionID: t.ID, GrantID: g.ID,
-			RedirectURI: t.RedirectURI, Challenge: t.CodeChallenge, Method: t.CodeChallengeMethod, Nonce: t.Nonce}, codeTTL)
+			RedirectURI: t.RedirectURI, Challenge: t.CodeChallenge, Method: t.CodeChallengeMethod, Nonce: t.Nonce, DPoPJKT: t.Pending.DPoPJKT}, codeTTL)
 		if err != nil {
 			return nil, err
 		}

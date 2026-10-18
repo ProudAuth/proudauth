@@ -18,7 +18,7 @@ func authorizeParams(r *AuthorizeRequest) map[string]*string {
 		"scope": &r.Scope, "state": &r.State, "nonce": &r.Nonce, "code_challenge": &r.CodeChallenge,
 		"code_challenge_method": &r.CodeChallengeMethod, "prompt": &r.Prompt, "max_age": &r.MaxAge, "acr_values": &r.ACRValues,
 		"login_hint": &r.LoginHint, "ui_locales": &r.UILocales, "organization": &r.Organization, "request_uri": &r.RequestURI,
-		"request": &r.Request, "intent": &r.Intent, "claims": &r.Claims,
+		"request": &r.Request, "intent": &r.Intent, "claims": &r.Claims, "dpop_jkt": &r.DPoPJKT,
 	}
 }
 
@@ -75,12 +75,14 @@ func TestParseAuthorize(t *testing.T) {
 		"login_hint": {"jo@example.com"}, "ui_locales": {"ar en"}, "organization": {"acme"},
 		"resource": {"https://orders.example", "https://billing.example"}, "request_uri": {"urn:ietf:params:oauth:request_uri:x"},
 		"request": {"eyJ.e30.sig"}, "intent": {"register"}, "claims": {`{"id_token":{"email":null}}`},
+		"dpop_jkt": {"NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs"},
 	}
 	fullReq := AuthorizeRequest{ClientID: "app", RedirectURI: "https://app.example/cb", ResponseType: "code", ResponseMode: "query.jwt",
 		Scope: "openid profile orders:read", State: "af0ifjsldkj", Nonce: "n-0S6_WzA2Mj", CodeChallenge: challenge, CodeChallengeMethod: "S256",
 		Prompt: "login consent", MaxAge: "300", ACRValues: "urn:proudauth:acr:mfa", LoginHint: "jo@example.com", UILocales: "ar en",
 		Organization: "acme", Resources: []string{"https://orders.example", "https://billing.example"},
-		RequestURI: "urn:ietf:params:oauth:request_uri:x", Request: "eyJ.e30.sig", Intent: "register", Claims: `{"id_token":{"email":null}}`}
+		RequestURI: "urn:ietf:params:oauth:request_uri:x", Request: "eyJ.e30.sig", Intent: "register", Claims: `{"id_token":{"email":null}}`,
+		DPoPJKT: "NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs"}
 	with := func(k string, vals ...string) url.Values {
 		v := url.Values{"client_id": {"app"}, "response_type": {"code"}}
 		v[k] = vals
@@ -201,6 +203,26 @@ func TestDedupe(t *testing.T) {
 		got := dedupe(tc.in)
 		if got == nil || !slices.Equal(got, tc.want) {
 			t.Errorf("dedupe(%q) = %#v, want %#v", tc.in, got, tc.want)
+		}
+	}
+}
+
+// TestValidJKT covers the form of dpop_jkt (RFC 9449 §10): a JWK SHA-256
+// thumbprint is 43 base64url characters without padding.
+func TestValidJKT(t *testing.T) {
+	for _, tc := range []struct {
+		in   string
+		want bool
+	}{
+		{"NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs", true},
+		{"", false},
+		{"NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9X", false},
+		{"NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs=", false},
+		{"NzbLsXh8uDCcd+6MNwXF4W/7noWXFZAfHkxZsRGC9Xs", false},
+		{"NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9X\x00", false},
+	} {
+		if got := validJKT(tc.in); got != tc.want {
+			t.Errorf("validJKT(%q) = %v, want %v", tc.in, got, tc.want)
 		}
 	}
 }

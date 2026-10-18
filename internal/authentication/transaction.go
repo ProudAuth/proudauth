@@ -145,6 +145,9 @@ type PendingState struct {
 	// Flow is the authentication flow decision for the current account
 	// (AUT-012), kept so risk hooks run once per sign-in.
 	Flow *FlowDecision `json:"flow,omitempty"`
+	// DPoPJKT is the dpop_jkt of the authorization request (RFC 9449 §10):
+	// the code this transaction issues is bound to that DPoP key (TOK-019).
+	DPoPJKT string `json:"dpop_jkt,omitempty"`
 	// UpgradeProof records an existing second factor proved in this
 	// transaction that the phishing-resistant profile does not accept
 	// (MFA-006, SEC-012). It unlocks passkey registration and nothing else:
@@ -249,6 +252,9 @@ type StartInput struct {
 	StepUpOf        string
 	// ClaimsRequest is the validated OIDC claims parameter (OIDC-008).
 	ClaimsRequest string
+	// DPoPJKT is the DPoP key thumbprint the authorization code is bound to
+	// (RFC 9449 §10, TOK-019).
+	DPoPJKT string
 }
 
 // Started is returned to the caller once.
@@ -309,7 +315,7 @@ func (s *Service) Start(ctx context.Context, in StartInput) (*Started, error) {
 	}
 	now := s.d.Now()
 	t := &Transaction{ID: ids.New(ids.Transaction)}
-	pending := PendingState{StepUpOf: in.StepUpOf, ClaimsRequest: in.ClaimsRequest}
+	pending := PendingState{StepUpOf: in.StepUpOf, ClaimsRequest: in.ClaimsRequest, DPoPJKT: in.DPoPJKT}
 	var userID *string
 	var factors []session.Factor
 	var authTime *time.Time

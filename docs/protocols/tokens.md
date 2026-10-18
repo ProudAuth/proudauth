@@ -16,8 +16,8 @@ Requirements: §14, TOK-001..TOK-024, JWT-AT (RFC 9068), OIDC-003. Code:
 | Authorization response (JARM, ADV-002) | JWT `typ: oauth-authz-resp+jwt` in the `response` parameter, optionally encrypted | The client | 10 min |
 | UserInfo response | JSON, or `application/jwt` (signed with `typ: userinfo+jwt` and/or encrypted, OIDC-013) for clients that ask for it | The OIDC client | — |
 | Logout token | JWT `typ: logout+jwt` | Back-channel logout endpoint of a client | 2 min |
-| Refresh token | Opaque `pa_rt_` | Token endpoint only | Family idle/absolute ([ADR 0011](../architecture-decisions/0011-refresh-token-families.md)) |
-| Authorization code | Opaque `pa_ac_` | Token endpoint | 60 s |
+| Refresh token | Opaque `pa_rt_`; bound for its family's life to the DPoP key or TLS client certificate of its first issuance, when there was one ([DPoP](oauth-oidc-profile.md#dpop-rfc-9449)) | Token endpoint only | Family idle/absolute ([ADR 0011](../architecture-decisions/0011-refresh-token-families.md)) |
+| Authorization code | Opaque `pa_ac_`; bound to a DPoP key when the request named `dpop_jkt` | Token endpoint | 60 s |
 | API key | Opaque `pa_key_` | Introspection | Set at creation |
 | Personal access token | Opaque `pa_pat_` | Introspection | Set at creation |
 

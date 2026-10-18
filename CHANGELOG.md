@@ -84,6 +84,26 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   `client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, `reviewed_version` and
   `requeued_at` (APP-016, APP-017, API-010;
   [dynamic-client-registration.md](docs/integrations/dynamic-client-registration.md#approval)).
+- Authorization codes bound to a DPoP key (RFC 9449 §10): the authorization
+  endpoint, pushed authorization requests and the headless transaction API
+  accept `dpop_jkt`, the JWK SHA-256 thumbprint of a DPoP key (43 base64url
+  characters; anything else is `invalid_request`), and the PAR endpoint
+  verifies a `DPoP` header and binds the code to its key as if it were named
+  in `dpop_jkt` (RFC 9449 §10.1; a `dpop_jkt` naming another key is `400
+  invalid_request`). Such a code is redeemed only with a DPoP proof of that
+  key: another key or none is `400 invalid_grant`, and, as for the other
+  code binding failures, the code is spent and its grant revoked. Codes
+  without `dpop_jkt` are unchanged and discovery advertises nothing new.
+  Migration `0089_refresh_family_binding.sql` (expand only, nullable columns
+  without a default) adds `authorization_codes.dpop_jkt` and the
+  `refresh_families.cnf_jkt` and `cnf_x5t_s256` columns of the refresh
+  binding under Security; older binaries in the mixed-version window neither
+  store nor check either binding
+  ([upgrades.md](docs/operations/upgrades.md#mixed-version-window)). The
+  OpenAPI document lists `dpop_jkt` and the PAR `DPoP` header (TOK-019, owner
+  decision 13 of the [alpha.6 decisions](docs/releases/2026-10-alpha.6-decisions.md)).
+  Regression tests `TestDPoPBoundAuthorizationCodes`, `TestValidJKT`,
+  `TestParseAuthorize`.
 
 ### Changed
 
@@ -431,6 +451,30 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   API-010; [decision 14](docs/releases/2026-10-alpha.6-decisions.md)).
   Affected: every earlier 0.2.0 prerelease; regression tests
   `TestDynamicRegistrationReapproval`, `TestReviewedChanges`.
+- Refresh tokens are bound to the sender of their first issuance (owner
+  decision 13 of the [alpha.6 decisions](docs/releases/2026-10-alpha.6-decisions.md)).
+  A refresh token family issued with a DPoP proof or with a
+  certificate-bound access token (RFC 8705) stores the proof key's JWK
+  thumbprint or the certificate's SHA-256 thumbprint
+  (`refresh_families.cnf_jkt`, `cnf_x5t_s256`, migration `0089`), and every
+  refresh must prove the same key or certificate, whatever the client's
+  `require_dpop` or certificate setting says, now or later: a proof from
+  another key, another certificate or none is `400 invalid_grant`. Until
+  now only access tokens were sender-constrained, against RFC 9449 §5, so
+  anyone holding a stolen refresh token of a DPoP-bound single-page or
+  native application could redeem it with a DPoP key of their own and, when
+  the client lacked `require_dpop`, with no proof at all, for a bearer
+  token. The refusal is checked before reuse detection and is not a reuse
+  signal: it neither rotates the token nor compromises the family, so a
+  stolen token without its key cannot be used to revoke the holder's
+  family, grant and session; it is audited as `token.refresh.binding_failed`
+  (reason `REFRESH_BINDING_FAILED`). Rotation keeps the family's binding,
+  `fapi2` refresh tokens included. Families issued before the upgrade, and
+  bearer families, keep refreshing as before until they expire. DPoP nonces
+  remain unsupported (issue #37) (TOK-019, SES-006, TEST-067,
+  [ADR 0011](docs/architecture-decisions/0011-refresh-token-families.md)).
+  Affected: every earlier 0.2.0 prerelease; regression tests
+  `TestSenderBoundRefreshFamilies`, `TestSenderBindingRefusal`.
 
 ## [0.2.0-alpha.5] - 2026-10-18
 

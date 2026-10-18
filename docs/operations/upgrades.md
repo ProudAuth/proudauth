@@ -363,6 +363,20 @@ which only `identity-cli restore-begin` does on a restored database
 ([backup-restore.md](backup-restore.md)); older binaries ignore it, so run
 only new binaries against a database you are restoring.
 
+Migration `0089_refresh_family_binding.sql` is expand-only: it adds
+`refresh_families.cnf_jkt` and `cnf_x5t_s256` and `authorization_codes.dpop_jkt`,
+nullable and without a default (a catalog change only). New binaries store
+the sender constraint of a refresh family's first issuance and refuse a
+refresh that does not prove the same DPoP key or TLS client certificate
+(`invalid_grant`), and bind authorization codes to `dpop_jkt`
+([DPoP](../protocols/oauth-oidc-profile.md#dpop-rfc-9449)). Families that
+exist when it is applied stay unbound until they expire. Older binaries
+ignore the columns: in the mixed-version window, families they issue are
+unbound, they refresh bound families without checking the binding, and
+they issue and redeem codes without `dpop_jkt`. The binding protects every
+family only once every server runs the new version; a rollback to an older
+binary leaves bound families refreshable without a proof until they expire.
+
 Migration `0090_dcr_reviewed_version.sql` is expand-only: it adds
 `client_registrations.reviewed_version` and `requeued_at`, `NULL` on every
 existing registration. New binaries return an approved dynamic registration
