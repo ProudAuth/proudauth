@@ -285,6 +285,15 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   `version` from `GET /client-registrations` with the metadata being
   reviewed and send it; after a `409`, list and review again.
 
+### Removed
+
+- The Dependabot configuration (`.github/dependabot.yml`), by owner decision on
+  2026-10-18, here and in the five SDK repositories. Go module, GitHub Actions
+  and base-image pins are raised in reviewed pull requests by the maintainer;
+  `govulncheck` on source and shipped binaries, the pinned-tool check and
+  `TestReleaseToolchainPinned` keep failing CI on vulnerable, unpinned or
+  drifting dependencies (DEP-003, SEC-016).
+
 ### Fixed
 
 - Errors on the OAuth and OIDC endpoints (`/realms/{realm}/oauth/*` and

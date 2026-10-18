@@ -208,8 +208,8 @@ func TestDeployComposeStack(t *testing.T) {
 
 // TestDeployImageHardening covers DEP-003 and DEP-004 for the container
 // image: every base image names an explicit tag or digest (never latest),
-// modules are verified against go.sum and kept current through reviewed
-// Dependabot updates, the build is reproducible (trimpath, no cgo, no build
+// modules are verified against go.sum and change only through reviewed
+// pull requests, the build is reproducible (trimpath, no cgo, no build
 // ID), and the runtime stage is a shell-less distroless image that runs as a
 // numeric non-root user and needs no writable root filesystem.
 func TestDeployImageHardening(t *testing.T) {
@@ -248,17 +248,6 @@ func TestDeployImageHardening(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(repoRoot, "go.sum")); err != nil {
 		t.Error("go.sum must pin module checksums")
-	}
-	var ecosystems []string
-	for _, u := range deployList(deployDocs(t, ".github/dependabot.yml")[0]["updates"]) {
-		if e, _ := deployDig(u, "package-ecosystem").(string); e != "" {
-			ecosystems = append(ecosystems, e)
-		}
-	}
-	for _, e := range []string{"gomod", "docker", "github-actions"} {
-		if !slices.Contains(ecosystems, e) {
-			t.Errorf("dependency pins for %s are not kept current by Dependabot", e)
-		}
 	}
 }
 
