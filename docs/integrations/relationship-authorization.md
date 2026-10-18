@@ -130,7 +130,8 @@ POST /api/v1/realms/main/organizations/org_.../relationships
 
   Otherwise `422` with the reason. `expires_at`, when given, must be in the
   future; the tuple then lapses on its own. Adding an existing tuple updates
-  its `expires_at`.
+  its `expires_at` and keeps its `source`: a tuple a share wrote stays the
+  share's, and revoking the share removes it.
 - `remove` is idempotent and does not validate the subject.
 - Audited as `authorization.relationships.written` (metadata `added`,
   `removed`, `source` and the writes, including subject IDs).
@@ -140,7 +141,8 @@ tuples, expired ones included, filtered by `object_type`, `object_id`,
 `subject_type` and `subject_id`; `limit` 1–500 (default 100) and `cursor`
 (the `id` of the last tuple). Items: `id`, `organization_id`,
 `object_type`, `object_id`, `relation`, `subject_type`, `subject_id`,
-`source` (`api`, or `share:<id>`), `expires_at`, `created_by_id`,
+`source` (`api`, or `share:<id>` for the tuple a share's acceptance wrote),
+`expires_at`, `created_by_id`,
 `created_at`.
 
 ## Object-level decisions
@@ -248,9 +250,9 @@ token, users only). Paths are relative to `/api/v1/realms/{realm}`:
 | --- | --- | --- |
 | `POST /me/shares` | Sharer, with recent authentication | Offer: `{"organization_id", "resource_type", "object_id", "relation", "recipient_user_id", "message", "expires_at"}` → `201`, state `pending` |
 | `GET /me/shares?direction=received\|sent&state=` | Either | Newest first (`direction` defaults to `received`) |
-| `POST /me/shares/{id}/accept` | Recipient | Re-checks that the relation is still shareable and that the sharer may still share the object, then writes the tuple (with the share's `expires_at`, source `share:<id>`) → state `accepted` |
+| `POST /me/shares/{id}/accept` | Recipient | Re-checks that the relation is still shareable and that the sharer may still share the object, then writes a new tuple (with the share's `expires_at`, source `share:<id>`) → state `accepted`; `409` when the recipient already has an equivalent tuple (Existing tuples, below) |
 | `POST /me/shares/{id}/decline` | Recipient | State `declined` |
-| `DELETE /me/shares/{id}` | Sharer (withdraw) or recipient (give back) | Removes the tuple; state `revoked` (`204`) |
+| `DELETE /me/shares/{id}` | Sharer (withdraw) or recipient (give back) | Removes the tuple the share wrote, no other; state `revoked` (`204`) |
 
 Rules: the sharer must hold the type's `share_permission` on the object
 (`403` "you may not share this object"); `relation` must be one of the
@@ -271,6 +273,23 @@ kept), recording `authorization.share.expired` (actor `system`, metadata
 `previous_state`). Listings show such a share as `expired`, and `state=`
 filters by that, before the sweep stores it; an expired share does not count
 as the one pending or accepted share per object, relation and recipient.
+
+**Existing tuples.** A share writes a tuple of its own or none. Tuples are
+unique per subject, relation and object whatever their `source`, so when the
+recipient already has an equivalent tuple, written through the relationships
+API or by another share, accepting is `409` ("you already hold this relation
+on the object outside this share"). That tuple keeps its `source`,
+`expires_at` and revision: a permanent grant does not become time-boxed, nor
+a time-boxed one permanent. The offer stays `pending`: the recipient can
+decline it, the sharer can withdraw it, and it can be accepted once the
+other tuple is gone. A tuple past its `expires_at` that has not been removed
+counts too: the application removes its own with `op: remove`, and the
+expiry sweep removes one an expired share left.
+
+Revoking a share and the expiry sweep remove only a tuple whose `source` is
+that share's `share:<id>`. A share accepted before 0.2.0-alpha.6 over an
+existing tuple recorded that tuple as its own; revoking it, or its expiry,
+leaves the tuple in place.
 
 ## Data and limits
 

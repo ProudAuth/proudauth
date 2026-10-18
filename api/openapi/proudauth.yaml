@@ -23656,7 +23656,7 @@ paths:
       tags:
         - Self-service
       summary: Accept a share
-      description: "Creates the relationship tuple, after re-checking that the sharer may still share and the relation is still shareable. An offer past its expires_at is 409 and stored as expired."
+      description: "Creates a relationship tuple with source share:<id>, after re-checking that the sharer may still share and the relation is still shareable. An offer past its expires_at is 409 and stored as expired. When the recipient already has an equivalent tuple (written through the relationships API or by another share, also one past its expires_at that was not removed) it is 409 and the offer stays pending; that tuple keeps its source and expires_at."
       security:
         - accountToken: []
       x-trust-class: self-service
@@ -23747,7 +23747,7 @@ paths:
       tags:
         - Self-service
       summary: Revoke or give back a share
-      description: "The sharer withdraws an offer or access, or the recipient gives access back; the relationship tuple is removed."
+      description: "The sharer withdraws an offer or access, or the recipient gives access back; the relationship tuple the share wrote (source share:<id>) is removed, and no other."
       security:
         - accountToken: []
       x-trust-class: self-service

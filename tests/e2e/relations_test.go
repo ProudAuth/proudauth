@@ -389,3 +389,192 @@ func TestRelationshipTenantEligibility(t *testing.T) {
 	runWorker(t, worker.New(h.App, "test"))
 	expect(bob, "doc_group", true, "recomputed dynamic group")
 }
+
+// TestResourceSharesKeepForeignTuples covers AZ-021 and AZ-027: a share
+// writes a relationship tuple of its own (source share:<id>) or none. When
+// the recipient already holds the relation through a tuple the application
+// or another share wrote, accepting is 409 and that tuple keeps its source,
+// expires_at and revision (a permanent grant does not become time-boxed, a
+// time-boxed one does not become permanent), also after it has expired; the
+// offer stays pending. Revoking a share removes only the tuple it wrote,
+// also for a share that an earlier version recorded as holding a foreign
+// tuple.
+func TestResourceSharesKeepForeignTuples(t *testing.T) {
+	f := NewFixture(t)
+	h := f.H
+	ctx := context.Background()
+	svc := f.MachineToken(f.Clients["orders-rs"], h.Realm.Issuer+"/admin", "proudauth:admin", "").Str("access_token")
+	api := func(method, path string, body any) *Resp {
+		return h.API(method, path, svc, body)
+	}
+	for _, perm := range []string{"docs.read", "docs.write", "docs.share"} {
+		f.must(f.AdminAPI("POST", "/permissions", map[string]any{"name": perm}), 201, "permission "+perm)
+	}
+	f.must(api("PUT", "/resource-types/document", map[string]any{"resource_id": f.Orders, "relations": []map[string]any{
+		{"name": "owner", "subject_types": []string{"user"}},
+		{"name": "editor", "subject_types": []string{"user"}, "implied_by": []string{"owner"}},
+		{"name": "viewer", "subject_types": []string{"user"}, "implied_by": []string{"editor"}}},
+		"permissions":         map[string][]string{"docs.read": {"viewer"}, "docs.write": {"editor"}, "docs.share": {"owner"}},
+		"shareable_relations": []string{"viewer", "editor"}, "share_permission": "docs.share"}), 201, "document type")
+	write := func(what string, writes ...map[string]any) {
+		t.Helper()
+		f.must(api("POST", "/organizations/"+f.Acme+"/relationships", map[string]any{"writes": writes}), 200, what)
+	}
+	tuple := func(op, obj, rel, user string, expires *time.Time) map[string]any {
+		w := map[string]any{"op": op, "object_type": "document", "object_id": obj, "relation": rel, "subject_type": "user", "subject_id": user}
+		if expires != nil {
+			w["expires_at"] = *expires
+		}
+		return w
+	}
+	var owners []map[string]any
+	for _, obj := range []string{"docA", "docB", "docC", "docD"} {
+		owners = append(owners, tuple("add", obj, "owner", f.Users["alice"], nil))
+	}
+	write("alice owns the documents", owners...)
+
+	type row struct {
+		id, source string
+		expiresAt  *time.Time
+		revision   int64
+	}
+	bobTuple := func(obj, rel string) *row {
+		t.Helper()
+		var r row
+		err := h.App.D.DB.Pool.QueryRow(ctx, `SELECT id, source, expires_at, revision FROM resource_relationships WHERE organization_id=$1
+			AND subject_type='user' AND subject_id=$2 AND relation=$3 AND object_type='document' AND object_id=$4`, f.Acme, f.Users["bob"], rel, obj).
+			Scan(&r.id, &r.source, &r.expiresAt, &r.revision)
+		if err != nil {
+			return nil
+		}
+		return &r
+	}
+	same := func(what string, got, want *row) {
+		t.Helper()
+		if got == nil || got.id != want.id || got.source != want.source || got.revision != want.revision ||
+			(got.expiresAt == nil) != (want.expiresAt == nil) || (got.expiresAt != nil && !got.expiresAt.Equal(*want.expiresAt)) {
+			t.Fatalf("%s: tuple %+v, want it unchanged: %+v", what, got, want)
+		}
+	}
+	shareState := func(id string) (state, relID string) {
+		t.Helper()
+		if err := h.App.D.DB.Pool.QueryRow(ctx, `SELECT state, coalesce(relationship_id,'') FROM resource_shares WHERE id=$1`, id).Scan(&state, &relID); err != nil {
+			t.Fatal(err)
+		}
+		return state, relID
+	}
+
+	var bob, aliceAcct, bobAcct string
+	login := func() {
+		svc = f.MachineToken(f.Clients["orders-rs"], h.Realm.Issuer+"/admin", "proudauth:admin", "").Str("access_token")
+		bob = f.LoginWeb("bob", f.Acme, f.OrdersAud, "orders:read").Tokens.Str("access_token")
+		aliceAcct = f.AccountToken("alice").Tokens.Str("access_token")
+		bobAcct = f.AccountToken("bob").Tokens.Str("access_token")
+	}
+	login()
+	expect := func(action, obj string, allowed bool, what string) {
+		t.Helper()
+		d := f.must(api("POST", "/authorization/check", map[string]any{"subject_token": bob, "action": action,
+			"resource": map[string]any{"type": "document", "id": obj, "org_id": f.Acme}}), 200, "check")
+		if d.Get("allowed") != allowed {
+			t.Fatalf("%s: %s on %s: %s", what, action, obj, d.Raw)
+		}
+	}
+	offer := func(obj, rel string, expires *time.Time) string {
+		t.Helper()
+		body := map[string]any{"organization_id": f.Acme, "resource_type": "document", "object_id": obj, "relation": rel, "recipient_user_id": f.Users["bob"]}
+		if expires != nil {
+			body["expires_at"] = *expires
+		}
+		return f.must(h.API("POST", "/me/shares", aliceAcct, body), 201, "offer "+rel+" on "+obj).Str("id")
+	}
+	accept := func(id string) *Resp {
+		return h.API("POST", "/me/shares/"+id+"/accept", bobAcct, nil)
+	}
+	refused := func(id, what string) {
+		t.Helper()
+		if r := accept(id); r.Status != 409 || !strings.Contains(string(r.Raw), "already hold this relation") {
+			t.Fatalf("%s: accepting %d %s, want 409 already hold this relation", what, r.Status, r.Raw)
+		}
+		if st, rel := shareState(id); st != "pending" || rel != "" {
+			t.Fatalf("%s: refused share stored as %q with tuple %q, want it pending", what, st, rel)
+		}
+	}
+	inAnHour := h.Clock.Now().Add(time.Hour)
+
+	// Without an equivalent tuple, acceptance writes the share's own tuple
+	// and revoking removes it.
+	plain := offer("docC", "viewer", nil)
+	f.must(accept(plain), 200, "accept a share")
+	written := bobTuple("docC", "viewer")
+	if _, rel := shareState(plain); written == nil || written.source != "share:"+plain || written.expiresAt != nil || rel != written.id {
+		t.Fatalf("tuple of an accepted share: %+v, recorded %q", written, rel)
+	}
+	expect("docs.read", "docC", true, "accepted share")
+	mustStatus(t, h.API("DELETE", "/me/shares/"+plain, aliceAcct, nil), 204, "owner revokes")
+	if r := bobTuple("docC", "viewer"); r != nil {
+		t.Fatalf("revoked share left its tuple: %+v", r)
+	}
+	expect("docs.read", "docC", false, "revoked share")
+
+	// A permanent grant from the application does not become time-boxed,
+	// and revoking the share leaves it.
+	write("permanent viewer", tuple("add", "docA", "viewer", f.Users["bob"], nil))
+	permanent := bobTuple("docA", "viewer")
+	timed := offer("docA", "viewer", &inAnHour)
+	refused(timed, "permanent grant, time-boxed share")
+	same("after the refused acceptance", bobTuple("docA", "viewer"), permanent)
+	mustStatus(t, h.API("DELETE", "/me/shares/"+timed, aliceAcct, nil), 204, "owner withdraws the offer")
+	same("after the offer was withdrawn", bobTuple("docA", "viewer"), permanent)
+	expect("docs.read", "docA", true, "application grant after the share ended")
+	// A share accepted before this fix recorded the application's tuple as
+	// its own; giving it back must not remove that tuple.
+	legacy := offer("docA", "viewer", &inAnHour)
+	if _, err := h.App.D.DB.Pool.Exec(ctx, `UPDATE resource_shares SET state='accepted', decided_at=$2, relationship_id=$3 WHERE id=$1`,
+		legacy, h.Clock.Now(), permanent.id); err != nil {
+		t.Fatal(err)
+	}
+	mustStatus(t, h.API("DELETE", "/me/shares/"+legacy, bobAcct, nil), 204, "recipient gives back a share that recorded a foreign tuple")
+	same("after revoking a share that recorded the application's tuple", bobTuple("docA", "viewer"), permanent)
+	expect("docs.read", "docA", true, "application grant after the legacy share was revoked")
+
+	// A time-boxed grant from the application does not become permanent.
+	write("time-boxed editor", tuple("add", "docB", "editor", f.Users["bob"], &inAnHour))
+	boxed := bobTuple("docB", "editor")
+	forever := offer("docB", "editor", nil)
+	refused(forever, "time-boxed grant, permanent share")
+	same("after the refused acceptance", bobTuple("docB", "editor"), boxed)
+	expect("docs.write", "docB", true, "time-boxed application grant")
+
+	// Another share's tuple is not taken over either.
+	first := offer("docD", "viewer", &inAnHour)
+	f.must(accept(first), 200, "accept a time-boxed share")
+	firstTuple := bobTuple("docD", "viewer")
+
+	h.Clock.Advance(2 * time.Hour)
+	login()
+	expect("docs.write", "docB", false, "the application's grant lapsed; the share did not make it permanent")
+	refused(forever, "expired application tuple not yet removed")
+	same("expired application tuple", bobTuple("docB", "editor"), boxed)
+	write("the application removes its tuple", tuple("remove", "docB", "editor", f.Users["bob"], nil))
+	f.must(accept(forever), 200, "accept once the application's tuple is gone")
+	if r := bobTuple("docB", "editor"); r == nil || r.source != "share:"+forever || r.expiresAt != nil {
+		t.Fatalf("tuple of the permanent share: %+v", r)
+	}
+	expect("docs.write", "docB", true, "permanent share")
+
+	second := offer("docD", "viewer", nil) // the first share is past its end
+	refused(second, "tuple of another share")
+	same("the other share's tuple", bobTuple("docD", "viewer"), firstTuple)
+	if _, err := worker.New(h.App, "test").Expiry(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if st, _ := shareState(first); st != "expired" || bobTuple("docD", "viewer") != nil {
+		t.Fatalf("after the sweep: first share %q, tuple %+v", st, bobTuple("docD", "viewer"))
+	}
+	f.must(accept(second), 200, "accept once the sweep removed the other share's tuple")
+	if r := bobTuple("docD", "viewer"); r == nil || r.source != "share:"+second {
+		t.Fatalf("tuple of the second share: %+v", r)
+	}
+	expect("docs.read", "docD", true, "second share")
+}

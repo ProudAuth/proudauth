@@ -19,8 +19,10 @@ import (
 // the person who may share an object (the type's share_permission) offers
 // one of its shareable relations to another member of the same
 // organization, and the recipient consents by accepting. Acceptance writes
-// the relationship tuple; revoking or declining removes it. Sharing never
-// crosses organizations and never grants more than the offered relation.
+// the relationship tuple (source share:<id>), never over an equivalent tuple
+// the application or another share wrote; revoking removes only the tuple
+// the share wrote. Sharing never crosses organizations and never grants more
+// than the offered relation.
 
 // Share is one sharing offer.
 type Share struct {
@@ -127,6 +129,10 @@ func (s *Service) OfferShare(ctx context.Context, realmID, ownerID string, in Sh
 // stored on its own afterwards.
 var errShareExpired = problem.ErrConflict.WithDetail("the offer expired")
 
+// errRelationHeld refuses an acceptance when the recipient already holds the
+// relation on the object through a tuple the share did not write.
+var errRelationHeld = problem.ErrConflict.WithDetail("you already hold this relation on the object outside this share")
+
 // RespondShare accepts or declines an offer made to the recipient.
 func (s *Service) RespondShare(ctx context.Context, realmID, recipientID, id string, accept bool) (*Share, error) {
 	var out *Share
@@ -160,13 +166,23 @@ func (s *Service) RespondShare(ctx context.Context, realmID, recipientID, id str
 			if !ok {
 				return problem.ErrConflict.WithDetail("the person who shared it may no longer share it")
 			}
+			// The share writes a tuple of its own or none. A pending share
+			// has written none yet, so an equivalent tuple (the uniqueness
+			// key has no source) came from the application or another
+			// share: its source and expires_at stay as they are, also when
+			// it has expired, and the acceptance is refused with the offer
+			// left pending.
 			w := RelationshipWrite{Op: "add", ObjectType: sh.ObjectType, ObjectID: sh.ObjectID, Relation: sh.Relation, SubjectType: RelSubjectUser,
-				SubjectID: recipientID, ExpiresAt: sh.ExpiresAt}
+				SubjectID: recipientID, ExpiresAt: sh.ExpiresAt, exclusive: true}
 			if err := s.writeRelationshipsTx(ctx, tx, realmID, sh.OrganizationID, []RelationshipWrite{w}, "share:"+id, audit.Ref{Type: "user", ID: recipientID}); err != nil {
+				if errors.Is(err, errTupleExists) {
+					return errRelationHeld
+				}
 				return err
 			}
 			if err := tx.QueryRow(ctx, `SELECT id FROM resource_relationships WHERE organization_id=$1 AND subject_type='user' AND subject_id=$2 AND relation=$3
-				AND object_type=$4 AND object_id=$5`, sh.OrganizationID, recipientID, sh.Relation, sh.ObjectType, sh.ObjectID).Scan(&relID); err != nil {
+				AND object_type=$4 AND object_id=$5 AND source=$6`, sh.OrganizationID, recipientID, sh.Relation, sh.ObjectType, sh.ObjectID,
+				"share:"+id).Scan(&relID); err != nil {
 				return err
 			}
 			state = "accepted"
@@ -252,7 +268,9 @@ func (s *Service) ExpireShares(ctx context.Context, realmID string, ids ...strin
 }
 
 // RevokeShare ends a share: the sharer withdraws an offer or access, or the
-// recipient gives access back.
+// recipient gives access back. Only the tuple the share wrote is removed;
+// an equivalent tuple the application or another share wrote (which an
+// acceptance before 0.2.0-alpha.6 could record as the share's) stays.
 func (s *Service) RevokeShare(ctx context.Context, realmID, userID, id string) error {
 	return s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
 		sh, err := scanShare(tx.QueryRow(ctx, `SELECT `+shareCols+` FROM resource_shares WHERE realm_id=$1 AND id=$2 AND (owner_user_id=$3 OR recipient_user_id=$3)
@@ -264,7 +282,8 @@ func (s *Service) RevokeShare(ctx context.Context, realmID, userID, id string) e
 			return problem.ErrConflict.WithDetail("the share is " + sh.State)
 		}
 		if sh.relationshipID != "" {
-			if _, err := tx.Exec(ctx, `DELETE FROM resource_relationships WHERE id=$1`, sh.relationshipID); err != nil {
+			if _, err := tx.Exec(ctx, `DELETE FROM resource_relationships WHERE id=$1 AND organization_id=$2 AND source=$3`, sh.relationshipID,
+				sh.OrganizationID, "share:"+id); err != nil {
 				return err
 			}
 		}
