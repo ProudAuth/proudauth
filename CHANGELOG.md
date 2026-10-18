@@ -12,6 +12,15 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 
 ## [Unreleased]
 
+### Added
+
+- [0.2.0-alpha.6 owner decisions](docs/releases/2026-10-alpha.6-decisions.md):
+  the known-device quota and budget defaults, the second-factor failure
+  ceiling, personal-access-token revocation, organization-switch consent,
+  sender-bound refresh families, re-approval of changed dynamic registrations,
+  logout-hint handling, the issuer-only client-assertion audience, the merge
+  model and the benchmark method for the alpha.6 phase.
+
 ### Changed
 
 - The service depends on `github.com/proudauth/proudauth-sdk-go` `v0.2.0`, the
