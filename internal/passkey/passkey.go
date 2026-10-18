@@ -287,8 +287,19 @@ func (s *Service) load(ctx context.Context, q storage.Querier, realmID, userID s
 	return a, rows.Err()
 }
 
-// decoy returns a stable, non-existent account for an unknown identifier so the
-// options returned for unknown and known identifiers have the same shape (SEC-005).
+// decoyIDLengths are credential ID lengths common among authenticators
+// (password managers and platform authenticators at the short end, security
+// keys' non-discoverable credentials at the long end).
+var decoyIDLengths = []int{16, 20, 32, 48, 64}
+
+// decoy returns a stable, non-existent account for an unknown identifier or
+// an account without passkeys, so identified options do not reveal whether
+// the account or its passkeys exist (SEC-005). Everything about it comes from
+// one keyed HMAC of realm and identifier: the user handle, the number of
+// credential descriptors (1 to 3) and each credential ID with its length (one
+// of decoyIDLengths). Decoys carry no transports, like every identified allow
+// list (BeginLogin). A real account with more than three passkeys is still
+// told apart by the count.
 func (s *Service) decoy(realmID, identifier string) *account {
 	k := s.d.Keys.DeriveBytes(keys.PurposeLookup, "webauthn-decoy")
 	mac := func(label string) []byte {
@@ -296,8 +307,13 @@ func (s *Service) decoy(realmID, identifier string) *account {
 		h.Write([]byte(realmID + "|" + label + "|" + strings.ToLower(identifier)))
 		return h.Sum(nil)
 	}
-	return &account{handle: mac("handle"), name: identifier, display: identifier,
-		rows: []credRow{{credentialID: mac("credential"), transports: []string{"internal", "hybrid"}}}}
+	a := &account{handle: mac("handle"), name: identifier, display: identifier}
+	shape := mac("shape")
+	for i := range 1 + int(shape[0])%3 {
+		id := append(mac(fmt.Sprintf("credential|%d|0", i)), mac(fmt.Sprintf("credential|%d|1", i))...)
+		a.rows = append(a.rows, credRow{credentialID: id[:decoyIDLengths[int(shape[1+i])%len(decoyIDLengths)]]})
+	}
+	return a
 }
 
 // ---------- ceremonies ----------
@@ -540,9 +556,15 @@ type AssertionOptions struct {
 
 // BeginLogin starts an authentication ceremony bound to a transaction. With no
 // user and no identifier it is a discoverable (username-less) ceremony
-// (PASS-003). For an identified user the allow list contains their credentials;
-// an unknown identifier receives a stable decoy so responses do not reveal
-// whether the account or its passkeys exist.
+// (PASS-003). A sign-in that identified an account before primary
+// authentication passes its identifier: the allow list then contains the
+// account's credentials without their stored transports, and an unknown
+// identifier or an account without passkeys receives a stable decoy of the
+// same shape, so neither the number of descriptors (up to three), the
+// transports nor the credential ID lengths reveal whether the account or its
+// passkeys exist (SEC-005). Transports are hints; without them the browser
+// offers every way to reach the authenticator. A second-factor ceremony
+// (userID without identifier, after primary authentication) keeps them.
 func (s *Service) BeginLogin(ctx context.Context, tx pgx.Tx, rlm *realm.Realm, transactionID, userID, identifier string, requireUV bool) (*AssertionOptions, error) {
 	wa, rp, err := s.relyingParty(rlm, requireUV, nil)
 	if err != nil {
@@ -561,6 +583,11 @@ func (s *Service) BeginLogin(ctx context.Context, tx pgx.Tx, rlm *realm.Realm, t
 			a = s.decoy(rlm.ID, firstNonEmpty(identifier, userID))
 		} else {
 			bound = userID
+			if identifier != "" {
+				for i := range a.rows {
+					a.rows[i].transports = nil
+				}
+			}
 		}
 		assertion, sd, err = wa.BeginLogin(a)
 		if err != nil {

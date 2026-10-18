@@ -199,10 +199,12 @@ func TestSCIMAdminRaceNeverLosesChanges(t *testing.T) {
 
 // TestIdentifierProbeResponses covers API-009 and SEC-005: once the
 // deployment's daily SMS budget is spent, a number without an account gets
-// the same 429 (body and Retry-After) as one with an account; and a
-// temporary password lock reached through one identifier of an account does
-// not reveal which other identifiers belong to it, while password guessing
-// stays bounded per account.
+// the same 429 (body and Retry-After) as one with an account; a temporary
+// password lock reached through one identifier of an account does not
+// reveal which other identifiers belong to it, while password guessing
+// stays bounded per account; and emailed sign-in codes and magic links are
+// padded to security.min_auth_response for known and unknown addresses
+// alike.
 func TestIdentifierProbeResponses(t *testing.T) {
 	h := NewHarness(t, func(c *configuration.Config) {
 		c.Delivery.SMS.Adapter = "dev_sink"
@@ -216,6 +218,9 @@ func TestIdentifierProbeResponses(t *testing.T) {
 		p.Login.SMSOTP = true
 		p.Login.Identifiers = append(p.Login.Identifiers, "phone")
 		p.Login.SMSRiskAccepted = true
+		p.Login.EmailOTP = true
+		p.Login.MagicLink = true
+		p.Interaction.LoginUIURL = "https://login.test/ui"
 	})
 	ctx := context.Background()
 	cli := LoginOpts{ClientID: "proudauth-cli", Scope: "proudauth:account", Resources: []string{h.Realm.Issuer + "/account"}}
@@ -287,6 +292,49 @@ func TestIdentifierProbeResponses(t *testing.T) {
 		// The lock expires by itself.
 		h.Clock.Advance(11 * time.Minute)
 		mustStatus(t, attempt("bob", h.passwords["bob"]), 200, "after the lock expired")
+	})
+
+	t.Run("sign-in code and magic-link sends are padded", func(t *testing.T) {
+		// Only a known address gets a message rendered, encrypted and
+		// queued; the send is padded like the password step. The harness
+		// runs without a minimum, so this sets one and observes the pad
+		// through the TimingPad hook instead of waiting for it.
+		var mu sync.Mutex
+		var pads []time.Duration
+		h.App.Auth.TimingPad = func(_ time.Time, min time.Duration) {
+			mu.Lock()
+			defer mu.Unlock()
+			pads = append(pads, min)
+		}
+		h.Cfg.Security.MinAuthResponse = 250 * time.Millisecond
+		defer func() { h.App.Auth.TimingPad, h.Cfg.Security.MinAuthResponse = nil, 0 }()
+		send := func(identifier, purpose string) *Resp {
+			t.Helper()
+			h.Clock.Advance(2 * time.Second)
+			start, _, cont := h.StartTx(cli)
+			tx := start.Str("transaction_id")
+			mustStatus(t, h.Step(tx, cont, "identify", map[string]any{"identifier": identifier}), 200, "identify "+identifier)
+			mu.Lock()
+			before := len(pads)
+			mu.Unlock()
+			r := h.Step(tx, cont, "otp/send", map[string]any{"purpose": purpose})
+			mustStatus(t, r, 200, purpose+" send to "+identifier)
+			mu.Lock()
+			defer mu.Unlock()
+			if len(pads) != before+1 || pads[before] != 250*time.Millisecond {
+				t.Fatalf("%s send to %s not padded to the minimum response time: %v", purpose, identifier, pads[before:])
+			}
+			return r
+		}
+		for purpose, template := range map[string]string{"login": "login_code", "magic_link": "magic_link"} {
+			known, unknown := send("carol@example.test", purpose), send("nobody@example.test", purpose)
+			if a, b := strings.Join(actionTypes(known), ","), strings.Join(actionTypes(unknown), ","); a != b {
+				t.Fatalf("%s: next actions differ for known (%s) and unknown (%s) addresses", purpose, a, b)
+			}
+			if h.Mail("carol@example.test", template) == "" || h.Mail("nobody@example.test", template) != "" {
+				t.Fatalf("%s: message delivery for known and unknown addresses", purpose)
+			}
+		}
 	})
 }
 

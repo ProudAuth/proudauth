@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
 	"testing"
@@ -36,6 +37,8 @@ type softKey struct {
 	aaguid      []byte
 	att         *attester
 	credProtect int
+	// transports are reported at registration (["internal"] when nil).
+	transports []string
 }
 
 func newSoftKey(rpID, origin string, backup bool) *softKey {
@@ -118,7 +121,14 @@ func (k *softKey) create(t testing.TB, opts any) map[string]any {
 	}
 	return map[string]any{"id": b64.EncodeToString(k.credID), "rawId": b64.EncodeToString(k.credID), "type": "public-key",
 		"authenticatorAttachment": "platform", "clientExtensionResults": map[string]any{"credProps": map[string]any{"rk": true}},
-		"response": map[string]any{"clientDataJSON": b64.EncodeToString(cd), "attestationObject": b64.EncodeToString(att), "transports": []string{"internal"}}}
+		"response": map[string]any{"clientDataJSON": b64.EncodeToString(cd), "attestationObject": b64.EncodeToString(att), "transports": k.transportList()}}
+}
+
+func (k *softKey) transportList() []string {
+	if k.transports == nil {
+		return []string{"internal"}
+	}
+	return k.transports
 }
 
 // get answers navigator.credentials.get() options.
@@ -209,7 +219,11 @@ func TestPasskeyEnrollmentHonoursMFAFloor(t *testing.T) {
 	}
 }
 
-// TestPasskeys covers PASS-001..PASS-007, MFA-007, SEC-012 and TEST-025.
+// TestPasskeys covers PASS-001..PASS-007, MFA-007, SEC-012, TEST-025 and, for
+// identified ceremonies, SEC-005: the allow list of an account with passkeys
+// and the decoy of an unknown identifier or an account without passkeys do
+// not differ in descriptor count (up to three), transports or credential ID
+// lengths.
 func TestPasskeys(t *testing.T) {
 	f := NewFixture(t, passkeyPolicy)
 	h := f.H
@@ -329,10 +343,10 @@ func TestPasskeys(t *testing.T) {
 		unknown := h.Step(tx2, cont2, "webauthn/options", nil)
 		ka, _ := known.Get("webauthn.public_key.allowCredentials").([]any)
 		ua, _ := unknown.Get("webauthn.public_key.allowCredentials").([]any)
-		if len(ka) != 1 || len(ua) != 1 {
+		if len(ka) != 1 || len(ua) < 1 || len(ua) > 3 {
 			t.Fatalf("allow lists differ in shape: known=%d unknown=%d", len(ka), len(ua))
 		}
-		if ka[0].(map[string]any)["id"] != b64.EncodeToString(alice.credID) {
+		if ka[0].(map[string]any)["id"] != b64.EncodeToString(alice.credID) || ka[0].(map[string]any)["transports"] != nil {
 			t.Fatalf("known account allow list: %v", ka)
 		}
 		// Another account's identified ceremony cannot be satisfied with alice's key.
@@ -350,6 +364,112 @@ func TestPasskeys(t *testing.T) {
 		o4 := h.Step(tx4, cont4, "webauthn/options", nil)
 		done := h.Step(tx4, cont4, "webauthn/verify", map[string]any{"credential": alice.get(t, o4.Get("webauthn.public_key"))})
 		mustStatus(t, f.exchange(done, verifier4, "proudauth-cli", account), 200, "identified passkey login")
+	})
+
+	t.Run("identified allow lists reveal no passkeys", func(t *testing.T) {
+		// dave signs in with two security keys: USB and NFC transports, a
+		// long and a short credential ID.
+		f.CreateUser("dave")
+		long := newSoftKey("login.test", "https://login.test", false)
+		long.credID, long.transports = make([]byte, 64), []string{"usb", "nfc"}
+		_, _ = rand.Read(long.credID)
+		short := newSoftKey("login.test", "https://login.test", false)
+		short.credID, short.transports = make([]byte, 16), []string{"usb"}
+		_, _ = rand.Read(short.credID)
+		enroll("dave", long, "Security key")
+		// The second key needs a session that proved the first (MFA-006).
+		start, verifier, cont := h.StartTx(cli)
+		txID := start.Str("transaction_id")
+		o := h.Step(txID, cont, "webauthn/options", nil)
+		toks := f.exchange(h.Step(txID, cont, "webauthn/verify", map[string]any{"credential": long.get(t, o.Get("webauthn.public_key"))}),
+			verifier, "proudauth-cli", account)
+		mustStatus(t, toks, 200, "passkey sign-in")
+		tok := toks.Str("access_token")
+		opts := h.API("POST", "/me/webauthn/registration-options", tok, map[string]any{})
+		mustStatus(t, opts, 200, "second registration options")
+		mustStatus(t, h.API("POST", "/me/webauthn/registration-complete", tok, map[string]any{"ceremony_id": opts.Str("ceremony_id"),
+			"credential": short.create(t, opts.Get("public_key")), "name": "Backup key"}), 201, "second passkey")
+		var stored int
+		if err := h.App.D.DB.Pool.QueryRow(context.Background(), `SELECT count(*) FROM webauthn_credentials WHERE user_id=$1 AND 'usb' = ANY(transports)`,
+			f.Users["dave"]).Scan(&stored); err != nil || stored != 2 {
+			t.Fatalf("stored USB transports: %d %v", stored, err)
+		}
+
+		allow := func(identifier string) []any {
+			t.Helper()
+			start, _, cont := h.StartTx(cli)
+			tx := start.Str("transaction_id")
+			h.Step(tx, cont, "identify", map[string]any{"identifier": identifier})
+			o := h.Step(tx, cont, "webauthn/options", nil)
+			mustStatus(t, o, 200, "options for "+identifier)
+			list, _ := o.Get("webauthn.public_key.allowCredentials").([]any)
+			return list
+		}
+		// lengths returns the credential ID lengths and fails on transports.
+		lengths := func(identifier string, list []any) []int {
+			t.Helper()
+			out := []int{}
+			for _, it := range list {
+				d := it.(map[string]any)
+				id, err := b64.DecodeString(d["id"].(string))
+				if err != nil {
+					t.Fatalf("%s: credential ID %v: %v", identifier, d["id"], err)
+				}
+				if _, ok := d["transports"]; ok {
+					t.Fatalf("%s: identified allow list carries transports: %v", identifier, list)
+				}
+				out = append(out, len(id))
+			}
+			return out
+		}
+		known := allow("dave@example.test")
+		if len(known) != 2 {
+			t.Fatalf("dave's allow list: %v", known)
+		}
+		knownLengths := lengths("dave", known)
+		counts, seen := map[int]int{}, map[int]bool{}
+		for i := range 40 {
+			ident := fmt.Sprintf("nobody-%d@example.test", i)
+			list := allow(ident)
+			if len(list) < 1 || len(list) > 3 {
+				t.Fatalf("%s: decoy with %d descriptors", ident, len(list))
+			}
+			counts[len(list)]++
+			for _, n := range lengths(ident, list) {
+				seen[n] = true
+			}
+		}
+		// Decoys spread over the counts and ID lengths real accounts have,
+		// so dave's list is one a decoy could be.
+		if counts[len(known)] == 0 || len(counts) < 2 {
+			t.Fatalf("decoy descriptor counts %v never match the known account's %d", counts, len(known))
+		}
+		for _, n := range knownLengths {
+			if !seen[n] {
+				t.Fatalf("decoys never use the known account's credential ID length %d (seen %v)", n, seen)
+			}
+		}
+		// A decoy is stable per identifier, as a real list is.
+		if a, b := jsonString(allow("nobody-0@example.test")), jsonString(allow("NOBODY-0@example.test")); a != b {
+			t.Fatalf("decoy changed between requests: %s vs %s", a, b)
+		}
+		// An account without passkeys gets a decoy too.
+		if none := allow("carol@example.test"); len(none) < 1 || len(none) > 3 {
+			t.Fatalf("account without passkeys: %v", none)
+		} else {
+			for _, n := range lengths("carol", none) {
+				if !seen[n] {
+					t.Fatalf("decoy length %d for an account without passkeys never seen for unknown identifiers (%v)", n, seen)
+				}
+			}
+		}
+		// Without transport hints the identified ceremony still signs dave in.
+		start, verifier, cont = h.StartTx(cli)
+		txID = start.Str("transaction_id")
+		h.Step(txID, cont, "identify", map[string]any{"identifier": "dave@example.test"})
+		o = h.Step(txID, cont, "webauthn/options", nil)
+		done := h.Step(txID, cont, "webauthn/verify", map[string]any{"credential": short.get(t, o.Get("webauthn.public_key"))})
+		mustStatus(t, f.exchange(done, verifier, "proudauth-cli", account), 200, "identified sign-in with the second key")
 	})
 
 	t.Run("TEST-024 assertions with wrong challenge, origin, RP ID or flags are rejected", func(t *testing.T) {

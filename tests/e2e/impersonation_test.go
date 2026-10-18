@@ -199,7 +199,8 @@ func TestSupportImpersonation(t *testing.T) {
 // session and token with MFA older than the limit get step_up_required),
 // IMP-005 (a request without a meaningful reason is refused), IMP-015
 // (realm administrators, organization owners and administrators, service
-// principals and the operator themselves cannot be impersonated).
+// principals and the operator themselves cannot be impersonated, also when
+// the target is promoted after the request or during a live grant).
 func TestImpersonationDenials(t *testing.T) {
 	f := NewFixture(t)
 	s := f.support(t)
@@ -249,6 +250,61 @@ func TestImpersonationDenials(t *testing.T) {
 		r = f.H.API("POST", "/impersonation-requests", svc, map[string]any{"target_user_id": f.Users["bob"], "organization_id": f.Acme,
 			"client_id": "support-bff", "audience": f.OrdersAud, "reason": "machine attempting support access"})
 		mustStatus(t, r, 403, "machine support request")
+	})
+	t.Run("TEST-041 targets promoted after the request", func(t *testing.T) {
+		bob := f.Users["bob"]
+		promote := func() string {
+			t.Helper()
+			id := f.must(f.AdminAPI("POST", "/organizations/"+f.Acme+"/members/"+f.MemberAcme["bob"]+"/roles",
+				map[string]any{"role_id": f.Roles["admin"]}), 201, "promote the target to organization administrator").Str("id")
+			t.Cleanup(func() { f.AdminAPI("DELETE", "/role-assignments/"+id, nil) }) // when the subtest stops early
+			return id
+		}
+		demote := func(assignment string) {
+			t.Helper()
+			f.must(f.AdminAPI("DELETE", "/role-assignments/"+assignment, nil), 204, "demote the target")
+		}
+		active := func(tok string) bool {
+			t.Helper()
+			return f.H.Introspect("orders-rs", f.Clients["orders-rs"].Secret, tok).Get("active") == true
+		}
+		// Promoted between the request and issuance: issuance is refused.
+		req := s.request(bob, f.Acme, nil)
+		mustStatus(t, req, 201, "request")
+		admin := promote()
+		r := f.H.API("POST", "/impersonation-requests/"+req.Str("id")+"/issue", s.samTok, nil)
+		if r.Status != 403 || r.Str("code") != "impersonation_denied" || strings.Contains(string(r.Raw), "pa_it_") {
+			t.Fatalf("grant issued for a target promoted to organization administrator: %d %s", r.Status, r.Raw)
+		}
+		var n int
+		_ = f.H.App.D.DB.Pool.QueryRow(context.Background(), `SELECT count(*) FROM impersonation_grants WHERE request_id=$1`, req.Str("id")).Scan(&n)
+		if n != 0 {
+			t.Fatal("grant persisted for an excluded target")
+		}
+		demote(admin)
+		// Promoted during a live grant: the next introspection is inactive.
+		tok := s.issue(t, bob, f.Acme).Str("access_token")
+		if !active(tok) {
+			t.Fatal("live grant inactive before the promotion")
+		}
+		admin = promote()
+		if active(tok) {
+			t.Fatal("support token stayed active after the target became an organization administrator")
+		}
+		demote(admin)
+		// A realm role ends it as well.
+		tok = s.issue(t, bob, f.Acme).Str("access_token")
+		realmAdmin := f.must(f.AdminAPI("POST", "/role-assignments", map[string]any{"role_id": f.Roles["realm-admin"],
+			"subject": map[string]any{"type": "user", "id": bob}}), 201, "promote the target to realm administrator").Str("id")
+		t.Cleanup(func() { f.AdminAPI("DELETE", "/role-assignments/"+realmAdmin, nil) })
+		if active(tok) {
+			t.Fatal("support token stayed active after the target became a realm administrator")
+		}
+		demote(realmAdmin)
+		// The ordinary flow works again once the target is no administrator.
+		if tok := s.issue(t, bob, f.Acme).Str("access_token"); !active(tok) {
+			t.Fatal("support access for an ordinary member after the demotion")
+		}
 	})
 	t.Run("TEST-047 audit failure prevents access", func(t *testing.T) {
 		req := s.request(f.Users["bob"], f.Acme, nil)
@@ -328,8 +384,10 @@ func TestSupportCapabilityProfile(t *testing.T) {
 }
 
 // TestCustomerApprovedSupportAccess covers IMP-022 (customer discovers,
-// approves or denies requests), IMP-023 (grant reporting by ticket and reason)
-// and IMP-024 (evidence linked by grant: decisions, expiry, export filter).
+// approves or denies requests), IMP-023 (grant reporting by ticket and reason),
+// IMP-024 (evidence linked by grant: decisions, expiry, export filter) and
+// IMP-015 (a target promoted to organization administrator after the request
+// cannot approve it).
 func TestCustomerApprovedSupportAccess(t *testing.T) {
 	f := NewFixture(t)
 	h := f.H
@@ -382,6 +440,16 @@ func TestCustomerApprovedSupportAccess(t *testing.T) {
 	mustStatus(t, h.API("POST", "/impersonation-requests/"+second.Str("id")+"/issue", s.samTok, nil), 409, "issue after denial")
 	alice := f.AccountToken("alice").Tokens.Str("access_token")
 	mustStatus(t, h.API("POST", "/impersonation-requests/"+second.Str("id")+"/deny", alice, nil), 404, "unrelated user cannot deny")
+	// A customer promoted to organization administrator after the request
+	// cannot approve it (IMP-015).
+	third := s.request(f.Users["bob"], f.Acme, nil)
+	mustStatus(t, third, 201, "third request")
+	promoted := f.must(f.AdminAPI("POST", "/organizations/"+f.Acme+"/members/"+f.MemberAcme["bob"]+"/roles",
+		map[string]any{"role_id": f.Roles["admin"]}), 201, "promote bob").Str("id")
+	if r := h.API("POST", "/impersonation-requests/"+third.Str("id")+"/approve", bob, nil); r.Status != 403 || r.Str("code") != "impersonation_denied" {
+		t.Fatalf("request approved for a target promoted to organization administrator: %d %s", r.Status, r.Raw)
+	}
+	f.must(f.AdminAPI("DELETE", "/role-assignments/"+promoted, nil), 204, "demote bob")
 	// Expiry is evidence too.
 	h.Clock.Advance(10 * time.Minute)
 	if _, err := h.App.Imp.ExpireGrants(context.Background()); err != nil {

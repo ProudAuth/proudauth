@@ -38,32 +38,40 @@ Requirements: docs/plan.md §16 (IMP-001..IMP-024). Design:
    `security.admin_mfa_max_age` and not recovery-restricted, user active, permission
    `support.impersonation.start` in the target organization. Reason length
    ≥ `impersonation.min_reason_length` (≤ 1000); ticket when the deployment or realm
-   requires it. Target: not self, active, not `protected`, no privileged realm role,
-   active member of an active organization, not holding `org.roles.assign`,
-   `org.ownership.transfer` or `org.members.write` there, not opted out (when the
-   realm permits opt-out), organization not opted out. Client: active,
-   confidential, in the resource's `support_client_ids` when set. Scopes: subset of
-   the resource's `allowed_scopes` (plus `write_scopes` only in
-   `allowlisted_write`). Request expires after 15 minutes.
+   requires it. Target: not self, active member of an active organization, not
+   opted out (when the realm permits opt-out), organization not opted out, and
+   the target exclusions of `checkTarget` (IMP-015): active, not `protected`, no
+   privileged realm role, not holding `org.roles.assign`,
+   `org.ownership.transfer` or `org.members.write` in the organization. Client:
+   active, confidential, in the resource's `support_client_ids` when set.
+   Scopes: subset of the resource's `allowed_scopes` (plus `write_scopes` only
+   in `allowlisted_write`). Request expires after 15 minutes.
 3. **Approval** (`approval` from realm policy, overridden by organization policy;
    `allowlisted_write` forces `second_operator` when policy says `none`).
    Requester cannot approve. Second operator and organization owner go through
    `checkActor` with their permission; `customer` requires the target user, who
    is emailed at request time and sees the request in
    `GET /me/impersonation-requests` (IMP-022, `TestCustomerApprovedSupportAccess`).
+   Approval re-runs `checkTarget`, so a request whose target became a realm or
+   organization administrator after it was made cannot be approved.
    `POST /impersonation-requests/{id}/deny` refuses a pending or approved request:
    the requester can withdraw it, and whoever may approve under the request's
    policy can deny it; other callers get `404`.
 4. **Issue** `POST /impersonation-requests/{id}/issue` by the requester only.
-   Re-runs `checkActor`, organization and membership liveness, client and
-   resource eligibility, recomputes scopes; inserts the grant, the opaque token,
-   the `support.impersonation.started` audit event, the outbox event and (if
-   `notify_customer`) the notification in **one transaction**; the token is
-   returned only after commit (IMP-020).
+   Re-runs `checkActor`, organization and membership liveness, the target
+   exclusions (`checkTarget`, as in step 2: a target promoted to realm or
+   organization administrator after the request gets `403
+   impersonation_denied`), client and resource eligibility, recomputes scopes;
+   inserts the grant, the opaque token, the `support.impersonation.started`
+   audit event, the outbox event and (if `notify_customer`) the notification
+   in **one transaction**; the token is returned only after commit (IMP-020).
 5. **Use.** The resource introspects every request. Introspection returns
    `active: true` only if the token, its resource and client are active **and**
    `ValidateGrant` passes: grant active and unexpired; actor and target users
-   active; target membership active; organization active; actor session live;
+   active; target membership active; the target exclusions still hold
+   (`checkTarget`: not `protected`, no privileged realm role, no organization
+   administrator permission; IMP-015, TEST-041), so a target promoted during
+   the grant ends it at the next use; organization active; actor session live;
    actor still holds `support.impersonation.start` in the organization, within any
    capability conditions on the operator's role assignment (`organization_ids`,
    `subject_categories`, `support_modes`, `support_scopes`; IMP-002, IMP-007,
@@ -72,7 +80,12 @@ Requirements: docs/plan.md §16 (IMP-001..IMP-024). Design:
    organization nor (where the realm permits it) the customer has opted out. The
    response carries `act`, `support_mode`, `impersonation_grant_id` and
    `token_kind: impersonation_access`; each active result is audited as
-   `support.token.introspected`.
+   `support.token.introspected`. These checks make a token inactive; they do
+   not revoke the grant, which stays `active` in the inventory until it
+   expires, and works again if the condition is undone before then (for
+   example the promotion is reversed). Assigning a role does not revoke
+   pending requests or live grants targeting the subject; issuance and
+   introspection refuse them instead.
 6. **Handoff** (optional). `POST /impersonation-grants/{id}/handoffs` returns a
    single-use code valid ≤ `impersonation.handoff_ttl` (30 s, capped at the grant
    expiry), bound to a confidential destination client allowed by the resource.
@@ -89,7 +102,7 @@ Requirements: docs/plan.md §16 (IMP-001..IMP-024). Design:
 | --- | --- | --- | --- |
 | I-1 | Operator without authority starts support access | Dedicated permission scoped to the organization; admin audience; live MFA session | TEST-040 |
 | I-2 | Stolen admin access token used to start access | Session must be live and MFA recent; token kind must be `user_access` (no machine or exchanged tokens) | TEST-040, TEST-039 |
-| I-3 | Impersonating a more privileged user to escalate | Protected users, privileged realm roles and organization administrators excluded | TEST-041 |
+| I-3 | Impersonating a more privileged user to escalate | Protected users, privileged realm roles and organization administrators excluded at request, approval, issuance and every introspection (`checkTarget`), so a target promoted after the request is neither issued a grant nor kept impersonated | TEST-041 (`TestImpersonationDenials`, "targets promoted after the request"; `TestCustomerApprovedSupportAccess`) |
 | I-4 | Support token used against the IdP (change password, MFA, create keys, start nested support) | `pa_it_` tokens are rejected by every IdP API (`403 impersonation_restricted`); the `support.token.rejected` audit event names the operator as actor, the customer as subject, the support grant, the organization and the route when the token is known (IMP-006); token exchange refuses them; no refresh token issued | TEST-042, TEST-043 |
 | I-5 | Support token used for protected business operations | `SupportGuard` denies the protected operations (identity and money operations, ownership transfer, secrets, delete, purge: Go `verifier.ProtectedOperationList()` plus the guard's own `ProtectedOperations`) wherever their segments occur in the operation name, treats any operation with a write-verb segment as a write, and denies writes outside `WriteOperations`; the decision API applies the same rule (`authorization.ImpersonationForbiddenActions`, `authorization.WriteSegments`), denies non-read actions in read-only mode and, in `allowlisted_write` mode, writes not listed in the resource's `impersonation_policy.write_actions` (`SUPPORT_ACCESS_WRITE_NOT_ALLOWLISTED`) | TEST-042; all five SDKs and the server's classification run `tests/fixtures/sdk-contracts/support-operations/cases.json` |
 | I-6 | Token outlives the reason for access | ≤ 5 min (config validation caps `impersonation.max_ttl`), per-request online validation of grant, actor, target, membership, organization, actor session, actor permission | TEST-043, TEST-044 |
