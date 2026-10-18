@@ -43,11 +43,32 @@ type API struct {
 	cfg      Config
 	intro    *verifier.Introspector
 	support  *verifier.SupportGuard
-	mu       sync.Mutex
+	mu       sync.Mutex // guards orders, Audit and the cached service token
 	orders   map[string]*Order
 	Audit    []verifier.SupportEvent
 	svcToken string
 	svcExp   time.Time
+	// fetchMu makes service-token fetches single-flight. It is separate from mu
+	// so that the orders map stays usable while a token request is in flight.
+	fetchMu sync.Mutex
+}
+
+// maxResponseBytes bounds what this service reads from the token and decision
+// endpoints, so a misbehaving upstream cannot make it buffer an unbounded body.
+const maxResponseBytes = 1 << 20
+
+// readBounded reads a response body of at most maxResponseBytes. A larger body
+// is an error rather than a silent truncation: a cut-off decision must never be
+// parsed as if it were complete.
+func readBounded(r io.Reader) ([]byte, error) {
+	b, err := io.ReadAll(io.LimitReader(r, maxResponseBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(b) > maxResponseBytes {
+		return nil, errors.New("response body exceeds 1 MiB")
+	}
+	return b, nil
 }
 
 // New builds the API and validates the support contract at startup.
@@ -232,14 +253,28 @@ func (a *API) refund(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, o)
 }
 
-func (a *API) serviceToken(ctx context.Context) (string, error) {
+func (a *API) cachedServiceToken() (string, bool) {
 	a.mu.Lock()
+	defer a.mu.Unlock()
 	if a.svcToken != "" && time.Now().Before(a.svcExp) {
-		t := a.svcToken
-		a.mu.Unlock()
+		return a.svcToken, true
+	}
+	return "", false
+}
+
+// serviceToken returns the client-credentials token for the decision API.
+// Fetches are single-flight: callers that miss the cache queue on fetchMu and
+// re-check the cache once they hold it, so a burst of requests on a cold or
+// expired cache causes one token request instead of one per request.
+func (a *API) serviceToken(ctx context.Context) (string, error) {
+	if t, ok := a.cachedServiceToken(); ok {
 		return t, nil
 	}
-	a.mu.Unlock()
+	a.fetchMu.Lock()
+	defer a.fetchMu.Unlock()
+	if t, ok := a.cachedServiceToken(); ok {
+		return t, nil // fetched by another caller while this one waited
+	}
 	form := url.Values{"grant_type": {"client_credentials"}, "resource": {a.cfg.Issuer + "/admin"}, "scope": {"proudauth:admin"}}
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, a.cfg.Issuer+"/oauth/token", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -249,11 +284,15 @@ func (a *API) serviceToken(ctx context.Context) (string, error) {
 		return "", err
 	}
 	defer res.Body.Close()
+	b, err := readBounded(res.Body)
+	if err != nil {
+		return "", err
+	}
 	var tr struct {
 		AccessToken string `json:"access_token"`
 		ExpiresIn   int    `json:"expires_in"`
 	}
-	if res.StatusCode != 200 || json.NewDecoder(res.Body).Decode(&tr) != nil {
+	if res.StatusCode != 200 || json.Unmarshal(b, &tr) != nil {
 		return "", errors.New("token request failed")
 	}
 	a.mu.Lock()
@@ -287,7 +326,10 @@ func (a *API) decide(ctx context.Context, subjectToken, action string, o *Order)
 		return nil, err
 	}
 	defer res.Body.Close()
-	b, _ := io.ReadAll(res.Body)
+	b, err := readBounded(res.Body)
+	if err != nil {
+		return nil, err
+	}
 	if res.StatusCode != 200 {
 		return nil, errors.New("decision failed: " + string(b))
 	}

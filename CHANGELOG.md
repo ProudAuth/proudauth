@@ -180,6 +180,21 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 
 ### Changed
 
+- The Kubernetes migrate Job stops after `activeDeadlineSeconds: 3600`
+  (keep it above `storage.migration_statement_timeout` times the long
+  statements of one run). The example overlay separates the database roles
+  (`storage.migration_database_url`, `storage.runtime_role: proudauth_app`)
+  and mounts a `proudauth-migration-secrets` Secret into the migrate Job
+  only; the NetworkPolicies carry commented `to:` examples for the database
+  and the SMTP relay (DEP-013, OPS-013, issue #36).
+- Notices show dates in the locale-neutral form `2006-01-02 15:04 MST`
+  instead of `2 Jan 2006 15:04 MST`, so Spanish and operator-translated
+  messages no longer carry an English month name (MSG-006, issue #38). The
+  docs name the five Spanish built-in templates, list upstream OIDC/SAML
+  group and role mapping as not supported (issue #30), give ASP.NET Core
+  relying parties the `query` response-mode settings, untested by automation
+  (issue #32), and list .NET among the SDKs without request-level proof
+  verification (issue #40).
 - `security.rate_limits.token_per_client` defaults to `2000` token requests
   per client per minute instead of `600`, consistent with `login_per_client`
   (20000 sign-ins per 15 minutes, about 1333 a minute, so a busy client no
@@ -296,6 +311,14 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 
 ### Fixed
 
+- The session-event stream (`GET /session-events`) carries
+  `organization.archived`, so bounded-state consumers learn that an
+  organization was archived and its grants revoked; the OpenAPI description
+  lists that type and `user.merged` (SES-019, issue #33).
+- The protected-orders example fetches its client-credentials token
+  single-flight, so concurrent requests share one token request, and reads
+  the token and policy-decision responses through a 1 MiB bound that fails
+  instead of buffering or truncating (SDK-005, issue #34).
 - Errors on the OAuth and OIDC endpoints (`/realms/{realm}/oauth/*` and
   `/realms/{realm}/oidc/*`) are always OAuth errors (`error` and
   `error_description` only), as the API conventions promise, also when the

@@ -609,7 +609,7 @@ never yields a user token. Trusts, profiles and verification:
   with a `Bearer` challenge.
 - **Limits:** DPoP nonces (`DPoP-Nonce`, RFC 9449 §8 and §9) are not
   supported (deferred, issue #37). The Go resource SDK checks proofs through `SenderVerifier`; token-only
-  methods in all SDKs reject bound tokens. Node.js, Dart and PHP have no
+  methods in all SDKs reject bound tokens. Node.js, Dart, PHP and .NET have no
   request-level proof verifier ([resource profile](../integrations/resource-servers.md#sender-constrained-tokens)).
   Introspection returns `cnf` (also for opaque tokens) and `token_type: DPoP`
   for a DPoP-bound token (`Bearer` otherwise, also for certificate-bound

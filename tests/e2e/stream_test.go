@@ -26,11 +26,25 @@ func TestSessionEventStream(t *testing.T) {
 
 	f.must(f.AdminAPI("POST", "/users/"+f.Users["carol"]+"/suspend", map[string]any{"reason": "test"}), 200, "suspend")
 	f.must(f.AdminAPI("DELETE", "/organizations/"+f.Acme+"/members/"+f.MemberAcme["bob"], nil), 204, "remove member")
+	f.must(f.AdminAPI("POST", "/organizations/"+f.Globex+"/archive", map[string]any{"reason": "test"}), 200, "archive")
 	page := h.API("GET", "/session-events?cursor="+cursor, svc, nil)
 	mustStatus(t, page, 200, "read")
 	body := string(page.Raw)
 	if !strings.Contains(body, `"user.suspended"`) || !strings.Contains(body, `"organization.membership.removed"`) {
 		t.Fatalf("expected change events: %s", body)
+	}
+	// Archiving revokes the organization's grants just as suspension does, so
+	// consumers need the event to drop what they cached for that organization.
+	archived := false
+	for _, e := range page.Get("events").([]any) {
+		ev := e.(map[string]any)
+		data, _ := ev["data"].(map[string]any)
+		if ev["event_type"] == "organization.archived" && ev["organization_id"] == f.Globex && data["organization_id"] == f.Globex {
+			archived = true
+		}
+	}
+	if !archived {
+		t.Fatalf("expected organization.archived for %s: %s", f.Globex, body)
 	}
 	if strings.Contains(body, "@example.test") {
 		t.Fatal("stream leaks contact data")

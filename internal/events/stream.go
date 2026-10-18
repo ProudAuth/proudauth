@@ -16,7 +16,7 @@ import (
 var SessionEventTypes = []string{
 	"session.revoked", "user.suspended", "user.locked", "user.deleted", "user.password_reset", "user.recovery_restricted",
 	"security.refresh_reuse_detected", "security.credential_compromised", "organization.membership.removed",
-	"organization.membership.suspended", "organization.suspended", "organization.deleted", "authorization.role.unassigned",
+	"organization.membership.suspended", "organization.suspended", "organization.archived", "organization.deleted", "authorization.role.unassigned",
 	"support.impersonation.ended", "client.state_changed", "signing_key.rotated", "user.merged",
 }
 

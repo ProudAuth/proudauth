@@ -7,6 +7,14 @@ metadata:
   name: proudauth-migrate
 spec:
   backoffLimit: 2
+  # Bounds the whole Job, retries included. It must stay above
+  # storage.migration_statement_timeout (default 10m per statement) times the
+  # number of long statements expected in one run, such as CREATE INDEX
+  # CONCURRENTLY builds, so a build is not killed with the pod before its own
+  # bound; 3600 leaves room for six at the default. Raise both together for
+  # large tables. An interrupted build leaves an invalid index that the next
+  # run drops and rebuilds (docs/operations/upgrades.md#no-transaction-migrations).
+  activeDeadlineSeconds: 3600
   ttlSecondsAfterFinished: 3600
   template:
     metadata:

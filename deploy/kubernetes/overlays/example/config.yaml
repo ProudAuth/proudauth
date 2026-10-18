@@ -8,7 +8,15 @@ server:
 identity:
   default_realm: main
 storage:
-  database_url: "file:/run/secrets/database_url"
+  # Separate database roles (OPS-013, docs/operations/installation.md#database-roles):
+  # the server and worker connect as the runtime role, which has data
+  # privileges only; the migrate Job applies migrations as the schema owner,
+  # then grants the runtime role. The owner's connection is in its own Secret,
+  # mounted only into the Job (migrate-job-secrets.yaml), so keep
+  # migrate_on_start off: the server and worker cannot read it.
+  database_url: "file:/run/secrets/database_url"                                # proudauth_app
+  migration_database_url: "file:/run/migration-secrets/migration_database_url"  # proudauth_owner
+  runtime_role: proudauth_app
   max_conns: 20
 keys:
   root_keys:

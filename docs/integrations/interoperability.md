@@ -217,6 +217,13 @@ real counterpart. Treat them as expectations to verify in your environment:
   through standard discovery, PKCE and JWKS; not run. Only `go-oidc` with
   `golang.org/x/oauth2` and Keycloak 26.8.0 (identity brokering) have run,
   in the profiles listed under [Third-party products](#third-party-products).
+- **ASP.NET Core / Microsoft.Identity.Web** relying parties: ProudAuth offers
+  only the `query`, `query.jwt` and `jwt` response modes, and the OpenID
+  Connect handler defaults to `form_post`, which the server refuses with
+  `invalid_request`. Set `options.ResponseType = "code"`,
+  `options.ResponseMode = "query"` and `options.UsePkce = true`
+  ([Not supported](../protocols/oauth-oidc-profile.md#not-supported)). This
+  guidance is not yet exercised by an automated test.
 - **Real upstream identity providers** (Google, Microsoft Entra ID, Okta,
   GitHub, …). The `google` and `microsoft` adapters encode those providers'
   documented issuers, tenant claims and email semantics; only test doubles

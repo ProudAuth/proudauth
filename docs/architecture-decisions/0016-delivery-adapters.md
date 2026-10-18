@@ -84,7 +84,7 @@ usable in production (MSG-011, QA-007).
   (`Message.UserID`, or a `user` reference), the account's `locale` is used if
   the message sets none, and the template values `time`, `expires` and
   `scheduled` (written as RFC 3339 by `notification.Timestamp`) are rendered in
-  the account's `zoneinfo` time zone, for example `2 Jan 2026 21:04 JST`.
+  the account's `zoneinfo` time zone, for example `2026-01-02 21:04 JST`.
   Without an account or a valid time zone they are rendered in UTC. A message
   that still has no locale at delivery uses the realm's or organization's
   default locale. Templates are looked up for that locale, then its base
@@ -94,8 +94,8 @@ usable in production (MSG-011, QA-007).
   followed by its base language, at most five tags) before `en`, so
   `fr-CA es` falls back to Spanish rather than English. For each, an organization override
   wins over a realm override, which wins over the built-in catalog (English,
-  with Spanish for verification, sign-in code, password reset and invitation
-  messages).
+  with Spanish for verification, sign-in code, account-link code, password
+  reset and invitation messages).
 - **SMS adapters**: `webhook` posts `{"id","to","text"}` to an operator-run HTTPS
   gateway with `X-ProudAuth-Timestamp` and an HMAC-SHA256 `X-ProudAuth-Signature`
   over `"<timestamp>.<body>"`, through the egress policy; the gateway relays to a

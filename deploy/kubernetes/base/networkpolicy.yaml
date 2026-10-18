@@ -1,5 +1,9 @@
 # Default-deny for ProudAuth pods, then allow only what is needed. Adjust the
 # selectors to your ingress controller, database and monitoring namespaces.
+# Egress rules without `to:` allow their ports to any destination; uncomment
+# a `to:` (keep the one destination that matches yours) to restrict them.
+# NetworkPolicy matches addresses, not host names: an ipBlock takes the
+# address of a database or SMTP relay outside the cluster.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -19,6 +23,12 @@ spec:
       ports: [{port: 9090}]
   egress:
     - ports: [{port: 5432}]          # PostgreSQL
+      # to:
+      #   - namespaceSelector:                # PostgreSQL in the cluster
+      #       matchLabels: {kubernetes.io/metadata.name: database}
+      #     podSelector:
+      #       matchLabels: {app.kubernetes.io/name: postgresql}
+      #   - ipBlock: {cidr: 192.0.2.10/32}    # or a managed database outside it
     - ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
     - ports: [{port: 443}]           # upstream identity providers (federation), checked again by the egress policy
 ---
@@ -36,6 +46,15 @@ spec:
             matchLabels: {kubernetes.io/metadata.name: monitoring}
       ports: [{port: 9091}]          # worker /metrics and /status (workers.metrics_listen)
   egress:
-    - ports: [{port: 5432}]
+    - ports: [{port: 5432}]          # PostgreSQL
+      # to:
+      #   - namespaceSelector:                # PostgreSQL in the cluster
+      #       matchLabels: {kubernetes.io/metadata.name: database}
+      #     podSelector:
+      #       matchLabels: {app.kubernetes.io/name: postgresql}
+      #   - ipBlock: {cidr: 192.0.2.10/32}    # or a managed database outside it
     - ports: [{port: 53, protocol: UDP}, {port: 53, protocol: TCP}]
-    - ports: [{port: 443}, {port: 587}, {port: 465}]   # webhooks, back-channel logout, SMTP
+    - ports: [{port: 443}]           # webhooks, back-channel logout
+    - ports: [{port: 587}, {port: 465}]   # SMTP (delivery.email.smtp_host)
+      # to:
+      #   - ipBlock: {cidr: 198.51.100.25/32} # your SMTP relay
