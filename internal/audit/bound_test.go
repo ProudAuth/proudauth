@@ -81,7 +81,7 @@ func TestRecordBoundsIdentifiers(t *testing.T) {
 
 	// Control characters, format characters and invalid UTF-8 are dropped,
 	// and the value is marked as altered.
-	for _, id := range []string{"web-bff\nforged: line", "evil\x00client", "a‮b", "bad\xffutf8", "\x1b[31mred", "tab\there"} {
+	for _, id := range []string{"web-bff\nforged: line", "evil\x00client", "a\u202eb", "bad\xffutf8", "\x1b[31mred", "tab\there"} {
 		got, _, _ := stored(t, Event{Type: "client.authentication.failed", Actor: Ref{Type: "client", ID: id}})
 		if !strings.HasSuffix(got, digest(id)) || !utf8.ValidString(got) || strings.ContainsFunc(got, func(r rune) bool { return !unicode.IsPrint(r) }) {
 			t.Errorf("actor ID %q stored as %q", id, got)
