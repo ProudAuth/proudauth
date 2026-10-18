@@ -51,3 +51,39 @@ func TestLegacyHashDeadline(t *testing.T) {
 		t.Fatalf("legacy verifier after the deadline: %v", err)
 	}
 }
+
+// TestLegacySHA256TypedPassword covers MIG-006 and CRED-003 for imported
+// salted SHA-256 verifiers: the source hashed the password as typed, so a
+// password that NFKC normalization changes (full-width letters and a
+// ligature, a decomposed accent) verifies against sha256(salt || typed) and
+// is rehashed, as the other imported formats are; a verifier computed over
+// the NFKC form keeps verifying.
+func TestLegacySHA256TypedPassword(t *testing.T) {
+	h := &Hasher{Params: Params{Time: 1, Memory: 1024, Threads: 1}, MaxBytes: 1024}
+	legacy := func(pw string) string {
+		salt := []byte("saltsaltsalt")
+		sum := sha256.Sum256(append(append([]byte{}, salt...), []byte(pw)...))
+		return "$legacy-sha256$" + base64.RawStdEncoding.EncodeToString(salt) + "$" + base64.RawStdEncoding.EncodeToString(sum[:])
+	}
+	for name, typed := range map[string]string{
+		"full-width letters and a ligature": "ｆｕｌｌｗｉｄｔｈ ﬁle passphrase 2026",
+		"decomposed accent (NFD)":           "café au lait passphrase 2026",
+	} {
+		n, err := h.Normalize(typed)
+		if err != nil || n == typed {
+			t.Fatalf("%s: the test password must change under NFKC (%v)", name, err)
+		}
+		if rehash, err := h.Verify(legacy(typed), typed); err != nil || !rehash {
+			t.Fatalf("%s: verifier over the typed password: %v rehash=%v", name, err, rehash)
+		}
+		if rehash, err := h.Verify(legacy(n), typed); err != nil || !rehash {
+			t.Fatalf("%s: verifier over the NFKC form: %v rehash=%v", name, err, rehash)
+		}
+		if _, err := h.Verify(legacy(typed), n); !errors.Is(err, ErrMismatch) {
+			t.Fatalf("%s: the NFKC form matched a verifier over the typed password: %v", name, err)
+		}
+		if _, err := h.Verify(legacy(typed), typed+"!"); !errors.Is(err, ErrMismatch) {
+			t.Fatalf("%s: a wrong password verified: %v", name, err)
+		}
+	}
+}

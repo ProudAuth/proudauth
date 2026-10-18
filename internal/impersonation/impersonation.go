@@ -30,6 +30,7 @@ import (
 	"github.com/proudauth/proudauth/internal/realm"
 	"github.com/proudauth/proudauth/internal/runtime"
 	"github.com/proudauth/proudauth/internal/session"
+	"github.com/proudauth/proudauth/internal/storage"
 	"github.com/proudauth/proudauth/internal/token"
 )
 
@@ -169,6 +170,45 @@ func (s *Service) checkActor(ctx context.Context, q pgx.Tx, rlm *realm.Realm, a 
 	return nil
 }
 
+// checkTarget applies the target exclusions (IMP-015, TEST-041) to live
+// state: the target is an active, unprotected user who holds no realm-scoped
+// role (HoldsPrivilegedRealmRole) and does not administer the organization
+// (org.roles.assign, org.ownership.transfer or org.members.write there). It
+// returns the audit reason code and the error for an excluded target, or ""
+// and nil. Request, approval, issuance and every use of a live grant
+// (ValidateGrant) call it, so a target promoted to realm or organization
+// administrator after the request is neither issued a grant nor kept
+// impersonated. Errors deny with an empty reason code.
+func (s *Service) checkTarget(ctx context.Context, q storage.Querier, realmID, targetID, orgID string) (string, error) {
+	var state string
+	var protected bool
+	if err := q.QueryRow(ctx, `SELECT state, protected FROM users WHERE realm_id=$1 AND id=$2`, realmID, targetID).Scan(&state, &protected); err != nil {
+		if storage.IsNoRows(err) {
+			return "TARGET_NOT_ELIGIBLE", problem.ErrImpersonationDenied
+		}
+		return "", err
+	}
+	if state != "active" || protected {
+		return "TARGET_PROTECTED", problem.ErrImpersonationDenied
+	}
+	privileged, err := s.Authz.HoldsPrivilegedRealmRole(ctx, q, realmID, targetID)
+	if err != nil {
+		return "", err
+	}
+	if privileged {
+		return "TARGET_PROTECTED", problem.ErrImpersonationDenied
+	}
+	teff, err := s.Authz.Effective(ctx, q, realmID, authorization.Subject{Type: authorization.SubjectUser, ID: targetID},
+		authorization.Scope{Type: authorization.ScopeOrganization, ID: orgID})
+	if err != nil {
+		return "", err
+	}
+	if teff.Has("org.roles.assign") || teff.Has("org.ownership.transfer") || teff.Has("org.members.write") {
+		return "TARGET_IS_ADMINISTRATOR", problem.ErrImpersonationDenied.WithDetail("organization administrators cannot be impersonated")
+	}
+	return "", nil
+}
+
 // RequestAccess validates and records a support-access request (IMP-004, IMP-005,
 // IMP-015). When no approval is required it is immediately approved.
 func (s *Service) RequestAccess(ctx context.Context, rlm *realm.Realm, a Actor, in RequestInput) (*Request, error) {
@@ -248,37 +288,22 @@ func (s *Service) RequestAccess(ctx context.Context, rlm *realm.Realm, a Actor, 
 		if org.Policy.SupportAccessOptOut {
 			return deny("CUSTOMER_OPTED_OUT", problem.ErrImpersonationDenied.WithDetail("the organization opted out of support access"))
 		}
-		// Target restrictions (IMP-015, TEST-041).
-		var targetState string
-		var protected bool
-		if err := tx.QueryRow(ctx, `SELECT state, protected FROM users WHERE realm_id=$1 AND id=$2`, rlm.ID, in.TargetUserID).Scan(&targetState, &protected); err != nil {
-			return deny("TARGET_NOT_ELIGIBLE", problem.ErrImpersonationDenied)
-		}
-		if targetState != "active" || protected {
-			return deny("TARGET_PROTECTED", problem.ErrImpersonationDenied)
-		}
-		if privileged, _ := s.Authz.HoldsPrivilegedRealmRole(ctx, tx, rlm.ID, in.TargetUserID); privileged {
-			return deny("TARGET_PROTECTED", problem.ErrImpersonationDenied)
+		// Target restrictions (IMP-015, TEST-041); the escalation guard
+		// excludes targets that administer the organization.
+		if code, err := s.checkTarget(ctx, tx, rlm.ID, in.TargetUserID, in.OrganizationID); err != nil {
+			if code == "" {
+				return err
+			}
+			return deny(code, err)
 		}
 		var optOut bool
 		_ = tx.QueryRow(ctx, `SELECT coalesce((internal_metadata->>'support_access_opt_out')::boolean, false) FROM users WHERE id=$1`, in.TargetUserID).Scan(&optOut)
 		if optOut && rlm.Policy.Impersonation.AllowCustomerOptOut {
 			return deny("CUSTOMER_OPTED_OUT", problem.ErrImpersonationDenied.WithDetail("the customer opted out of support access"))
 		}
-		m, err := s.Orgs.ActiveMembership(ctx, tx, rlm.ID, in.OrganizationID, in.TargetUserID)
-		if err != nil {
+		if _, err := s.Orgs.ActiveMembership(ctx, tx, rlm.ID, in.OrganizationID, in.TargetUserID); err != nil {
 			return deny("TARGET_NOT_MEMBER", problem.ErrImpersonationDenied)
 		}
-		// Escalation guard: targets that administer the organization are excluded.
-		teff, err := s.Authz.Effective(ctx, tx, rlm.ID, authorization.Subject{Type: authorization.SubjectUser, ID: in.TargetUserID},
-			authorization.Scope{Type: authorization.ScopeOrganization, ID: in.OrganizationID})
-		if err != nil {
-			return err
-		}
-		if teff.Has("org.roles.assign") || teff.Has("org.ownership.transfer") || teff.Has("org.members.write") {
-			return deny("TARGET_IS_ADMINISTRATOR", problem.ErrImpersonationDenied.WithDetail("organization administrators cannot be impersonated"))
-		}
-		_ = m
 		approval := rlm.Policy.Impersonation.Approval
 		if org.Policy.ImpersonationApproval != "" && org.Policy.ImpersonationApproval != "none" {
 			approval = org.Policy.ImpersonationApproval
@@ -348,6 +373,10 @@ func (s *Service) Approve(ctx context.Context, rlm *realm.Realm, approver Actor,
 		if approver.UserID == actorID {
 			return problem.ErrForbidden.WithDetail("self-approval is not permitted")
 		}
+		// The target may have become an administrator since the request (IMP-015).
+		if _, err := s.checkTarget(ctx, tx, rlm.ID, targetID, orgID); err != nil {
+			return err
+		}
 		switch approval {
 		case "second_operator":
 			if err := s.checkActor(ctx, tx, rlm, approver, orgID, "support.impersonation.approve"); err != nil {
@@ -375,9 +404,14 @@ func (s *Service) Approve(ctx context.Context, rlm *realm.Realm, approver Actor,
 	})
 }
 
-// Issue re-validates everything with live state and issues the support grant and
-// opaque token. The grant and its audit/outbox records commit before the token is
-// returned; an audit failure prevents access (IMP-020, TEST-047).
+// Issue re-validates the request with live state and issues the support grant
+// and opaque token: the request is approved and unexpired, the organization
+// active, the target's membership active, the target still eligible
+// (checkTarget: active, unprotected, no realm role, not an organization
+// administrator; IMP-015), the client and resource still eligible, and the
+// operator still passes checkActor; scopes are recomputed from the resource's
+// current policy. The grant and its audit/outbox records commit before the
+// token is returned; an audit failure prevents access (IMP-020, TEST-047).
 func (s *Service) Issue(ctx context.Context, rlm *realm.Realm, a Actor, requestID string) (*Issued, error) {
 	if err := s.enabled(ctx, rlm); err != nil {
 		return nil, err
@@ -406,6 +440,9 @@ func (s *Service) Issue(ctx context.Context, rlm *realm.Realm, a Actor, requestI
 		m, err := s.Orgs.ActiveMembership(ctx, tx, rlm.ID, r.OrganizationID, r.TargetUserID)
 		if err != nil {
 			return problem.ErrImpersonationDenied.WithDetail("target membership is no longer active")
+		}
+		if _, err := s.checkTarget(ctx, tx, rlm.ID, r.TargetUserID, r.OrganizationID); err != nil {
+			return err
 		}
 		client, err := s.Apps.ClientByRef(ctx, tx, rlm.ID, clientRef)
 		if err != nil || !client.Active() {
@@ -500,7 +537,9 @@ func (s *Service) Issue(ctx context.Context, rlm *realm.Realm, a Actor, requestI
 
 // ValidateGrant is called on every introspection of a support token (IMP-010). It
 // re-checks the grant, the actor (active, session live, still permitted) and the
-// target (active, membership live), and returns actor-aware context (IMP-006).
+// target (membership live and checkTarget: active, unprotected, no realm role,
+// not an organization administrator; IMP-015), and returns actor-aware context
+// (IMP-006).
 func (s *Service) ValidateGrant(ctx context.Context, q interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }, realmID, grantID string) (map[string]any, bool) {
@@ -520,6 +559,12 @@ func (s *Service) ValidateGrant(ctx context.Context, q interface {
 		(SELECT state='active' AND idle_expires_at > $5 AND absolute_expires_at > $5 FROM sessions WHERE id=$6)`,
 		actorID, targetID, membershipID, orgID, s.d.Now(), actorSession).Scan(&ok)
 	if err != nil || !ok {
+		return nil, false
+	}
+	// A target promoted to realm or organization administrator during the
+	// grant ends it at the next use. The check costs about as much as the
+	// operator's permission check below: a fixed number of indexed queries.
+	if _, err := s.checkTarget(ctx, s.d.DB.Pool, realmID, targetID, orgID); err != nil {
 		return nil, false
 	}
 	var scopes []string

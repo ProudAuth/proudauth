@@ -983,7 +983,7 @@
           "$ref": "#/$defs/RateLimitConfig"
         },
         "min_auth_response": {
-          "description": "Minimum response time for credential checks and recovery starts, to blunt account enumeration by timing.",
+          "description": "Minimum response time for credential checks, recovery starts and sign-in code and magic-link sends, to blunt account enumeration by timing.",
           "$ref": "#/$defs/duration",
           "default": "250ms"
         },

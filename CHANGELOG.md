@@ -339,6 +339,20 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   0.2.0-alpha.5 and earlier; regression tests
   `TestPolicyInContainsUnknownOnMistypedAttributes`,
   `TestPolicyInOverMistypedAttributeFailsClosed`.
+- Imported salted SHA-256 verifiers (`$legacy-sha256$`) are checked against
+  the password as typed first and then against its NFKC form, as imported
+  Argon2id, bcrypt and PBKDF2 verifiers are. They were checked only as
+  `sha256(salt || NFKC(password))`, while the import schema's example, the
+  migration guides and the benchmark seeder describe
+  `sha256(salt || password)` over the typed input, so a migrated user whose
+  password NFKC normalization changes (full-width or compatibility
+  characters, ligatures, decomposed accents) could never sign in with it. A
+  match is still rehashed to Argon2id. The `password_hash` description in
+  `api/schemas/user-import.schema.json` now gives the format as
+  `sha256(salt || password)` (MIG-006, CRED-003, CRED-004,
+  [exit-and-export.md](docs/operations/exit-and-export.md#user-import-request)).
+  Affected: every earlier 0.2.0 prerelease; regression test
+  `TestLegacySHA256TypedPassword`.
 
 ### Security
 
@@ -475,6 +489,39 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   [ADR 0011](docs/architecture-decisions/0011-refresh-token-families.md)).
   Affected: every earlier 0.2.0 prerelease; regression tests
   `TestSenderBoundRefreshFamilies`, `TestSenderBindingRefusal`.
+- Support impersonation re-checks the target exclusions (IMP-015) when a
+  request is approved, when the grant is issued and on every introspection
+  of a support token, not only when the request is made: the target must
+  still be active and not `protected`, hold no privileged realm role and not
+  hold `org.roles.assign`, `org.ownership.transfer` or `org.members.write`
+  in the organization. A target promoted to realm or organization
+  administrator after the request could be issued a grant (requests live up
+  to 15 minutes) and impersonated until it expired (up to 5 minutes);
+  issuance and approval now answer `403 impersonation_denied` and the
+  token's introspection `active: false` (IMP-010). Assigning a role still
+  revokes no request or grant; the grant stays `active` in the inventory
+  until it expires ([impersonation.md](docs/threat-models/impersonation.md#flow-and-checks),
+  steps 3 to 5). Affected: every earlier 0.2.0 prerelease; regression tests
+  `TestImpersonationDenials` ("TEST-041 targets promoted after the
+  request", TEST-041) and `TestCustomerApprovedSupportAccess`.
+- Identified sign-ins no longer reveal through passkey options or response
+  times whether an account or its passkeys exist (SEC-005, PASS-003).
+  `webauthn/options` after `identify` lists the account's passkeys without
+  their stored transports, and the decoy for an unknown identifier or an
+  account without passkeys has one to three credential IDs of common lengths
+  (16 to 64 bytes), all derived from a keyed hash of the identifier; it was
+  always one 32-byte ID with the transports `internal` and `hybrid`, so the
+  number of entries, the transports or the ID length told a real list apart.
+  An account with more than three passkeys is still recognizable by the
+  count. `otp/send` with purpose `login` (email or SMS) or `magic_link` is
+  padded to `security.min_auth_response` like the password step and reset
+  requests; only known accounts had the message rendered, encrypted and
+  queued, unpadded
+  ([headless-authentication.md](docs/protocols/headless-authentication.md#enumeration-resistance)).
+  Affected: every earlier 0.2.0 prerelease; regression tests `TestPasskeys`
+  ("identified allow lists reveal no passkeys") and
+  `TestIdentifierProbeResponses` ("sign-in code and magic-link sends are
+  padded").
 
 ## [0.2.0-alpha.5] - 2026-10-18
 

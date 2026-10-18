@@ -257,10 +257,11 @@ Each record carries:
   legacy verifiers: after `security.password.legacy_hashes_until` they no
   longer verify, and records carrying one are refused per record ("legacy
   password verifiers are no longer accepted"; checked when the job runs, not
-  at the request). bcrypt and PBKDF2 verifiers are checked against the
-  password as typed and against its NFKC form, because the source hashed
-  what the user typed. For users whose verifier cannot come over, leave
-  `password_hash` out and set `update_password`;
+  at the request). Imported Argon2id, bcrypt, PBKDF2 and salted SHA-256
+  verifiers are checked against the password as typed and against its NFKC
+  form, because the source hashed what the user typed. For users whose
+  verifier cannot come over, leave `password_hash` out and set
+  `update_password`;
 - `totp_secret` (only with `import_totp`);
 - `memberships` mapped to existing organizations (ID or slug) and existing
   organization roles by name; unknown roles are errors, owner roles require

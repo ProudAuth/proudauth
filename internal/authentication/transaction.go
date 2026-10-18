@@ -196,6 +196,10 @@ type Service struct {
 	// against their directory and provisions accounts at first sign-in
 	// (PROV-011, FED-015); nil disables directory sign-in.
 	Directory DirectoryLogin
+	// TimingPad, when set, stands in for the wait that pads emailed or
+	// texted sign-in codes and magic links to security.min_auth_response
+	// (padSend, SEC-005), so tests observe the pad without waiting.
+	TimingPad func(start time.Time, min time.Duration)
 }
 
 // NewService builds the service.

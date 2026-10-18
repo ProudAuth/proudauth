@@ -31,7 +31,8 @@ func (s *Service) magicLinkBase(ctx context.Context, q storage.Querier, t *Trans
 // must post it back with the transaction's continuation proof after the user
 // confirms. A link opened in another browser therefore cannot complete the
 // sign-in (no silent cross-device relaxation). Responses are identical whether
-// or not an account exists (SEC-005).
+// or not an account exists, and padded to the same minimum time (padSend,
+// SEC-005).
 func (s *Service) sendMagicLink(ctx context.Context, tx pgx.Tx, t *Transaction, rlm *realm.Realm) error {
 	if !rlm.Policy.Login.MagicLink || t.Pending.IdentifierType != "email" {
 		return problem.ErrUnexpectedStep
@@ -40,6 +41,7 @@ func (s *Service) sendMagicLink(ctx context.Context, tx pgx.Tx, t *Transaction, 
 	if base == "" {
 		return problem.ErrFeatureDisabled.WithDetail("magic links require a configured login UI")
 	}
+	defer s.padSend(time.Now())
 	if err := s.sendBudget(ctx, t.RealmID, t.Pending.Identifier, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
 		return err
 	}
@@ -76,6 +78,19 @@ func (s *Service) sendMagicLink(ctx context.Context, tx pgx.Tx, t *Transaction, 
 		Recipient: t.Pending.Identifier, Mandatory: true, ReferenceType: "challenge", ReferenceID: cid, TTL: MagicLinkTTL, UserID: userID,
 		Data: data})
 	return err
+}
+
+// padSend pads an emailed or texted sign-in code or a magic link
+// (otp/send with purpose login or magic_link) to security.min_auth_response,
+// so the work done only for a known account (rendering, localizing,
+// encrypting and queueing the message) does not tell it from an unknown
+// identifier, as the password step and reset requests are padded (SEC-005).
+func (s *Service) padSend(start time.Time) {
+	if s.TimingPad != nil {
+		s.TimingPad(start, s.d.Cfg.Security.MinAuthResponse)
+		return
+	}
+	padTiming(start, s.d.Cfg.Security.MinAuthResponse)
 }
 
 // ConsumeMagicLink completes sign-in with a magic-link secret presented to the

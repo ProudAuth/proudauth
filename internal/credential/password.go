@@ -274,7 +274,13 @@ func (h *Hasher) Verify(verifier, pw string) (needsRehash bool, err error) {
 		if h.LegacyRetired() {
 			return false, ErrLegacyRetired
 		}
-		return h.verifyLegacy(verifier, n)
+		// Like the other imported formats, the source hashed the password
+		// as typed (MIG-006): that form first, then its NFKC form.
+		rehash, err := h.verifyLegacy(verifier, pw)
+		if errors.Is(err, ErrMismatch) && n != pw {
+			rehash, err = h.verifyLegacy(verifier, n)
+		}
+		return rehash, err
 	}
 	if IsForeignVerifier(verifier) {
 		// Imported bcrypt or PBKDF2 (MIG-006): migration window only, and
@@ -319,8 +325,9 @@ func (h *Hasher) Verify(verifier, pw string) (needsRehash bool, err error) {
 }
 
 // verifyLegacy supports imported salted SHA-256 verifiers only during a controlled
-// migration (CRED-004, MIG-006): "$legacy-sha256$<b64 salt>$<b64 sha256(salt||pw)>".
-// A successful verification always requests a rehash to Argon2id.
+// migration (CRED-004, MIG-006): "$legacy-sha256$<b64 salt>$<b64 sha256(salt||pw)>",
+// pw being the password as typed or its NFKC form (Verify tries both). A
+// successful verification always requests a rehash to Argon2id.
 func (h *Hasher) verifyLegacy(verifier, pw string) (bool, error) {
 	parts := strings.Split(verifier, "$")
 	if len(parts) != 4 {

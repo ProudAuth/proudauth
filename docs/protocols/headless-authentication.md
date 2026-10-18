@@ -640,7 +640,20 @@ exhausted budget answers `429 rate_limited` and does not count as a failure
   `invalid_credentials`, padded to at least `security.min_auth_response`, with a
   full-cost dummy hash for unknown accounts.
 - `otp/send` with `purpose: login` behaves identically for unknown addresses (a
-  challenge is created; nothing is sent).
+  challenge is created; nothing is sent). With `purpose: login` or
+  `magic_link` it is padded to at least `security.min_auth_response`, so the
+  message rendered, encrypted and queued only for an account does not show
+  in the response time.
+- `webauthn/options` after `identify` (before primary authentication) lists
+  the account's passkeys without their transports. An unknown identifier, or
+  an account without passkeys, gets a decoy: one to three credential IDs of
+  lengths common among authenticators (16 to 64 bytes), derived from a keyed
+  hash of the identifier and the same on every request. Neither the number of
+  entries (up to three), the transports nor the ID lengths tell the cases
+  apart; an account with more than three passkeys is still recognizable by
+  the count. Without transport hints the browser offers every way to reach
+  the authenticator. After primary authentication the second-factor ceremony
+  keeps the stored transports.
 - Registration with an address that already belongs to a verified account returns
   the same response as a new address and emails the existing owner instead.
 - Password-reset requests always return `202` with a `reset_id`.
@@ -682,7 +695,8 @@ identifier is an email address and a login UI URL is known (the client's
 1. `POST .../{id}/otp/send {"purpose": "magic_link"}`. If an active account owns the
    address, it receives a link to the login UI:
    `<login UI>?transaction_id=atx_...#magic_link=<secret>`. The response is the same
-   when no account exists.
+   when no account exists, and padded to at least `security.min_auth_response`
+   either way.
 2. The login UI reads the secret from the URL **fragment** (never sent to a server,
    so link scanners cannot consume it), asks the user to confirm, and posts it with
    the transaction's continuation: `POST .../{id}/magic-link {"token": "..."}`.

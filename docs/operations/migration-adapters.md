@@ -514,9 +514,9 @@ bcrypt and PBKDF2 are **legacy** verifiers, like salted SHA-256: they verify
 only until `security.password.legacy_hashes_until`, and user imports refuse
 them after that date ([configuration.md](configuration.md#security)). Every
 imported verifier is rehashed to the deployment's Argon2id at the next
-successful sign-in. Imported verifiers are checked against the password as
-typed (what the source hashed) and its NFKC form; a match of the typed form is
-rehashed to the NFKC-based local verifier. A stored verifier outside the
+successful sign-in. Imported verifiers, salted SHA-256 included, are checked
+against the password as typed (what the source hashed) and its NFKC form; a
+match of the typed form is rehashed to the NFKC-based local verifier. A stored verifier outside the
 bounds never verifies. The floors follow OWASP (bcrypt cost 10) and NIST
 SP 800-63B (PBKDF2 10,000 iterations); the ceilings keep a stored verifier
 from turning a sign-in into a CPU sink.

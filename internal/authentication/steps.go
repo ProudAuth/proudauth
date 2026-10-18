@@ -452,6 +452,7 @@ func (s *Service) SendOTP(ctx context.Context, realmID, id string, p Proof, purp
 				// (PWDLESS-006, PWDLESS-008).
 				return nil, problem.ErrUnexpectedStep
 			}
+			defer s.padSend(time.Now())
 			if err := s.sendBudget(ctx, t.RealmID, t.Pending.Identifier, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
 				return nil, err
 			}

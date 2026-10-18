@@ -26,7 +26,10 @@ list non-negotiable controls.
 - **Targets excluded**: self, protected users, holders of privileged realm roles,
   organization administrators (`org.roles.assign`, `org.ownership.transfer` or
   `org.members.write`), non-members, suspended users, opted-out customers or
-  organizations.
+  organizations. Protection, realm roles and organization administration are
+  checked again at approval, at issuance and on every introspection, so a
+  target promoted after the request is neither issued a grant nor kept
+  impersonated.
 - **Scope**: the resource's `impersonation_policy.allowed_scopes` (and
   `write_scopes` only in `allowlisted_write` mode). The operator's own permissions
   are never added.
@@ -41,8 +44,9 @@ list non-negotiable controls.
 - **Revocation**: by the actor, the target (`/me/impersonation-grants/{id}/revoke`
   or opting out), or a holder of `support.impersonation.revoke`. Introspection
   also stops succeeding when the actor or target is no longer active, the target's
-  membership or the organization is no longer active, the actor's session ends, or
-  the actor loses `support.impersonation.start`.
+  membership or the organization is no longer active, the target becomes protected
+  or gains a realm role or organization-administrator permissions, the actor's
+  session ends, or the actor loses `support.impersonation.start`.
 - **Downstream contract**: resources use `verifier.SupportGuard`, which
   introspects every request, requires the actor claim, denies protected
   operations, allows writes only for allowlisted operations in
