@@ -1,0 +1,161 @@
+{
+  "tool": "identity-bench",
+  "format_version": "1",
+  "scenario": "refresh",
+  "target": "http://127.0.0.1:18591",
+  "started_at": "2026-10-17T23:41:05.986533Z",
+  "duration_s": 60.000597084,
+  "concurrency": 32,
+  "seed": 1,
+  "operations": 47724,
+  "outcomes": {
+    "ok": 47724
+  },
+  "throughput_per_s": 795.392084735208,
+  "latency_ms": {
+    "mean": 40.2219717332998,
+    "p50": 38.912,
+    "p90": 51.2,
+    "p99": 57.344,
+    "p999": 86.016,
+    "max": 1020.579
+  },
+  "histogram": [
+    {
+      "le_ms": 28.672,
+      "count": 1
+    },
+    {
+      "le_ms": 30.72,
+      "count": 1
+    },
+    {
+      "le_ms": 31.744,
+      "count": 6
+    },
+    {
+      "le_ms": 32.768,
+      "count": 14
+    },
+    {
+      "le_ms": 34.816,
+      "count": 1147
+    },
+    {
+      "le_ms": 36.864,
+      "count": 13082
+    },
+    {
+      "le_ms": 38.912,
+      "count": 16954
+    },
+    {
+      "le_ms": 40.96,
+      "count": 7341
+    },
+    {
+      "le_ms": 43.008,
+      "count": 1914
+    },
+    {
+      "le_ms": 45.056,
+      "count": 523
+    },
+    {
+      "le_ms": 47.104,
+      "count": 346
+    },
+    {
+      "le_ms": 49.152,
+      "count": 861
+    },
+    {
+      "le_ms": 51.2,
+      "count": 2021
+    },
+    {
+      "le_ms": 53.248,
+      "count": 1973
+    },
+    {
+      "le_ms": 55.296,
+      "count": 931
+    },
+    {
+      "le_ms": 57.344,
+      "count": 311
+    },
+    {
+      "le_ms": 59.392,
+      "count": 107
+    },
+    {
+      "le_ms": 61.44,
+      "count": 51
+    },
+    {
+      "le_ms": 63.488,
+      "count": 22
+    },
+    {
+      "le_ms": 65.536,
+      "count": 8
+    },
+    {
+      "le_ms": 69.632,
+      "count": 8
+    },
+    {
+      "le_ms": 73.728,
+      "count": 5
+    },
+    {
+      "le_ms": 77.824,
+      "count": 25
+    },
+    {
+      "le_ms": 81.92,
+      "count": 13
+    },
+    {
+      "le_ms": 86.016,
+      "count": 12
+    },
+    {
+      "le_ms": 90.112,
+      "count": 6
+    },
+    {
+      "le_ms": 94.208,
+      "count": 5
+    },
+    {
+      "le_ms": 98.304,
+      "count": 4
+    },
+    {
+      "le_ms": 753.664,
+      "count": 5
+    },
+    {
+      "le_ms": 786.432,
+      "count": 24
+    },
+    {
+      "le_ms": 819.2,
+      "count": 1
+    },
+    {
+      "le_ms": 1048.576,
+      "count": 2
+    }
+  ],
+  "environment": {
+    "arch": "arm64",
+    "cpus": 12,
+    "go": "go1.27.1",
+    "host": "reference-laptop",
+    "os": "darwin"
+  },
+  "complete": true
+}

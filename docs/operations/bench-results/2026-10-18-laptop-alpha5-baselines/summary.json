@@ -1,0 +1,136 @@
+[
+  {
+    "scenario": "password-login",
+    "started": "2026-10-17T23:39:55Z",
+    "ended": "2026-10-17T23:41:00Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 2870,
+    "throughput_per_s": 47.8,
+    "latency_ms": {
+      "mean": 665.06,
+      "p50": 655.36,
+      "p90": 753.66,
+      "p99": 851.97,
+      "p999": 1176.45,
+      "max": 1176.45
+    },
+    "outcomes": {
+      "ok": 2870
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 65,
+      "identity_server": 419.62,
+      "identity_worker": 1.04,
+      "postgres_container": 39.33,
+      "docker_vm_and_proxy": 191.73,
+      "identity_bench": 2.24
+    },
+    "notes": [
+      "password verifiers after the run (Argon2id, imported SHA-256): 3104, 6897"
+    ]
+  },
+  {
+    "scenario": "token",
+    "started": "2026-10-17T23:41:00Z",
+    "ended": "2026-10-17T23:41:00Z",
+    "verdict": "FAIL",
+    "error": "identity-bench: unknown scenario \"token\"",
+    "cpu_seconds": {
+      "wall_s": 0,
+      "identity_server": 0,
+      "identity_worker": 0.01,
+      "postgres_container": 0.01,
+      "docker_vm_and_proxy": 0.06,
+      "identity_bench": 0.00
+    }
+  },
+  {
+    "scenario": "refresh",
+    "started": "2026-10-17T23:41:00Z",
+    "ended": "2026-10-17T23:42:05Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 47724,
+    "throughput_per_s": 795.4,
+    "latency_ms": {
+      "mean": 40.22,
+      "p50": 38.91,
+      "p90": 51.2,
+      "p99": 57.34,
+      "p999": 86.02,
+      "max": 1020.58
+    },
+    "outcomes": {
+      "ok": 47724
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 65,
+      "identity_server": 203.74,
+      "identity_worker": 1,
+      "postgres_container": 85.22,
+      "docker_vm_and_proxy": 389.97,
+      "identity_bench": 5.38
+    }
+  },
+  {
+    "scenario": "client-credentials",
+    "started": "2026-10-17T23:42:06Z",
+    "ended": "2026-10-17T23:43:11Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 60490,
+    "throughput_per_s": 1008.2,
+    "latency_ms": {
+      "mean": 31.73,
+      "p50": 31.74,
+      "p90": 34.82,
+      "p99": 38.91,
+      "p999": 77.82,
+      "max": 121.36
+    },
+    "outcomes": {
+      "ok": 60490
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 65,
+      "identity_server": 210.46,
+      "identity_worker": 1.03,
+      "postgres_container": 83.94,
+      "docker_vm_and_proxy": 399.43,
+      "identity_bench": 7.43
+    }
+  },
+  {
+    "scenario": "introspection",
+    "started": "2026-10-17T23:43:11Z",
+    "ended": "2026-10-17T23:44:16Z",
+    "duration_s": 60,
+    "concurrency": 32,
+    "operations": 120772,
+    "throughput_per_s": 2012.9,
+    "latency_ms": {
+      "mean": 15.89,
+      "p50": 15.87,
+      "p90": 18.43,
+      "p99": 20.48,
+      "p999": 30.72,
+      "max": 53.8
+    },
+    "outcomes": {
+      "ok": 120772
+    },
+    "verdict": "pass",
+    "cpu_seconds": {
+      "wall_s": 65.15,
+      "identity_server": 123.98,
+      "identity_worker": 1.28,
+      "postgres_container": 96.12,
+      "docker_vm_and_proxy": 453.23,
+      "identity_bench": 14.76
+    }
+  }
+]

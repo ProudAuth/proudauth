@@ -1609,6 +1609,84 @@ remote sources and multi-host capacity remain unmeasured. The runner's
 cleanup trap removed native processes, its own container/volume and private
 seed/credentials/CA working files. Nothing was downloaded or committed.
 
+### Alpha.5 core-flow baselines (NFR-003, NFR-008)
+
+On **2026-10-18 local time** (started `2026-10-17T23:39:55Z`, after a
+172-second seed of 10000 users, 500 organizations, a 5000-member
+organization, 20 machine clients and a 1000-member group, seed 1) the four
+core token flows were measured again on the 0.2.0-alpha.5 tree, with the
+hardened sign-in step (factor-step gating, upgrade proof), the optional
+`security.password.max_concurrent_hashes` bound left off and the directory
+bounds unused (local passwords only). Each scenario ran 60 measured seconds
+at concurrency 32 after a five-second warm-up; latencies are milliseconds
+from the histogram's upper bucket bounds.
+
+| Scenario | Operations/s | p50 ms | p99 ms | p99.9 ms | Outcomes | Criterion | 2026-10-11 reference ops/s |
+| --- | ---: | ---: | ---: | ---: | --- | --- | ---: |
+| password-login | 47.8 | 655.36 | 851.97 | 1176.45 | `ok`: 2870 | Pass | 47.1 |
+| refresh | 795.4 | 38.91 | 57.34 | 86.02 | `ok`: 47724 | Pass | 815.2 |
+| client-credentials | 1008.2 | 31.74 | 38.91 | 77.82 | `ok`: 60490 | Pass | 1036.6 |
+| introspection | 2012.9 | 15.87 | 20.48 | 30.72 | `ok`: 120772 | Pass | 2038.1 |
+
+Throughput is within three percent of the 2026-10-11 reference in every
+flow and p99 latency is unchanged or lower, so the alpha.5 security changes
+on the sign-in and token paths cost nothing measurable on this machine. Both
+runs share a laptop, so differences of this size are run-to-run noise, not a
+trend. `password-login` again measured first sign-ins with
+SHA-256-to-Argon2id rehashing: 3104 verifiers were Argon2id afterwards and
+6897 remained imported SHA-256. The database ended at 292632255 bytes
+(279 MiB) with 149606 audit rows. The scenario list of the invocation also
+named `token`, which is not a scenario; `summary.json` keeps that failed
+entry (`unknown scenario "token"`, zero operations) and the runner's
+nonzero exit refers to it alone. The four valid scenarios passed.
+
+**Environment:** Mac16,8 / Apple M4 Pro, 12 CPUs (8 performance + 4
+efficiency), 25769803776 bytes RAM, AC power; macOS 27.0.1 (26A434),
+Darwin 27.0.0; Go 1.27.1 `darwin/arm64`; Docker 29.7.2 with a 12-CPU,
+25161293824-byte VM. PostgreSQL **18.6** (`postgres:18.6`, image
+`sha256:74935e72…`) in one container on the same laptop with the settings
+of the reference run (`shared_buffers=2GB`, `max_connections=200`,
+`work_mem=16MB`, `effective_cache_size=6GB`, `pg_stat_statements`). Server,
+worker and load generator run on the host over loopback HTTP. Checkout
+source digest **`ed47a3d61d279094`**, no Git commit in the build; the tree
+is the `main` merge of the alpha.5 integration branch. Development mode,
+Argon2id 64 MiB/three passes, RSA 3072-bit signing keys, minimum
+authentication response 250 ms; login per-IP/realm/client and token
+per-client budgets **1000000** each.
+
+[Per-scenario results](bench-results/2026-10-18-laptop-alpha5-baselines/),
+[summary/CPU](bench-results/2026-10-18-laptop-alpha5-baselines/summary.json),
+[environment](bench-results/2026-10-18-laptop-alpha5-baselines/environment.json),
+[PostgreSQL settings](bench-results/2026-10-18-laptop-alpha5-baselines/postgres/settings.tsv),
+top statements per scenario, [redacted
+configuration](bench-results/2026-10-18-laptop-alpha5-baselines/proudauth-config.yaml)
+and [artifact hashes](bench-results/2026-10-18-laptop-alpha5-baselines/artifact-sha256.json)
+identify the measured build; the runner's private work directory appears as
+`$WORK`. CPU accounting per scenario covers 65 wall seconds including
+warm-up: `password-login` server 419.62, PostgreSQL 39.33; `refresh` server
+203.74, PostgreSQL 85.22; `client-credentials` server 210.46, PostgreSQL
+83.94; `introspection` server 123.98, PostgreSQL 96.12 CPU seconds, each
+with roughly 190–450 Docker VM/proxy seconds on top.
+
+To reproduce, choose unused ports and a fresh output directory:
+
+```sh
+GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local \
+  GOFLAGS='-mod=readonly -buildvcs=false' \
+  BENCH_PG_IMAGE=postgres:18.6 \
+  BENCH_SCENARIOS="password-login refresh client-credentials introspection" \
+  BENCH_SOAK=0 BENCH_OUT="$PWD/bench-results-private/alpha5-baselines" \
+  BENCH_HOST_LABEL=laptop make bench-local
+```
+
+**One laptop; load generator and database share it. These numbers are not
+guarantees or sizing advice.** They are a before/after check of the alpha.5
+changes on the four most common flows, not a repeat of the full 13-scenario
+reference, the soak or the adversarial profiles; those keep their 2026-10-11
+to 2026-10-13 results above. Directory-backed sign-in under
+`directory.sign_in_timeout` and `max_concurrent_binds`, and the password
+hash bound, are covered by tests, not measured here.
+
 ## Not covered yet
 
 - **SCIM** bulk and real-directory load remain outside the

@@ -10,7 +10,8 @@ and [TOTP guessing results](benchmarks.md#totp-guessing-results-nfr-006-nfr-008)
 plus [SCIM User-filter results](benchmarks.md#scim-filter-results-nfr-004-nfr-006-nfr-008)
 with the initial failure preserved alongside the passing correction,
 [SCIM Group-filter results](benchmarks.md#scim-group-filter-results-nfr-004-nfr-006-nfr-008), and
-[refresh results across three independent server processes](benchmarks.md#independent-server-process-results-nfr-003-nfr-007-nfr-008).
+[refresh results across three independent server processes](benchmarks.md#independent-server-process-results-nfr-003-nfr-007-nfr-008),
+and [alpha.5 baselines of the four core token flows](benchmarks.md#alpha5-core-flow-baselines-nfr-003-nfr-008).
 **They do not validate the proposed targets and are
 not guarantees or sizing advice:** the load generator, server, worker and
 PostgreSQL share that laptop. The benchmark tool
