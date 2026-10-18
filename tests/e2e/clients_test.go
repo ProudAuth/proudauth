@@ -50,9 +50,16 @@ func TestConfigurableLimits(t *testing.T) {
 
 // TestVerificationBudgetPerClient covers REG-012: proof attempts made through
 // one client (factor codes and passwords alike) share a budget across
-// accounts and networks, security.rate_limits.login_per_client.
+// accounts and networks, security.rate_limits.login_per_client. Every request
+// here comes from the loopback address, which the fixture's sign-ins make a
+// known network, so the known-device quota (owner decision 9,
+// TestKnownDeviceQuota) is off: then the exhausted client budget refuses
+// everyone.
 func TestVerificationBudgetPerClient(t *testing.T) {
-	h := NewHarness(t, func(c *configuration.Config) { c.Security.RateLimits.LoginPerClient = 3 })
+	h := NewHarness(t, func(c *configuration.Config) {
+		c.Security.RateLimits.LoginPerClient = 3
+		c.Security.RateLimits.KnownQuotaDays = 0
+	})
 	f := fixtureOn(t, h)
 	f.EnrollTOTP("bob")
 	f.EnrollTOTP("carol")

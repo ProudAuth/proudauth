@@ -27,6 +27,7 @@ func TestBenchOTPGuessesShareAccountBudget(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			h := NewHarness(t, func(c *configuration.Config) {
 				c.Security.RateLimits.LoginPerIP = 100000
+				c.Security.RateLimits.StartPerNetwork = 100000
 				c.Security.RateLimits.LoginPerRealm = 100000
 				c.Security.RateLimits.LoginPerClient = 100000
 				c.Security.RateLimits.TokenPerClient = 100000

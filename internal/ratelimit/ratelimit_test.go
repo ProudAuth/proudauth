@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/proudauth/proudauth/internal/observability"
 	"github.com/proudauth/proudauth/internal/platform/clock"
 	"github.com/proudauth/proudauth/internal/platform/secret"
 	"github.com/proudauth/proudauth/internal/runtime"
@@ -270,5 +271,102 @@ func TestHitSharedCountersConcurrently(t *testing.T) {
 	}
 	if d, err := l.Hit(ctx, twice...); err != nil || d.Allowed || d.Bucket != "e" {
 		t.Fatalf("shared counter over its limit: %+v %v", d, err)
+	}
+}
+
+// TestPerNetworkBudgets covers SEC-006 and ABU-001 (the finding
+// httpapi-surface/ipv6-per-ip-budgets-realm-lockout): a per-network budget
+// counts an IPv4 address as its /32 and an IPv6 address by its /64, so every
+// address of one /64 shares one budget, and the wider budget counts the IPv4
+// /24 or IPv6 /48 at factor times the limit. A factor or limit of 0 drops
+// the wider budget; an unparsable address keeps a budget of its own.
+func TestPerNetworkBudgets(t *testing.T) {
+	w := 15 * time.Minute
+	for _, c := range []struct {
+		ip   string
+		want []Budget
+	}{
+		{"2001:db8:1:2::1", []Budget{{Key: "p:2001:db8:1:2::/64", Limit: 3, Window: w}, {Key: "p:2001:db8:1::/48", Limit: 30, Window: w}}},
+		{"2001:db8:1:2:ffff:ffff:ffff:fffe", []Budget{{Key: "p:2001:db8:1:2::/64", Limit: 3, Window: w}, {Key: "p:2001:db8:1::/48", Limit: 30, Window: w}}},
+		{"2001:db8:1:3::1", []Budget{{Key: "p:2001:db8:1:3::/64", Limit: 3, Window: w}, {Key: "p:2001:db8:1::/48", Limit: 30, Window: w}}},
+		{"198.51.100.7", []Budget{{Key: "p:198.51.100.7/32", Limit: 3, Window: w}, {Key: "p:198.51.100.0/24", Limit: 30, Window: w}}},
+		{"::ffff:198.51.100.7", []Budget{{Key: "p:198.51.100.7/32", Limit: 3, Window: w}, {Key: "p:198.51.100.0/24", Limit: 30, Window: w}}},
+		{"", []Budget{{Key: "p:", Limit: 3, Window: w}}},
+		{"garbage", []Budget{{Key: "p:garbage", Limit: 3, Window: w}}},
+	} {
+		got := PerNetwork("p:", c.ip, 3, w, 10)
+		if len(got) != len(c.want) {
+			t.Errorf("%q: %+v, want %+v", c.ip, got, c.want)
+			continue
+		}
+		for i := range got {
+			if got[i] != c.want[i] {
+				t.Errorf("%q: %+v, want %+v", c.ip, got, c.want)
+			}
+		}
+	}
+	if got := PerNetwork("p:", "2001:db8::1", 3, w, 0); len(got) != 1 {
+		t.Errorf("factor 0 kept the wider budget: %+v", got)
+	}
+	if got := PerNetwork("p:", "2001:db8::1", 0, w, 10); len(got) != 1 || !got[0].disabled() {
+		t.Errorf("limit 0 must disable both: %+v", got)
+	}
+}
+
+// TestUtilizationOfAggregateBudgets covers SEC-006 and OPS-002 (owner
+// decision 9 of 0.2.0-alpha.6): proudauth_rate_budget_utilization reports,
+// per aggregate budget family, the highest count/limit of the current window
+// over the family's keys, ignores per-identifier and per-network budgets
+// (their keys never become label values), goes above 1 while refused
+// attempts keep counting, and drops to 0 when the window ends.
+func TestUtilizationOfAggregateBudgets(t *testing.T) {
+	l, _, clk := newLimiter(t)
+	ctx := context.Background()
+	reg := observability.NewRegistry()
+	reg.GaugeVec(UtilizationMetric, UtilizationHelp, "budget", AggregateBudgets, l.Utilization)
+	scrape := func() string {
+		var b strings.Builder
+		reg.WriteText(&b)
+		return b.String()
+	}
+	clientA := Budget{Key: "pwd-client:app-a", Limit: 4, Window: 15 * time.Minute}
+	clientB := Budget{Key: "pwd-client:app-b", Limit: 4, Window: 15 * time.Minute}
+	realm := Budget{Key: "pwd-realm:r1", Limit: 10, Window: 15 * time.Minute}
+	own := Budget{Key: "pwd-ip:r1:2001:db8::/64", Limit: 100, Window: 15 * time.Minute}
+	for range 3 {
+		if _, err := l.Hit(ctx, own, clientA, realm); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := l.Hit(ctx, own, clientB, realm); err != nil {
+		t.Fatal(err)
+	}
+	out := scrape()
+	for _, want := range []string{
+		`proudauth_rate_budget_utilization{budget="pwd-client"} 0.75`,
+		`proudauth_rate_budget_utilization{budget="pwd-realm"} 0.4`,
+		`proudauth_rate_budget_utilization{budget="verify-realm"} 0`,
+	} {
+		if !strings.Contains(out, want+"\n") {
+			t.Errorf("missing %q in\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "pwd-ip") || strings.Contains(out, "app-a") || strings.Contains(out, "r1") {
+		t.Errorf("a key or a per-network budget became a label:\n%s", out)
+	}
+	if n := strings.Count(out, UtilizationMetric+"{"); n != len(AggregateBudgets) {
+		t.Errorf("%d series, want one per aggregate family (%d)", n, len(AggregateBudgets))
+	}
+	for range 3 {
+		if _, err := l.Hit(ctx, clientA); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if !strings.Contains(scrape(), `proudauth_rate_budget_utilization{budget="pwd-client"} 1.5`+"\n") {
+		t.Errorf("refused attempts beyond the cap not reported:\n%s", scrape())
+	}
+	clk.Advance(15 * time.Minute)
+	if u := l.Utilization("pwd-client"); u != 0 {
+		t.Errorf("utilization %v after the window ended", u)
 	}
 }

@@ -69,6 +69,14 @@ Response `201`:
 { "transaction_id": "atx_01k7...", "continuation_token": "pa_tx_...", "state": { ... } }
 ```
 
+Starting a transaction is budgeted per client network, an IPv4 address or
+an IPv6 /64 with its wider /24 or /48
+(`security.rate_limits.start_per_network`, SEC-006): beyond it the headless
+start answers `429 rate_limited` with `Retry-After` (the end of the
+`login_window`), the browser authorization endpoint redirects to the client
+with `error=temporarily_unavailable`, and a device approval or SAML sign-in
+answers `429`. A start that reuses a valid SSO session is not counted.
+
 **Authority rules (AUT-003):** the transaction ID alone never authorizes anything.
 A headless transaction cannot be continued with a cookie, and a browser transaction
 step sent with only a cookie but without a valid CSRF token or allowed `Origin` is
@@ -663,11 +671,23 @@ stable `code` and `request_id`:
 Proof failures (wrong password, code, TOTP, HOTP, recovery code, passkey, refused certificate, challenge answer) are counted per
 transaction; after **5** the transaction becomes `failed` with
 `error: "too_many_failures"`, and `redirect_to` carries an error for the client.
-Budgets also apply across transactions per identifier, IP, client and subject,
-and every proof attempt also counts against realm-wide, per-client and (when
-the request named an organization) per-organization budgets (REG-012); an
-exhausted budget answers `429 rate_limited` and does not count as a failure
-([configuration.md](../operations/configuration.md#security)). Code-factor
+Budgets also apply across transactions per identifier, network, client and
+subject, and every proof attempt also counts against realm-wide, per-client
+and (when the request named an organization) per-organization budgets
+(REG-012); an exhausted budget answers `429 rate_limited` and does not count
+as a failure ([configuration.md](../operations/configuration.md#security)).
+A network is the IPv4 address or the IPv6 /64 of the request that makes the
+step, whatever address the transaction started from, with a wider /24 or /48
+budget (ABU-001). When only the aggregate password or proof budgets (client,
+organization, realm) are exhausted, a request from a network, a remembered
+device (cookie `pa_rd` or `X-Remembered-Device`) or an identifier with a
+successful sign-in in the last `security.rate_limits.known_quota_days`
+continues under a quota of its own; everyone else gets the same
+`429 rate_limited` with `Retry-After` (owner decision 9 of
+[0.2.0-alpha.6](../releases/2026-10-alpha.6-decisions.md)). An identifier
+counts only from the wider network (/24, /48) it signed in from, so outside
+that network the `429` is the same whether or not the account exists or
+signed in recently. Code-factor
 failures are also counted per account across transactions and windows; the
 backoff's `429` and `403 code_factors_disabled` do not count as failures
 either ([Consecutive code-factor failures](#consecutive-code-factor-failures)).

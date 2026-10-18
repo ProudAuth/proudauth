@@ -750,7 +750,7 @@
           "default": 10
         },
         "login_per_ip": {
-          "description": "Login attempts per client IP per login_window; also the hourly budget for setup links per IP.",
+          "description": "Login attempts per client network (IPv4 /32, IPv6 /64) per login_window; also the hourly budget for setup links per network.",
           "type": "integer",
           "minimum": 0,
           "default": 100
@@ -766,7 +766,7 @@
           "default": 5
         },
         "send_per_ip": {
-          "description": "Messages per client IP per send_window.",
+          "description": "Messages per client network (IPv4 /32, IPv6 /64) per send_window.",
           "type": "integer",
           "minimum": 0,
           "default": 50
@@ -791,7 +791,7 @@
           "default": "15m"
         },
         "signup_per_ip": {
-          "description": "Registrations per client IP per signup_window.",
+          "description": "Registrations per client network (IPv4 /32, IPv6 /64) per signup_window.",
           "type": "integer",
           "minimum": 0,
           "default": 20
@@ -906,6 +906,44 @@
         "join_request_window": {
           "description": "Window for the join-request budgets; a user's repeat request to the same organization within it does not notify the reviewers again. 0 also turns that de-duplication off.",
           "$ref": "#/$defs/nonNegativeDuration"
+        },
+        "start_per_network": {
+          "description": "Authentication transactions one network (IPv4 /32, IPv6 /64) starts per login_window, at the headless start, the browser authorization endpoint, device approval and SAML sign-in (SEC-006, ABU-001). A start that reuses a valid SSO session is not counted. Excess answers 429 rate_limited with Retry-After (the authorization endpoint redirects with error=temporarily_unavailable); 0 disables.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 300
+        },
+        "network_coarse_factor": {
+          "description": "Every configurable per-network budget (login_per_ip, send_per_ip, signup_per_ip, start_per_network and the proof and setup budgets that use login_per_ip) also counts the wider network, IPv4 /24 or IPv6 /48, with this many times its limit (ABU-001); 0 disables the wider budgets.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 10
+        },
+        "known_quota_days": {
+          "description": "Known-device quota (owner decision 9 of 0.2.0-alpha.6): when an aggregate password or proof budget (login_per_client, login_per_realm, login_per_organization) is exhausted, a sign-in from a network, remembered device or identifier with a successful sign-in in this many days proceeds under its own quota; everyone else gets 429. 0 turns the quota off (nothing is recorded and the worker deletes stored facts).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 365,
+          "default": 30
+        },
+        "known_login_per_network": {
+          "description": "Password and proof attempts per known network (IPv4 /32, IPv6 /64) per login_window while an aggregate budget is exhausted; 0 admits nobody by network.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 50
+        },
+        "known_login_per_device": {
+          "description": "Password and proof attempts per known remembered device per login_window while an aggregate budget is exhausted; 0 admits nobody by device.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 20
+        },
+        "known_login_per_identifier": {
+          "description": "Password and proof attempts per known identifier per login_window while an aggregate budget is exhausted; an identifier is known only from the wider network (IPv4 /24, IPv6 /48) it signed in from. 0 admits nobody by identifier.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 10
         }
       }
     },

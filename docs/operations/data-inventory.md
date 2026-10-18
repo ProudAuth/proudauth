@@ -70,7 +70,7 @@ whichever section they are in
 | `sessions`: `client_ip`, `user_agent`, `device_label` | Client network (/24 for IPv4, /48 for IPv6; the full address when `privacy.store_full_ip` is set), user agent (≤ 256 characters), a device label derived from the user agent | Session listing, security review | Ended rows (revoked, or past their absolute expiry) are deleted `privacy.session_retention` (30 days) after they ended, once no grant references them; an offline grant keeps its session row until the grant itself is removed. A session that ended by idle timeout counts from its absolute expiry | plain |
 | `sessions`: `auth_time`, `mfa_time`, `amr`, `acr`, `factors` | Authentication evidence | Assurance decisions | As above | plain |
 | `sessions.cookie_digest` | Browser session cookie | Session lookup | Cleared on revocation/expiry | SHA-256 |
-| `auth_transactions`: `client_ip` (full), `user_agent`, `login_hint`, `user_id`, `pending_state` (identifier, registration email, encrypted invitation secret, the authentication flow decision with the signals it used, such as risk level and reasons from risk hooks and recent failed attempts) | In-flight login data | Transaction binding, per-IP budgets | `client_ip` and `user_agent` cleared at the next cleanup run (every 5 minutes) once the transaction is no longer pending, unless `privacy.store_full_ip` is set (PRV-002); rows deleted 24 h after completion or expiry | plain; invitation secret AEAD |
+| `auth_transactions`: `client_ip` (full), `user_agent`, `login_hint`, `user_id`, `pending_state` (identifier, registration email, encrypted invitation secret, the authentication flow decision with the signals it used, such as risk level and reasons from risk hooks and recent failed attempts) | In-flight login data | Transaction binding, per-network budgets | `client_ip` and `user_agent` cleared at the next cleanup run (every 5 minutes) once the transaction is no longer pending, unless `privacy.store_full_ip` is set (PRV-002); rows deleted 24 h after completion or expiry | plain; invitation secret AEAD |
 | `challenges`: `identifier_canonical`, `verifier` | Email address or phone number; one-time code or magic-link secret | Verification, login OTP (email or SMS), magic links, authentication flow challenge codes, reset, setup | Deleted 1 h after expiry | plain / HMAC |
 | `authorization_grants`: subject, client, organization, scopes, `amr`, `acr`, `auth_time` | Authorization history | Token issuance and refresh | Deleted `privacy.session_retention` after the grant ended (revoked, or past its expiry), with its refresh families and tokens, codes and opaque tokens (PRV-004) | plain |
 | `client_sessions` | Which clients took part in a session | Back-channel and front-channel logout | Deleted `privacy.session_retention` after the session ended | plain |
@@ -83,7 +83,8 @@ whichever section they are in
 | `dpop_proof_jtis.jkt` | Public-key thumbprints | DPoP replay protection | Deleted after expiry | plain |
 | `remembered_devices` | Device token digest, label (truncated user agent), last use, expiry | Remembered devices: skipping the MFA prompt where policy allows (AUT-013) | Revoked by the user, on account-wide session revocation, or at expiry (`login.remember_device_days`, at most 90 days); revoked and expired rows are kept until the account is deleted | SHA-256 |
 | `pairwise_subjects`: sector, user ID, subject | Per-sector pairwise identifiers | Stable pairwise `sub` values across root-key rotation (OIDC-010) | Deleted with the account (explicitly: the `users` row is kept, so nothing cascades) | plain |
-| `rate_limit_counters.bucket` | Truncated digest of keys such as `login-id:<realm>:<email>` and `login-ip:<realm>:<ip>` | Abuse budgets | Deleted after the window | digest (guessable) |
+| `rate_limit_counters.bucket` | Truncated digest of keys such as `login-id:<realm>:<email>` and `login-ip:<realm>:<network>` (an IPv4 /32 or /24, an IPv6 /64 or /48) | Abuse budgets | Deleted after the window | digest (guessable) |
+| `known_sign_ins`: realm, `kind`, `digest`, `last_seen_at` | Keyed digests of the networks (IPv4 /32, IPv6 /64), remembered-device secrets, and canonical identifiers together with their wider network (IPv4 /24, IPv6 /48), that completed a sign-in, with the time of the latest one; not linked to an account | Known-device quota: who still signs in while an aggregate sign-in budget is exhausted (owner decision 9 of 0.2.0-alpha.6, SEC-006) | Deleted by the worker once older than `rate_limits.known_quota_days` (default 30, at most 365; all of them when it is `0`); not removed by account deletion, so an erased account's identifier digest expires with the rest | HMAC (lookup key) |
 | `second_factor_failures`: user, `consecutive`, `last_failure_at`, `notified_at`, `disabled_at` | How many TOTP, HOTP, recovery-code and emailed or texted sign-in code proofs of the account failed in a row, when the last one failed, when the owner was warned and when code factors were turned off (owner decision 10 of 0.2.0-alpha.6, SEC-006) | Code-factor backoff, owner notice and ceiling; shown to administrators in `GET /users/{user}` | One row per account that made a TOTP, HOTP or recovery-code proof or failed a sign-in code; the count is set back to zero (the row and `last_failure_at` stay) after a successful second factor or passkey, a completed sign-in, a password reset or an assisted recovery; deleted with the account | plain |
 | `signing_keys`: `private_ciphertext`, `public_jwk` | Realm token-signing private keys (and their public halves) | Signing tokens; JWKS publication | Kept with their state (`retired`, `compromised`) for evidence; the public key is published until `publish_until` ([keys.md](keys.md)) | AEAD under the signing-wrap key, bound to the key ID (`signing-key:<kid>`) |
 
@@ -657,10 +658,10 @@ POST /api/v1/realms/{realm}/audit-events/evt_.../corrections
 ## Known data-minimization gaps
 
 - `auth_transactions` holds the full client IP address and the user agent
-  while a transaction is pending (per-IP budgets need the address), and
-  `sessions` keeps user agents until the session row is deleted (PRV-002).
-- The per-network verification budget counts by full address, not by /24 or
-  /48.
+  while a transaction is pending (the per-network budgets of a step without
+  a request address of its own, the authentication flow's network signals
+  and challenge providers use it), and `sessions` keeps user agents until
+  the session row is deleted (PRV-002).
 - Imported audit metadata is redacted only by member name (secret-looking
   keys and bearer-token or JWT-shaped values); other personal data the source
   supplied, such as IP addresses, is stored as given.

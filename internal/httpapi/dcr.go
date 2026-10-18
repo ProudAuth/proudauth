@@ -140,8 +140,9 @@ func (a *App) dcrRegister(w http.ResponseWriter, r *http.Request, rlm *realm.Rea
 		return problem.ErrNotFound
 	}
 	info := reqctx.From(r.Context())
-	// Registration budgets fail closed (SEC-006): per network and per realm.
-	d, err := a.Limiter.Hit(r.Context(), ratelimit.Budget{Key: "dcr-ip:" + info.ClientIP, Limit: 20, Window: time.Hour},
+	// Registration budgets fail closed (SEC-006): per network (IPv4 /32,
+	// IPv6 /64, ABU-001) and per realm.
+	d, err := a.Limiter.Hit(r.Context(), ratelimit.Budget{Key: "dcr-ip:" + ratelimit.NetworkKey(info.ClientIP), Limit: 20, Window: time.Hour},
 		ratelimit.Budget{Key: "dcr-realm:" + rlm.ID, Limit: 500, Window: time.Hour})
 	if err != nil {
 		return problem.ErrUnavailable

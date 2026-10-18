@@ -105,7 +105,8 @@ func registryError(w http.ResponseWriter, status int, code, message, issuer stri
 // client's secret with the client ID as user name. Without credentials the
 // caller is anonymous and can only receive anonymous pulls.
 func (a *App) registryToken(w http.ResponseWriter, r *http.Request, rlm *realm.Realm) error {
-	ip := reqctx.From(r.Context()).ClientIP
+	// Per network: an IPv4 /32 or IPv6 /64 (SEC-006, ABU-001).
+	ip := ratelimit.NetworkKey(reqctx.From(r.Context()).ClientIP)
 	failures := ratelimit.Budget{Key: "registry-fail:" + ip, Limit: 20, Window: 15 * time.Minute}
 	if ok, err := a.Limiter.Peek(r.Context(), failures); err != nil || !ok {
 		registryError(w, http.StatusTooManyRequests, "TOOMANYREQUESTS", "too many failed sign-ins; try again later", rlm.Issuer)

@@ -102,7 +102,7 @@ func (s *Service) WebAuthnVerify(ctx context.Context, realmID, id string, p Proo
 		if subject == "" {
 			subject = "tx:" + t.ID
 		}
-		if err := s.verifyBudget(ctx, t.RealmID, subject, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+		if err := s.verifyBudget(ctx, t.RealmID, subject, requesterOf(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
 		second := primaryDone(t)
@@ -220,7 +220,7 @@ func (s *Service) WebAuthnRegister(ctx context.Context, realmID, id string, p Pr
 		if err := s.offered(ctx, tx, t, "enroll_webauthn"); err != nil {
 			return nil, err
 		}
-		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, requesterOf(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
 		rlm, err := s.Realms.ByID(ctx, tx, t.RealmID)
@@ -242,10 +242,11 @@ func (s *Service) WebAuthnRegister(ctx context.Context, realmID, id string, p Pr
 	})
 }
 
-// loginBudgetIP bounds ceremony creation per client IP (NFR-006).
+// loginBudgetIP bounds ceremony creation per network of the request (NFR-006,
+// SEC-006, ABU-001).
 func (s *Service) loginBudgetIP(ctx context.Context, t *Transaction) error {
 	rl := s.d.Cfg.Security.RateLimits
-	d, err := s.Limiter.Hit(ctx, ratelimit.Budget{Key: "wan-ip:" + t.RealmID + ":" + t.ClientIP, Limit: rl.LoginPerIP, Window: rl.LoginWindow})
+	d, err := s.Limiter.Hit(ctx, ratelimit.PerNetwork("wan-ip:"+t.RealmID+":", chargeIP(ctx, t), rl.LoginPerIP, rl.LoginWindow, rl.NetworkCoarseFactor)...)
 	if err != nil {
 		return err
 	}

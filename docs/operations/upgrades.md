@@ -399,6 +399,38 @@ servers refuse the `reviewed_version` member (`400`) and new ones require
 it (`422`), so approve pending registrations after the rollout, and do not
 rely on re-approval until every server runs the new version.
 
+Migration `0091_known_device_quota.sql` is expand-only: it creates the
+`known_sign_ins` table, keyed digests of the networks, remembered devices
+and identifiers that completed a sign-in, for the known-device quota (owner
+decision 9). Older binaries ignore it. New binaries also change the abuse
+budgets in ways an upgrade notices
+([configuration.md](configuration.md#security)):
+
+- Per-network budgets count networks, not addresses: an IPv4 address (/32)
+  or an IPv6 /64, plus the wider /24 or /48 at
+  `security.rate_limits.network_coarse_factor` (10) times the limit. Every
+  address of one /64 now shares one budget, and budget keys change, so the
+  counters of the window in progress start again from zero at the upgrade.
+  In the mixed-version window, older servers keep counting full addresses
+  under the old keys, so the per-network bound holds only once every server
+  runs the new version.
+- Each step is charged to the network of the request that makes it, no
+  longer to the address the transaction started from.
+- Starting a transaction is budgeted: `start_per_network` (300 per
+  `login_window` per network; starts that reuse an SSO session are not
+  counted). Behind a large NAT or a proxy missing from
+  `server.trusted_proxies`, raise it together with `login_per_ip`, or every
+  user behind it shares one budget; load generators must raise it too.
+- While an aggregate password or proof budget is exhausted, requesters
+  without a recent successful sign-in get `429`, and known ones keep a
+  quota. Facts are recorded only by new servers, so right after the upgrade
+  nobody is known yet: until users have signed in through a new server, an
+  exhausted aggregate budget still refuses everyone, as before.
+- Older binaries reject the new keys `security.rate_limits.start_per_network`,
+  `network_coarse_factor`, `known_quota_days`, `known_login_per_network`,
+  `known_login_per_device` and `known_login_per_identifier`; add them only
+  for new processes (the defaults apply without them).
+
 New binaries also change the user ownership transfer: `POST
 /users/{user}/ownership-transfer` moves hooks, webhook subscriptions and
 authorization policies too and so also needs `realm.hooks.write`,

@@ -218,7 +218,8 @@ func TestValidateRateLimits(t *testing.T) {
 		limits []string
 	}{
 		"login_window": {func(r *RateLimitConfig, d time.Duration) { r.LoginWindow = d },
-			[]string{"login_per_identifier", "login_per_ip", "login_per_realm", "login_per_client", "login_per_organization"}},
+			[]string{"login_per_identifier", "login_per_ip", "login_per_realm", "login_per_client", "login_per_organization",
+				"start_per_network", "known_login_per_network", "known_login_per_device", "known_login_per_identifier"}},
 		"send_window": {func(r *RateLimitConfig, d time.Duration) { r.SendWindow = d },
 			[]string{"send_per_identifier", "send_per_ip", "send_per_client", "send_per_organization", "send_per_realm"}},
 		"otp_verify_window": {func(r *RateLimitConfig, d time.Duration) { r.OTPVerifyWindow = d }, []string{"otp_verify_per_account"}},
@@ -261,6 +262,43 @@ func TestValidateRateLimits(t *testing.T) {
 	c.Security.RateLimits = RateLimitConfig{}
 	if err := c.Validate(); err != nil {
 		t.Errorf("all rate limits disabled refused: %v", err)
+	}
+}
+
+// TestNetworkBudgetConfig covers SEC-006 and ABU-001 (owner decision 9 of
+// 0.2.0-alpha.6): the transaction-start budget defaults to 300 per network
+// per login window, the wider /24 and /48 budgets to 10 times each
+// per-network limit, and the known-device quota to facts of the last 30 days
+// with 50 attempts per known network, 20 per remembered device and 10 per
+// identifier per login window. The factor stops at 1000 and the days at
+// 365; both refuse negative values and 0 turns each off.
+func TestNetworkBudgetConfig(t *testing.T) {
+	rl := Defaults().Security.RateLimits
+	if rl.StartPerNetwork != 300 || rl.NetworkCoarseFactor != 10 || rl.KnownQuotaDays != 30 || rl.KnownLoginPerNetwork != 50 ||
+		rl.KnownLoginPerDevice != 20 || rl.KnownLoginPerIdentifier != 10 {
+		t.Fatalf("defaults: %+v", rl)
+	}
+	for _, c := range []struct {
+		set  func(*RateLimitConfig)
+		want string
+	}{
+		{func(r *RateLimitConfig) { r.NetworkCoarseFactor = MaxNetworkCoarseFactor + 1 }, "security.rate_limits.network_coarse_factor must be at most 1000"},
+		{func(r *RateLimitConfig) { r.KnownQuotaDays = MaxKnownQuotaDays + 1 }, "security.rate_limits.known_quota_days must be at most 365"},
+	} {
+		cfg := validDev()
+		c.set(&cfg.Security.RateLimits)
+		if err := cfg.Validate(); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("want %q, got %v", c.want, err)
+		}
+	}
+	cfg := validDev()
+	cfg.Security.RateLimits.NetworkCoarseFactor, cfg.Security.RateLimits.KnownQuotaDays = MaxNetworkCoarseFactor, MaxKnownQuotaDays
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("maximum factor and days refused: %v", err)
+	}
+	cfg.Security.RateLimits.NetworkCoarseFactor, cfg.Security.RateLimits.KnownQuotaDays = 0, 0
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("factor and days 0 (off) refused: %v", err)
 	}
 }
 

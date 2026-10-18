@@ -654,6 +654,9 @@ func (w *Worker) Retention(ctx context.Context) (int, error) {
 	step("challenges", func() (int64, error) { return a.Auth.CleanupChallenges(ctx) })
 	step("sessions", func() (int64, error) { return a.Sessions.CleanupExpired(ctx, d.Cfg.Privacy.SessionRetention) })
 	step("rate_limits", func() (int64, error) { return a.Limiter.Cleanup(ctx) })
+	// Known-device quota facts older than security.rate_limits.known_quota_days
+	// (owner decision 9 of 0.2.0-alpha.6, PRV-004).
+	step("known_sign_ins", func() (int64, error) { return a.Auth.CleanupKnownSignIns(ctx) })
 	step("assertion_jtis", func() (int64, error) { return a.Apps.CleanupAssertionJTIs(ctx) })
 	// Workload assertion replay records past their expiry (ADV-004).
 	if a.Workload != nil {

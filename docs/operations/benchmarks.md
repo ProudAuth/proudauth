@@ -65,7 +65,10 @@ write failure exits `1`; usable partial data is kept when it can be written.
   100 per 15 minutes), `login_per_realm` (50000), `login_per_client` (20000
   password attempts per client per 15 minutes; it used to follow
   `token_per_client`, and a soak run of `mixed` signs in tens of thousands of
-  times through the one web client) and `token_per_client` (600 per minute),
+  times through the one web client), `token_per_client` (600 per minute)
+  and, from 0.2.0-alpha.6, `start_per_network` (300 transaction starts per
+  network per 15 minutes; the wider /24 or /48 budgets follow at
+  `network_coarse_factor` times each raised value),
   and **publish the values you used with the results**. Leave the
   per-identifier, send and lock budgets as configured: the adversarial
   scenarios measure them ([configuration.md](configuration.md#security)), and

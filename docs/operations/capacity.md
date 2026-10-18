@@ -80,7 +80,7 @@ sustained test. Earlier published files retain their recorded build/schema.
 | Token issuance | Signature with the realm key: RSA-3072 (default `RS256`/`PS256`) is far more expensive than `ES256` or `EdDSA`. ID tokens add a second signature. Several inserts (grant, code, refresh family/token, audit). |
 | Refresh | One transaction with a session row lock before the family lock for session-bound grants, live checks of session, user, client, organization and membership, two token inserts, an access-token signature and an audit row. Offline grants do not take the session lock. |
 | Introspection | Client authentication plus several indexed reads (token or JTI revocation, live grant, client, user, session, membership). Support-token introspection adds permission checks **and writes one audit row per call**. |
-| Any transaction step or token request | Each rate-limit check is one upsert statement into `rate_limit_counters`, however many budgets it counts: one for the identify step; one for the password step's budgets, plus up to two lock reads and, after a wrong password, up to two lock upserts; two for a code or link send (the cooldown first, then the other send budgets); one per token request and one more per access token minted in an organization's context. |
+| Any transaction step or token request | Each rate-limit check is one upsert statement into `rate_limit_counters`, however many budgets it counts (per-network budgets count two rows, the network and its wider /24 or /48, in the same statement): one for starting a transaction that does not reuse an SSO session; one for the identify step; one for the password step's budgets, plus up to two lock reads and, after a wrong password, up to two lock upserts; two for a code or link send (the cooldown first, then the other send budgets); one per token request and one more per access token minted in an organization's context. Only while an aggregate sign-in budget is exhausted, a password or proof attempt adds one indexed read of `known_sign_ins` and, for a known requester, one more upsert (the known-device quota). A completed sign-in adds one upsert of up to four `known_sign_ins` rows after it commits, which changes a row at most once an hour. |
 | Admin lists | Bounded pages (`limits.default_page_size` 50, `limits.max_page_size` 200; a larger `limit` is reduced) read with keyset cursors (API-004), including `GET /webhooks/{id}/deliveries`, `GET /notification-jobs` and `GET /me/security-events` (newest first, `next_cursor` until the last page). Cursors are MAC-bound to the realm, the route and its query filters: a cursor from another route gets `400` ("invalid cursor"); they are not bound to IDs in the path or to the caller, which the queries' own filters cover. |
 | SCIM User filters | Candidate mappings, realm-qualified users/identifiers and organization-qualified memberships load in batches. A scan still evaluates every candidate to compute an exact total, up to 20000; only the requested page is retained. Batching removes per-user round trips, not scan or memory costs. The real-query regression observes five queries at both eight and 64 users. |
 
@@ -141,7 +141,12 @@ excluded by default; an explicit `state` filter can list it.
   A large backlog of one tenant therefore drains over several runs instead of
   delaying everyone else. Sign-in and token issuance are bounded per
   organization by `security.rate_limits.login_per_organization` and
-  `organization_per_window` ([configuration.md](configuration.md)).
+  `organization_per_window` ([configuration.md](configuration.md)). When an
+  aggregate sign-in budget (client, organization or realm) is exhausted, only
+  networks, remembered devices and identifiers with a successful sign-in in
+  the last `known_quota_days` keep signing in, under quotas of their own
+  (owner decision 9); `proudauth_rate_budget_utilization` shows how close
+  each aggregate family is to its cap ([monitoring.md](monitoring.md#metrics)).
 
 ## Directory outages
 
@@ -215,6 +220,7 @@ trades directory-outage isolation for burst capacity; raising
 | `sessions`, `client_sessions`, `authorization_grants`, `refresh_families`, `refresh_tokens` | Grants that ended (revoked or expired) are deleted `privacy.session_retention` (30 days) later with their refresh families and tokens, codes and opaque tokens, at most 1000 grants per run; ended sessions and client sessions after the same period once no grant references them. Offline grants keep their session rows until they end. |
 | `auth_transactions`, `challenges`, codes, opaque tokens, PAR, device codes, DPoP JTIs, client assertion JTIs, rate-limit counters, idempotency records | Deleted after expiry by the worker's retention task; the expiry sweeps use indexes (migration `0045`, DB-011). |
 | `outbox_events` | Dispatched rows deleted after 7 days. |
+| `known_sign_ins` | At most one row per realm and network (IPv4 /32, IPv6 /64), remembered device, and identifier with its wider network, that completed a sign-in within `security.rate_limits.known_quota_days` (30); older rows are deleted by the worker's retention task through the `last_seen_at` index (migration `0091`). |
 | `workload_assertion_jtis` | One row per workload assertion with a `jti` that obtained a token; kept until the assertion's expiry plus 60 s clock skew, then deleted by the worker's retention task (and with the trust) |
 | `resource_relationships`, `resource_shares`, `resource_types`, `elevations`, `access_review_items`, `client_registrations`, `client_registration_tokens`, `user_certificate_bindings` | Grow with use and are kept: tuples and types are removed only through their APIs; shares, elevations, review items, registrations, registration tokens and certificate bindings keep every row (revoked or ended ones included; account deletion removes the account's certificate bindings and the tuples naming it) |
 | `notification_jobs` | Payloads purged after `delivery.payload_retention`; finished rows deleted after `privacy.history_retention` (180 days). |

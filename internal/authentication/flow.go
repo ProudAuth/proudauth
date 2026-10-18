@@ -264,7 +264,7 @@ func (s *Service) SendChallengeCode(ctx context.Context, realmID, id string, p P
 		if !rlm.Policy.AuthFlow.EmailAlternative() || e == nil || !e.Verified() {
 			return nil, problem.ErrUnexpectedStep
 		}
-		if err := s.sendBudget(ctx, t.RealmID, e.Canonical, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+		if err := s.sendBudget(ctx, t.RealmID, e.Canonical, chargeIP(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
 		cid, code, err := s.IssueChallengeTx(ctx, tx, ChallengeSpec{RealmID: t.RealmID, Purpose: PurposeFlowChallenge, TransactionID: t.ID,
@@ -344,7 +344,7 @@ func (s *Service) AnswerChallenge(ctx context.Context, realmID, id string, p Pro
 			if t.Pending.Flow.ChallengeCode == "" {
 				return nil, problem.ErrUnexpectedStep
 			}
-			if err := s.verifyBudget(ctx, t.RealmID, u.ID, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+			if err := s.verifyBudget(ctx, t.RealmID, u.ID, requesterOf(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 				return nil, err
 			}
 			if _, err := s.ConsumeChallengeTx(ctx, tx, t.RealmID, t.Pending.Flow.ChallengeCode, PurposeFlowChallenge, strings.TrimSpace(in.Code)); err != nil {

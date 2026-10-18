@@ -125,7 +125,7 @@ func (a *App) receiveSET(w http.ResponseWriter, r *http.Request, rlm *realm.Real
 	// Bounded per transmitter and per network so a misbehaving or forged
 	// sender cannot load the receiver; the budget fails closed.
 	d, err := a.Limiter.Hit(r.Context(), ratelimit.Budget{Key: "ssf-push:" + r.PathValue("id"), Limit: 600, Window: time.Minute},
-		ratelimit.Budget{Key: "ssf-push-ip:" + reqctx.From(r.Context()).ClientIP, Limit: 1200, Window: time.Minute})
+		ratelimit.Budget{Key: "ssf-push-ip:" + ratelimit.NetworkKey(reqctx.From(r.Context()).ClientIP), Limit: 1200, Window: time.Minute})
 	if err != nil {
 		problem.SetRetryAfter(w.Header(), http.StatusServiceUnavailable, 0)
 		writeJSON(w, http.StatusServiceUnavailable, &ssf.PushError{Err: "temporarily_unavailable", Description: "try again later"})

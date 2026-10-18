@@ -75,6 +75,7 @@ func newHarnessWithKeyring(t testing.TB, keyring *keys.Keyring, opts ...Option) 
 	cfg.Impersonation.Enabled = true
 	cfg.Security.RateLimits.TokenPerClient = 10000
 	cfg.Security.RateLimits.LoginPerIP = 10000
+	cfg.Security.RateLimits.StartPerNetwork = 10000
 	cfg.Security.RateLimits.SendPerIP = 10000
 	cfg.Security.RateLimits.SignupPerIP = 10000
 	cfg.Security.RateLimits.SendCooldown = time.Second

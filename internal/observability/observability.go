@@ -203,6 +203,15 @@ type Gauge struct {
 // Set sets the gauge.
 func (g *Gauge) Set(v int64) { g.v.Store(v) }
 
+// GaugeVec is a gauge with one label whose values are fixed when it is
+// registered, so its series are bounded whatever happens at run time; fn
+// computes each series at scrape time.
+type GaugeVec struct {
+	name, help, label string
+	values            []string
+	fn                func(value string) float64
+}
+
 // Histogram tracks latency distributions.
 type Histogram struct {
 	name, help string
@@ -245,6 +254,7 @@ type Registry struct {
 	mu         sync.Mutex
 	counters   []*Counter
 	gauges     []*Gauge
+	gaugeVecs  []*GaugeVec
 	histograms []*Histogram
 }
 
@@ -265,6 +275,18 @@ func (r *Registry) Gauge(name, help string, fn func() float64) *Gauge {
 	g := &Gauge{name: name, help: help, fn: fn}
 	r.mu.Lock()
 	r.gauges = append(r.gauges, g)
+	r.mu.Unlock()
+	return g
+}
+
+// GaugeVec registers a gauge with one label: one series per value of values
+// (copied and sorted), computed by fn at scrape time.
+func (r *Registry) GaugeVec(name, help, label string, values []string, fn func(value string) float64) *GaugeVec {
+	vals := append([]string(nil), values...)
+	sort.Strings(vals)
+	g := &GaugeVec{name: name, help: help, label: label, values: vals, fn: fn}
+	r.mu.Lock()
+	r.gaugeVecs = append(r.gaugeVecs, g)
 	r.mu.Unlock()
 	return g
 }
@@ -326,6 +348,16 @@ func (r *Registry) WriteText(w io.Writer) {
 			v = 0
 		}
 		fmt.Fprintf(w, "%s %g\n", g.name, v)
+	}
+	for _, g := range r.gaugeVecs {
+		fmt.Fprintf(w, "# HELP %s %s\n# TYPE %s gauge\n", g.name, g.help, g.name)
+		for _, val := range g.values {
+			v := g.fn(val)
+			if math.IsNaN(v) || math.IsInf(v, 0) {
+				v = 0
+			}
+			fmt.Fprintf(w, "%s{%s=%q} %g\n", g.name, g.label, val, v)
+		}
 	}
 	for _, h := range r.histograms {
 		fmt.Fprintf(w, "# HELP %s %s\n# TYPE %s histogram\n", h.name, h.help, h.name)

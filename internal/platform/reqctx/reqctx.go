@@ -3,7 +3,7 @@ package reqctx
 
 import (
 	"context"
-	"net"
+	"net/netip"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -38,21 +38,49 @@ func From(ctx context.Context) Info {
 // NetworkContext returns a privacy-reduced network hint: /24 for IPv4 and /48 for
 // IPv6 (PRV-002). The full address is retained only when explicitly configured.
 func NetworkContext(ip string, full bool) string {
-	if ip == "" {
-		return ""
-	}
-	parsed := net.ParseIP(ip)
-	if parsed == nil {
-		return ""
-	}
 	if full {
-		return parsed.String()
+		a, ok := parseAddr(ip)
+		if !ok {
+			return ""
+		}
+		return a.String()
 	}
-	if v4 := parsed.To4(); v4 != nil {
-		return net.IPv4(v4[0], v4[1], v4[2], 0).String() + "/24"
+	return NetworkPrefix(ip, 24, 48)
+}
+
+// NetworkPrefix returns the network of an address as a prefix in canonical
+// form ("192.0.2.0/24", "2001:db8:1::/48"): the first v4Bits bits of an IPv4
+// address (an IPv4-mapped IPv6 address counts as IPv4) or the first v6Bits of
+// an IPv6 address, without zone. It returns "" for an empty or unparsable
+// address. Abuse budgets count per-network budgets on /32 and /64 prefixes and
+// the wider ones on /24 and /48 (SEC-006, ABU-001); logs and audit records
+// keep /24 and /48 (PRV-002).
+func NetworkPrefix(ip string, v4Bits, v6Bits int) string {
+	a, ok := parseAddr(ip)
+	if !ok {
+		return ""
 	}
-	mask := net.CIDRMask(48, 128)
-	return parsed.Mask(mask).String() + "/48"
+	bits := v6Bits
+	if a.Is4() {
+		bits = v4Bits
+	}
+	p, err := a.Prefix(bits)
+	if err != nil {
+		return ""
+	}
+	return p.String()
+}
+
+// parseAddr parses an address without zone, IPv4-mapped IPv6 as IPv4.
+func parseAddr(ip string) (netip.Addr, bool) {
+	if ip == "" {
+		return netip.Addr{}, false
+	}
+	a, err := netip.ParseAddr(ip)
+	if err != nil {
+		return netip.Addr{}, false
+	}
+	return a.WithZone("").Unmap(), true
 }
 
 // TruncateUA bounds stored user-agent strings.

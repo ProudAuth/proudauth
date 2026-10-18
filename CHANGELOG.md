@@ -123,6 +123,21 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   values and a positive limit with a zero window, as for the other
   `rate_limits` keys ([configuration.md](docs/operations/configuration.md)).
   Regression test `TestValidateRateLimits`.
+- The network-normalized abuse budgets and the known-device quota of
+  [owner decision 9](docs/releases/2026-10-alpha.6-decisions.md) (see
+  Security): migration `0091_known_device_quota.sql` (expand only, a new
+  table `known_sign_ins` of keyed digests that the worker's retention task
+  sweeps), the configuration keys `security.rate_limits.start_per_network`
+  (default `300` per `login_window`), `network_coarse_factor` (`10`, at most
+  `1000`), `known_quota_days` (`30`, at most `365`),
+  `known_login_per_network` (`50`), `known_login_per_device` (`20`) and
+  `known_login_per_identifier` (`10`), each `0` to disable, and the gauge
+  `proudauth_rate_budget_utilization{budget}` over the fixed aggregate
+  budget families, for an alert near the cap
+  ([monitoring.md](docs/operations/monitoring.md#metrics)). Load generators
+  raise `start_per_network` along with `login_per_ip`
+  ([benchmarks.md](docs/operations/benchmarks.md)). Regression tests
+  `TestNetworkBudgetConfig`, `TestGaugeVecFixedLabels`.
 
 ### Changed
 
@@ -598,6 +613,39 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   capped (REG-012, TEN-018, INV-013). Affected: every earlier 0.2.0
   prerelease; regression tests `TestJoinRequestBudgets`,
   `TestJoinRequestReviewerNotices`.
+- Abuse budgets count networks instead of addresses, and an exhausted
+  aggregate sign-in budget no longer refuses everyone
+  ([decision 9](docs/releases/2026-10-alpha.6-decisions.md)). The per-IP
+  budgets (`login-ip`, `pwd-ip`, `verify-ip`, `send-ip`, `signup-ip`,
+  `guest-ip`, `wan-ip`, `setup-ip`, and the fixed `dcr-ip`, registry,
+  shared-signals and check-session budgets) were keyed by the full client
+  address, each step was charged to the address its transaction started
+  from, and starting a transaction had no budget. With one IPv6 /64, an
+  attacker started every attempt from a new address with random identifiers
+  and passed every per-IP and per-identifier limit, leaving only the
+  aggregate caps, which then failed for everyone: about 22 requests per
+  second through one public client used up `pwd-client` (20000 per 15
+  minutes) and refused every password sign-in through that client, and
+  about 55 per second through three clients did the same for `pwd-realm`
+  across the realm, window after window. A network is now an IPv4 /32 or an
+  IPv6 /64; every configurable per-network budget also counts the wider /24
+  or /48 at `network_coarse_factor` times its limit; each step is charged to
+  the network of the request that makes it; and starting a transaction is
+  budgeted per network (`start_per_network`; a start that reuses an SSO
+  session is not counted, and the browser authorization endpoint redirects
+  with `error=temporarily_unavailable`). When an aggregate password or proof
+  budget (per client, organization or realm) is exhausted, networks,
+  remembered devices and identifiers with a successful sign-in in the last
+  `known_quota_days` keep a quota of their own; everyone else gets
+  `429 rate_limited` with `Retry-After`, with no CAPTCHA and no
+  proof-of-work. An identifier counts only from the /24 or /48 it signed in
+  from, so outside it the `429` still does not tell recently active accounts
+  from others (SEC-005, API-009). Aggregate send and registration budgets
+  have no such quota (SEC-006, ABU-001, REG-012, TEN-018, SEC-001).
+  Affected: every earlier 0.2.0 prerelease; regression tests
+  `TestNetworkNormalizedBudgets`, `TestTransactionStartBudget`,
+  `TestKnownDeviceQuota`, `TestPerNetworkBudgets`,
+  `TestUtilizationOfAggregateBudgets`, `TestNetworkPrefix`.
 
 ## [0.2.0-alpha.5] - 2026-10-18
 

@@ -3,6 +3,7 @@ package observability
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -61,5 +62,36 @@ func TestDebugWindow(t *testing.T) {
 	worker.Debug("expired")
 	if buf.Len() != 0 {
 		t.Fatalf("expired window still logs: %s", buf.String())
+	}
+}
+
+// TestGaugeVecFixedLabels covers OPS-002: a labelled gauge exposes exactly the
+// label values it was registered with, sorted, each computed at scrape time,
+// so a value the function was not registered for never opens a series; NaN
+// and infinities are written as 0.
+func TestGaugeVecFixedLabels(t *testing.T) {
+	r := NewRegistry()
+	asked := []string{}
+	r.GaugeVec("proudauth_test_utilization", "Test utilization", "budget", []string{"pwd-realm", "pwd-client", "verify-realm"}, func(v string) float64 {
+		asked = append(asked, v)
+		switch v {
+		case "pwd-client":
+			return 0.25
+		case "verify-realm":
+			return math.NaN()
+		}
+		return 0
+	})
+	var buf bytes.Buffer
+	r.WriteText(&buf)
+	want := "# HELP proudauth_test_utilization Test utilization\n# TYPE proudauth_test_utilization gauge\n" +
+		"proudauth_test_utilization{budget=\"pwd-client\"} 0.25\n" +
+		"proudauth_test_utilization{budget=\"pwd-realm\"} 0\n" +
+		"proudauth_test_utilization{budget=\"verify-realm\"} 0\n"
+	if buf.String() != want {
+		t.Fatalf("exposition:\n%s\nwant:\n%s", buf.String(), want)
+	}
+	if strings.Join(asked, ",") != "pwd-client,pwd-realm,verify-realm" {
+		t.Fatalf("scrape asked for %v", asked)
 	}
 }

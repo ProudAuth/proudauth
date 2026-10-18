@@ -37,6 +37,9 @@ type Completion struct {
 	GrantID    string
 	Code       string
 	RedirectTo string
+	// known are the facts the sign-in makes known to the known-device quota,
+	// recorded once it has committed.
+	known []knownFact
 }
 
 // step runs fn under the transaction lock. Proof failures are committed (failure
@@ -93,6 +96,9 @@ func (s *Service) step(ctx context.Context, realmID, id string, p Proof, fn func
 	}
 	if stepErr != nil {
 		return nil, stepErr
+	}
+	if st != nil && st.Completion != nil {
+		s.recordKnown(ctx, realmID, st.Completion.known)
 	}
 	return st, nil
 }
@@ -216,12 +222,13 @@ func (s *Service) Identify(ctx context.Context, realmID, id string, p Proof, ide
 	})
 }
 
+// loginBudget bounds identifier lookups per identifier and per network of the
+// request (SEC-006, ABU-001).
 func (s *Service) loginBudget(ctx context.Context, t *Transaction, canon string) error {
 	rl := s.d.Cfg.Security.RateLimits
-	d, err := s.Limiter.Hit(ctx,
-		ratelimit.Budget{Key: "login-id:" + t.RealmID + ":" + canon, Limit: rl.LoginPerIdentifier * 3, Window: rl.LoginWindow},
-		ratelimit.Budget{Key: "login-ip:" + t.RealmID + ":" + t.ClientIP, Limit: rl.LoginPerIP, Window: rl.LoginWindow},
-	)
+	budgets := append([]ratelimit.Budget{{Key: "login-id:" + t.RealmID + ":" + canon, Limit: rl.LoginPerIdentifier * 3, Window: rl.LoginWindow}},
+		ratelimit.PerNetwork("login-ip:"+t.RealmID+":", chargeIP(ctx, t), rl.LoginPerIP, rl.LoginWindow, rl.NetworkCoarseFactor)...)
+	d, err := s.Limiter.Hit(ctx, budgets...)
 	if err != nil {
 		return err
 	}
@@ -263,9 +270,11 @@ func (s *Service) Password(ctx context.Context, realmID, id string, p Proof, ide
 			return nil, problem.ErrUnexpectedStep
 		}
 		rl := s.d.Cfg.Security.RateLimits
-		budgets := []ratelimit.Budget{
-			{Key: "pwd-id:" + t.RealmID + ":" + t.Pending.Identifier, Limit: rl.LoginPerIdentifier, Window: rl.LoginWindow},
-			{Key: "pwd-ip:" + t.RealmID + ":" + t.ClientIP, Limit: rl.LoginPerIP, Window: rl.LoginWindow},
+		// The attempt's own budgets: per identifier and per network of the
+		// request (SEC-006, ABU-001).
+		own := append([]ratelimit.Budget{{Key: "pwd-id:" + t.RealmID + ":" + t.Pending.Identifier, Limit: rl.LoginPerIdentifier, Window: rl.LoginWindow}},
+			ratelimit.PerNetwork("pwd-ip:"+t.RealmID+":", chargeIP(ctx, t), rl.LoginPerIP, rl.LoginWindow, rl.NetworkCoarseFactor)...)
+		shared := []ratelimit.Budget{
 			// Password attempts through one client are sign-in proof attempts,
 			// bounded by login_per_client like codes and factors (REG-012),
 			// not by the token endpoint's budget.
@@ -273,14 +282,12 @@ func (s *Service) Password(ctx context.Context, realmID, id string, p Proof, ide
 			{Key: "pwd-realm:" + t.RealmID, Limit: rl.LoginPerRealm, Window: rl.LoginWindow},
 		}
 		if t.RequestedOrgID != "" && rl.LoginPerOrganization > 0 {
-			budgets = append(budgets, ratelimit.Budget{Key: "pwd-org:" + t.RequestedOrgID, Limit: rl.LoginPerOrganization, Window: rl.LoginWindow})
+			shared = append(shared, ratelimit.Budget{Key: "pwd-org:" + t.RequestedOrgID, Limit: rl.LoginPerOrganization, Window: rl.LoginWindow})
 		}
-		d, err := s.Limiter.Hit(ctx, budgets...)
-		if err != nil {
+		// Exhausted aggregate budgets still admit known requesters under
+		// the known-device quota (owner decision 9).
+		if err := s.hitBudgets(ctx, t.RealmID, requesterOf(ctx, t), own, shared); err != nil {
 			return nil, err
-		}
-		if !d.Allowed {
-			return nil, problem.ErrRateLimited.WithRetryAfter(d.RetryAfter)
 		}
 		start := time.Now()
 		u, lookupErr := s.Users.FindByLogin(ctx, t.RealmID, t.Pending.IdentifierType, t.Pending.Identifier)
@@ -405,7 +412,7 @@ func (s *Service) SendOTP(ctx context.Context, realmID, id string, p Proof, purp
 		case "verify_email":
 			if t.Pending.PhantomRegistration {
 				// Nothing is sent to an unrelated mailbox; the response is indistinguishable.
-				return nil, s.sendBudget(ctx, t.RealmID, t.Pending.RegistrationEmail, t.ClientIP, t.ClientRef, t.RequestedOrgID)
+				return nil, s.sendBudget(ctx, t.RealmID, t.Pending.RegistrationEmail, chargeIP(ctx, t), t.ClientRef, t.RequestedOrgID)
 			}
 			if t.UserID == "" {
 				return nil, problem.ErrUnexpectedStep
@@ -418,7 +425,7 @@ func (s *Service) SendOTP(ctx context.Context, realmID, id string, p Proof, purp
 			if e == nil || e.Verified() {
 				return nil, problem.ErrUnexpectedStep
 			}
-			if err := s.sendBudget(ctx, t.RealmID, e.Canonical, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+			if err := s.sendBudget(ctx, t.RealmID, e.Canonical, chargeIP(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 				return nil, err
 			}
 			return nil, s.sendCode(ctx, tx, t, rlm.DisplayName, PurposeEmailVerification, u.ID, e.Canonical, e.Value, notification.TplEmailVerification)
@@ -436,7 +443,7 @@ func (s *Service) SendOTP(ctx context.Context, realmID, id string, p Proof, purp
 			if e == nil || !u.HasRequiredAction(identity.ActionVerifyContact) || slices.Contains(t.ActionsDone, identity.ActionVerifyContact) {
 				return nil, problem.ErrUnexpectedStep
 			}
-			if err := s.sendBudget(ctx, t.RealmID, e.Canonical, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+			if err := s.sendBudget(ctx, t.RealmID, e.Canonical, chargeIP(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 				return nil, err
 			}
 			return nil, s.sendCode(ctx, tx, t, rlm.DisplayName, PurposeEmailVerification, u.ID, e.Canonical, e.Value, notification.TplEmailVerification)
@@ -453,7 +460,7 @@ func (s *Service) SendOTP(ctx context.Context, realmID, id string, p Proof, purp
 				return nil, problem.ErrUnexpectedStep
 			}
 			defer s.padSend(time.Now())
-			if err := s.sendBudget(ctx, t.RealmID, t.Pending.Identifier, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+			if err := s.sendBudget(ctx, t.RealmID, t.Pending.Identifier, chargeIP(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 				return nil, err
 			}
 			if typ == "phone" {
@@ -552,7 +559,7 @@ func (s *Service) VerifyOTP(ctx context.Context, realmID, id string, p Proof, co
 				}
 			}
 		}
-		if err := s.verifyBudget(ctx, t.RealmID, subject, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+		if err := s.verifyBudget(ctx, t.RealmID, subject, requesterOf(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
 		if t.Pending.PhantomRegistration {
@@ -703,7 +710,7 @@ func (s *Service) TOTP(ctx context.Context, realmID, id string, p Proof, code st
 		if err := s.gateCodeFactor(ctx, tx, t.RealmID, t.UserID); err != nil {
 			return nil, err
 		}
-		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, requesterOf(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
 		credID, ok, err := s.VerifyTOTPTx(ctx, tx, t.UserID, code)
@@ -762,7 +769,7 @@ func (s *Service) HOTP(ctx context.Context, realmID, id string, p Proof, code st
 		if err := s.gateCodeFactor(ctx, tx, t.RealmID, t.UserID); err != nil {
 			return nil, err
 		}
-		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, requesterOf(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
 		credID, ok, err := s.VerifyHOTPTx(ctx, tx, t.UserID, code, rlm.Policy.MFA.HOTPLookAhead())
@@ -817,7 +824,7 @@ func (s *Service) RecoveryCode(ctx context.Context, realmID, id string, p Proof,
 		if err := s.gateCodeFactor(ctx, tx, t.RealmID, t.UserID); err != nil {
 			return nil, err
 		}
-		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+		if err := s.verifyBudget(ctx, t.RealmID, t.UserID, requesterOf(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
 		ok, remaining, err := s.ConsumeRecoveryCodeTx(ctx, tx, t.UserID, code)
@@ -1439,6 +1446,9 @@ func (s *Service) complete(ctx context.Context, tx pgx.Tx, t *Transaction) (*Com
 	} else {
 		comp.RememberedDevice = rd
 	}
+	// The network, remembered device and identifier of this sign-in become
+	// known to the known-device quota once it commits (owner decision 9).
+	comp.known = s.knownFactsOf(ctx, tx, t, comp.RememberedDevice)
 	if t.DeviceCodeID != "" {
 		tag, err := tx.Exec(ctx, `UPDATE device_codes SET state='approved', grant_id=$2, user_id=$3 WHERE id=$1 AND state='pending' AND expires_at > $4`,
 			t.DeviceCodeID, g.ID, t.UserID, now)

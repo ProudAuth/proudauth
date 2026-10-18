@@ -257,21 +257,21 @@ See [keys.md](keys.md) before changing anything here.
 | `policy_engines` | `[]` | External policy decision points (AZ-026) that a realm's `policy_engine` policy can name ([policy-engines.md](../integrations/policy-engines.md)). Each entry: `name` (unique, `^[a-z0-9][a-z0-9-]{0,39}$`), `url` (absolute, no userinfo; `https`, `http` only outside production), `token` (required bearer token; a secret reference in production; resolved at each call), `timeout` (at most `5s`; `0` means 1 s). Calls may reach private addresses (the operator chose them), but follow no redirects, read at most 64 KiB, require `https` in production and apply `privacy.residency`. Support bundles and `config-diff` show a literal `token` as `[REDACTED]`. |
 | `min_auth_response` | `250ms` | Minimum duration of the password step, of password-reset requests and of emailed or texted sign-in code and magic-link sends (`otp/send` with purpose `login` or `magic_link`), so unknown accounts are not distinguishable by timing. |
 | `rate_limits.login_per_identifier` | `10` | Password attempts per identifier per window; the identify step allows 3× this. |
-| `rate_limits.login_per_ip` | `100` | Identify and password attempts per client IP per window. |
+| `rate_limits.login_per_ip` | `100` | Identify and password attempts per client network per window. A network is an IPv4 address (/32) or an IPv6 /64, so every address of one /64 shares the budget, and each step is charged to the network of the request that makes it, not to the address the transaction started from (SEC-006, ABU-001). |
 | `rate_limits.login_window` | `15m` | Window for login budgets. |
 | `rate_limits.login_per_realm` | `50000` | Password attempts, and separately proof attempts (below), across the whole realm per `login_window` (aggregate ceiling, SEC-006). |
 | `rate_limits.login_per_client` | `20000` | Proof attempts per OAuth client per `login_window` (REG-012): emailed and SMS codes, magic links, TOTP, HOTP and recovery codes, passkeys, certificates and challenge answers made in a transaction. Password attempts per client have their own budget of the same size (it used to be 10 × `token_per_client`). `0` disables both. |
 | `rate_limits.login_per_organization` | `10000` | Password attempts, and separately proof attempts, per organization per `login_window`, counted for transactions that name an organization (the `organization` request parameter), so one tenant cannot use up sign-in capacity for the others (TEN-018). Excess returns `429 rate_limited`. `0` disables it. |
 | `rate_limits.send_per_identifier` | `5` | Code/link sends per identifier per window. |
-| `rate_limits.send_per_ip` | `50` | Code/link sends per IP per window. |
+| `rate_limits.send_per_ip` | `50` | Code/link sends per client network (IPv4 /32, IPv6 /64) per window. |
 | `rate_limits.send_window` | `1h` | Window for send budgets. |
 | `rate_limits.send_cooldown` | `30s` | Minimum interval between sends to one identifier. |
 | `rate_limits.send_per_client` | `1000` | Code/link sends per OAuth client per `send_window`: sends started from an authentication or registration transaction, and identifier-verification codes requested through `POST /verification-challenges` (counted for the client of the caller's token). Password-reset sends have no client context. |
 | `rate_limits.send_per_organization` | `500` | Code/link sends per requested organization per `send_window` (transactions that name an organization, and identifier-verification sends whose token is bound to an organization). |
 | `rate_limits.send_per_realm` | `5000` | Code/link sends across the realm per `send_window`, including password-reset and recovery sends. |
-| `rate_limits.otp_verify_per_account` | `10` | Proof attempts (codes, magic links, TOTP, recovery codes, passkeys, certificates, challenge answers, password-reset and identifier-verification codes) per subject per `otp_verify_window`, across transactions. The subject is the account; a certificate presented before `identify` counts against that certificate (its thumbprint) from the client's /24 (IPv4) or /48 (IPv6) network. Each attempt also counts against `login_per_ip` for the client's address and `login_per_realm`, and attempts made in an authentication transaction against `login_per_client` and, when the transaction names an organization, `login_per_organization` (REG-012, SEC-006). Exhausted budgets answer `429 rate_limited` without counting as a failed proof. The budget is windowed and resumes in every window; consecutive code-factor failures are bounded across windows by `second_factor.*` (above). |
+| `rate_limits.otp_verify_per_account` | `10` | Proof attempts (codes, magic links, TOTP, recovery codes, passkeys, certificates, challenge answers, password-reset and identifier-verification codes) per subject per `otp_verify_window`, across transactions. The subject is the account; a certificate presented before `identify` counts against that certificate (its thumbprint) from the client's /24 (IPv4) or /48 (IPv6) network. Each attempt also counts against `login_per_ip` for the client's network and `login_per_realm`, and attempts made in an authentication transaction against `login_per_client` and, when the transaction names an organization, `login_per_organization` (REG-012, SEC-006); once only these aggregate budgets are exhausted, the known-device quota applies (`known_quota_days`). Exhausted budgets answer `429 rate_limited` without counting as a failed proof. The budget is windowed and resumes in every window; consecutive code-factor failures are bounded across windows by `second_factor.*` (above). |
 | `rate_limits.otp_verify_window` | `15m` | Window for verification budgets. |
-| `rate_limits.signup_per_ip` | `20` | Registrations per IP per window. |
+| `rate_limits.signup_per_ip` | `20` | Registrations (and guest accounts) per client network (IPv4 /32, IPv6 /64) per window. |
 | `rate_limits.signup_window` | `1h` | Window for registrations. |
 | `rate_limits.signup_per_client` | `500` | Registrations per OAuth client per `signup_window`. |
 | `rate_limits.signup_per_realm` | `2000` | Registrations across the realm per `signup_window`. |
@@ -286,17 +286,31 @@ See [keys.md](keys.md) before changing anything here.
 | `rate_limits.join_requests_per_user` | `10` | Join requests one user files per `join_request_window`, across the organizations of the realm (INV-013, REG-012). Withdrawing a request does not refund it, so a request-withdraw loop meets it; an attempt answered `409` (a request already pending, or a membership) counts too. Excess returns `429 rate_limited` with `Retry-After`. `0` disables it. |
 | `rate_limits.join_requests_per_organization` | `100` | Join requests filed to one organization per `join_request_window`, from all requesters (TEN-018). It is checked after the requester's budget, and a request that budget refuses does not count here, so one account cannot use up an organization's budget. Excess returns `429 rate_limited` with `Retry-After`. `0` disables it. |
 | `rate_limits.join_request_window` | `24h` | Window for the join-request budgets. It also de-duplicates reviewer notices: a request filed within this time after the same user's previous request to the same organization (whatever became of it) is recorded and audited, but does not notify the reviewers again. `0` turns that de-duplication off too, and needs both join-request limits at `0`. |
+| `rate_limits.start_per_network` | `300` | Authentication transactions one client network (IPv4 /32, IPv6 /64) starts per `login_window`: headless starts (`POST /auth/transactions`, device approval included), the browser authorization endpoint and SAML sign-in. A start that reuses a valid SSO session (silent SSO, a further client of a signed-in browser) is not counted. Excess answers `429 rate_limited` with `Retry-After`; the browser authorization endpoint redirects to the client with `error=temporarily_unavailable` instead (SEC-006, ABU-001). Behind a large NAT, raise it with `login_per_ip`. `0` disables it. |
+| `rate_limits.network_coarse_factor` | `10` | Every configurable per-network budget (`login_per_ip` with the proof, passkey-ceremony and setup budgets that use it, `send_per_ip`, `signup_per_ip`, `start_per_network`) also counts the wider network, the IPv4 /24 or IPv6 /48, with this many times its limit, so many /64s of one site cannot add up to the realm's budgets (ABU-001). At most `1000`; `0` disables the wider budgets. |
+| `rate_limits.known_quota_days` | `30` | Known-device quota ([owner decision 9](../releases/2026-10-alpha.6-decisions.md)). When an aggregate sign-in budget is exhausted (password attempts through `login_per_client`, `login_per_realm` or `login_per_organization`, or proof attempts through the same three), a sign-in from a network (IPv4 /32, IPv6 /64), a remembered device or an identifier that completed a sign-in in the realm within this many days still proceeds under the quota below; everyone else gets `429 rate_limited` with `Retry-After`. An identifier is known only from the wider network (IPv4 /24, IPv6 /48) it signed in from: anyone can name an identifier, and an identifier admitted from anywhere would let whoever exhausts the budget tell recently active accounts (admitted) from all others (`429`), SEC-005. The attempt's own budgets (identifier, account, network and wider network) still apply. A completed sign-in records its network, the remembered device it presented (when still valid for the account) or remembered, and its identifier with its wider network, as keyed digests in `known_sign_ins` (refreshed at most hourly); the worker deletes them after this many days. Aggregate send and registration budgets have no such quota. No CAPTCHA, no proof-of-work. At most `365`; `0` turns the quota off (nothing is recorded, stored facts are deleted, everyone gets `429`). |
+| `rate_limits.known_login_per_network` | `50` | Attempts per known network per `login_window` under the known-device quota. A requester with several known facts is charged to the most specific one only: a remembered device, then the network, then the identifier, which comes last because anyone can name it. `0` admits nobody by network. |
+| `rate_limits.known_login_per_device` | `20` | Attempts per known remembered device per `login_window`; a revoked or expired device is not known. `0` admits nobody by device. |
+| `rate_limits.known_login_per_identifier` | `10` | Attempts per known identifier (from the wider network it signed in from) per `login_window`. `0` admits nobody by identifier. |
 
 Rate-limit counters are fixed windows stored in PostgreSQL (`rate_limit_counters`)
 with digested keys, so every node shares them. A limit of `0` disables its budget,
 and `send_cooldown: 0` disables the cooldown. Startup refuses a negative value for
 any `rate_limits` key, and a positive limit whose window is `0`: the `login_*`
-limits use `login_window`, the `send_*` limits `send_window`,
+limits, `start_per_network` and the `known_login_*` limits use `login_window`,
+the `send_*` limits `send_window`,
 `otp_verify_per_account` `otp_verify_window`, the `signup_*` limits
 `signup_window`, `token_per_client` and `organization_per_window` `token_window`,
 `failures_before_lock` `temporary_lock`, the `invitations_*` limits
 `invitation_window`, and the `join_requests_*` limits `join_request_window`
 (set the limit to `0` to disable a budget instead). A check
+`failures_before_lock` `temporary_lock`, and the `invitations_*` limits
+`invitation_window` (set the limit to `0` to disable a budget instead); it also
+refuses `network_coarse_factor` above `1000` and `known_quota_days` above
+`365`. Per-network budgets count networks, not addresses: an IPv4 address is
+its own network (/32), an IPv6 address counts by its /64, with the wider /24 or
+/48 budget of `network_coarse_factor` (ABU-001); the address comes from
+`server.trusted_proxies` (SEC-001). A check
 counts all the budgets of an attempt in one database statement and consumes every
 one of them even when one is exhausted, so a refused attempt still counts toward
 the others. The send cooldown is an exception: it is checked on its own before
@@ -306,12 +320,15 @@ realm send budgets). Join requests are the other: `join_requests_per_user` is
 checked first, and a request it refuses consumes no unit of
 `join_requests_per_organization`. Exhausted budgets on the custom APIs return
 `429 rate_limited` with `Retry-After`; the token endpoint answers `429 slow_down`.
+`proudauth_rate_budget_utilization` reports how close the aggregate budgets are
+to their caps ([monitoring.md](monitoring.md#metrics)).
 
 Fixed budgets (not configurable): shared-signals pushes 600 per minute per
-transmitter and 1200 per minute per address; check-session origin checks 300
-per minute per address; registry tokens 600 per minute per address, and 20
-failed registry sign-ins per address per 15 minutes; dynamic client
-registration 20 per hour per address and 500 per hour per realm.
+transmitter and 1200 per minute per network; check-session origin checks 300
+per minute per network; registry tokens 600 per minute per network, and 20
+failed registry sign-ins per network per 15 minutes; dynamic client
+registration 20 per hour per network and 500 per hour per realm. A network is
+an IPv4 /32 or an IPv6 /64, as above; the fixed budgets have no wider budget.
 
 ## `impersonation`
 
@@ -465,7 +482,7 @@ for back-channel logout to Keycloak.
 | `backup_retention` | `0s` | How long you keep database backups (PRV-005). Informational: `GET /users/{user}/deletion-status` uses it to date when a deleted account leaves the last backup; `0` reports that stage as `unknown`. ProudAuth does not manage backups. |
 | `residency.region` | `""` | Label of the deployment's region, reported by `/status` (PRV-003). |
 | `residency.allowed_destinations` | `[]` | Host names, or `.domain` suffixes matching every host under that domain (case-insensitive), that outbound connectors may reach. Empty: no residency restriction. When set, it is checked when webhooks, pre-action hooks, organization mail servers (`PUT /organizations/{org}/notification-settings/smtp`, `422` on `host`), upstream identity providers (issuer, discovery, endpoint and JWKS URLs, `422`) and workload trusts (`jwks_uri`) are saved; at every connection of webhooks, hooks, back-channel logout, the SMS gateway, challenge providers, policy engines, organization mail servers, upstream identity providers and workload key sets; and at startup for `delivery.email.smtp_host` (the deployment relay is not checked again when it connects), `delivery.sms.webhook_url` and `observability.otlp_endpoint`. Destinations outside the list are refused like other egress-policy violations. It does not cover the database, backups, logs, Vault or a KMS command ([data-inventory.md](data-inventory.md#data-residency)). |
-| `store_full_ip` | `false` | Audit `ip_context` and `sessions.client_ip` store the full IP instead of /24 (IPv4) or /48 (IPv6). `auth_transactions.client_ip` holds the full address while the transaction is pending, because per-IP budgets need it; unless this key is set, the client IP and user agent of finished transactions are cleared at the next cleanup run (every 5 minutes), and the rows are deleted 24 h after they finished (PRV-002, [data-inventory.md](data-inventory.md)). |
+| `store_full_ip` | `false` | Audit `ip_context` and `sessions.client_ip` store the full IP instead of /24 (IPv4) or /48 (IPv6). `auth_transactions.client_ip` holds the full address while the transaction is pending, for the per-network budgets and the authentication flow; unless this key is set, the client IP and user agent of finished transactions are cleared at the next cleanup run (every 5 minutes), and the rows are deleted 24 h after they finished (PRV-002, [data-inventory.md](data-inventory.md)). |
 
 ## `limits`
 

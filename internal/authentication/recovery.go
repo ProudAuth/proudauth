@@ -83,7 +83,7 @@ func (s *Service) CompletePasswordReset(ctx context.Context, realmID, resetID, c
 		}
 		var userID string
 		_ = tx.QueryRow(ctx, `SELECT coalesce(user_id,'') FROM challenges WHERE id=$1 AND realm_id=$2`, resetID, realmID).Scan(&userID)
-		if err := s.verifyBudget(ctx, realmID, "reset:"+resetID+userID, ip); err != nil {
+		if err := s.verifyBudget(ctx, realmID, "reset:"+resetID+userID, requester{ip: ip}); err != nil {
 			return err
 		}
 		c, err := s.ConsumeChallengeTx(ctx, tx, realmID, resetID, PurposePasswordReset, strings.TrimSpace(code))
@@ -179,7 +179,8 @@ func (s *Service) CompleteAccountSetup(ctx context.Context, realmID, token, pass
 	var proofErr error
 	err := s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
 		proofErr = nil
-		d, err := s.Limiter.Hit(ctx, ratelimit.Budget{Key: "setup-ip:" + realmID + ":" + ip, Limit: s.d.Cfg.Security.RateLimits.LoginPerIP, Window: time.Hour})
+		rl := s.d.Cfg.Security.RateLimits
+		d, err := s.Limiter.Hit(ctx, ratelimit.PerNetwork("setup-ip:"+realmID+":", ip, rl.LoginPerIP, time.Hour, rl.NetworkCoarseFactor)...)
 		if err != nil {
 			return err
 		}
@@ -397,7 +398,7 @@ func (s *Service) ConsumeIdentifierChallenge(ctx context.Context, realmID, userI
 	var proofErr error
 	err := s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
 		proofErr = nil
-		if err := s.verifyBudget(ctx, realmID, userID, ip); err != nil {
+		if err := s.verifyBudget(ctx, realmID, userID, requester{ip: ip}); err != nil {
 			return err
 		}
 		c, err := s.ConsumeChallengeTx(ctx, tx, realmID, challengeID, PurposeIdentifierChange, strings.TrimSpace(code))

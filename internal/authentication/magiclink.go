@@ -42,7 +42,7 @@ func (s *Service) sendMagicLink(ctx context.Context, tx pgx.Tx, t *Transaction, 
 		return problem.ErrFeatureDisabled.WithDetail("magic links require a configured login UI")
 	}
 	defer s.padSend(time.Now())
-	if err := s.sendBudget(ctx, t.RealmID, t.Pending.Identifier, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+	if err := s.sendBudget(ctx, t.RealmID, t.Pending.Identifier, chargeIP(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 		return err
 	}
 	userID := ""
@@ -101,7 +101,7 @@ func (s *Service) ConsumeMagicLink(ctx context.Context, realmID, id string, p Pr
 		if subject == "" {
 			subject = t.Pending.Identifier
 		}
-		if err := s.verifyBudget(ctx, t.RealmID, subject, t.ClientIP, t.ClientRef, t.RequestedOrgID); err != nil {
+		if err := s.verifyBudget(ctx, t.RealmID, subject, requesterOf(ctx, t), t.ClientRef, t.RequestedOrgID); err != nil {
 			return nil, err
 		}
 		c, err := s.ConsumeLinkTx(ctx, tx, t.RealmID, PurposeMagicLink, token)

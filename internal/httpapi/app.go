@@ -149,6 +149,9 @@ func Build(d *runtime.Deps, metrics *observability.Metrics) (*App, error) {
 	a.Orgs = organization.NewService(d, a.Authz, a.Sessions, a.Notify)
 	a.Limiter = ratelimit.New(d)
 	a.Orgs.Limiter = a.Limiter
+	// Utilization of the aggregate abuse budgets, for alerts before they
+	// refuse sign-ins (owner decision 9 of 0.2.0-alpha.6, SEC-006).
+	metrics.Registry.GaugeVec(ratelimit.UtilizationMetric, ratelimit.UtilizationHelp, "budget", ratelimit.AggregateBudgets, a.Limiter.Utilization)
 	a.Orgs.RecheckPolicy = func(ctx context.Context, realmID string) organization.DomainRecheckPolicy {
 		p := organization.DefaultRecheckPolicy
 		if rlm, err := a.Realms.ByID(ctx, nil, realmID); err == nil {
