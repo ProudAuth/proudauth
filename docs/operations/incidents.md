@@ -471,8 +471,10 @@ is neither Gmail nor in a domain the Google Workspace tenant runs.
 Signals: `proudauth_authentications_total{outcome="failure"}`,
 `proudauth_rate_limited_total`, `proudauth_load_shed_total` rising; bursts of
 `authentication.password.failed`, `authentication.password.temporarily_locked`,
-`registration.*` or code sends; an SMS daily budget exhausted; mail provider
-complaints ([monitoring.md](monitoring.md#suggested-alerts)).
+`registration.*` or code sends; `mfa.code_factors.failure_notice` or
+`mfa.code_factors.disabled` (someone guessing an account's second factor,
+which usually means its password is known); an SMS daily budget exhausted;
+mail provider complaints ([monitoring.md](monitoring.md#suggested-alerts)).
 
 1. **Find the source**: `GET /audit-events?type_prefix=authentication.&network=<cidr>&from=...`
    narrows by network (stored as /24 or /48), client and organization;
@@ -490,8 +492,12 @@ complaints ([monitoring.md](monitoring.md#suggested-alerts)).
    `delivery.sms.daily_budget`; restart) and block the source at the proxy.
 4. Watch the side effects: the temporary password lock also locks out the
    real owners of attacked accounts for `security.rate_limits.temporary_lock`
-   (other sign-in methods keep working), and budgets that fail closed answer
-   `429` or `503` to legitimate users of the same client or organization.
+   (other sign-in methods keep working), the code-factor backoff slows their
+   TOTP, HOTP and recovery codes down, and at `security.second_factor.failure_disable_at`
+   their code factors are off until a passkey sign-in, a password reset or an
+   assisted recovery ([account-recovery.md](account-recovery.md#code-factors-turned-off-after-repeated-failures));
+   budgets that fail closed answer `429` or `503` to legitimate users of the
+   same client or organization.
 5. Afterwards, review accounts that signed in from the source and revoke
    their sessions if needed; record the rules you added and remove them when
    the spike is over (each policy change is audited as `realm.policy.updated`).

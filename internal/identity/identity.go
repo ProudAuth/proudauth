@@ -1089,6 +1089,7 @@ func EraseAccountDataTx(ctx context.Context, tx pgx.Tx, realmID, userID string, 
 		// cascade from it are removed explicitly (PRV-005).
 		`DELETE FROM pairwise_subjects WHERE user_id=$1`,
 		`DELETE FROM notification_preferences WHERE user_id=$1`,
+		`DELETE FROM second_factor_failures WHERE user_id=$1`,
 		// Shared-signals subjects (AUD-016), queued security events about the
 		// account, and the upstream subjects of federation transfer entries
 		// (FED-016) are identifying data too.

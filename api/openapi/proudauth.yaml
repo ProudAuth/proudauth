@@ -1590,7 +1590,7 @@ paths:
       tags:
         - Interaction
       summary: Send a one-time code
-      description: Transaction-bound step. On completion the state carries redirect_to (and browser callers receive the pa_sid cookie while pa_tx is cleared). Purpose/identifier-bound send budget.
+      description: "Transaction-bound step. On completion the state carries redirect_to (and browser callers receive the pa_sid cookie while pa_tx is cleared). Purpose/identifier-bound send budget. With purpose login, nothing is sent to an account whose code factors are off after consecutive failures (security.second_factor.failure_disable_at), exactly as for an address without an account."
       security:
         - transactionToken: []
         - transactionCookie: []
@@ -1655,7 +1655,7 @@ paths:
       tags:
         - Interaction
       summary: Verify a one-time code
-      description: Transaction-bound step. On completion the state carries redirect_to (and browser callers receive the pa_sid cookie while pa_tx is cleared). Attempt-limited atomic consumption.
+      description: "Transaction-bound step. On completion the state carries redirect_to (and browser callers receive the pa_sid cookie while pa_tx is cleared). Attempt-limited atomic consumption. A wrong sign-in code counts toward the account's consecutive code-factor failures (security.second_factor); once its code factors are off, every sign-in code is refused with 400 invalid_proof, as for an address without an account."
       security:
         - transactionToken: []
         - transactionCookie: []
@@ -1718,7 +1718,7 @@ paths:
       tags:
         - Interaction
       summary: Verify a TOTP code
-      description: Transaction-bound step. On completion the state carries redirect_to (and browser callers receive the pa_sid cookie while pa_tx is cleared).
+      description: "Transaction-bound step. On completion the state carries redirect_to (and browser callers receive the pa_sid cookie while pa_tx is cleared). Consecutive code-factor failures (security.second_factor): from failure_backoff_after on, 429 rate_limited with Retry-After until the growing backoff since the last failure passes; at failure_disable_at, 403 code_factors_disabled until a passkey sign-in, a password reset or an assisted recovery (owner decision 10, SEC-006)."
       security:
         - transactionToken: []
         - transactionCookie: []
@@ -1781,7 +1781,7 @@ paths:
       tags:
         - Interaction
       summary: Verify an HOTP code
-      description: "Counter-based code (MFA-013), offered only in realms that list hotp in mfa.allowed_factors. A code within mfa.hotp.look_ahead counters of the stored counter is accepted once; the counter moves past it atomically. Transaction-bound step. On completion the state carries redirect_to (and browser callers receive the pa_sid cookie while pa_tx is cleared)."
+      description: "Counter-based code (MFA-013), offered only in realms that list hotp in mfa.allowed_factors. A code within mfa.hotp.look_ahead counters of the stored counter is accepted once; the counter moves past it atomically. Transaction-bound step. On completion the state carries redirect_to (and browser callers receive the pa_sid cookie while pa_tx is cleared). Consecutive code-factor failures (security.second_factor): from failure_backoff_after on, 429 rate_limited with Retry-After until the growing backoff since the last failure passes; at failure_disable_at, 403 code_factors_disabled until a passkey sign-in, a password reset or an assisted recovery (owner decision 10, SEC-006)."
       security:
         - transactionToken: []
         - transactionCookie: []
@@ -2077,7 +2077,7 @@ paths:
       tags:
         - Interaction
       summary: Use a recovery code
-      description: Transaction-bound step. On completion the state carries redirect_to (and browser callers receive the pa_sid cookie while pa_tx is cleared). Produces a recovery-restricted session.
+      description: "Transaction-bound step. On completion the state carries redirect_to (and browser callers receive the pa_sid cookie while pa_tx is cleared). Produces a recovery-restricted session. Consecutive code-factor failures (security.second_factor): from failure_backoff_after on, 429 rate_limited with Retry-After until the growing backoff since the last failure passes; at failure_disable_at, 403 code_factors_disabled until a passkey sign-in, a password reset or an assisted recovery (owner decision 10, SEC-006)."
       security:
         - transactionToken: []
         - transactionCookie: []
@@ -3930,7 +3930,7 @@ paths:
       tags:
         - Self-service
       summary: Change own password
-      description: Requires recent authentication.
+      description: "Requires recent authentication. A wrong current_password (401 invalid_credentials) counts against the account's temporary password lock, the one password sign-in uses (security.rate_limits.failures_before_lock): once it is reached the current password is not checked and the change answers 429 rate_limited with Retry-After (temporary_lock), and password sign-in to the account is locked too, until the lock window ends (owner decision 10, SEC-006)."
       security:
         - accountToken: []
       x-trust-class: user-self-service
@@ -33443,7 +33443,7 @@ components:
           schema:
             "$ref": "#/components/schemas/Problem"
     Forbidden:
-      description: "Authenticated but not allowed (code forbidden, mfa_required, step_up_required, recent_authentication_required, consent_required, grant_ceiling_exceeded, impersonation_restricted, account_unavailable, sso_required, recovery_restricted). Step-up and consent problems carry obligations."
+      description: "Authenticated but not allowed (code forbidden, mfa_required, step_up_required, recent_authentication_required, consent_required, grant_ceiling_exceeded, impersonation_restricted, account_unavailable, sso_required, recovery_restricted, code_factors_disabled). Step-up and consent problems carry obligations."
       headers:
         X-Request-Id:
           "$ref": "#/components/headers/X-Request-Id"
@@ -33655,6 +33655,45 @@ components:
             - string
             - "null"
           format: date-time
+        second_factor_failures:
+          type: object
+          description: "Consecutive failed code-factor proofs (TOTP, HOTP, recovery codes, emailed or texted sign-in codes; owner decision 10, SEC-006). Returned by GET /users/{user} only. consecutive is 0 when the account never failed one or something proved it since (a successful TOTP, HOTP, recovery-code or passkey proof, a completed sign-in, a password reset or an assisted recovery); last_failure_at then stays as history."
+          properties:
+            consecutive:
+              type: integer
+            last_failure_at:
+              type:
+                - string
+                - "null"
+              format: date-time
+            notified_at:
+              type:
+                - string
+                - "null"
+              format: date-time
+              description: When the owner was sent the second_factor_failures notice (security.second_factor.failure_notice_at).
+            disabled_at:
+              type:
+                - string
+                - "null"
+              format: date-time
+              description: When the count reached security.second_factor.failure_disable_at.
+            backoff_until:
+              type:
+                - string
+                - "null"
+              format: date-time
+              description: While the backoff runs, when the next TOTP, HOTP or recovery-code proof may be made.
+            code_factors_disabled:
+              type: boolean
+              description: TOTP, HOTP, recovery codes and sign-in codes are refused until a passkey sign-in, a password reset or an assisted recovery.
+          required:
+            - consecutive
+            - last_failure_at
+            - notified_at
+            - disabled_at
+            - backoff_until
+            - code_factors_disabled
       required:
         - id
         - state

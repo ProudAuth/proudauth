@@ -153,6 +153,10 @@ var (
 	ErrAccountState        = newErr(http.StatusForbidden, "account_unavailable", "The account cannot be used for this action.")
 	ErrSSORequired         = newErr(http.StatusForbidden, "sso_required", "This organization requires its enterprise sign-in provider.")
 	ErrUpstreamUnavailable = newErr(http.StatusServiceUnavailable, "upstream_unavailable", "The upstream identity provider is unavailable. Retry later.")
+	// ErrCodeFactorsDisabled refuses a TOTP, HOTP or recovery-code proof of an
+	// account whose consecutive code-factor failures reached
+	// security.second_factor.failure_disable_at (SEC-006, owner decision 10).
+	ErrCodeFactorsDisabled = newErr(http.StatusForbidden, "code_factors_disabled", "Code factors are turned off for this account after too many failed attempts: sign in with a passkey or reset the password from the account's email address.")
 )
 
 // DefaultRetryAfter is the Retry-After of a 429 or 503 response that names no

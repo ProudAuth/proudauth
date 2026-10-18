@@ -29,6 +29,13 @@ type AssistedRecoveryInput struct {
 // returns the setup token only when the account has no email address, and
 // refuses when the primary one is unverified.
 func (s *Service) ExecuteAssistedRecoveryTx(ctx context.Context, tx pgx.Tx, rlm *realm.Realm, in AssistedRecoveryInput, actor audit.Ref, requestID string) (string, error) {
+	// The owner was proofed out of band: code factors turned off after
+	// consecutive failures are on again (owner decision 10, SEC-006). First,
+	// in the lock order of the sign-in steps (the count's row before the
+	// account row); undone with the rest if the recovery fails.
+	if err := s.resetCodeFactorFailures(ctx, tx, rlm.ID, in.UserID, "assisted_recovery", actor); err != nil {
+		return "", err
+	}
 	u, err := s.Users.LockUser(ctx, tx, rlm.ID, in.UserID)
 	if err != nil {
 		return "", err

@@ -306,6 +306,47 @@ HOTP too. The realm data export's `credentials` summary has `hotp`. Audit:
 `identity-cli login` prompts for an HOTP code; user imports do not carry HOTP
 tokens (users enroll again).
 
+### Consecutive code-factor failures
+
+Owner decision 10 of 0.2.0-alpha.6 (SEC-006, MFA-002, MFA-012, TEST-021),
+migration `0088`, `tests/e2e/second_factor_ceiling_test.go`. The proof
+budgets above are fixed windows: they bound guesses per window
+(`rate_limits.otp_verify_per_account`, 10 per 15 minutes) but let them resume
+in every new window, about 960 a day per account. Code factors are therefore
+also bounded by one persistent count per account of **consecutive** failed
+code proofs: TOTP, HOTP and recovery codes, and emailed or texted sign-in
+codes (`otp/verify` with `purpose: login`). Each failure adds one in the
+step's transaction; passkeys never count and are never blocked. With the
+defaults (`security.second_factor`,
+[configuration.md](../operations/configuration.md#security)):
+
+| Count | Effect |
+| --- | --- |
+| From `failure_backoff_after` (10) | Every further `totp`, `hotp` or `recovery-code` step waits 2 s after the last failure, doubling with each further failure up to `failure_backoff_max` (1 h): until then it answers `429 rate_limited` with `Retry-After` (the remaining delay, rounded up), before the proof budgets are counted and without counting as a failure of the transaction. The first ten failures behave exactly as before; from the 21st on, one guess an hour remains, so 100 failures take more than three days |
+| `failure_notice_at` (20) | The owner receives one mandatory `second_factor_failures` notice (variables `realm`, `count`, `time`) at the primary verified email address, recorded as `mfa.code_factors.failure_notice`. The next notice comes only after the count was reset and reaches the threshold again |
+| `failure_disable_at` (100) | The account's code factors are turned off (`mfa.code_factors.disabled`): `totp`, `hotp` and `recovery-code` answer `403 code_factors_disabled` (also with the correct code), and `otp/send` with `purpose: login` sends nothing while `otp/verify` refuses every code with `400 invalid_proof` |
+
+The count goes back to zero after a successful TOTP, HOTP, recovery-code or
+passkey proof, after any completed sign-in, after a completed password reset
+(the emailed reset code proves the owner's address) and after an assisted
+recovery; a reset that turns code factors back on is recorded as
+`mfa.code_factors.restored`. A password alone never resets it, and neither
+does an emailed or texted sign-in code on its own: only the sign-in it
+completes. An attacker who knows the password can therefore slow the owner's
+code sign-in down for at most `failure_backoff_max` at a time and turn code
+factors off, but cannot lock the owner out: passkey sign-in and the
+email-verified password reset stay available and turn them back on
+([account-recovery.md](../operations/account-recovery.md)).
+
+Emailed and texted sign-in codes prove a primary factor while the client
+does not yet know whether an account exists, so they get neither the backoff
+nor a distinct refusal: a code for an account whose code factors are off is
+handled exactly like one for an address without an account (nothing is sent,
+`400 invalid_proof`; SEC-005, API-009). Administrators see the state in
+`GET /users/{user}` as `second_factor_failures` (`consecutive`,
+`last_failure_at`, `notified_at`, `disabled_at`, `backoff_until`,
+`code_factors_disabled`).
+
 ### Verified contact (AUT-018)
 
 An administrator can make a user confirm their contact address at the next
@@ -613,7 +654,8 @@ stable `code` and `request_id`:
 | 403 | `account_unavailable` | The step that would complete sign-in found the account no longer able to authenticate (suspended, locked or deactivated while the transaction was pending); until then the same condition is the state's `error` |
 | 422 | `validation_failed` | Malformed field (`errors` map lists fields) |
 | 422 | `password_policy` | New password rejected; `policy_code` is `too_short`, `too_long`, `compromised`, `repetitive`, `contains_identifier` or `invalid_encoding` |
-| 429 | `rate_limited` | Budget exhausted, temporary password lock, or the deployment's daily SMS budget; honor `Retry-After` |
+| 429 | `rate_limited` | Budget exhausted, temporary password lock, the consecutive code-factor backoff (see [Consecutive code-factor failures](#consecutive-code-factor-failures)), or the deployment's daily SMS budget; honor `Retry-After` |
+| 403 | `code_factors_disabled` | The account's TOTP, HOTP and recovery codes are turned off after `security.second_factor.failure_disable_at` consecutive failed code proofs; sign in with a passkey, or reset the password from the account's email address (see [Consecutive code-factor failures](#consecutive-code-factor-failures)) |
 | 404 | `feature_disabled` | Passkeys or federation not enabled |
 | 503 | `unavailable` | A challenge provider could not verify the answer (see [Challenges](#challenges)); or the process is at its bound for sign-in directory operations (`directory.max_concurrent_binds`) or, when set, for password hashing (`security.password.max_concurrent_hashes`): no password was checked and no failure was counted (a hashing refusal also comes before the sign-in budgets); honor `Retry-After` (5 s for directories, 2 s for hashing) and resubmit the same step ([capacity.md](../operations/capacity.md#directory-outages)) |
 | 503 | `upstream_unavailable` | The password of an account an LDAP or Active Directory connector sources could not be checked: the directory is unreachable, or its connector or the directory module is disabled; also first sign-in provisioning when a directory is unreachable. Honor `Retry-After` (30 s); there is no fallback to a local password ([directory.md](../integrations/directory.md#sign-in-with-directory-passwords)). A directory that does not answer ends the attempt after `directory.sign_in_timeout` (8 s) in total |
@@ -625,7 +667,10 @@ Budgets also apply across transactions per identifier, IP, client and subject,
 and every proof attempt also counts against realm-wide, per-client and (when
 the request named an organization) per-organization budgets (REG-012); an
 exhausted budget answers `429 rate_limited` and does not count as a failure
-([configuration.md](../operations/configuration.md#security)).
+([configuration.md](../operations/configuration.md#security)). Code-factor
+failures are also counted per account across transactions and windows; the
+backoff's `429` and `403 code_factors_disabled` do not count as failures
+either ([Consecutive code-factor failures](#consecutive-code-factor-failures)).
 
 ### Enumeration resistance
 

@@ -14,6 +14,7 @@ strong factor is enrolled again (MFA-010).
 | Lost contact address | An administrator holding **both** `realm.users.verification.override` and `realm.users.credentials.manage`, from an MFA session with recent authentication, never for their own account | Out-of-band identity proofing for the new address, recorded as `reason` in every step | The owner does not sign in until step 4: 1. `POST /users/{user}/identifiers` `{"type":"email","value":"<new address>","reason":"..."}` adds the address unverified and not primary (`409` if another account has verified it); 2. `POST /users/{user}/verification-overrides` `{"identifier_id":"<id from step 1>","reason":"..."}` (USR-005); 3. `POST /users/{user}/identifiers/{id}/primary` `{"reason":"..."}` (`422` for an unverified address); 4. `POST /users/{user}/recovery-requests` as above: the setup link goes to the primary address, now the new one. Assisted recovery answers `409` while the primary address is unverified, so it is never delivered to an address nobody proved control of. The previous verified primary address receives an `identifier_changed` notice at steps 1 and 3 (it never names the new address; USR-004). Once signed in, the owner removes the lost address (`DELETE /me/identifiers/{id}`) | `user.identifier.added`, `user.identifier.verification_overridden`, `user.identifier.primary_changed` (actor, reason), `recovery.assisted` |
 | Compromised account | An administrator (`realm.users.suspend`, `realm.users.credentials.manage`) | Incident evidence | Lock or suspend; `POST /users/{user}/credentials/password/compromised` (state `compromised`, every session and offline grant revoked, and the account's personal access tokens and user-owned API keys); then assisted recovery once the owner is re-proofed | `credential.password.compromised`, `automation_credential.revoked`, `security.credential_compromised` event, alert signal `credential_compromised`, owner notice `credentials_revoked` |
 | Organization owner unreachable or departed | A realm administrator (`realm-admin` holds `org.ownership.transfer` in every organization) | Confirmation through the organization's own channel, recorded as evidence | `POST /organizations/{org}/ownership-transfers` makes an active member an owner; the former owner's role is removed separately ([incidents.md](incidents.md#organization-owner-recovery)) | `organization.ownership.transferred` |
+| Code factors turned off after repeated failures | The user, or an administrator | A passkey; or control of a verified email address (password reset); or out-of-band identity proofing (assisted recovery) | After `security.second_factor.failure_disable_at` (100) consecutive failed TOTP, HOTP, recovery-code or sign-in code proofs, those factors are refused (`403 code_factors_disabled`; sign-in codes are not sent); a passkey sign-in, a completed password reset or an assisted recovery turns them back on ([below](#code-factors-turned-off-after-repeated-failures)) | `mfa.code_factors.failure_notice`, `.disabled`, `.restored`, owner notice `second_factor_failures` |
 | Directory-managed or federated account | The upstream directory or identity provider | The upstream's own recovery | ProudAuth does not reset a credential it does not own: users of SSO-required organizations have no local password fallback (FED-012). Unlinking or relinking an upstream identity is an administrator action with evidence. For accounts an LDAP or Active Directory connector sources, a password change and the completion of a password reset or account setup answer `409 conflict` (`externally_managed`), an account the directory disabled cannot be reactivated locally, and the password is changed in the directory; MFA factors stay local and follow the paths above ([directory.md](../integrations/directory.md#directory-authoritative-accounts-and-write-back)) | `federation.identity.unlinked` / `.linked`; `directory.user.*` |
 
 ## Cooling-off and second-operator approval (MFA-009)
@@ -59,6 +60,59 @@ Each cancellation is audited as `recovery.assisted.cancelled` with actor
 `system` and the reason code, and are not counted as executed recoveries. Each due request runs in its own transaction, so
 a request that fails is retried on the next run without holding up the others.
 Deleting the account cancels its pending and approved requests.
+
+## Code factors turned off after repeated failures
+
+Owner decision 10 of 0.2.0-alpha.6 (SEC-006, MFA-002, TEST-021; migration
+`0088`). Every account keeps a count of consecutive failed code-factor
+proofs: TOTP, HOTP, recovery codes and emailed or texted sign-in codes, across
+transactions and proof-budget windows. Passkeys never count. With the
+defaults ([configuration.md](configuration.md#security),
+`security.second_factor`):
+
+- from the 10th failure on, every TOTP, HOTP or recovery-code step waits a
+  delay that starts at 2 s and doubles per failure up to 1 hour
+  (`429 rate_limited` with `Retry-After`);
+- at the 20th, the owner receives one mandatory `second_factor_failures`
+  notice ("someone who knows your password or your address may be trying to
+  guess a code"), recorded as `mfa.code_factors.failure_notice`;
+- at the 100th, the account's code factors are turned off
+  (`mfa.code_factors.disabled`): TOTP, HOTP and recovery-code steps answer
+  `403 code_factors_disabled`, also with a valid code, which stays unused, and
+  sign-in codes are no longer sent (the sign-in step looks exactly as for an
+  address without an account).
+
+The owner gets back in without anyone's help, so an attacker who knows the
+password can turn code factors off but cannot lock the owner out:
+
+1. **Passkey.** Signing in with a passkey works as usual and turns code
+   factors back on.
+2. **Password reset from the email address.** `POST /password-resets` sends a
+   reset code to the verified address; completing the reset replaces the
+   password (the old one was probably known to whoever made the guesses),
+   revokes every session, offline grant and personal access token, and turns
+   code factors back on. MFA stays required: the next sign-in asks for the
+   TOTP, HOTP or recovery code again.
+3. **Assisted recovery.** An administrator's assisted recovery
+   (`POST /users/{user}/recovery-requests`, [above](#account-recovery-policy))
+   turns them back on as well, with or without `reset_mfa`; with cooling-off or
+   approval configured, only when the scheduled recovery runs.
+
+Each of these is recorded as `mfa.code_factors.restored` with the `cause`
+(`passkey`, `password_reset`, `assisted_recovery`; also `sign_in`, `totp`,
+`hotp`, `recovery_code` when the count is reset before it reached the
+ceiling). Before the ceiling, any successful TOTP, HOTP, recovery-code or
+passkey proof and any completed sign-in reset the count; a correct password
+alone never does. Administrators see the count, when the owner was warned,
+when code factors were turned off and until when the backoff runs in
+`GET /users/{user}` (`second_factor_failures`). The notice and the audit
+trail are the signal to look at the account: guesses at the second factor
+mean the password is very likely known to someone else.
+
+Whoever controls the account's mailbox can also turn code factors back on
+with a password reset, which changes the password and ends every session;
+the owner then sees the `password_changed` notice
+([incidents.md](incidents.md#abuse-spikes) lists the signals to watch).
 
 ## Recovery-restricted sessions (MFA-010, USR-003)
 
@@ -127,7 +181,14 @@ enrollment from a restricted session.
   password, and — when the account has TOTP, HOTP or a passkey — a session that
   completed MFA (otherwise `step_up_required`). A TOTP or HOTP the realm's
   `mfa.allowed_factors` no longer allows satisfies nothing (MFA-005) and does
-  not count here. The owner is notified. When the
+  not count here. A wrong current password counts against the account's
+  temporary password lock, the one password sign-in uses
+  (`security.rate_limits.failures_before_lock`, 10 per `temporary_lock`,
+  15 minutes): once it is reached, the change answers `429 rate_limited`
+  without checking the password, and password sign-in to the account is
+  locked as well until the window ends; each refusal is audited as
+  `credential.password.change_failed` (`INVALID_CREDENTIALS` or
+  `TEMPORARY_LOCK`). The owner is notified. When the
   realm sets `password.revoke_sessions_on_change` (the default), every other
   session of the user is revoked in the same transaction; the session that made
   the change stays signed in. Password resets always revoke all sessions.

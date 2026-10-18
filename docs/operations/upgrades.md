@@ -363,6 +363,16 @@ which only `identity-cli restore-begin` does on a restored database
 ([backup-restore.md](backup-restore.md)); older binaries ignore it, so run
 only new binaries against a database you are restoring.
 
+Migration `0088_second_factor_failures.sql` (0.2.0-alpha.6) is expand-only:
+it creates the `second_factor_failures` table, the per-account count of
+consecutive failed code-factor proofs (owner decision 10). Older binaries
+ignore it: during the rollout, failures they handle are not counted, and
+they neither wait out the backoff nor refuse code factors that a new server
+turned off, so the ceiling holds only once every server runs the new
+version. Older binaries reject the new configuration key
+`security.second_factor`; add it only for new processes (the defaults apply
+without it).
+
 Migration `0089_refresh_family_binding.sql` is expand-only: it adds
 `refresh_families.cnf_jkt` and `cnf_x5t_s256` and `authorization_codes.dpop_jkt`,
 nullable and without a default (a catalog change only). New binaries store

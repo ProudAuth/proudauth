@@ -153,6 +153,11 @@ func (s *Service) WebAuthnVerify(ctx context.Context, realmID, id string, p Proo
 			now := s.d.Now()
 			t.AuthTime = &now
 		}
+		// A passkey is never counted or blocked by the code-factor ceiling,
+		// and proving one resets it (owner decision 10, SEC-006).
+		if err := s.resetCodeFactorFailures(ctx, tx, t.RealmID, t.UserID, "passkey", audit.Ref{Type: "user", ID: t.UserID}); err != nil {
+			return nil, err
+		}
 		if upgrade && !f.UserVerified {
 			// Proves the existing passkey but cannot meet the profile: it
 			// unlocks registering a user-verified one (MFA-006, SEC-012).

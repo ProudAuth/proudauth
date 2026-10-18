@@ -296,6 +296,81 @@ type MFAFloor struct {
 	ForbidOrgAdminWaiver bool `yaml:"forbid_org_admin_waiver"`
 }
 
+// SecondFactorConfig bounds consecutive failed code-factor proofs per account
+// (owner decision 10 of 0.2.0-alpha.6; SEC-006, MFA-002, TEST-021). Code
+// factors are TOTP, HOTP, recovery codes and emailed or texted sign-in codes;
+// one persistent count per account grows with each failed proof and goes
+// back to zero after a successful second factor or passkey, a completed
+// sign-in, a password reset or an assisted recovery. 0 turns a threshold off.
+type SecondFactorConfig struct {
+	// FailureBackoffAfter is the count from which every further code-factor
+	// proof waits: 2 s after the last failure, doubling with each failure,
+	// at most FailureBackoffMax. Earlier attempts wait for nothing but the
+	// per-window budgets (rate_limits.otp_verify_per_account).
+	FailureBackoffAfter int `yaml:"failure_backoff_after"`
+	// FailureBackoffMax caps the delay, so the backoff never locks an
+	// account out for long (SEC-006).
+	FailureBackoffMax time.Duration `yaml:"failure_backoff_max"`
+	// FailureNoticeAt sends the owner one mandatory notice when the count
+	// reaches it; the next one only after a reset.
+	FailureNoticeAt int `yaml:"failure_notice_at"`
+	// FailureDisableAt turns the account's code factors off when the count
+	// reaches it, until a passkey sign-in, a password reset or an assisted
+	// recovery resets it.
+	FailureDisableAt int `yaml:"failure_disable_at"`
+}
+
+// SecondFactorBackoffBase is the first delay of the code-factor backoff.
+const SecondFactorBackoffBase = 2 * time.Second
+
+// BackoffDelay returns how long after the last failure the next code-factor
+// proof of an account with n consecutive failures must wait: nothing below
+// FailureBackoffAfter, then SecondFactorBackoffBase doubled for each failure
+// beyond it, capped at FailureBackoffMax.
+func (c SecondFactorConfig) BackoffDelay(n int) time.Duration {
+	if c.FailureBackoffAfter <= 0 || c.FailureBackoffMax <= 0 || n < c.FailureBackoffAfter {
+		return 0
+	}
+	d := SecondFactorBackoffBase
+	for i := c.FailureBackoffAfter; i < n && d < c.FailureBackoffMax; i++ {
+		d *= 2
+	}
+	return min(d, c.FailureBackoffMax)
+}
+
+// CodeFactorsDisabled reports whether n consecutive failures turn the
+// account's code factors off.
+func (c SecondFactorConfig) CodeFactorsDisabled(n int) bool {
+	return c.FailureDisableAt > 0 && n >= c.FailureDisableAt
+}
+
+// validate refuses negative thresholds, a backoff without a positive cap or
+// with one above a day, and a notice that would come at or after the
+// disable.
+func (c SecondFactorConfig) validate() []string {
+	var errs []string
+	for _, v := range []struct {
+		key string
+		n   int
+	}{{"failure_backoff_after", c.FailureBackoffAfter}, {"failure_notice_at", c.FailureNoticeAt}, {"failure_disable_at", c.FailureDisableAt}} {
+		if v.n < 0 {
+			errs = append(errs, fmt.Sprintf("security.second_factor.%s must not be negative (0 turns it off)", v.key))
+		}
+	}
+	switch {
+	case c.FailureBackoffMax < 0:
+		errs = append(errs, "security.second_factor.failure_backoff_max must not be negative")
+	case c.FailureBackoffMax > 24*time.Hour:
+		errs = append(errs, "security.second_factor.failure_backoff_max must be at most 24h")
+	case c.FailureBackoffAfter > 0 && c.FailureBackoffMax < SecondFactorBackoffBase:
+		errs = append(errs, "security.second_factor.failure_backoff_after needs security.second_factor.failure_backoff_max of at least 2s (set failure_backoff_after to 0 to turn the backoff off)")
+	}
+	if c.FailureNoticeAt > 0 && c.FailureDisableAt > 0 && c.FailureNoticeAt >= c.FailureDisableAt {
+		errs = append(errs, "security.second_factor.failure_notice_at must be below failure_disable_at")
+	}
+	return errs
+}
+
 type SecurityConfig struct {
 	MFAFloor          MFAFloor       `yaml:"mfa_floor"`
 	Password          PasswordConfig `yaml:"password"`
@@ -323,6 +398,9 @@ type SecurityConfig struct {
 	// authorization decisions to (AZ-026). Their endpoints and credentials
 	// belong to the operator; realms only name one.
 	PolicyEngines []PolicyEngineConfig `yaml:"policy_engines"`
+	// SecondFactor is the consecutive code-factor failure ceiling (owner
+	// decision 10 of 0.2.0-alpha.6).
+	SecondFactor SecondFactorConfig `yaml:"second_factor"`
 }
 
 // PolicyEngineConfig is an external policy engine called with an
@@ -619,6 +697,9 @@ func Defaults() Config {
 				LoginPerOrganization:       10000,
 				InvitationsPerOrganization: 500, InvitationsPerRecipient: 10, InvitationWindow: 24 * time.Hour,
 			},
+			// Ten failures, the default per-window proof budget, before the
+			// backoff starts; a notice at 20; code factors off at 100.
+			SecondFactor: SecondFactorConfig{FailureBackoffAfter: 10, FailureBackoffMax: time.Hour, FailureNoticeAt: 20, FailureDisableAt: 100},
 		},
 		Impersonation: ImpersonationConfig{
 			Enabled: false, MaxTTL: 5 * time.Minute, RequireTicket: false,
@@ -1192,6 +1273,8 @@ func (c *Config) Validate() error {
 	errs = append(errs, c.Security.RateLimits.validate()...)
 	errs = append(errs, c.Extensions.validate()...) // plugin publisher keys (EXT-014)
 	errs = append(errs, c.WebAuthn.validate()...)   // passkey metadata (PASS-009)
+	// The consecutive code-factor failure ceiling (SEC-006).
+	errs = append(errs, c.Security.SecondFactor.validate()...)
 	if len(errs) > 0 {
 		return errors.New("invalid configuration:\n  - " + strings.Join(errs, "\n  - "))
 	}

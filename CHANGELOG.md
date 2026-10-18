@@ -104,6 +104,17 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   decision 13 of the [alpha.6 decisions](docs/releases/2026-10-alpha.6-decisions.md)).
   Regression tests `TestDPoPBoundAuthorizationCodes`, `TestValidJKT`,
   `TestParseAuthorize`.
+- The consecutive second-factor failure ceiling of
+  [owner decision 10](docs/releases/2026-10-alpha.6-decisions.md) (see
+  Security): migration `0088_second_factor_failures.sql` (expand only, a new
+  table), the configuration keys `security.second_factor.failure_backoff_after`
+  (default `10`), `failure_backoff_max` (`1h`), `failure_notice_at` (`20`) and
+  `failure_disable_at` (`100`), the mandatory notification template
+  `second_factor_failures` (variables `realm`, `count`, `time`), the problem
+  code `code_factors_disabled` (`403`), the audit events
+  `mfa.code_factors.failure_notice`, `.disabled` and `.restored`, and
+  `second_factor_failures` in `GET /users/{user}`
+  ([configuration.md](docs/operations/configuration.md#security)).
 
 ### Changed
 
@@ -522,6 +533,44 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   ("identified allow lists reveal no passkeys") and
   `TestIdentifierProbeResponses` ("sign-in code and magic-link sends are
   padded").
+- Second factors that are codes now have a ceiling across budget windows.
+  TOTP, HOTP and recovery codes, and emailed or texted sign-in codes, shared
+  only fixed-window budgets (10 proofs per account per 15 minutes, 5 per
+  transaction), so someone who knew the password could make about 960 TOTP
+  guesses a day, about 8.6% success within a month with the default
+  ±1 step, and failed proofs were only audited. A persistent
+  per-account count of consecutive failures (`second_factor_failures`,
+  migration `0088`) now grows across windows: from 10 failures every TOTP,
+  HOTP or recovery-code step waits 2 s after the last failure, doubling up
+  to 1 hour (`429 rate_limited` with `Retry-After`); at 20 the owner
+  receives one mandatory `second_factor_failures` notice
+  (`mfa.code_factors.failure_notice`); at 100 the account's code factors are
+  turned off (`403 code_factors_disabled`, `mfa.code_factors.disabled`; no
+  sign-in code is sent, and a code is refused exactly as for an unknown
+  address). Passkeys never count and are never blocked; a passkey sign-in,
+  a completed password reset from the account's email address and an
+  assisted recovery turn code factors back on, and any successful TOTP, HOTP,
+  recovery-code or passkey proof or completed sign-in resets the count, never
+  a correct password alone, so an attacker cannot cause a permanent lockout.
+  Administrators see the state in `GET /users/{user}`
+  ([owner decision 10](docs/releases/2026-10-alpha.6-decisions.md);
+  SEC-006, MFA-002, MFA-012, TEST-021,
+  [headless-authentication.md](docs/protocols/headless-authentication.md#consecutive-code-factor-failures),
+  [account-recovery.md](docs/operations/account-recovery.md#code-factors-turned-off-after-repeated-failures)).
+  Affected: every earlier 0.2.0 prerelease; regression tests
+  `TestSecondFactorFailureNotice`, `TestSecondFactorBackoff`,
+  `TestSecondFactorCeiling`.
+- The current password of a self-service password change
+  (`POST /me/password`) is checked under the account's sign-in password lock
+  (`security.rate_limits.failures_before_lock`, `temporary_lock`): a wrong one
+  counts against the same budget as a wrong sign-in password, and once it is
+  spent the change answers `429 rate_limited` without checking the password
+  and password sign-in to the account is locked as well, until the window
+  ends. A recently authenticated session could guess the current password
+  without any bound. The refusals' `credential.password.change_failed`
+  evidence, which the rolled-back transaction used to discard, is now kept
+  (owner decision 10; CRED-006, SEC-006). Affected: every earlier 0.2.0
+  prerelease; regression test `TestChangePasswordUnderSignInLock`.
 
 ## [0.2.0-alpha.5] - 2026-10-18
 
