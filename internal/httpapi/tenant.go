@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"slices"
 
 	"github.com/jackc/pgx/v5"
 
@@ -1100,7 +1101,7 @@ func (a *App) tenantRoutes(mux *http.ServeMux) {
 		if _, err := a.orgGuard(p, r, "org.groups.write"); err != nil {
 			return err
 		}
-		if err := a.Orgs.DeleteGroup(r.Context(), p.Realm.ID, r.PathValue("org"), r.PathValue("group"), p.AuditRef()); err != nil {
+		if err := a.Orgs.DeleteGroup(r.Context(), p.Realm.ID, r.PathValue("org"), r.PathValue("group"), p.Subject(), p.AuditRef()); err != nil {
 			return err
 		}
 		w.WriteHeader(http.StatusNoContent)
@@ -1140,7 +1141,7 @@ func (a *App) tenantRoutes(mux *http.ServeMux) {
 		if _, err := a.orgGuard(p, r, "org.groups.write"); err != nil {
 			return err
 		}
-		if err := a.Orgs.RemoveGroupMember(r.Context(), p.Realm.ID, r.PathValue("org"), r.PathValue("group"), r.PathValue("member"), p.AuditRef()); err != nil {
+		if err := a.Orgs.RemoveGroupMember(r.Context(), p.Realm.ID, r.PathValue("org"), r.PathValue("group"), r.PathValue("member"), p.Subject(), p.AuditRef()); err != nil {
 			return err
 		}
 		w.WriteHeader(http.StatusNoContent)
@@ -1162,6 +1163,27 @@ func (a *App) tenantRoutes(mux *http.ServeMux) {
 			return err
 		}
 		writeJSON(w, http.StatusCreated, as)
+		return nil
+	}))
+	mux.HandleFunc("DELETE "+base+"/{org}/groups/{group}/roles/{assignment}", a.tenant(func(w http.ResponseWriter, r *http.Request, p *Principal) error {
+		if _, err := a.orgGuard(p, r, "org.roles.assign"); err != nil {
+			return err
+		}
+		// Only this group's grants in this organization; another group's or
+		// organization's assignment, or a user's, is not found here.
+		group := authorization.Subject{Type: authorization.SubjectGroup, ID: r.PathValue("group")}
+		held, err := a.Authz.ListAssignments(r.Context(), p.Realm.ID, &group, ptrScope(orgScope(r.PathValue("org"))))
+		if err != nil {
+			return err
+		}
+		if !slices.ContainsFunc(held, func(as authorization.Assignment) bool { return as.ID == r.PathValue("assignment") }) {
+			return problem.ErrNotFound
+		}
+		// Unassign applies the delegation ceiling (TEN-008, AZ-006).
+		if err := a.Authz.Unassign(r.Context(), p.Realm.ID, r.PathValue("assignment"), p.Subject(), p.AuditRef()); err != nil {
+			return err
+		}
+		w.WriteHeader(http.StatusNoContent)
 		return nil
 	}))
 	// Domains (TEN-009).

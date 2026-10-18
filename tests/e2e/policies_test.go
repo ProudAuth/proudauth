@@ -174,3 +174,42 @@ func TestPoliciesAndConditionalGrants(t *testing.T) {
 		}
 	})
 }
+
+// TestPolicyInOverMistypedAttributeFailsClosed covers AZ-007 and AZ-015 for
+// the in operator: a deny rule over an attribute of the wrong type is
+// unknown and applies, as an eq rule does, instead of being skipped. A
+// classification asserted as a number, list or object against a list of
+// strings is denied with POLICY_ATTRIBUTE_MISSING; a matching string is
+// denied with the rule's reason and another string is allowed.
+func TestPolicyInOverMistypedAttributeFailsClosed(t *testing.T) {
+	f := NewFixture(t)
+	h := f.H
+	svc := f.MachineToken(f.Clients["orders-rs"], h.Realm.Issuer+"/admin", "proudauth:admin", "").Str("access_token")
+	bob := f.LoginWeb("bob", f.Acme, f.OrdersAud, "orders:read").Tokens.Str("access_token")
+	def := map[string]any{
+		"target": map[string]any{"actions": []string{"orders.*"}, "resource_types": []string{"order"}},
+		"rules": []map[string]any{{"id": "classified", "effect": "deny", "reason_code": "CLASSIFIED",
+			"when": map[string]any{"op": "in", "attr": "context.classification", "value": []string{"secret", "top_secret"}}}},
+	}
+	pid := f.must(f.AdminAPI("POST", "/policies", map[string]any{"name": "orders-classification", "definition": def}), 201, "create policy").Str("policy.id")
+	f.must(f.AdminAPI("POST", "/policies/"+pid+"/versions/1/publish", nil), 200, "publish")
+	for _, c := range []struct {
+		what           string
+		classification any
+		allowed        bool
+		reason         string
+	}{
+		{"another classification", "public", true, "ALLOWED"},
+		{"a listed classification", "secret", false, "CLASSIFIED"},
+		{"a number", 7, false, "POLICY_ATTRIBUTE_MISSING"},
+		{"a list", []string{"secret"}, false, "POLICY_ATTRIBUTE_MISSING"},
+		{"an object", map[string]any{"level": "secret"}, false, "POLICY_ATTRIBUTE_MISSING"},
+	} {
+		r := h.API("POST", "/authorization/check", svc, map[string]any{"subject_token": bob, "action": "orders.read",
+			"resource": map[string]any{"type": "order", "id": "ord_acme_1", "org_id": f.Acme}, "context": map[string]any{"classification": c.classification}})
+		mustStatus(t, r, 200, "decision")
+		if r.Get("allowed") != c.allowed || r.Str("reason_code") != c.reason {
+			t.Errorf("classification %s: %s", c.what, r.Raw)
+		}
+	}
+}

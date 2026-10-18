@@ -456,13 +456,11 @@ func (c *Condition) eval(in *PolicyInput) tri {
 			return b(l >= r)
 		}
 	case "in":
+		// False only when the attribute could be compared with the list:
+		// a number, list or object checked against a list of strings is
+		// unknown, as eq would be, not a non-match.
 		list, _ := right.([]any)
-		for _, v := range list {
-			if eq, ok := equalValues(left, v); ok && eq {
-				return triTrue
-			}
-		}
-		return triFalse
+		return memberOf(list, func(v any) (bool, bool) { return equalValues(left, v) })
 	case "contains":
 		list, ok := left.([]any)
 		if !ok {
@@ -474,12 +472,10 @@ func (c *Condition) eval(in *PolicyInput) tri {
 				return triUnknown
 			}
 		}
-		for _, v := range list {
-			if eq, ok := equalValues(v, right); ok && eq {
-				return triTrue
-			}
+		if len(list) == 0 && scalar(right) {
+			return triFalse // an empty list contains nothing
 		}
-		return triFalse
+		return memberOf(list, func(v any) (bool, bool) { return equalValues(v, right) })
 	case "starts_with":
 		ls, ok1 := left.(string)
 		rs, ok2 := right.(string)
@@ -487,6 +483,24 @@ func (c *Condition) eval(in *PolicyInput) tri {
 			return triUnknown
 		}
 		return b(strings.HasPrefix(ls, rs))
+	}
+	return triUnknown
+}
+
+// memberOf is true when cmp matches an element, false when at least one
+// element was comparable and none matched, and unknown when no element was
+// comparable (a mistyped attribute, AZ-007).
+func memberOf(list []any, cmp func(any) (eq, comparable bool)) tri {
+	compared := false
+	for _, v := range list {
+		eq, ok := cmp(v)
+		if ok && eq {
+			return triTrue
+		}
+		compared = compared || ok
+	}
+	if compared {
+		return triFalse
 	}
 	return triUnknown
 }

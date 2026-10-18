@@ -158,7 +158,22 @@ after acceptance:
   ancestors, and counts the height of the moved subtree against
   `limits.max_group_depth` (`422` on `parent_id`: depth limit, cycle or unknown
   parent). Both run the separation-of-duties check
-  ([ADR 0013](0013-authorization-model.md#update-2026-10)). `group.updated`
+  ([ADR 0013](0013-authorization-model.md#update-2026-10)). Removing a
+  member (`DELETE /organizations/{org}/groups/{group}/members/{member}`)
+  and deleting a group (`DELETE /organizations/{org}/groups/{group}`, which
+  ends the group's role assignments) take those roles away and require the
+  same of the roles of the group and its ancestors, with the same `403`
+  codes, as unassigning a role does (TEN-007). Before 0.2.0-alpha.6 they
+  needed only `org.groups.write`, so an administrator who could not add
+  members to a group could still strip its roles from every member. A
+  group's own role assignment is removed with
+  `DELETE /organizations/{org}/groups/{group}/roles/{assignment}`
+  (`org.roles.assign` from an MFA session, the role within the caller's
+  delegable set); another group's, another organization's or a user's
+  assignment is `404` there. A SCIM connector removes members from, and
+  deletes, the groups it owns without an administrator's ceiling
+  (PROV-007), and a lifecycle workflow checks its publisher's group
+  authority itself. `group.updated`
   carries `parent_id` and `previous_parent_id` when the parent changed, and
   every group update increments the membership revision of every member of
   the group's subtree, which changes their decision cache keys and token
