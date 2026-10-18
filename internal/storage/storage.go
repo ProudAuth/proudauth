@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -283,8 +284,12 @@ type MigrationStatus struct {
 	// Compat is "expand" (older binaries keep working against the migrated
 	// schema) or "contract" (older binaries are no longer supported). A
 	// migration declares contract with a "-- proudauth:compat=contract" line.
-	Compat    string
-	AppliedAt *time.Time
+	Compat string
+	// NoTransaction marks a migration with a "-- proudauth:no-transaction"
+	// line: it runs statement by statement outside a transaction, as
+	// CREATE INDEX CONCURRENTLY requires (parseNoTransaction).
+	NoTransaction bool
+	AppliedAt     *time.Time
 }
 
 // ErrSchemaIncompatible reports a database migrated past what this binary
@@ -314,12 +319,41 @@ func loadMigrations() ([]MigrationStatus, map[string]string, error) {
 		if strings.Contains(string(b), "-- proudauth:compat=contract") {
 			compat = "contract"
 		}
-		out = append(out, MigrationStatus{Name: e.Name(), Checksum: hex.EncodeToString(sum[:]), Compat: compat})
+		out = append(out, MigrationStatus{Name: e.Name(), Checksum: hex.EncodeToString(sum[:]), Compat: compat,
+			NoTransaction: hasLine(string(b), noTransactionDirective)})
 		bodies[e.Name()] = string(b)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out, bodies, nil
 }
+
+// noTransactionDirective marks a migration that runs outside a transaction.
+const noTransactionDirective = "-- proudauth:no-transaction"
+
+// hasLine reports whether body has a line that is exactly line, apart from
+// surrounding white space.
+func hasLine(body, line string) bool {
+	for _, l := range strings.Split(body, "\n") {
+		if strings.TrimSpace(l) == line {
+			return true
+		}
+	}
+	return false
+}
+
+// Bounds of a migration run (OPS-008, DEP-012). A migration's DDL takes
+// table locks; a statement queued behind a long-running query blocks every
+// later query on that table until the migration commits, so on hot tables
+// (authorization codes, access tokens, sessions) an unbounded lock wait is an
+// outage. Each migration therefore waits at most DefaultMigrationLockTimeout
+// for any lock and is retried, after a growing pause, when it gives up.
+const (
+	DefaultMigrationLockTimeout      = 5 * time.Second
+	DefaultMigrationLockRetries      = 5
+	DefaultMigrationStatementTimeout = 10 * time.Minute
+	defaultLockRetryBackoff          = 500 * time.Millisecond
+	maxLockRetryBackoff              = 8 * time.Second
+)
 
 // MigrateOptions controls safety gates for schema transitions (OPS-008).
 type MigrateOptions struct {
@@ -330,12 +364,107 @@ type MigrateOptions struct {
 	BackupReference string
 	// Plan reports what would run, with precondition results, without applying.
 	Plan bool
+	// LockTimeout bounds every lock wait of a migration (PostgreSQL
+	// lock_timeout, set for the migration's own statements only), except
+	// the concurrent index statements of a no-transaction migration
+	// (applyWithoutTx). Zero selects DefaultMigrationLockTimeout; negative
+	// waits without limit.
+	LockTimeout time.Duration
+	// LockRetries is how often a migration that gave up waiting for a lock
+	// (SQLSTATE 55P03) is retried, after a pause that doubles each time.
+	// Zero selects DefaultMigrationLockRetries; negative does not retry.
+	LockRetries int
+	// StatementTimeout bounds each migration statement (statement_timeout,
+	// set for the migration's own statements only, so it replaces the
+	// runtime connection's limit there and never applies to runtime
+	// traffic). Zero selects DefaultMigrationStatementTimeout; negative
+	// runs without limit.
+	StatementTimeout time.Duration
+	// lockRetryBackoff is the first pause between attempts
+	// (defaultLockRetryBackoff when zero); tests shorten it.
+	lockRetryBackoff time.Duration
+}
+
+// migrationBounds are the resolved bounds of a run; zero means no limit.
+type migrationBounds struct {
+	lockTimeout, statementTimeout time.Duration
+	retries                       int
+	backoff                       time.Duration
+}
+
+func (opt MigrateOptions) bounds() migrationBounds {
+	pick := func(d, def time.Duration) time.Duration {
+		switch {
+		case d == 0:
+			return def
+		case d < 0:
+			return 0
+		}
+		return d
+	}
+	b := migrationBounds{
+		lockTimeout:      pick(opt.LockTimeout, DefaultMigrationLockTimeout),
+		statementTimeout: pick(opt.StatementTimeout, DefaultMigrationStatementTimeout),
+		retries:          max(opt.LockRetries, 0),
+		backoff:          pick(opt.lockRetryBackoff, defaultLockRetryBackoff),
+	}
+	if opt.LockRetries == 0 {
+		b.retries = DefaultMigrationLockRetries
+	}
+	return b
+}
+
+// pgMillis renders d as a PostgreSQL time setting; "0" disables it.
+func pgMillis(d time.Duration) string {
+	if d <= 0 {
+		return "0"
+	}
+	return fmt.Sprintf("%dms", min(max(d.Milliseconds(), 1), math.MaxInt32))
+}
+
+// isLockTimeout reports lock_not_available (SQLSTATE 55P03): lock_timeout
+// expired, or NOWAIT found the lock taken.
+func isLockTimeout(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "55P03"
+}
+
+// withLockRetry runs attempt until it succeeds, fails for another reason
+// than a lock timeout, or has been retried b.retries times, pausing between
+// attempts. An attempt that fails must leave nothing behind but a rolled
+// back transaction or repeatable statements that completed. lockTimeout is
+// the lock_timeout the attempts run with, for the error message.
+func withLockRetry(ctx context.Context, b migrationBounds, lockTimeout time.Duration, attempt func() error) error {
+	pause := b.backoff
+	for n := 0; ; n++ {
+		err := attempt()
+		if err == nil || !isLockTimeout(err) {
+			return err
+		}
+		if n >= b.retries {
+			attempts := fmt.Sprintf("%d attempts", n+1)
+			if n == 0 {
+				attempts = "1 attempt"
+			}
+			if lockTimeout <= 0 {
+				return fmt.Errorf("%w (gave up after %s: run migrate again when the tables are quieter)", err, attempts)
+			}
+			return fmt.Errorf("%w (gave up after %s with lock_timeout %s: run migrate again when the tables are quieter, or raise -lock-timeout or storage.migration_lock_timeout)", err, attempts, lockTimeout)
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(pause):
+		}
+		pause = min(pause*2, maxLockRetryBackoff)
+	}
 }
 
 // MigrationPlanItem is one pending migration in a plan.
 type MigrationPlanItem struct {
 	Name          string
 	Compat        string
+	NoTransaction bool
 	Preconditions []PreconditionResult
 }
 
@@ -385,6 +514,10 @@ func (db *DB) Migrate(ctx context.Context) ([]string, error) {
 // nodes cannot race. Applied migrations whose checksum changed abort the run,
 // contract migrations require a backup reference, and declared preconditions
 // must hold, rather than attempting unsafe automatic recovery (OPS-008).
+// Every lock wait and statement of a migration is bounded (LockTimeout,
+// StatementTimeout), and a migration that gives up waiting for a lock is
+// retried a bounded number of times (LockRetries), so DDL never queues
+// indefinitely in front of the service's queries (DEP-012).
 func (db *DB) MigrateWith(ctx context.Context, opt MigrateOptions) ([]string, []MigrationPlanItem, error) {
 	ran, plan, err := db.migrate(ctx, opt)
 	return ran, plan, err
@@ -453,6 +586,20 @@ func (db *DB) migrate(ctx context.Context, opt MigrateOptions) ([]string, []Migr
 			return nil, nil, fmt.Errorf("database has migration %s unknown to this binary: refusing to run an older binary against a newer schema (TEST-061)", name)
 		}
 	}
+	// No-transaction files are split before anything runs, so a file the
+	// splitter refuses stops the run (and the plan) before any change.
+	noTx := map[string][]noTxStatement{}
+	for _, m := range all {
+		if _, ok := applied[m.Name]; ok || !m.NoTransaction {
+			continue
+		}
+		stmts, err := parseNoTransaction(bodies[m.Name])
+		if err != nil {
+			return nil, nil, fmt.Errorf("migration %s (no-transaction): %w", m.Name, err)
+		}
+		noTx[m.Name] = stmts
+	}
+	bounds := opt.bounds()
 	var ran []string
 	var plan []MigrationPlanItem
 	for _, m := range all {
@@ -464,7 +611,7 @@ func (db *DB) migrate(ctx context.Context, opt MigrateOptions) ([]string, []Migr
 		}
 		pre := checkPreconditions(ctx, conn, bodies[m.Name])
 		if opt.Plan {
-			plan = append(plan, MigrationPlanItem{Name: m.Name, Compat: m.Compat, Preconditions: pre})
+			plan = append(plan, MigrationPlanItem{Name: m.Name, Compat: m.Compat, NoTransaction: m.NoTransaction, Preconditions: pre})
 			continue
 		}
 		if m.Compat == "contract" && strings.TrimSpace(opt.BackupReference) == "" {
@@ -475,25 +622,162 @@ func (db *DB) migrate(ctx context.Context, opt MigrateOptions) ([]string, []Migr
 				return ran, nil, fmt.Errorf("migration %s precondition failed: %s %s", m.Name, p.SQL, p.Err)
 			}
 		}
-		tx, err := conn.Begin(ctx)
+		if m.NoTransaction {
+			err = applyWithoutTx(ctx, conn, m, noTx[m.Name], bounds, opt.BackupReference)
+		} else {
+			err = applyInTx(ctx, conn, m, bodies[m.Name], bounds, opt.BackupReference)
+		}
 		if err != nil {
-			return ran, nil, err
-		}
-		if _, err := tx.Exec(ctx, bodies[m.Name]); err != nil {
-			_ = tx.Rollback(ctx)
-			return ran, nil, fmt.Errorf("apply %s: %w", m.Name, err)
-		}
-		if _, err := tx.Exec(ctx, `INSERT INTO schema_migrations (name, checksum, compat, backup_reference) VALUES ($1, $2, $3, $4)`,
-			m.Name, m.Checksum, m.Compat, nilIfBlank(opt.BackupReference)); err != nil {
-			_ = tx.Rollback(ctx)
-			return ran, nil, err
-		}
-		if err := tx.Commit(ctx); err != nil {
 			return ran, nil, err
 		}
 		ran = append(ran, m.Name)
 	}
 	return ran, plan, nil
+}
+
+func recordMigration(ctx context.Context, q Querier, m MigrationStatus, backupReference string) error {
+	_, err := q.Exec(ctx, `INSERT INTO schema_migrations (name, checksum, compat, backup_reference) VALUES ($1, $2, $3, $4)`,
+		m.Name, m.Checksum, m.Compat, nilIfBlank(backupReference))
+	return err
+}
+
+// applyInTx applies a migration and records it in one transaction, with
+// lock_timeout and statement_timeout set for that transaction only. A lock
+// timeout rolls everything back, so the whole transaction is retried.
+func applyInTx(ctx context.Context, conn *pgxpool.Conn, m MigrationStatus, body string, b migrationBounds, backupReference string) error {
+	return withLockRetry(ctx, b, b.lockTimeout, func() error {
+		tx, err := conn.Begin(ctx)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = tx.Rollback(ctx) }()
+		if _, err := tx.Exec(ctx, `SELECT set_config('lock_timeout', $1, true), set_config('statement_timeout', $2, true)`,
+			pgMillis(b.lockTimeout), pgMillis(b.statementTimeout)); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, body); err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "25001" {
+				return fmt.Errorf("apply %s: %w (a statement that cannot run in a transaction block, such as CREATE INDEX CONCURRENTLY, needs a file marked %q)", m.Name, err, noTransactionDirective)
+			}
+			return fmt.Errorf("apply %s: %w", m.Name, err)
+		}
+		if err := recordMigration(ctx, tx, m, backupReference); err != nil {
+			return err
+		}
+		return tx.Commit(ctx)
+	})
+}
+
+// applyWithoutTx runs a no-transaction migration one statement at a time
+// outside a transaction, then records it once every statement succeeded and
+// every index it creates is valid. The file is not atomic: an interrupted
+// run leaves its completed statements in place, so each statement is
+// repeatable (parseNoTransaction) and a repeated run completes it. A lock
+// timeout retries the statement that hit it.
+//
+// CREATE INDEX CONCURRENTLY and DROP INDEX CONCURRENTLY (and the drop of an
+// invalid index) run without lock_timeout, bounded by statement_timeout
+// alone. They wait for every transaction older than them, read-only ones
+// included, yet take only SHARE UPDATE EXCLUSIVE, which the service's reads
+// and writes never wait for; with a lock bound of a few seconds, one long
+// export or report would make every attempt give up. Every other statement
+// of the file keeps the configured lock bound.
+func applyWithoutTx(ctx context.Context, conn *pgxpool.Conn, m MigrationStatus, stmts []noTxStatement, b migrationBounds, backupReference string) error {
+	// Session settings, since there is no transaction to scope them to;
+	// standard_conforming_strings is what the splitter assumes.
+	if _, err := conn.Exec(ctx, `SELECT set_config('statement_timeout', $1, false), set_config('standard_conforming_strings', 'on', false)`,
+		pgMillis(b.statementTimeout)); err != nil {
+		return err
+	}
+	// lock_timeout is set before every statement rather than once: the file
+	// may change it itself.
+	lockTimeout := func(d time.Duration) error {
+		_, err := conn.Exec(ctx, `SELECT set_config('lock_timeout', $1, false)`, pgMillis(d))
+		return err
+	}
+	defer func() {
+		// The connection goes back to the pool: restore the settings it was
+		// opened with (these and any SET of the file itself; RESET ALL keeps
+		// the advisory lock and the connection's startup parameters), or
+		// close it so no runtime query inherits them.
+		if _, err := conn.Exec(context.Background(), `RESET ALL`); err != nil {
+			_ = conn.Conn().Close(context.Background())
+		}
+	}()
+	for i, st := range stmts {
+		bound := b.lockTimeout
+		if st.Concurrently {
+			bound = 0
+		}
+		err := withLockRetry(ctx, b, bound, func() error {
+			if st.Index != nil {
+				if err := lockTimeout(0); err != nil {
+					return err
+				}
+				if err := dropInvalidIndex(ctx, conn, st.Index); err != nil {
+					return err
+				}
+			}
+			if err := lockTimeout(bound); err != nil {
+				return err
+			}
+			_, err := conn.Exec(ctx, st.SQL)
+			return err
+		})
+		if err != nil {
+			left := ""
+			// A failed concurrent build leaves an invalid index that every
+			// write maintains and that may enforce uniqueness: drop it now
+			// while the session still works, otherwise the next run does.
+			if st.Index != nil && st.Index.Concurrently && (lockTimeout(0) != nil || dropInvalidIndex(ctx, conn, st.Index) != nil) {
+				left = fmt.Sprintf("; index %s may be left invalid, and the next migrate run drops and rebuilds it", st.Index.Name)
+			}
+			return fmt.Errorf("apply %s (no-transaction, statement %d of %d, not recorded%s): %w", m.Name, i+1, len(stmts), left, err)
+		}
+	}
+	for _, st := range stmts {
+		if st.Index == nil {
+			continue
+		}
+		name, valid, found, err := indexState(ctx, conn, st.Index)
+		switch {
+		case err != nil:
+			return err
+		case !found:
+			return fmt.Errorf("migration %s: index %s on %s does not exist after the migration ran; it is not recorded", m.Name, st.Index.Name, st.Index.Table)
+		case !valid:
+			return fmt.Errorf("migration %s: index %s is invalid (pg_index.indisvalid is false), so the migration is not recorded; run migrate again to drop and rebuild it", m.Name, name)
+		}
+	}
+	return recordMigration(ctx, conn, m, backupReference)
+}
+
+// indexState finds the index ix creates on its table: its schema-qualified
+// name and whether it is valid.
+func indexState(ctx context.Context, q Querier, ix *indexDDL) (name string, valid, found bool, err error) {
+	err = q.QueryRow(ctx, `SELECT format('%I.%I', n.nspname, c.relname), i.indisvalid
+		FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid JOIN pg_namespace n ON n.oid = c.relnamespace
+		WHERE i.indrelid = to_regclass($1) AND c.relname = $2`, ix.Table, ix.Name).Scan(&name, &valid)
+	if IsNoRows(err) {
+		return "", false, false, nil
+	}
+	return name, valid, err == nil, err
+}
+
+// dropInvalidIndex drops an invalid index of the name ix creates: what an
+// interrupted CREATE INDEX CONCURRENTLY leaves behind (the migration is not
+// recorded yet, and the advisory lock excludes a build still in progress).
+// IF NOT EXISTS would keep it, and the migration would be recorded with an
+// index that no query uses but every write maintains, and that may still
+// enforce uniqueness.
+func dropInvalidIndex(ctx context.Context, conn *pgxpool.Conn, ix *indexDDL) error {
+	name, valid, found, err := indexState(ctx, conn, ix)
+	if err != nil || !found || valid {
+		return err
+	}
+	_, err = conn.Exec(ctx, "DROP INDEX CONCURRENTLY IF EXISTS "+name)
+	return err
 }
 
 func nilIfBlank(s string) *string {

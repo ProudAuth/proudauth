@@ -257,6 +257,38 @@ The runner records a SHA-256 checksum per file.
   `-- proudauth:precondition <SQL>` lines must return true before the migration
   runs, and `migrate -plan` reports pending migrations and precondition results
   without applying anything (OPS-008, `TestMigrationSafetyGates`).
+- Every migration runs with `lock_timeout` (`storage.migration_lock_timeout`,
+  5 s) and `statement_timeout` (`storage.migration_statement_timeout`, 10 min)
+  set for its own statements, and is rolled back and retried when it gives up
+  waiting for a lock (`TestMigrationLockTimeout`). The bound keeps DDL from
+  queuing in front of the service's queries; it does not shorten a lock the
+  migration holds. Concurrent index statements are exempt (below). Keep DDL on hot tables (`authorization_codes`,
+  `opaque_access_tokens`, `sessions`, ...) short, and build an index on an
+  existing table with `CREATE INDEX CONCURRENTLY` in a no-transaction
+  migration rather than plain `CREATE INDEX`, which blocks writes to the table
+  for the whole build.
+- **No-transaction migrations.** A file with a `-- proudauth:no-transaction`
+  line runs statement by statement outside a transaction, as
+  `CREATE INDEX CONCURRENTLY` and `DROP INDEX CONCURRENTLY` require. It is not
+  atomic, so write every statement to run again after an interruption:
+  `CREATE INDEX CONCURRENTLY IF NOT EXISTS name ON table (...)`,
+  `DROP INDEX CONCURRENTLY IF EXISTS name`, `ADD COLUMN IF NOT EXISTS`. The
+  runner refuses `CREATE INDEX` without `IF NOT EXISTS` and a name,
+  `DROP INDEX` without `IF EXISTS`, transaction control, `BEGIN ATOMIC`
+  bodies and anything its statement splitter cannot read with certainty
+  (`TestSplitSQL`, `TestParseNoTransaction`); the other statements'
+  idempotency is the author's and the reviewer's job. Put the index builds in
+  their own file, with nothing that needs a transaction; a `SET` in it lasts
+  until the end of the file. `CREATE INDEX CONCURRENTLY` and
+  `DROP INDEX CONCURRENTLY` run without `lock_timeout`: they wait for older
+  transactions without blocking the service's queries, so
+  `storage.migration_statement_timeout` is their only bound; every other
+  statement of the file keeps the lock bound
+  (`TestNoTransactionMigrationLockBounds`). The runner rebuilds an invalid
+  index left by an interrupted build and records the migration only when
+  every index the file creates is valid
+  (`TestNoTransactionMigrationRebuildsInvalidIndex`,
+  [upgrades.md](docs/operations/upgrades.md#no-transaction-migrations)).
 - Every tenant-owned table carries `realm_id` (and `organization_id` where
   relevant) with composite foreign keys (DB-001). Bearer secrets are stored only as
   digests; recoverable secrets only as AES-GCM ciphertext with a key version

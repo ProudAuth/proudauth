@@ -33,9 +33,28 @@ func init() {
 		fs := flag.NewFlagSet("migrate", flag.ExitOnError)
 		cfg := fs.String("config", os.Getenv("PROUDAUTH_CONFIG"), "config file")
 		status := fs.Bool("status", false, "only show status")
-		plan := fs.Bool("plan", false, "show pending migrations, their compatibility class and precondition results without applying (OPS-008)")
+		plan := fs.Bool("plan", false, "show pending migrations, their compatibility class, no-transaction mode and precondition results without applying (OPS-008)")
 		backup := fs.String("backup-reference", "", "identifier of the verified backup taken before this run; required for contract (destructive) migrations")
+		lockTimeout := fs.Duration("lock-timeout", 0, "longest wait for each lock a migration takes (PostgreSQL lock_timeout) before the migration gives up and is retried; concurrent index builds run without it; 0 waits without limit (default storage.migration_lock_timeout, 5s)")
+		lockRetries := fs.Int("lock-retries", storage.DefaultMigrationLockRetries, "how often a migration that gave up waiting for a lock is retried, after a pause that doubles from 0.5s up to 8s; 0 does not retry")
+		stmtTimeout := fs.Duration("statement-timeout", 0, "longest run of each migration statement (statement_timeout, for migrations only); 0 runs without limit (default storage.migration_statement_timeout, 10m)")
 		_ = fs.Parse(args)
+		if *lockTimeout < 0 || *lockRetries < 0 || *stmtTimeout < 0 {
+			return errors.New("migrate: -lock-timeout, -lock-retries and -statement-timeout must not be negative")
+		}
+		opt := storage.MigrateOptions{BackupReference: *backup, LockRetries: *lockRetries}
+		if *lockRetries == 0 {
+			opt.LockRetries = -1
+		}
+		// Bounds given here replace the configured ones for this run (OPS-008).
+		fs.Visit(func(f *flag.Flag) {
+			switch f.Name {
+			case "lock-timeout":
+				opt.LockTimeout = server.MigrationBound(*lockTimeout)
+			case "statement-timeout":
+				opt.StatementTimeout = server.MigrationBound(*stmtTimeout)
+			}
+		})
 		ctx := context.Background()
 		env, err := server.InitOperator(ctx, *cfg)
 		if err != nil {
@@ -63,7 +82,7 @@ func init() {
 		} else {
 			// Applied as the schema owner when storage.migration_database_url is
 			// set, then the runtime role gets data privileges only (OPS-013).
-			ran, err = server.MigrateAsOwner(ctx, env.Cfg, env.DB, storage.MigrateOptions{BackupReference: *backup})
+			ran, err = server.MigrateAsOwner(ctx, env.Cfg, env.DB, opt)
 		}
 		if *plan {
 			if err != nil {
@@ -73,7 +92,11 @@ func init() {
 				fmt.Println("schema is current")
 			}
 			for _, m := range pending {
-				fmt.Printf("%-48s %s\n", m.Name, m.Compat)
+				class := m.Compat
+				if m.NoTransaction {
+					class += ", no-transaction"
+				}
+				fmt.Printf("%-48s %s\n", m.Name, class)
 				for _, p := range m.Preconditions {
 					state := "holds"
 					if !p.Held {

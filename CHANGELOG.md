@@ -130,6 +130,37 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   ([relationship-authorization.md](docs/integrations/relationship-authorization.md#sharing)).
   Affected: every earlier 0.2.0 prerelease; regression test
   `TestResourceSharesKeepForeignTuples`.
+- Migrations bound their lock waits: each migration runs with `lock_timeout`
+  set to the new `storage.migration_lock_timeout` (default `5s`), so DDL that
+  queues behind a long query no longer holds up every later query on a hot
+  table (`authorization_codes`, `opaque_access_tokens`, `sessions`) until it
+  commits. A migration that gives up waiting (SQLSTATE `55P03`) is rolled
+  back and retried up to 5 times with pauses growing from 0.5 s to 8 s, then
+  `migrate` fails and nothing of it is applied. Migration statements run with
+  the new `storage.migration_statement_timeout` (default `10m`) instead of
+  the runtime `storage.statement_timeout`: over the runtime connection they
+  were cut off after 10 seconds, over `storage.migration_database_url` they
+  had no limit. Both are set for the migration's own statements only;
+  `identity-cli migrate -lock-timeout`, `-lock-retries` and
+  `-statement-timeout` override them for one run (OPS-008, DEP-012). A
+  migration file with a `-- proudauth:no-transaction` line runs statement by
+  statement outside a transaction, so it can use `CREATE INDEX CONCURRENTLY`;
+  its `CREATE INDEX` and `DROP INDEX` statements must be repeatable
+  (`IF NOT EXISTS`, `IF EXISTS`), an invalid index left by an interrupted
+  concurrent build is dropped and rebuilt, and the migration is recorded only
+  when every index it creates is valid (`pg_index.indisvalid`). Its
+  `CREATE INDEX CONCURRENTLY` and `DROP INDEX CONCURRENTLY` statements wait
+  for older transactions without blocking the service's queries, so they run
+  without `lock_timeout` and are bounded by
+  `storage.migration_statement_timeout` only; its other statements keep the
+  lock bound. `migrate -plan` marks such migrations `no-transaction`
+  ([upgrades.md](docs/operations/upgrades.md#no-transaction-migrations),
+  [CONTRIBUTING.md](CONTRIBUTING.md#database-migrations)). Regression tests
+  `TestMigrationLockTimeout`, `TestMigrationStatementTimeout`,
+  `TestNoTransactionMigrationRebuildsInvalidIndex`,
+  `TestNoTransactionMigrationLockBounds`,
+  `TestNoTransactionMigrationFailures`, `TestSplitSQL`,
+  `TestParseNoTransaction`, `TestMigrationBounds`.
 
 ### Security
 
