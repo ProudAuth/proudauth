@@ -259,6 +259,28 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   longer turns into a year-long token. Accounts without a second factor are
   unchanged (MCH-006, MFA-006). Affected: every earlier 0.2.0 prerelease;
   regression test `TestPersonalAccessTokenMintingNeedsFactorProof`.
+- `POST /me/organization-grants`, the organization switch, runs the consent
+  coverage of an authorization before it creates a grant
+  ([decision 12](docs/releases/2026-10-alpha.6-decisions.md)): for a client
+  with `consent_mode: required`, the user's own live consent at the client's
+  terms version, otherwise a live pre-authorization for the realm or the
+  target organization, must cover every scope of the new grant, otherwise
+  `403 consent_required` (a new problem code) with an `authorize` obligation
+  naming `organization_id` and `scope`. The grant records the consent it rests
+  on, so revoking the consent or the pre-authorization ends it, and the
+  client's `token_policy.max_session_age_seconds` refuses an older session
+  with `403 step_up_required`. The switch checked only the client's resource
+  grants, so a third-party client holding a user's account-API token could
+  mint a code for scopes the user never approved or for an organization
+  without a pre-authorization, and such a grant outlived the revoked
+  pre-authorization (TOK-008, APP-013, TEN-005, SES-002). The authentication
+  transaction uses the same coverage check (`CheckConsentCoverage`): a consent
+  recorded for an organization's pre-authorization now covers a later sign-in
+  only while that pre-authorization does, so it no longer stands in for the
+  user's consent in another organization, where the user is now asked, and a
+  grant issued without asking records the consent it rests on. Affected:
+  every earlier 0.2.0 prerelease; regression tests
+  `TestOrganizationSwitchConsent`, `TestOrganizationSwitchPreauthorization`.
 
 ## [0.2.0-alpha.5] - 2026-10-18
 

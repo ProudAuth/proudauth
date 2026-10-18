@@ -56,6 +56,28 @@ is bounded by the smallest of `impersonation.max_ttl` (operator), realm
 `impersonation.max_ttl_seconds`, `tokens.impersonation_access_token_ttl_seconds`
 and `tokens.access_token_ttl_seconds`.
 
+## Scope reduction and consent (TOK-008)
+
+A user token's scopes stay within the client's resource grants, the subject's
+organization scope policy and, for a client with `consent_mode: required`, the
+user's consent for that client (APP-013). Every path that creates a user grant
+or derives a token from one applies the consent part:
+
+| Path | Consent |
+| --- | --- |
+| Authorization (authentication transaction) | `CheckConsentCoverage` (`internal/authentication/consent_coverage.go`): the user's own live consent at the client's `consent_terms_version`, otherwise a live pre-authorization for the realm or the organization signed in to, must cover every scope; otherwise the transaction asks with the `consent` action ([headless-authentication.md](headless-authentication.md#consent)) |
+| Organization switch (`POST /me/organization-grants`) | The same check for the target organization and the scopes of the new grant (never `offline_access`); otherwise `403 consent_required` with the obligation `{"type": "authorize", "organization_id": "...", "scope": "..."}`, which the client answers with an authorization request naming the organization (`TestOrganizationSwitchConsent`, `TestOrganizationSwitchPreauthorization`) |
+| Refresh | Only narrows the grant's scopes (`invalid_scope`, "refresh cannot expand scope"), re-checked against the client's current grants |
+| Token exchange | Narrowed to the user's live consent for the client the subject token was issued to ([oauth-oidc-profile.md](oauth-oidc-profile.md#token-exchange-rfc-8693), `TestExchangeLimitedToUserConsent`) |
+
+Offline access by a third-party client always needs the user's own consent, and
+a consent recorded for a pre-authorization covers a later request only while
+that pre-authorization does. For a `consent_mode: required` client, a grant
+issued without asking records the consent it rests on, so revoking the consent,
+or the pre-authorization behind it, ends the grant and its refresh tokens; this
+holds for grants created by an organization switch as for those of an
+authorization.
+
 ## JWT header
 
 ```json

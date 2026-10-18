@@ -130,6 +130,14 @@ type TokenPolicy struct {
 	MaxSessionAgeSeconds int `json:"max_session_age_seconds,omitempty"`
 }
 
+// SessionTooOld reports whether a session authenticated at authTime is older
+// than the client's MaxSessionAgeSeconds allows at now (SES-002). The
+// authentication transaction then does not reuse the session, and an
+// organization switch refuses it.
+func (p TokenPolicy) SessionTooOld(authTime, now time.Time) bool {
+	return p.MaxSessionAgeSeconds > 0 && now.Sub(authTime) > time.Duration(p.MaxSessionAgeSeconds)*time.Second
+}
+
 // Active reports whether the client may be used.
 func (c *Client) Active() bool { return c.State == "active" }
 

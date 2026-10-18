@@ -1052,9 +1052,10 @@ func (a *App) removeOwnCredential(r *http.Request, p *Principal, id string) erro
 }
 
 // organizationGrant switches organization context: it issues a new code bound to the
-// current session for the same client after checking active membership and the
-// organization's authentication requirements (TEN-005). It never changes tenant
-// context from a header alone.
+// current session for the same client after checking active membership, the
+// organization's authentication requirements (TEN-005), the client's session-age
+// bound (SES-002) and the user's consent for the client in that organization
+// (APP-013, TOK-008). It never changes tenant context from a header alone.
 func (a *App) organizationGrant(w http.ResponseWriter, r *http.Request, p *Principal) error {
 	var b struct {
 		ClientID            string   `json:"client_id"`
@@ -1140,10 +1141,34 @@ func (a *App) organizationGrant(w http.ResponseWriter, r *http.Request, p *Princ
 			return problem.ErrStepUpRequired.WithDetail("the organization's session lifetime has passed").
 				WithExtension("obligations", []map[string]any{{"type": "reauthenticate"}})
 		}
+		// The client's own session-age bound applies as at authorization,
+		// where such a session is not reused (SES-002).
+		if c.TokenPolicy.SessionTooOld(sess.AuthTime, a.D.Now()) {
+			return problem.ErrStepUpRequired.WithDetail("the session is older than the client allows").
+				WithExtension("obligations", []map[string]any{{"type": "reauthenticate", "max_age_seconds": c.TokenPolicy.MaxSessionAgeSeconds}})
+		}
+		// Consent (APP-013, TOK-008): the same coverage as an authorization
+		// for the organization. The user's own live consent at the client's
+		// terms version, otherwise a pre-authorization for the realm or the
+		// target organization, must cover every scope of the new grant; the
+		// grant rests on it, so revoking it ends the grant.
+		granted := slices.DeleteFunc(slices.Clone(scopes), func(s string) bool { return s == "offline_access" })
+		req := authentication.ConsentRequest{RealmID: p.Realm.ID, UserID: p.SubjectID, Client: c, OrgID: org.ID, Scopes: granted}
+		cov, err := a.Auth.CheckConsentCoverage(ctx, tx, req)
+		if err != nil {
+			return err
+		}
+		if !cov.Covered() {
+			return problem.ErrConsentRequired.WithDetail("the user has not consented to these scopes for this client in that organization").
+				WithExtension("obligations", []map[string]any{{"type": "authorize", "organization_id": org.ID, "scope": strings.Join(granted, " ")}})
+		}
+		consentID, err := a.Auth.ConsentBasisTx(ctx, tx, req, cov, resources)
+		if err != nil {
+			return err
+		}
 		at := sess.AuthTime
 		g := &session.Grant{RealmID: p.Realm.ID, SubjectType: "user", SubjectID: p.SubjectID, ClientRef: c.Ref, OrgID: org.ID, SessionID: sess.ID,
-			ResourceIDs: resources, Scopes: slices.DeleteFunc(slices.Clone(scopes), func(s string) bool { return s == "offline_access" }),
-			AuthTime: &at, AMR: sess.AMR, ACR: sess.ACR, ExpiresAt: expires}
+			ResourceIDs: resources, Scopes: granted, ConsentID: consentID, AuthTime: &at, AMR: sess.AMR, ACR: sess.ACR, ExpiresAt: expires}
 		if err := a.Sessions.CreateGrantTx(ctx, tx, g); err != nil {
 			return err
 		}

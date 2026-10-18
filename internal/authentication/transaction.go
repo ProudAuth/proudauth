@@ -319,7 +319,7 @@ func (s *Service) Start(ctx context.Context, in StartInput) (*Started, error) {
 		fresh := in.MaxAge == nil || now.Sub(sess.AuthTime) <= time.Duration(*in.MaxAge)*time.Second
 		// Per-client restriction (SES-002): a client may refuse SSO sessions older
 		// than its own bound, whatever the request asks for.
-		if limit := in.Client.TokenPolicy.MaxSessionAgeSeconds; limit > 0 && now.Sub(sess.AuthTime) > time.Duration(limit)*time.Second {
+		if in.Client.TokenPolicy.SessionTooOld(sess.AuthTime, now) {
 			fresh = false
 		}
 		if fresh {
@@ -836,29 +836,18 @@ func (s *Service) evaluate(ctx context.Context, q storage.Querier, t *Transactio
 	}
 	// Consent (APP-013). Offline access by a third-party client always needs the
 	// user's explicit consent, independent of remember-me (OIDC-012, SES-021).
-	offlineConsent := slices.Contains(t.Scopes, "offline_access") && client.AllowOfflineAccess && !client.FirstParty
-	if (client.ConsentMode == "required" || t.hasPrompt("consent") || offlineConsent) && !t.ConsentDecided {
+	if (client.ConsentMode == "required" || t.hasPrompt("consent") || offlineConsentRequired(client, t.Scopes)) && !t.ConsentDecided {
 		covered := false
 		if !t.hasPrompt("consent") {
-			// A live consent covers the request when it includes every requested
-			// scope and was given for the client's current terms version.
-			var scopes []string
-			var terms string
-			err := q.QueryRow(ctx, `SELECT scopes, coalesce(terms_version,'') FROM consents WHERE user_id=$1 AND client_ref=$2 AND revoked_at IS NULL`,
-				u.ID, t.ClientRef).Scan(&scopes, &terms)
-			if err == nil && terms == client.ConsentTermsVersion {
-				covered = !slices.ContainsFunc(t.Scopes, func(sc string) bool { return !slices.Contains(scopes, sc) })
+			// The user's own live consent at the client's current terms
+			// version, otherwise a pre-authorization for the realm or for the
+			// organization the user signs in to, covers the request
+			// (CheckConsentCoverage, shared with the organization switch).
+			cov, err := s.CheckConsentCoverage(ctx, q, t.consentRequest(client, u.ID, t.Scopes))
+			if err != nil {
+				return nil, err
 			}
-			// An administrator may pre-authorize the client for the realm or for
-			// the organization the user signs in to (APP-013); offline access by a
-			// third-party client still needs the user's own consent.
-			if !covered && !offlineConsent {
-				id, err := s.consentPreauthorization(ctx, q, t, client)
-				if err != nil {
-					return nil, err
-				}
-				covered = id != ""
-			}
+			covered = cov.Covered()
 		}
 		if !covered {
 			r.needConsent = true
@@ -876,21 +865,14 @@ func (s *Service) evaluate(ctx context.Context, q storage.Querier, t *Transactio
 	return r, nil
 }
 
-// consentPreauthorization returns the live administrative pre-authorization
-// covering the transaction's client, organization, scopes and terms, if any.
-func (s *Service) consentPreauthorization(ctx context.Context, q storage.Querier, t *Transaction, client *application.Client) (string, error) {
+// consentRequest is the consent question of the transaction: the user, its
+// client, the organization it signs in to (selected or requested) and scopes.
+func (t *Transaction) consentRequest(client *application.Client, userID string, scopes []string) ConsentRequest {
 	org := t.SelectedOrgID
 	if org == "" {
 		org = t.RequestedOrgID
 	}
-	var id string
-	err := q.QueryRow(ctx, `SELECT id FROM consent_preauthorizations WHERE realm_id=$1 AND client_ref=$2 AND revoked_at IS NULL
-		AND (organization_id IS NULL OR organization_id=$3) AND scopes @> $4 AND coalesce(terms_version,'') = $5
-		ORDER BY organization_id NULLS LAST, granted_at LIMIT 1`, t.RealmID, t.ClientRef, org, nonNil(t.Scopes), client.ConsentTermsVersion).Scan(&id)
-	if storage.IsNoRows(err) {
-		return "", nil
-	}
-	return id, err
+	return ConsentRequest{RealmID: t.RealmID, UserID: userID, Client: client, OrgID: org, Scopes: scopes}
 }
 
 func hasVerifiedEmail(u *identity.User) bool {

@@ -132,6 +132,7 @@ var (
 	ErrUnsupportedMedia    = newErr(http.StatusUnsupportedMediaType, "unsupported_media_type", "Content-Type must be application/json.")
 	ErrStepUpRequired      = newErr(http.StatusForbidden, "step_up_required", "Fresh or stronger authentication is required.")
 	ErrRecentAuthRequired  = newErr(http.StatusForbidden, "recent_authentication_required", "Recent authentication is required for this action.")
+	ErrConsentRequired     = newErr(http.StatusForbidden, "consent_required", "The user has not consented to this request for the client.")
 	ErrMFARequired         = newErr(http.StatusForbidden, "mfa_required", "Multi-factor authentication is required.")
 	ErrRecoveryRestricted  = newErr(http.StatusForbidden, "recovery_restricted", "This session started from a recovery factor: enroll a new factor and sign in with it first.")
 	ErrTransactionInvalid  = newErr(http.StatusBadRequest, "transaction_invalid", "The authentication transaction cannot continue.")
