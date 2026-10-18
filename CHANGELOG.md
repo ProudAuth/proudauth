@@ -74,6 +74,16 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   (`403 grant_ceiling_exceeded`); the members of the group and of its
   descendant groups lose the role, recorded as `role.unassigned`
   (TEN-007, TEN-008, TEN-013, `TestGroupRoleUnassignRoute`).
+- Migration `0090_dcr_reviewed_version.sql` adds the nullable
+  `client_registrations.reviewed_version` (the client version an approval
+  reviewed) and `requeued_at` (when a change returned the registration to
+  review); an expand migration that older binaries ignore. `POST
+  /client-registrations/{client}/approve` takes `{"reviewed_version": N}`
+  and `GET /client-registrations` lists, per registration, the client
+  `version` and `client_state`, `post_logout_redirect_uris`, `grant_types`,
+  `client_uri`, `logo_uri`, `policy_uri`, `tos_uri`, `reviewed_version` and
+  `requeued_at` (APP-016, APP-017, API-010;
+  [dynamic-client-registration.md](docs/integrations/dynamic-client-registration.md#approval)).
 
 ### Changed
 
@@ -153,6 +163,11 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   updated. No ProudAuth SDK creates client assertions. A relying party that
   logs users out with a `GET` and a hint from another session uses that
   session's ID token or `POST`.
+- `POST /client-registrations/{client}/approve` requires `reviewed_version`,
+  the client version that was reviewed: `422` without it, `409` when the
+  client is at another version (APP-017, decision 14). **Migration:** read
+  `version` from `GET /client-registrations` with the metadata being
+  reviewed and send it; after a `409`, list and review again.
 
 ### Fixed
 
@@ -394,6 +409,28 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   [oauth-oidc-profile.md](docs/protocols/oauth-oidc-profile.md#clients)).
   Affected: every earlier 0.2.0 prerelease; regression tests
   `TestPrivateKeyJWT`, `TestFAPI2Profile`, `TestAssertionAudience`.
+- Dynamic client registration: where a registration requires approval (open
+  registration, or `client_registration.require_approval`), the registrant's
+  RFC 7592 `PUT` changing `client_name`, `redirect_uris`,
+  `post_logout_redirect_uris`, `grant_types`, `client_uri`, `logo_uri`,
+  `policy_uri` or `tos_uri` now returns an approved registration to
+  `pending` and suspends the client in the same transaction (refresh tokens,
+  grants and opaque access tokens end; token requests fail with `401
+  invalid_client` until approved). Before, the client stayed approved and
+  active, so a registrant could pass review with harmless branding and
+  redirects and then present another name, logo or redirect at consent
+  (consent phishing), and administrators could not see the change:
+  `client.registration.updated` now records each changed field's values
+  before and after (lists bounded at 20 entries), whether it re-queued, and
+  `secret_rotated`, which the audit redaction used to hide. An approval
+  names the client version reviewed and is refused with `409` when the
+  client changed since, including changes made while under review; the
+  approved version is kept as `reviewed_version`. Lists compare as sets; a
+  secret rotation or an update of other metadata does not re-queue, and
+  realms without approval are unchanged (APP-016, APP-017, ADV-003, APP-008,
+  API-010; [decision 14](docs/releases/2026-10-alpha.6-decisions.md)).
+  Affected: every earlier 0.2.0 prerelease; regression tests
+  `TestDynamicRegistrationReapproval`, `TestReviewedChanges`.
 
 ## [0.2.0-alpha.5] - 2026-10-18
 

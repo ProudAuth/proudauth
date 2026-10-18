@@ -210,8 +210,10 @@ func TestDynamicClientRegistration(t *testing.T) {
 	if c := f.must(f.AdminAPI("GET", "/clients/"+ref, nil), 200, "pending client"); c.Str("client.state") != "suspended" {
 		t.Fatalf("pending client state: %s", c.Raw)
 	}
-	mustStatus(t, f.AdminAPI("POST", "/client-registrations/"+ref+"/approve", nil), 204, "approve")
-	mustStatus(t, f.AdminAPI("POST", "/client-registrations/"+ref+"/approve", nil), 409, "already decided")
+	// The approval names the client version the administrator reviewed.
+	reviewed := map[string]any{"reviewed_version": items[0].(map[string]any)["version"]}
+	mustStatus(t, f.AdminAPI("POST", "/client-registrations/"+ref+"/approve", reviewed), 204, "approve")
+	mustStatus(t, f.AdminAPI("POST", "/client-registrations/"+ref+"/approve", reviewed), 409, "already decided")
 	h.Login(LoginOpts{ClientID: open.Str("client_id"), RedirectURI: "http://127.0.0.1/cb", Scope: "openid", Identifier: "bob@example.test"})
 
 	// The registrant deletes its client: tokens and management stop.
@@ -219,4 +221,296 @@ func TestDynamicClientRegistration(t *testing.T) {
 	mustStatus(t, manage("GET", clientID, newRAT, nil), 401, "deleted client")
 	mustStatus(t, h.TokenRequest(url.Values{"grant_type": {"refresh_token"}, "refresh_token": {lr.Tokens.Str("refresh_token")}}, clientID, newSecret), 401,
 		"deleted client cannot authenticate")
+}
+
+// TestDynamicRegistrationReapproval covers APP-016, APP-017 and ADV-003 with
+// alpha.6 decision 14: where a registration requires approval, a
+// registrant's change of the reviewed metadata (client_name,
+// redirect_uris, post_logout_redirect_uris, grant_types, client_uri,
+// logo_uri, policy_uri, tos_uri) returns an approved registration to
+// pending and suspends its client, with the values before and after in the
+// audit record; a secret rotation or an update that changes none of them
+// does not; an approval names the client version the administrator
+// reviewed and is refused with 409 when the client changed since, also
+// while the registration was under review; realms without approval keep
+// approved clients active.
+func TestDynamicRegistrationReapproval(t *testing.T) {
+	f := NewFixture(t)
+	h := f.H
+	ctx := context.Background()
+	f.must(f.SetPolicy(func(p *realm.Policy) {
+		p.ClientRegistration.Enabled = true
+		p.ClientRegistration.RequireApproval = true
+	}), 200, "registration with approval")
+	iat := f.must(f.AdminAPI("POST", "/client-registration-tokens", map[string]any{"max_uses": 10}), 201, "initial access token").Str("initial_access_token")
+	register := func(token string, meta map[string]any) *Resp {
+		t.Helper()
+		return h.Do(Req{Method: "POST", Path: "/realms/main/oauth/register", Token: token, JSON: meta})
+	}
+	type registered struct{ id, ref, secret, rat string }
+	registerClient := func(token string, meta map[string]any) *registered {
+		t.Helper()
+		r := register(token, meta)
+		mustStatus(t, r, 201, "registration")
+		c := &registered{id: r.Str("client_id"), secret: r.Str("client_secret"), rat: r.Str("registration_access_token")}
+		if err := h.App.D.DB.Pool.QueryRow(ctx, `SELECT id FROM clients WHERE client_id=$1`, c.id).Scan(&c.ref); err != nil {
+			t.Fatal(err)
+		}
+		return c
+	}
+	// put sends a registrant update and keeps the new registration access token.
+	put := func(c *registered, meta map[string]any) *Resp {
+		t.Helper()
+		body := map[string]any{"client_id": c.id}
+		for k, v := range meta {
+			body[k] = v
+		}
+		r := h.Do(Req{Method: "PUT", Path: "/realms/main/oauth/register/" + c.id, Token: c.rat, JSON: body})
+		mustStatus(t, r, 200, "registrant update")
+		c.rat = r.Str("registration_access_token")
+		return r
+	}
+	listed := func(c *registered) map[string]any {
+		t.Helper()
+		l := f.must(f.AdminAPI("GET", "/client-registrations", nil), 200, "registrations")
+		for _, it := range l.Get("items").([]any) {
+			if m := it.(map[string]any); m["client_ref"] == c.ref {
+				return m
+			}
+		}
+		t.Fatalf("registration %s not listed: %s", c.ref, l.Raw)
+		return nil
+	}
+	approve := func(c *registered, version any) *Resp {
+		t.Helper()
+		return f.AdminAPI("POST", "/client-registrations/"+c.ref+"/approve", map[string]any{"reviewed_version": version})
+	}
+	approveListed := func(c *registered) {
+		t.Helper()
+		l := listed(c)
+		mustStatus(t, approve(c, l["version"]), 204, "approve the listed version")
+		if l2 := listed(c); l2["approval_state"] != "approved" || l2["client_state"] != "active" || l2["reviewed_version"] != l["version"] {
+			t.Fatalf("after approval: %v (approved %v)", l2, l["version"])
+		}
+	}
+	// probe is a token request with the client's own credentials: an active
+	// client authenticates and is told the refresh token is unknown (400),
+	// a suspended one cannot authenticate (401 invalid_client).
+	probe := func(c *registered) *Resp {
+		t.Helper()
+		return h.TokenRequest(url.Values{"grant_type": {"refresh_token"}, "refresh_token": {"pa_rt_unknown"}}, c.id, c.secret)
+	}
+	mustBeActive := func(c *registered, what string) {
+		t.Helper()
+		if r := probe(c); r.Status != 400 {
+			t.Fatalf("%s: the client cannot authenticate: %d %s", what, r.Status, r.Raw)
+		}
+	}
+	lastUpdate := func(c *registered) map[string]any {
+		t.Helper()
+		var meta map[string]any
+		if err := h.App.D.DB.Pool.QueryRow(ctx, `SELECT metadata FROM audit_events WHERE type='client.registration.updated' AND target_id=$1
+			ORDER BY seq DESC LIMIT 1`, c.ref).Scan(&meta); err != nil {
+			t.Fatal(err)
+		}
+		return meta
+	}
+	meta := map[string]any{"client_name": "Partner app", "redirect_uris": []string{"https://dcr.test/cb"},
+		"grant_types": []string{"authorization_code", "refresh_token"}, "logo_uri": "https://dcr.test/logo.png",
+		"client_uri": "https://dcr.test/", "policy_uri": "https://dcr.test/privacy", "tos_uri": "https://dcr.test/terms"}
+	with := func(changes map[string]any) map[string]any {
+		out := map[string]any{}
+		for k, v := range meta {
+			out[k] = v
+		}
+		for k, v := range changes {
+			out[k] = v
+		}
+		return out
+	}
+	c := registerClient(iat, meta)
+	if l := listed(c); l["approval_state"] != "pending" || l["client_state"] != "suspended" || l["logo_uri"] != "https://dcr.test/logo.png" ||
+		l["tos_uri"] != "https://dcr.test/terms" || l["version"] == nil {
+		t.Fatalf("pending registration as listed for review: %v", l)
+	}
+
+	// (c) The approval names the reviewed version: missing is 422; a
+	// version the client has moved past (any registrant update gives it a
+	// new one) is 409 and changes nothing; the current one approves.
+	stale := listed(c)["version"].(float64)
+	mustStatus(t, f.AdminAPI("POST", "/client-registrations/"+c.ref+"/approve", map[string]any{}), 422, "approval without reviewed_version")
+	put(c, meta)
+	current := listed(c)["version"].(float64)
+	if current == stale {
+		t.Fatalf("an update kept the client version %v", current)
+	}
+	for _, v := range []float64{stale, current + 1} {
+		if r := approve(c, v); r.Status != 409 {
+			t.Fatalf("approval of version %v (the client is at %v): %d %s", v, current, r.Status, r.Raw)
+		}
+	}
+	if l := listed(c); l["approval_state"] != "pending" || l["client_state"] != "suspended" || l["reviewed_version"] != nil {
+		t.Fatalf("a refused approval changed the registration: %v", l)
+	}
+	approveListed(c)
+	var reviewed int64
+	if err := h.App.D.DB.Pool.QueryRow(ctx, `SELECT coalesce(reviewed_version,0) FROM client_registrations WHERE client_ref=$1`, c.ref).Scan(&reviewed); err != nil ||
+		reviewed != int64(current) {
+		t.Fatalf("reviewed_version recorded: %d (%v), want %v", reviewed, err, current)
+	}
+	mustBeActive(c, "approved client")
+
+	// (b) An update that changes none of the reviewed fields (only contacts
+	// and software_version), a secret rotation, and an unchanged PUT keep
+	// the approval and the client active.
+	for _, u := range []struct {
+		name  string
+		extra map[string]any
+	}{
+		{"unchanged", nil},
+		{"unreviewed metadata", map[string]any{"contacts": []string{"dev@partner.test"}, "software_version": "2.0"}},
+		{"secret rotation", map[string]any{"rotate_secret": true}},
+		{"reordered lists", map[string]any{"grant_types": []string{"refresh_token", "authorization_code"}}},
+	} {
+		r := put(c, with(u.extra))
+		rotated := r.Str("client_secret") != ""
+		if rotated {
+			c.secret = r.Str("client_secret")
+		}
+		if r.Str("proudauth_approval_state") != "approved" || r.Str("proudauth_client_state") != "active" || rotated != (u.name == "secret rotation") {
+			t.Fatalf("%s: the registration went back to review: %s", u.name, r.Raw)
+		}
+		mustBeActive(c, u.name)
+		if m := lastUpdate(c); m["requeued"] != false || m["changes"] != nil || m["approval_state"] != "approved" || m["secret_rotated"] != rotated {
+			t.Fatalf("%s: audit record %v", u.name, m)
+		}
+	}
+
+	// A user signed in before the change: their refresh token ends with the
+	// suspension, so the new brand needs a new sign-in and consent.
+	lr := h.Login(LoginOpts{ClientID: c.id, ClientSecret: c.secret, RedirectURI: "https://dcr.test/cb", Scope: "openid", Identifier: "bob@example.test"})
+	refresh := lr.Tokens.Str("refresh_token")
+	if refresh == "" {
+		t.Fatalf("no refresh token: %s", lr.Tokens.Raw)
+	}
+
+	// (a) Each reviewed field, changed on an approved client: pending,
+	// suspended (token requests refused), before and after audited.
+	for i, ch := range []struct {
+		field         string
+		value         any
+		before, after any
+	}{
+		{"client_name", "Partner app (new brand)", "Partner app", "Partner app (new brand)"},
+		{"redirect_uris", []string{"https://dcr.test/cb", "https://dcr.test/cb2"}, []any{"https://dcr.test/cb"}, []any{"https://dcr.test/cb", "https://dcr.test/cb2"}},
+		{"post_logout_redirect_uris", []string{"https://dcr.test/bye"}, []any{}, []any{"https://dcr.test/bye"}},
+		{"grant_types", []string{"authorization_code"}, []any{"authorization_code", "refresh_token"}, []any{"authorization_code"}},
+		{"logo_uri", "https://dcr.test/other-logo.png", "https://dcr.test/logo.png", "https://dcr.test/other-logo.png"},
+		{"client_uri", "https://partner.dcr.test/", "https://dcr.test/", "https://partner.dcr.test/"},
+		{"policy_uri", "https://dcr.test/privacy-v2", "https://dcr.test/privacy", "https://dcr.test/privacy-v2"},
+		{"tos_uri", "https://dcr.test/terms-v2", "https://dcr.test/terms", "https://dcr.test/terms-v2"},
+	} {
+		meta = with(map[string]any{ch.field: ch.value})
+		r := put(c, meta)
+		if r.Str("proudauth_approval_state") != "pending" {
+			t.Fatalf("%s changed: the registration stayed approved: %s", ch.field, r.Raw)
+		}
+		if l := listed(c); l["approval_state"] != "pending" || l["requeued_at"] == nil {
+			t.Fatalf("%s changed: listed as %v", ch.field, l)
+		}
+		if r.Str("proudauth_client_state") != "suspended" || listed(c)["client_state"] != "suspended" {
+			t.Fatalf("%s changed: the client was not suspended: %s", ch.field, r.Raw)
+		}
+		if p := probe(c); p.Status != 401 || p.Str("error") != "invalid_client" {
+			t.Fatalf("%s changed: a token request of the re-queued client: %d %s", ch.field, p.Status, p.Raw)
+		}
+		m := lastUpdate(c)
+		changes, _ := m["changes"].(map[string]any)
+		got, _ := changes[ch.field].(map[string]any)
+		if m["requeued"] != true || m["approval_state"] != "pending" || len(changes) != 1 || got == nil ||
+			jsonString(got["before"]) != jsonString(ch.before) || jsonString(got["after"]) != jsonString(ch.after) {
+			t.Fatalf("%s changed: audit record %v", ch.field, m)
+		}
+		if i == 0 {
+			var reason string
+			if err := h.App.D.DB.Pool.QueryRow(ctx, `SELECT coalesce(reason_code,'') FROM audit_events WHERE type='client.suspended' AND target_id=$1
+				ORDER BY seq DESC LIMIT 1`, c.ref).Scan(&reason); err != nil || reason != "registration_requeued" {
+				t.Fatalf("suspension audit: %q %v", reason, err)
+			}
+			// Only the approval activates it again.
+			mustStatus(t, f.AdminAPI("POST", "/clients/"+c.ref+"/reactivate", map[string]any{}), 409, "reactivating a re-queued registration")
+		}
+		approveListed(c)
+		mustBeActive(c, ch.field+" approved")
+		if i == 0 {
+			if r := h.TokenRequest(url.Values{"grant_type": {"refresh_token"}, "refresh_token": {refresh}}, c.id, c.secret); r.Status != 400 ||
+				r.Str("error") != "invalid_grant" {
+				t.Fatalf("a refresh token issued before the re-queue: %d %s", r.Status, r.Raw)
+			}
+		}
+	}
+
+	// (d) A change made while the registration is under review is not
+	// approved with the version reviewed before it.
+	meta = with(map[string]any{"client_name": "Partner app (rebrand)"})
+	put(c, meta)
+	seen := listed(c)
+	if seen["name"] != "Partner app (rebrand)" || seen["approval_state"] != "pending" {
+		t.Fatalf("re-queued registration: %v", seen)
+	}
+	meta = with(map[string]any{"logo_uri": "https://dcr.test/swapped-logo.png"})
+	if r := put(c, meta); r.Str("proudauth_approval_state") != "pending" || r.Str("proudauth_client_state") != "suspended" {
+		t.Fatalf("an update under review: %s", r.Raw)
+	}
+	if m := lastUpdate(c); m["requeued"] != false || m["changes"] == nil {
+		t.Fatalf("audit record of an update under review: %v", m)
+	}
+	if r := approve(c, seen["version"]); r.Status != 409 {
+		t.Fatalf("approval of the version reviewed before a change: %d %s", r.Status, r.Raw)
+	}
+	if l := listed(c); l["approval_state"] != "pending" || l["client_state"] != "suspended" || l["logo_uri"] != "https://dcr.test/swapped-logo.png" {
+		t.Fatalf("after a refused approval: %v", l)
+	}
+	if p := probe(c); p.Status != 401 {
+		t.Fatalf("a refused approval activated the client: %d %s", p.Status, p.Raw)
+	}
+	approveListed(c)
+	mustBeActive(c, "approved after review")
+
+	// A re-queued registration can be rejected; that ends the client.
+	put(c, with(map[string]any{"client_name": "Partner app (third brand)"}))
+	mustStatus(t, f.AdminAPI("POST", "/client-registrations/"+c.ref+"/reject", nil), 204, "reject a re-queued registration")
+	if l := listed(c); l["approval_state"] != "rejected" || l["client_state"] != "decommissioned" {
+		t.Fatalf("rejected registration: %v", l)
+	}
+
+	// Open registrations always need approval, so their changes re-queue
+	// even when require_approval is off.
+	f.must(f.SetPolicy(func(p *realm.Policy) {
+		p.ClientRegistration.RequireApproval = false
+		p.ClientRegistration.Open = true
+	}), 200, "open registration without require_approval")
+	openMeta := map[string]any{"client_name": "Open app", "redirect_uris": []string{"https://open.dcr.test/cb"}}
+	o := registerClient("", openMeta)
+	approveListed(o)
+	mustBeActive(o, "approved open registration")
+	if r := put(o, map[string]any{"client_name": "Open app (new brand)", "redirect_uris": []string{"https://open.dcr.test/cb"}}); r.Str("proudauth_approval_state") != "pending" ||
+		r.Str("proudauth_client_state") != "suspended" {
+		t.Fatalf("a changed open registration: %s", r.Raw)
+	}
+
+	// (e) Without approval, changes keep the client approved and active;
+	// the audit record still names them.
+	free := registerClient(iat, meta)
+	if l := listed(free); l["approval_state"] != "approved" || l["client_state"] != "active" {
+		t.Fatalf("registration without approval: %v", l)
+	}
+	r := put(free, with(map[string]any{"client_name": "Free app (new brand)", "logo_uri": "https://dcr.test/free-logo.png"}))
+	if r.Str("proudauth_approval_state") != "approved" || r.Str("proudauth_client_state") != "active" {
+		t.Fatalf("a realm without approval re-queued a change: %s", r.Raw)
+	}
+	mustBeActive(free, "changed client without approval")
+	if m := lastUpdate(free); m["requeued"] != false || m["changes"].(map[string]any)["client_name"] == nil {
+		t.Fatalf("audit record without approval: %v", m)
+	}
 }

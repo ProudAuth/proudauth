@@ -528,7 +528,18 @@ func (s *Service) RegistrationOf(ctx context.Context, q storage.Querier, c *Clie
 // secret (the previous ones stay valid for at most an hour). It is one
 // transaction: when any part fails (the metadata, the secret limit), nothing
 // changes and the registration access token presented stays valid.
-func (s *Service) UpdateRegistration(ctx context.Context, realmID string, c *Client, m RegistrationMetadata, rotateSecret bool) (*Registration, error) {
+//
+// Re-approval (APP-016, APP-017; alpha.6 decision 14): where the realm
+// requires approval for this registration (requireApproval, the realm's
+// require_approval, or a registration made without an initial access
+// token), a change of the reviewed metadata (reviewedChanges) returns an
+// approved registration to pending and suspends its client, so a
+// registrant cannot pass review with one name, logo or redirect and then
+// present another at consent. Every update gives the client a new version,
+// so an approval pinned to the version reviewed (DecideRegistration) never
+// covers a change made after the review. The changed fields' values before
+// and after go into the client.registration.updated audit record.
+func (s *Service) UpdateRegistration(ctx context.Context, realmID string, c *Client, m RegistrationMetadata, rotateSecret, requireApproval bool) (*Registration, error) {
 	if m.ClientID != c.ClientID {
 		return nil, badMetadata("client_id must match the registered client")
 	}
@@ -540,19 +551,60 @@ func (s *Service) UpdateRegistration(ctx context.Context, realmID string, c *Cli
 		return nil, badMetadata("the client type (public or confidential) cannot change; register a new client")
 	}
 	keepAdministratorSettings(in, c)
+	actor := audit.Ref{Type: "registration", ID: c.ClientID}
 	var out *Registration
 	err := s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
 		out = nil // a retried transaction starts clean (DB-014)
-		updated, err := s.UpdateClientTx(ctx, tx, realmID, c.Ref, 0, *in, audit.Ref{Type: "registration", ID: c.ClientID})
+		// The registration row, then the client row, in the order
+		// DecideRegistration locks them: an approval sees the whole update
+		// or none of it, and the values compared below are the current ones.
+		var approval, initialTokenID string
+		if err := tx.QueryRow(ctx, `SELECT approval_state, coalesce(initial_token_id,'') FROM client_registrations
+			WHERE realm_id=$1 AND client_ref=$2 FOR UPDATE`, realmID, c.Ref).Scan(&approval, &initialTokenID); err != nil {
+			if storage.IsNoRows(err) {
+				return problem.ErrNotFound
+			}
+			return err
+		}
+		var locked string
+		if err := tx.QueryRow(ctx, `SELECT id FROM clients WHERE realm_id=$1 AND id=$2 FOR UPDATE`, realmID, c.Ref).Scan(&locked); err != nil {
+			if storage.IsNoRows(err) {
+				return problem.ErrNotFound
+			}
+			return err
+		}
+		before, err := s.ClientByRef(ctx, tx, realmID, c.Ref)
+		if err != nil {
+			return err
+		}
+		updated, err := s.UpdateClientTx(ctx, tx, realmID, c.Ref, 0, *in, actor)
 		if err != nil {
 			return asRegistrationError(err)
+		}
+		changes := reviewedChanges(before, updated)
+		requeued := false
+		if len(changes) > 0 && approval == "approved" && (requireApproval || initialTokenID == "") {
+			if _, err := tx.Exec(ctx, `UPDATE client_registrations SET approval_state='pending', requeued_at=$2 WHERE client_ref=$1`,
+				c.Ref, s.d.Now()); err != nil {
+				return err
+			}
+			// Suspension through the client state machine (APP-008): the
+			// client's refresh tokens, grants and opaque access tokens end,
+			// and only an approval activates it again. A client an
+			// administrator already suspended stays suspended.
+			if updated.State == "active" {
+				if err := s.setClientStateTx(ctx, tx, realmID, c.Ref, "suspended", actor, "registration_requeued", false); err != nil {
+					return err
+				}
+			}
+			approval, requeued = "pending", true
 		}
 		secretPlain := ""
 		rotated := rotateSecret && strings.HasPrefix(updated.AuthMethod, "client_secret")
 		if rotated {
 			// Before the registration access token is replaced: a refused
 			// rotation (limits.client_secrets_max) rolls back the whole update.
-			if secretPlain, _, err = s.IssueSecretTx(ctx, tx, realmID, c.Ref, time.Hour, audit.Ref{Type: "registration", ID: c.ClientID}); err != nil {
+			if secretPlain, _, err = s.IssueSecretTx(ctx, tx, realmID, c.Ref, time.Hour, actor); err != nil {
 				return err
 			}
 		}
@@ -568,8 +620,12 @@ func (s *Service) UpdateRegistration(ctx context.Context, realmID string, c *Cli
 			nilIfEmpty(m.SoftwareID), nilIfEmpty(m.SoftwareVersion)); err != nil {
 			return err
 		}
-		if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "client.registration.updated", RealmID: realmID, Actor: audit.Ref{Type: "registration", ID: c.ClientID},
-			Category: "configuration", Target: &audit.Ref{Type: "client", ID: c.Ref}, Metadata: map[string]any{"secret_rotated": rotated}}); err != nil {
+		meta := map[string]any{"client_id": c.ClientID, "secret_rotated": rotated, "approval_state": approval, "requeued": requeued}
+		if len(changes) > 0 {
+			meta["changes"] = changes
+		}
+		if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "client.registration.updated", RealmID: realmID, Actor: actor,
+			Category: "configuration", Target: &audit.Ref{Type: "client", ID: c.Ref}, Metadata: meta}); err != nil {
 			return err
 		}
 		if updated, err = s.ClientByRef(ctx, tx, realmID, c.Ref); err != nil {
@@ -587,6 +643,48 @@ func (s *Service) UpdateRegistration(ctx context.Context, realmID string, c *Cli
 		return nil, err
 	}
 	return out, nil
+}
+
+// maxAuditListEntries bounds each URI or grant-type list an audit record
+// carries; registration allows at most 20 redirect URIs.
+const maxAuditListEntries = 20
+
+// reviewedChanges returns the reviewed registration metadata that differs
+// between two versions of a client, each field with its value before and
+// after: client_name, redirect_uris, post_logout_redirect_uris, grant_types,
+// client_uri, logo_uri, policy_uri and tos_uri (alpha.6 decision 14). These
+// are what users see at consent and where the client may send them. Lists
+// compare as sets and are recorded as stored (sorted), at most
+// maxAuditListEntries entries each with "truncated" set beyond that; strings
+// are bounded by validation (200 characters for the name, 2048 for URIs).
+func reviewedChanges(before, after *Client) map[string]any {
+	changes := map[string]any{}
+	text := func(field, b, a string) {
+		if b != a {
+			changes[field] = map[string]any{"before": b, "after": a}
+		}
+	}
+	list := func(field string, b, a []string) {
+		bs, as := slices.Sorted(slices.Values(b)), slices.Sorted(slices.Values(a))
+		bs, as = slices.Compact(bs), slices.Compact(as)
+		if slices.Equal(bs, as) {
+			return
+		}
+		ch := map[string]any{"before": nonNilStrings(bs[:min(len(bs), maxAuditListEntries)]), "after": nonNilStrings(as[:min(len(as), maxAuditListEntries)])}
+		if len(bs) > maxAuditListEntries || len(as) > maxAuditListEntries {
+			ch["truncated"] = true
+		}
+		changes[field] = ch
+	}
+	text("client_name", before.Name, after.Name)
+	list("redirect_uris", before.RedirectURIs, after.RedirectURIs)
+	list("post_logout_redirect_uris", before.PostLogoutRedirects, after.PostLogoutRedirects)
+	list("grant_types", before.GrantTypes, after.GrantTypes)
+	text("client_uri", before.ClientURI, after.ClientURI)
+	text("logo_uri", before.LogoURI, after.LogoURI)
+	text("policy_uri", before.PolicyURI, after.PolicyURI)
+	text("tos_uri", before.TOSURI, after.TOSURI)
+	return changes
 }
 
 // keepAdministratorSettings carries over what a registrant's update does
@@ -625,26 +723,42 @@ func (s *Service) DeleteRegistration(ctx context.Context, realmID string, c *Cli
 	return err
 }
 
-// PendingRegistration is a registration awaiting an administrator.
+// PendingRegistration is a dynamically registered client as an
+// administrator reviews it: the reviewed metadata (alpha.6 decision 14) and
+// the client version they were read at, all from one statement, so an
+// approval of that version approves exactly what was listed.
 type PendingRegistration struct {
-	ClientRef       string    `json:"client_ref"`
-	ClientID        string    `json:"client_id"`
-	Name            string    `json:"name"`
-	ClientType      string    `json:"client_type"`
-	ApprovalState   string    `json:"approval_state"`
-	InitialTokenID  string    `json:"initial_token_id,omitempty"`
-	SoftwareID      string    `json:"software_id,omitempty"`
-	SoftwareVersion string    `json:"software_version,omitempty"`
-	RedirectURIs    []string  `json:"redirect_uris"`
-	CreatedAt       time.Time `json:"created_at"`
+	ClientRef              string     `json:"client_ref"`
+	ClientID               string     `json:"client_id"`
+	Name                   string     `json:"name"`
+	ClientType             string     `json:"client_type"`
+	ClientState            string     `json:"client_state"`
+	Version                int64      `json:"version"`
+	ApprovalState          string     `json:"approval_state"`
+	InitialTokenID         string     `json:"initial_token_id,omitempty"`
+	SoftwareID             string     `json:"software_id,omitempty"`
+	SoftwareVersion        string     `json:"software_version,omitempty"`
+	RedirectURIs           []string   `json:"redirect_uris"`
+	PostLogoutRedirectURIs []string   `json:"post_logout_redirect_uris"`
+	GrantTypes             []string   `json:"grant_types"`
+	ClientURI              string     `json:"client_uri,omitempty"`
+	LogoURI                string     `json:"logo_uri,omitempty"`
+	PolicyURI              string     `json:"policy_uri,omitempty"`
+	TOSURI                 string     `json:"tos_uri,omitempty"`
+	ReviewedVersion        *int64     `json:"reviewed_version,omitempty"`
+	RequeuedAt             *time.Time `json:"requeued_at,omitempty"`
+	CreatedAt              time.Time  `json:"created_at"`
 }
 
 // ListRegistrations lists dynamically registered clients, optionally by
 // approval state.
 func (s *Service) ListRegistrations(ctx context.Context, realmID, state string) ([]*PendingRegistration, error) {
-	rows, err := s.d.DB.Pool.Query(ctx, `SELECT r.client_ref, c.client_id, c.name, c.client_type, r.approval_state, coalesce(r.initial_token_id,''),
-		coalesce(r.software_id,''), coalesce(r.software_version,''), coalesce((SELECT array_agg(u.uri ORDER BY u.uri) FROM client_redirect_uris u
-			WHERE u.client_ref=c.id AND u.purpose='redirect'), '{}'), r.created_at
+	rows, err := s.d.DB.Pool.Query(ctx, `SELECT r.client_ref, c.client_id, c.name, c.client_type, c.state, c.version, r.approval_state,
+		coalesce(r.initial_token_id,''), coalesce(r.software_id,''), coalesce(r.software_version,''),
+		coalesce((SELECT array_agg(u.uri ORDER BY u.uri) FROM client_redirect_uris u WHERE u.client_ref=c.id AND u.purpose='redirect'), '{}'),
+		coalesce((SELECT array_agg(u.uri ORDER BY u.uri) FROM client_redirect_uris u WHERE u.client_ref=c.id AND u.purpose='post_logout'), '{}'),
+		c.grant_types, coalesce(c.protocol_options->>'client_uri',''), coalesce(c.protocol_options->>'logo_uri',''),
+		coalesce(c.protocol_options->>'policy_uri',''), coalesce(c.protocol_options->>'tos_uri',''), r.reviewed_version, r.requeued_at, r.created_at
 		FROM client_registrations r JOIN clients c ON c.id=r.client_ref WHERE r.realm_id=$1 AND ($2='' OR r.approval_state=$2)
 		ORDER BY r.created_at DESC LIMIT 500`, realmID, state)
 	if err != nil {
@@ -654,18 +768,29 @@ func (s *Service) ListRegistrations(ctx context.Context, realmID, state string) 
 	out := []*PendingRegistration{}
 	for rows.Next() {
 		var p PendingRegistration
-		if err := rows.Scan(&p.ClientRef, &p.ClientID, &p.Name, &p.ClientType, &p.ApprovalState, &p.InitialTokenID, &p.SoftwareID, &p.SoftwareVersion,
-			&p.RedirectURIs, &p.CreatedAt); err != nil {
+		if err := rows.Scan(&p.ClientRef, &p.ClientID, &p.Name, &p.ClientType, &p.ClientState, &p.Version, &p.ApprovalState, &p.InitialTokenID,
+			&p.SoftwareID, &p.SoftwareVersion, &p.RedirectURIs, &p.PostLogoutRedirectURIs, &p.GrantTypes, &p.ClientURI, &p.LogoURI, &p.PolicyURI,
+			&p.TOSURI, &p.ReviewedVersion, &p.RequeuedAt, &p.CreatedAt); err != nil {
 			return nil, err
 		}
+		p.GrantTypes = nonNilStrings(p.GrantTypes)
 		out = append(out, &p)
 	}
 	return out, rows.Err()
 }
 
 // DecideRegistration approves (activates) or rejects (decommissions) a
-// pending registration, in one transaction with the client's state.
-func (s *Service) DecideRegistration(ctx context.Context, realmID, clientRef string, approve bool, actor audit.Ref) error {
+// pending registration, in one transaction with the client's state. An
+// approval names the client version the administrator reviewed
+// (reviewedVersion, the version GET /client-registrations reports) and is
+// refused with a conflict when the client changed since (alpha.6 decision
+// 14, API-010): every registrant update gives the client a new version, so
+// a change made after the review is never approved unseen. The approved
+// version is kept as the registration's reviewed_version.
+func (s *Service) DecideRegistration(ctx context.Context, realmID, clientRef string, approve bool, reviewedVersion int64, actor audit.Ref) error {
+	if approve && reviewedVersion < 1 {
+		return problem.ErrValidation.WithField("reviewed_version", "required: the client version that was reviewed (version in GET /client-registrations)")
+	}
 	return s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
 		var state string
 		if err := tx.QueryRow(ctx, `SELECT approval_state FROM client_registrations WHERE realm_id=$1 AND client_ref=$2 FOR UPDATE`,
@@ -682,15 +807,30 @@ func (s *Service) DecideRegistration(ctx context.Context, realmID, clientRef str
 		if !approve {
 			next, decision = "decommissioned", "rejected"
 		}
+		meta := map[string]any{}
+		if approve {
+			var version int64
+			if err := tx.QueryRow(ctx, `SELECT version FROM clients WHERE realm_id=$1 AND id=$2 FOR UPDATE`, realmID, clientRef).Scan(&version); err != nil {
+				if storage.IsNoRows(err) {
+					return problem.ErrNotFound
+				}
+				return err
+			}
+			if version != reviewedVersion {
+				return problem.ErrConflict.WithDetail("the client changed after the reviewed version; review its current registration and approve that version")
+			}
+			meta["reviewed_version"] = reviewedVersion
+		}
 		if err := s.setClientStateTx(ctx, tx, realmID, clientRef, next, actor, "registration_"+decision, true); err != nil {
 			return err
 		}
-		if _, err := tx.Exec(ctx, `UPDATE client_registrations SET approval_state=$2, decided_by_id=$3, decided_at=$4 WHERE client_ref=$1`,
-			clientRef, decision, actor.ID, s.d.Now()); err != nil {
+		if _, err := tx.Exec(ctx, `UPDATE client_registrations SET approval_state=$2, decided_by_id=$3, decided_at=$4,
+			reviewed_version=CASE WHEN $2='approved' THEN $5::bigint ELSE reviewed_version END WHERE client_ref=$1`,
+			clientRef, decision, actor.ID, s.d.Now(), reviewedVersion); err != nil {
 			return err
 		}
 		_, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "client.registration." + decision, RealmID: realmID, Actor: actor, Category: "configuration",
-			Target: &audit.Ref{Type: "client", ID: clientRef}})
+			Target: &audit.Ref{Type: "client", ID: clientRef}, Metadata: meta})
 		return err
 	})
 }

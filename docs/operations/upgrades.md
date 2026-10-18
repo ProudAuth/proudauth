@@ -363,6 +363,18 @@ which only `identity-cli restore-begin` does on a restored database
 ([backup-restore.md](backup-restore.md)); older binaries ignore it, so run
 only new binaries against a database you are restoring.
 
+Migration `0090_dcr_reviewed_version.sql` is expand-only: it adds
+`client_registrations.reviewed_version` and `requeued_at`, `NULL` on every
+existing registration. New binaries return an approved dynamic registration
+to review when its registrant changes the reviewed metadata, and require
+`reviewed_version` to approve one
+([dynamic-client-registration.md](../integrations/dynamic-client-registration.md#re-approval-of-changed-registrations)).
+Older binaries ignore both columns: a registrant update they serve keeps the
+registration approved, and an approval through them pins no version. Older
+servers refuse the `reviewed_version` member (`400`) and new ones require
+it (`422`), so approve pending registrations after the rollout, and do not
+rely on re-approval until every server runs the new version.
+
 New binaries also change the user ownership transfer: `POST
 /users/{user}/ownership-transfer` moves hooks, webhook subscriptions and
 authorization policies too and so also needs `realm.hooks.write`,
