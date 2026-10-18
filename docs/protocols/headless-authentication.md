@@ -928,6 +928,19 @@ device page of its own). The login UI starts a transaction with
 which client is asking. Consent is always shown. On completion the device code is
 approved and no `redirect_to` is returned; the device receives tokens by polling.
 
+User codes are 8 letters of 20 (about 34.6 bits), short enough to type, so
+lookups that find no pending code (a wrong, malformed or expired code) count
+against the network the login UI forwards the request from
+(`security.rate_limits.user_code_failures_per_network`, 30 per
+`login_window`, with the wider /24 or /48; SEC-006, ABU-001). Once that is
+spent, the network's lookups answer `429 rate_limited` with `Retry-After`
+before any code is looked up, a right one included. A lookup that finds its
+code is not counted. A login UI that calls the transaction API from its own
+server must be listed in `server.trusted_proxies` and forward the user's
+address in `X-Forwarded-For`, or all its users share one network's budgets.
+Device authorization itself counts against `device_per_network` before the
+device client is authenticated ([oauth-oidc-profile.md](oauth-oidc-profile.md#token-endpoint)).
+
 ## Upstream identity providers
 
 When the realm has active upstream connections, unauthenticated transactions offer

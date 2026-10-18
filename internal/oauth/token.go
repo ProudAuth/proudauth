@@ -19,7 +19,6 @@ import (
 	"github.com/proudauth/proudauth/internal/identity"
 	"github.com/proudauth/proudauth/internal/platform/problem"
 	"github.com/proudauth/proudauth/internal/platform/secret"
-	"github.com/proudauth/proudauth/internal/ratelimit"
 	"github.com/proudauth/proudauth/internal/realm"
 	"github.com/proudauth/proudauth/internal/session"
 	"github.com/proudauth/proudauth/internal/storage"
@@ -27,6 +26,8 @@ import (
 )
 
 // TokenRequest carries the token endpoint form and client authentication.
+// The caller has checked its network's failure budget (NetworkBudget with
+// EndpointToken) before reading client credentials.
 type TokenRequest struct {
 	Form       url.Values
 	Auth       application.ClientAuthInput
@@ -39,7 +40,26 @@ type TokenRequest struct {
 
 // Token dispatches token endpoint grants (TOK-001). There is deliberately no
 // password grant and no "mint a token for any user" operation (§18.2).
+//
+// Budgets (SEC-006, owner decision 9 of 0.2.0-alpha.6): the caller has
+// checked the network's failure budget before client authentication
+// (NetworkBudget). A confidential client's request counts against
+// token_per_client; a public client's request only checks its failure
+// budgets (tokenClientBudget). A request that fails, client authentication
+// included, counts against the network's failure budget and, for a public
+// client, against the client's, in one statement (chargeFailures), so
+// successful requests never use a failure budget up.
 func (s *Service) Token(ctx context.Context, rlm *realm.Realm, req TokenRequest) (*IssuedTokens, *Error) {
+	out, c, oe := s.token(ctx, rlm, req)
+	if failedRequest(oe) {
+		s.chargeFailures(ctx, rlm, EndpointToken, c, req.ClientIP)
+	}
+	return out, oe
+}
+
+// token runs a token request and returns the authenticated client, nil when
+// the request failed before or at client authentication.
+func (s *Service) token(ctx context.Context, rlm *realm.Realm, req TokenRequest) (*IssuedTokens, *application.Client, *Error) {
 	if s.Hooks != nil && s.Hooks.HasActive(ctx, rlm.ID) {
 		// Claims hooks run inside the issuance transaction; it is not retried,
 		// so a hook call is never repeated (DB-014).
@@ -47,27 +67,28 @@ func (s *Service) Token(ctx context.Context, rlm *realm.Realm, req TokenRequest)
 	}
 	for k, v := range req.Form {
 		if k != "resource" && len(v) > 1 {
-			return nil, ErrInvalidRequest("parameter " + k + " must not repeat")
+			return nil, nil, ErrInvalidRequest("parameter " + k + " must not repeat")
 		}
 	}
 	if !rlm.Active() {
-		return nil, ErrInvalidGrant("identity domain unavailable")
+		return nil, nil, ErrInvalidGrant("identity domain unavailable")
 	}
 	c, err := s.Apps.Authenticate(ctx, rlm.ID, rlm.Issuer, req.Endpoint, req.Auth)
 	if err != nil {
 		_, _ = s.d.Audit.Record(ctx, s.d.DB.Pool, audit.Event{Type: "client.authentication.failed", RealmID: rlm.ID,
 			Actor: audit.Ref{Type: "client", ID: firstNonEmpty(req.Auth.BasicID, req.Auth.FormClientID, "unknown")}, Outcome: audit.Failure})
-		return nil, ErrInvalidClient
+		return nil, nil, ErrInvalidClient
 	}
-	rl := s.d.Cfg.Security.RateLimits
 	// Budgets fail closed: an unavailable limiter refuses issuance (SEC-006).
-	if d, err := s.Limiter.Hit(ctx, ratelimit.Budget{Key: "token-client:" + c.Ref, Limit: rl.TokenPerClient, Window: rl.TokenWindow}); err != nil {
-		return nil, oerr(503, "temporarily_unavailable", "request budget unavailable")
-	} else if !d.Allowed {
-		e := oerr(429, "slow_down", "token request budget exhausted")
-		e.RetryAfter = d.RetryAfter
-		return nil, e
+	if oe := s.tokenClientBudget(ctx, rlm, c, req.ClientIP); oe != nil {
+		return nil, c, oe
 	}
+	out, oe := s.runGrant(ctx, rlm, c, req)
+	return out, c, oe
+}
+
+// runGrant runs the grant of a token request from an authenticated client.
+func (s *Service) runGrant(ctx context.Context, rlm *realm.Realm, c *application.Client, req TokenRequest) (*IssuedTokens, *Error) {
 	grant := req.Form.Get("grant_type")
 	if c.AllowsGrant(grant) && !grantAllowed(rlm, c, grant) {
 		return nil, ErrUnauthorizedClient("this grant type is disabled by an emergency control")

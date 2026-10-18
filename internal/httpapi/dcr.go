@@ -141,9 +141,11 @@ func (a *App) dcrRegister(w http.ResponseWriter, r *http.Request, rlm *realm.Rea
 	}
 	info := reqctx.From(r.Context())
 	// Registration budgets fail closed (SEC-006): per network (IPv4 /32,
-	// IPv6 /64, ABU-001) and per realm.
-	d, err := a.Limiter.Hit(r.Context(), ratelimit.Budget{Key: "dcr-ip:" + ratelimit.NetworkKey(info.ClientIP), Limit: 20, Window: time.Hour},
-		ratelimit.Budget{Key: "dcr-realm:" + rlm.ID, Limit: 500, Window: time.Hour})
+	// IPv6 /64, with the wider /24 or /48, ABU-001; dcr_per_network per
+	// dcr_window) and per realm.
+	rl := a.D.Cfg.Security.RateLimits
+	d, err := a.Limiter.Hit(r.Context(), append(ratelimit.PerNetwork("dcr-ip:", info.ClientIP, rl.DCRPerNetwork, rl.DCRWindow, rl.NetworkCoarseFactor),
+		ratelimit.Budget{Key: "dcr-realm:" + rlm.ID, Limit: 500, Window: time.Hour})...)
 	if err != nil {
 		return problem.ErrUnavailable
 	}

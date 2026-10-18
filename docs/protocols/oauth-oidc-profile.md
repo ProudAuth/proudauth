@@ -388,15 +388,33 @@ A scope with `sensitivity: privileged` and no `step_up_acr` requires
 | `authorization_code` | Requires `code`, `code_verifier` (43–128 characters), `redirect_uri` (exact). The code is single-use and bound to client, redirect, PKCE challenge, transaction and, when the request named `dpop_jkt`, a DPoP key; valid 60 s. Presenting a used code again revokes the grant and everything issued from it and fails with `invalid_grant`. A binding failure also revokes the grant. Returns access token, refresh token (if the client has the refresh grant), ID token (if `openid`). |
 | `refresh_token` | Rotation with reuse detection ([ADR 0011](../architecture-decisions/0011-refresh-token-families.md)); `fapi2` clients keep the same refresh token ([FAPI 2.0](#fapi-20-security-profile-adv-001)). A family whose first issuance was bound to a DPoP key or a TLS client certificate is refreshed only with a proof of the same key or the same certificate ([sender-bound refresh tokens](#dpop-rfc-9449)). `scope` may only narrow; scopes whose step-up policy the grant no longer meets are left out ([Scope step-up](#scope-step-up)). Live re-checks of user, client, session, organization and membership. |
 | `client_credentials` | Confidential client with a service principal; `resource` must resolve to exactly one business resource (account and UserInfo audiences are refused); `organization` must be allowed for the service principal; no refresh token. |
-| `urn:ietf:params:oauth:grant-type:device_code` | RFC 8628 polling: `authorization_pending`, `slow_down` (interval +5 s when polled faster than the interval, initial 5 s), `access_denied`, `expired_token`; single redemption; client-bound. |
+| `urn:ietf:params:oauth:grant-type:device_code` | RFC 8628 polling: `authorization_pending`, `slow_down` (interval +5 s when polled faster than the interval, initial 5 s), `access_denied`, `expired_token`; single redemption; client-bound. Device authorization counts against the requesting network's budget (`security.rate_limits.device_per_network`, 300 per `login_window`) before the client is authenticated, and wrong user codes entered for approval against `user_code_failures_per_network` (30 per `login_window`), after which the network's lookups answer `429 rate_limited` ([headless-authentication.md](headless-authentication.md#device-flow)). |
 | `urn:ietf:params:oauth:grant-type:token-exchange` | See below. |
 | `urn:ietf:params:oauth:grant-type:jwt-bearer` | Workload federation (RFC 7523 §2.1): see below. |
 
-- Per-client budget `security.rate_limits.token_per_client` per `token_window`;
-  excess returns `429 slow_down` with `Retry-After`. Tokens bound to an
+- Budgets ([owner decision 9](../releases/2026-10-alpha.6-decisions.md),
+  SEC-006): before client credentials are checked and before anything is
+  audited, every request reads the requesting network's failure budget
+  (`security.rate_limits.token_failures_per_network`, 300 failed requests
+  per `token_window` per IPv4 address or IPv6 /64, with the wider /24 or
+  /48); a network that has spent it is refused. A request that fails, a
+  failed client authentication included, counts against it; successful
+  requests never do. Then a confidential client's request counts against
+  `security.rate_limits.token_per_client` (2000 per `token_window`). A public
+  client authenticates with its `client_id` alone, so only its failed grants
+  count against `token_per_client` (`invalid_request`, `invalid_grant`,
+  `invalid_client`, `invalid_scope`, `invalid_target`, `unauthorized_client`,
+  `unsupported_grant_type`, `invalid_dpop_proof`; not device-flow polling
+  answers), and each network's failed grants through it against
+  `token_per_network_client` (100), so one network cannot spend the client's
+  budget for its other users. Every spent budget returns `429 slow_down` with
+  `Retry-After`; a limiter that cannot be reached returns `503
+  temporarily_unavailable`. Tokens bound to an
   organization also count against that organization's budget
   (`security.rate_limits.organization_per_window`, TEN-018), so one tenant
-  cannot use up issuance for the others.
+  cannot use up issuance for the others
+  (`TestTokenEndpointNetworkBudgets`,
+  `TestPublicClientTokenBudgetCountsFailedGrants`).
 - Responses: `access_token`, `token_type`, `expires_in`, `scope`, optional
   `refresh_token`, `id_token`, `issued_token_type`. `token_type` is `DPoP`
   for a token bound to a DPoP key (`cnf.jkt`) and `Bearer` for every other
@@ -506,6 +524,13 @@ never yields a user token. Trusts, profiles and verification:
 - Clients with `token_policy.require_par` (always for `high_assurance` and
   `fapi2`) must use it; an authorization request without it is
   `invalid_request` ("this client must use pushed authorization requests").
+- Every push reads the requesting network's failure budget
+  (`security.rate_limits.par_failures_per_network`, 300 failed pushes per
+  `token_window`) before the client is authenticated; a push that fails
+  client authentication or validation counts against it, a successful one
+  never does. A public client's pushes count against `par_per_client` (2000
+  per `token_window`) from every network. A spent budget returns `429
+  slow_down` with `Retry-After` (`TestPARAndDeviceNetworkBudgets`).
 - A pushed request may name `dpop_jkt`, or carry a `DPoP` header (RFC 9449
   §10.1): the proof is verified like one at the token endpoint, with `htu`
   the PAR endpoint, and the code is bound to its key as if the request had
@@ -1008,8 +1033,10 @@ the client may receive) or, with `open` registration, by nothing (the client
 is then held for an administrator's approval). The response carries a
 registration access token (`pa_rat_`) for `GET`, `PUT` and `DELETE` on
 `I/oauth/register/{client_id}`. `jwks_uri` and software statements are refused,
-and no client metadata URL is ever fetched. Budgets: 20 registrations per hour
-per network, 500 per realm. Details:
+and no client metadata URL is ever fetched. Budgets:
+`security.rate_limits.dcr_per_network` (20) registrations per network per
+`dcr_window` (1 hour), counted before the request is authenticated, and 500
+per realm per hour. Details:
 [dynamic-client-registration.md](../integrations/dynamic-client-registration.md).
 
 ## Not supported

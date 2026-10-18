@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -21,7 +22,13 @@ import (
 // TestTokenEndpointLimiterFailsClosed covers QA-008 and SEC-006: when the
 // token request budget cannot be consulted (its counters are unreachable),
 // the token endpoint refuses with 503 temporarily_unavailable instead of
-// issuing unbudgeted tokens, and issues again once the limiter is back.
+// issuing unbudgeted tokens, and issues again once the limiter is back. The
+// same holds for every protocol-endpoint budget of owner decision 9: the
+// network failure budgets of the token endpoint and PAR (read before client
+// authentication) and the network budget of device authorization, a public
+// client's failure budgets (read before its grant) and a confidential
+// client's token budget once the network budget is off, and the user-code
+// budget of device approval (503 unavailable).
 func TestTokenEndpointLimiterFailsClosed(t *testing.T) {
 	f := NewFixture(t)
 	h := f.H
@@ -45,6 +52,27 @@ func TestTokenEndpointLimiterFailsClosed(t *testing.T) {
 	if r.Status != 503 || r.Str("error") != "temporarily_unavailable" || r.Str("access_token") != "" {
 		t.Fatalf("token request with an unavailable limiter: %d %s", r.Status, r.Raw)
 	}
+	unavailable := func(r *Resp, what string) {
+		t.Helper()
+		if r.Status != 503 || r.Str("error") != "temporarily_unavailable" {
+			t.Fatalf("%s with an unavailable limiter: %d %s", what, r.Status, r.Raw)
+		}
+	}
+	bogusCode := url.Values{"grant_type": {"authorization_code"}, "code": {"pa_code_bogus"}, "code_verifier": {"x"}, "redirect_uri": {"http://127.0.0.1/callback"}}
+	unavailable(h.TokenRequest(bogusCode, "proudauth-cli", ""), "public client's token request")
+	_, challenge := PKCE()
+	unavailable(h.Do(Req{Method: "POST", Path: "/realms/main/oauth/par", Basic: [2]string{"web-bff", f.Clients["web"].Secret}, Form: url.Values{
+		"redirect_uri": {webRedirect}, "response_type": {"code"}, "scope": {"orders:read"}, "code_challenge": {challenge}, "code_challenge_method": {"S256"},
+		"resource": {f.OrdersAud}}}), "PAR")
+	unavailable(h.Do(Req{Method: "POST", Path: "/realms/main/oauth/device_authorization", Form: url.Values{"client_id": {"proudauth-cli"},
+		"scope": {"proudauth:account"}, "resource": {h.Realm.Issuer + "/account"}}}), "device authorization")
+	if r := h.API("POST", "/auth/transactions", "", map[string]any{"device_user_code": "BCDF-GHJK"}); r.Status != 503 {
+		t.Fatalf("user-code lookup with an unavailable limiter: %d %s", r.Status, r.Raw)
+	}
+	// With the network budgets off, the client budgets still fail closed.
+	h.App.D.Cfg.Security.RateLimits.TokenFailuresPerNetwork = 0
+	unavailable(f.MachineToken(batch, f.BillingAud, "billing:read", f.Acme), "confidential client's token request")
+	unavailable(h.TokenRequest(bogusCode, "proudauth-cli", ""), "public client's token request")
 	h.App.OAuth.Limiter = working
 	mustStatus(t, f.MachineToken(batch, f.BillingAud, "billing:read", f.Acme), 200, "token once the limiter is back")
 }

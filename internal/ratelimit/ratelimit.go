@@ -14,7 +14,9 @@
 // one database round trip however many budgets the call names. Every budget is
 // consumed even when another one of the call is exhausted: a refused request still
 // counts toward the aggregate budgets (client, organization, realm) it would have
-// used, so retrying a refused request cannot bypass them.
+// used, so retrying a refused request cannot bypass them. Check reads budgets
+// without consuming them, in one read-only statement: a failure budget is
+// checked before an attempt and charged with Hit only once the attempt fails.
 //
 // Per-network budgets count networks, not addresses (SEC-006, ABU-001): an IPv4
 // address is its own network (/32), an IPv6 address counts by its /64, which one
@@ -59,9 +61,13 @@ func New(d *runtime.Deps) *Limiter { return &Limiter{d: d, peaks: map[string]pea
 // client, organization or realm (SEC-006, REG-012, TEN-018), named by the key
 // prefix before the first colon. They are the label values of
 // proudauth_rate_budget_utilization, a fixed set so its series are bounded.
+// token-client counts every token request of a confidential client and only
+// the failed grants of a public one; par-client counts the pushed
+// authorization requests of a public client.
 var AggregateBudgets = []string{
 	"dcr-realm",
 	"guest-client", "guest-realm",
+	"par-client",
 	"pwd-client", "pwd-org", "pwd-realm",
 	"send-client", "send-org", "send-realm",
 	"signup-client", "signup-realm",
@@ -275,6 +281,76 @@ func (l *Limiter) Hit(ctx context.Context, budgets ...Budget) (Decision, error) 
 	if denied >= 0 {
 		b := lives[denied]
 		return Decision{Allowed: false, RetryAfter: b.start.Add(b.Window).Sub(now), Bucket: b.Key}, nil
+	}
+	return Decision{Allowed: true}, nil
+}
+
+// checkSQL reads the counters of one Check, one row per (bucket, window)
+// asked for, 0 for a counter not stored yet.
+const checkSQL = `SELECT b.bucket, b.window_start, coalesce(c.count, 0)
+	FROM unnest($1::text[], $2::timestamptz[]) AS b(bucket, window_start)
+	LEFT JOIN rate_limit_counters c ON c.bucket = b.bucket AND c.window_start = b.window_start`
+
+// Check reports whether every live budget still has a unit left (its count
+// below Limit) without consuming any, in one read-only statement. It is the
+// check of a failure budget, which the caller charges with Hit only once an
+// attempt has failed, so that successful attempts never use it up. The
+// decision names the first exhausted budget in argument order and the time
+// until its window ends. Disabled budgets are skipped, and a call without
+// live budgets does not touch the database. Attempts that run concurrently
+// can all pass the check before any of them is charged, so a failure budget
+// may be exceeded by the attempts in flight.
+func (l *Limiter) Check(ctx context.Context, budgets ...Budget) (Decision, error) {
+	now := l.d.Now()
+	type live struct {
+		Budget
+		start time.Time
+		c     counter
+	}
+	lives := make([]live, 0, len(budgets))
+	var (
+		buckets []string
+		starts  []time.Time
+	)
+	for _, b := range budgets {
+		if b.disabled() {
+			continue
+		}
+		start := now.Truncate(b.Window)
+		c := counter{bucket: secret.Digest(b.Key)[:40], start: start.UnixMicro()}
+		lives = append(lives, live{Budget: b, start: start, c: c})
+		buckets = append(buckets, c.bucket)
+		starts = append(starts, start)
+	}
+	if len(lives) == 0 {
+		return Decision{Allowed: true}, nil
+	}
+	rows, err := l.d.DB.Pool.Query(ctx, checkSQL, buckets, starts)
+	if err != nil {
+		return Decision{}, err
+	}
+	counts := make(map[counter]int, len(buckets))
+	for rows.Next() {
+		var (
+			bucket string
+			start  time.Time
+			count  int
+		)
+		if err := rows.Scan(&bucket, &start, &count); err != nil {
+			rows.Close()
+			return Decision{}, err
+		}
+		counts[counter{bucket: bucket, start: start.UnixMicro()}] = count
+	}
+	if err := rows.Err(); err != nil {
+		return Decision{}, err
+	}
+	for _, b := range lives {
+		count := counts[b.c]
+		l.observe(b.Budget, b.start, count)
+		if count >= b.Limit {
+			return Decision{Allowed: false, RetryAfter: b.start.Add(b.Window).Sub(now), Bucket: b.Key}, nil
+		}
 	}
 	return Decision{Allowed: true}, nil
 }

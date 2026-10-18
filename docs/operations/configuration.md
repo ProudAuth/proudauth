@@ -275,8 +275,16 @@ See [keys.md](keys.md) before changing anything here.
 | `rate_limits.signup_window` | `1h` | Window for registrations. |
 | `rate_limits.signup_per_client` | `500` | Registrations per OAuth client per `signup_window`. |
 | `rate_limits.signup_per_realm` | `2000` | Registrations across the realm per `signup_window`. |
-| `rate_limits.token_per_client` | `600` | Token-endpoint requests per client per window. |
-| `rate_limits.token_window` | `1m` | Window for the token budget. |
+| `rate_limits.token_per_client` | `2000` | Token-endpoint budget per client per `token_window` ([owner decision 9](../releases/2026-10-alpha.6-decisions.md), REG-012; `600` before 0.2.0-alpha.6). Every request of a confidential client counts. A public client authenticates with its `client_id` alone, so only its failed grants count: `invalid_request`, `invalid_grant`, `invalid_client`, `invalid_scope`, `invalid_target`, `unauthorized_client`, `unsupported_grant_type` and `invalid_dpop_proof` after the client is identified; its successful grants, device-flow polling (`authorization_pending`, `slow_down`, `expired_token`, `access_denied`), budget refusals and server errors do not. Once spent, the client's token requests answer `429 slow_down` with `Retry-After` until the window ends (an aggregate cap fails closed); `token_per_network_client` keeps one network from spending a public client's budget alone. `0` disables it. |
+| `rate_limits.token_window` | `1m` | Window for the token budgets (`token_per_client`, `token_failures_per_network`, `token_per_network_client`, `organization_per_window`) and the PAR budgets. |
+| `rate_limits.token_failures_per_network` | `300` | Failed token-endpoint requests per client network (IPv4 /32, IPv6 /64) per `token_window` ([owner decision 9](../releases/2026-10-alpha.6-decisions.md): about 300 per minute per network, bounding failures; SEC-006, ABU-001). Failed means a failed client authentication (`invalid_client`) or a failed grant as for `token_per_client`, from any client. Every request first reads the budget, before client credentials are read or checked and before anything is audited, and a network that has spent it gets `429 slow_down` with `Retry-After` for every request, valid clients included, until the window ends, so a flood of junk client IDs, wrong secrets, bad codes or stolen tokens from one network costs one read per request. Successful requests never count: a confidential client's backend (a BFF exchanging codes and refreshing for its users, a resource server, a batch job) or a NAT full of a public client's users is never refused by it, however many requests it sends. The wider /24 or /48 counts `network_coarse_factor` times as many. An unreachable limiter gives `503 temporarily_unavailable`. `0` disables it. |
+| `rate_limits.token_per_network_client` | `100` | Failed grants (as for `token_per_client`) one client network makes through one public client per `token_window`, with the wider /24 or /48 at `network_coarse_factor` times. Beyond it that network's requests through the client answer `429 slow_down` with `Retry-After` before the grant runs, and are not counted against `token_per_client`, so one network cannot spend a public client's budget for everyone else (it takes `token_per_client` / this many networks, or / `network_coarse_factor` times this many /24s or /48s). `0` disables it. |
+| `rate_limits.par_failures_per_network` | `300` | Failed pushed authorization requests (`POST /oauth/par`) per client network per `token_window`: a failed client authentication, or a pushed request refused as invalid (`invalid_request`, `invalid_scope`, `invalid_target`, `unauthorized_client`, `unsupported_response_type`, `request_not_supported`, `invalid_dpop_proof`). Read before client authentication like `token_failures_per_network`; a network that has spent it gets `429 slow_down` with `Retry-After` for every push until the window ends (wider /24 or /48 at `network_coarse_factor` times). Successful pushes never count, so a backend pushing for every sign-in of its users is never refused by it. `0` disables it. |
+| `rate_limits.par_per_client` | `2000` | Pushed authorization requests per public client per `token_window`, from every network: anyone can push in a public client's name, and each push stores a row for 60 s. Confidential clients are not counted. An aggregate cap: once spent, pushes through the client answer `429 slow_down` until the window ends. `0` disables it. |
+| `rate_limits.device_per_network` | `300` | Device authorization requests (`POST /oauth/device_authorization`) per client network per `login_window`, counted before client authentication (wider /24 or /48 at `network_coarse_factor` times). Excess answers `429 slow_down` with `Retry-After`. `0` disables it. |
+| `rate_limits.user_code_failures_per_network` | `30` | Device-approval user-code lookups (`device_user_code` at `POST /auth/transactions`) that find no pending code, a wrong, malformed or expired one, per client network per `login_window` (wider /24 or /48 at `network_coarse_factor` times). Once spent, the network's lookups answer `429 rate_limited` with `Retry-After` before any code is looked up, a right one included; lookups that find their code do not count. User codes are 8 letters of 20 (about 34.6 bits). `0` disables it. |
+| `rate_limits.dcr_per_network` | `20` | Dynamic client registrations (`POST /oauth/register`) per client network per `dcr_window`, counted before the request is authenticated (wider /24 or /48 at `network_coarse_factor` times; until 0.2.0-alpha.6 a fixed 20 per hour without the wider budget). Excess answers `429 slow_down` with `Retry-After`. `0` disables it. |
+| `rate_limits.dcr_window` | `1h` | Window for `dcr_per_network`. |
 | `rate_limits.organization_per_window` | `2000` | Access tokens minted in one organization's context per `token_window`, for every grant type including token exchange; beyond it `429 slow_down` with `Retry-After` (TEN-018). Fails closed: an unreachable limiter gives `503 temporarily_unavailable`. |
 | `rate_limits.temporary_lock` | `15m` | Duration of the temporary password lock, and the window in which `failures_before_lock` counts failures. |
 | `rate_limits.failures_before_lock` | `10` | Failed password attempts that trigger the temporary lock. Each failure counts against the identifier tried and, when it names an account, against the account as well. Once the identifier's count is reached, the password step returns `429` for that identifier and records `authentication.password.temporarily_locked` (each attempt during the lock also counts as a proof failure of the transaction). Once the account's count is reached, no password of the account is checked through any identifier, so guessing stays bounded per account; through an identifier whose own count is not reached yet the step answers `401 invalid_credentials`, exactly as for an identifier without an account (the attempt is recorded as `authentication.password.temporarily_locked` and counts against that identifier), so a lock reached through an account's email address does not reveal its username or phone number (API-009). Other sign-in methods (passkeys, codes, magic links, federation) are not blocked. A wrong current password in a self-service password change (`POST /me/password`) counts against the account's count too, and while it is reached the change answers `429 rate_limited` (`Retry-After`: `temporary_lock`) without checking the password, so a recently authenticated session cannot guess the current password without bound (owner decision 10, CRED-006). `0` disables the lock. |
@@ -286,8 +294,8 @@ See [keys.md](keys.md) before changing anything here.
 | `rate_limits.join_requests_per_user` | `10` | Join requests one user files per `join_request_window`, across the organizations of the realm (INV-013, REG-012). Withdrawing a request does not refund it, so a request-withdraw loop meets it; an attempt answered `409` (a request already pending, or a membership) counts too. Excess returns `429 rate_limited` with `Retry-After`. `0` disables it. |
 | `rate_limits.join_requests_per_organization` | `100` | Join requests filed to one organization per `join_request_window`, from all requesters (TEN-018). It is checked after the requester's budget, and a request that budget refuses does not count here, so one account cannot use up an organization's budget. Excess returns `429 rate_limited` with `Retry-After`. `0` disables it. |
 | `rate_limits.join_request_window` | `24h` | Window for the join-request budgets. It also de-duplicates reviewer notices: a request filed within this time after the same user's previous request to the same organization (whatever became of it) is recorded and audited, but does not notify the reviewers again. `0` turns that de-duplication off too, and needs both join-request limits at `0`. |
-| `rate_limits.start_per_network` | `300` | Authentication transactions one client network (IPv4 /32, IPv6 /64) starts per `login_window`: headless starts (`POST /auth/transactions`, device approval included), the browser authorization endpoint and SAML sign-in. A start that reuses a valid SSO session (silent SSO, a further client of a signed-in browser) is not counted. Excess answers `429 rate_limited` with `Retry-After`; the browser authorization endpoint redirects to the client with `error=temporarily_unavailable` instead (SEC-006, ABU-001). Behind a large NAT, raise it with `login_per_ip`. `0` disables it. |
-| `rate_limits.network_coarse_factor` | `10` | Every configurable per-network budget (`login_per_ip` with the proof, passkey-ceremony and setup budgets that use it, `send_per_ip`, `signup_per_ip`, `start_per_network`) also counts the wider network, the IPv4 /24 or IPv6 /48, with this many times its limit, so many /64s of one site cannot add up to the realm's budgets (ABU-001). At most `1000`; `0` disables the wider budgets. |
+| `rate_limits.start_per_network` | `300` | Authentication transactions one client network (IPv4 /32, IPv6 /64) starts per `login_window`: headless starts (`POST /auth/transactions`, device approval included), the browser authorization endpoint (`GET`/`POST /oauth/authorize`, which writes a row only by starting a transaction, so it has no budget of its own) and SAML sign-in. A start that reuses a valid SSO session (silent SSO, a further client of a signed-in browser) is not counted. Excess answers `429 rate_limited` with `Retry-After`; the browser authorization endpoint redirects to the client with `error=temporarily_unavailable` instead (SEC-006, ABU-001). Behind a large NAT, raise it with `login_per_ip`. `0` disables it. |
+| `rate_limits.network_coarse_factor` | `10` | Every configurable per-network budget (`login_per_ip` with the proof, passkey-ceremony and setup budgets that use it, `send_per_ip`, `signup_per_ip`, `start_per_network`, `token_failures_per_network`, `token_per_network_client`, `par_failures_per_network`, `device_per_network`, `user_code_failures_per_network`, `dcr_per_network`) also counts the wider network, the IPv4 /24 or IPv6 /48, with this many times its limit, so many /64s of one site cannot add up to the realm's budgets (ABU-001). At most `1000`; `0` disables the wider budgets. |
 | `rate_limits.known_quota_days` | `30` | Known-device quota ([owner decision 9](../releases/2026-10-alpha.6-decisions.md)). When an aggregate sign-in budget is exhausted (password attempts through `login_per_client`, `login_per_realm` or `login_per_organization`, or proof attempts through the same three), a sign-in from a network (IPv4 /32, IPv6 /64), a remembered device or an identifier that completed a sign-in in the realm within this many days still proceeds under the quota below; everyone else gets `429 rate_limited` with `Retry-After`. An identifier is known only from the wider network (IPv4 /24, IPv6 /48) it signed in from: anyone can name an identifier, and an identifier admitted from anywhere would let whoever exhausts the budget tell recently active accounts (admitted) from all others (`429`), SEC-005. The attempt's own budgets (identifier, account, network and wider network) still apply. A completed sign-in records its network, the remembered device it presented (when still valid for the account) or remembered, and its identifier with its wider network, as keyed digests in `known_sign_ins` (refreshed at most hourly); the worker deletes them after this many days. Aggregate send and registration budgets have no such quota. No CAPTCHA, no proof-of-work. At most `365`; `0` turns the quota off (nothing is recorded, stored facts are deleted, everyone gets `429`). |
 | `rate_limits.known_login_per_network` | `50` | Attempts per known network per `login_window` under the known-device quota. A requester with several known facts is charged to the most specific one only: a remembered device, then the network, then the identifier, which comes last because anyone can name it. `0` admits nobody by network. |
 | `rate_limits.known_login_per_device` | `20` | Attempts per known remembered device per `login_window`; a revoked or expired device is not known. `0` admits nobody by device. |
@@ -297,15 +305,14 @@ Rate-limit counters are fixed windows stored in PostgreSQL (`rate_limit_counters
 with digested keys, so every node shares them. A limit of `0` disables its budget,
 and `send_cooldown: 0` disables the cooldown. Startup refuses a negative value for
 any `rate_limits` key, and a positive limit whose window is `0`: the `login_*`
-limits, `start_per_network` and the `known_login_*` limits use `login_window`,
-the `send_*` limits `send_window`,
-`otp_verify_per_account` `otp_verify_window`, the `signup_*` limits
-`signup_window`, `token_per_client` and `organization_per_window` `token_window`,
+limits, `start_per_network`, the `known_login_*` limits, `device_per_network`
+and `user_code_failures_per_network` use `login_window`, the `send_*` limits
+`send_window`, `otp_verify_per_account` `otp_verify_window`, the `signup_*`
+limits `signup_window`, the `token_*` limits, `organization_per_window` and
+the `par_*` limits `token_window`, `dcr_per_network` `dcr_window`,
 `failures_before_lock` `temporary_lock`, the `invitations_*` limits
 `invitation_window`, and the `join_requests_*` limits `join_request_window`
-(set the limit to `0` to disable a budget instead). A check
-`failures_before_lock` `temporary_lock`, and the `invitations_*` limits
-`invitation_window` (set the limit to `0` to disable a budget instead); it also
+(set the limit to `0` to disable a budget instead); it also
 refuses `network_coarse_factor` above `1000` and `known_quota_days` above
 `365`. Per-network budgets count networks, not addresses: an IPv4 address is
 its own network (/32), an IPv6 address counts by its /64, with the wider /24 or
@@ -318,8 +325,16 @@ the other send budgets, and a send it refuses consumes nothing but the cooldown
 (no unit of `send_per_identifier`, `send_per_ip` or the client, organization and
 realm send budgets). Join requests are the other: `join_requests_per_user` is
 checked first, and a request it refuses consumes no unit of
-`join_requests_per_organization`. Exhausted budgets on the custom APIs return
-`429 rate_limited` with `Retry-After`; the token endpoint answers `429 slow_down`.
+`join_requests_per_organization`. Failure budgets are the third:
+`token_failures_per_network`, `par_failures_per_network`, a public client's
+`token_per_network_client` and `token_per_client`, and
+`user_code_failures_per_network` are read before the attempt (one read-only
+statement) and counted only once it has failed (in one statement), so attempts that succeed never
+use them up; attempts running at the same moment can all pass the read, so a
+failure budget can be exceeded by the attempts in flight. Exhausted budgets on
+the custom APIs return `429 rate_limited` with `Retry-After`; the protocol
+endpoints (token, PAR, device authorization, dynamic client registration)
+answer `429 slow_down` with `Retry-After` in the OAuth error format.
 `proudauth_rate_budget_utilization` reports how close the aggregate budgets are
 to their caps ([monitoring.md](monitoring.md#metrics)).
 
@@ -327,8 +342,19 @@ Fixed budgets (not configurable): shared-signals pushes 600 per minute per
 transmitter and 1200 per minute per network; check-session origin checks 300
 per minute per network; registry tokens 600 per minute per network, and 20
 failed registry sign-ins per network per 15 minutes; dynamic client
-registration 20 per hour per network and 500 per hour per realm. A network is
-an IPv4 /32 or an IPv6 /64, as above; the fixed budgets have no wider budget.
+registration 500 per hour per realm (its per-network budget is
+`dcr_per_network`). A network is an IPv4 /32 or an IPv6 /64, as above; the
+fixed budgets have no wider budget.
+
+Load generators and every other single source of many users (identity-bench,
+a large NAT) meet the per-network budgets that count every attempt first.
+For a benchmark, `make bench-local` raises to 1000000 every budget a workload
+can trip: `login_per_ip`, `login_per_realm`, `login_per_client`,
+`token_per_client`, `start_per_network`, `token_failures_per_network`,
+`token_per_network_client`, `par_failures_per_network`, `par_per_client`,
+`device_per_network` and `user_code_failures_per_network`
+([benchmarks.md](benchmarks.md)); the adversarial scenarios that fail on
+purpose would otherwise spend the failure budgets of the load source.
 
 ## `impersonation`
 
@@ -561,8 +587,8 @@ per request. Federation transfers: 50000 entries per transfer, 2000 per
 request. Registry tokens: 60–3600 s per registry service.
 Protocol extensions: JARM responses expire after 10 minutes; `fapi2` clients
 get authorization codes of at most 60 s and access tokens of at most
-10 minutes; dynamic registration allows 20 registrations per hour per
-network and 500 per realm; HOTP enrollment expires after 15 minutes and
+10 minutes; dynamic registration allows `rate_limits.dcr_per_network` (20)
+registrations per network per `dcr_window` (1 hour) and 500 per realm per hour; HOTP enrollment expires after 15 minutes and
 resynchronization allows 5 attempts per 15 minutes; workload key sets are
 cached 5 minutes (refetched at most once a minute for an unknown key) with a
 60 s clock skew for assertions; relationship decisions stop at depth 6,

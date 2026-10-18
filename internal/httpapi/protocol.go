@@ -351,13 +351,22 @@ func (a *App) tokenEndpoint(w http.ResponseWriter, r *http.Request, rlm *realm.R
 		writeJSON(w, http.StatusBadRequest, oauth.ErrInvalidRequest("parameters must be sent in the request body"))
 		return nil
 	}
-	endpoint := rlm.Issuer + "/oauth/token"
-	res, oe := a.OAuth.Token(r.Context(), rlm, oauth.TokenRequest{Form: r.PostForm, Auth: a.clientAuthFrom(r), Endpoint: endpoint,
-		DPoPProof: r.Header.Get("DPoP"), HTTPMethod: r.Method, HTTPURL: endpoint, ClientIP: reqctx.From(r.Context()).ClientIP})
 	grant := r.PostForm.Get("grant_type")
 	if len(grant) > 64 {
 		grant = "invalid"
 	}
+	// The network's failure budget comes first, before client credentials
+	// are read or checked and before anything is audited (SEC-006, owner
+	// decision 9); Token counts the request against it if it fails.
+	ip := reqctx.From(r.Context()).ClientIP
+	if oe := a.OAuth.NetworkBudget(r.Context(), rlm, oauth.EndpointToken, ip); oe != nil {
+		a.Metrics.Tokens.Inc(grant, oe.Code)
+		a.writeOAuthError(w, oe)
+		return nil
+	}
+	endpoint := rlm.Issuer + "/oauth/token"
+	res, oe := a.OAuth.Token(r.Context(), rlm, oauth.TokenRequest{Form: r.PostForm, Auth: a.clientAuthFrom(r), Endpoint: endpoint,
+		DPoPProof: r.Header.Get("DPoP"), HTTPMethod: r.Method, HTTPURL: endpoint, ClientIP: ip})
 	if oe != nil {
 		a.Metrics.Tokens.Inc(grant, oe.Code)
 		a.writeOAuthError(w, oe)
@@ -564,6 +573,12 @@ func (a *App) deviceAuthorization(w http.ResponseWriter, r *http.Request, rlm *r
 		writeJSON(w, http.StatusBadRequest, oauth.ErrInvalidRequest("form encoding required"))
 		return nil
 	}
+	// Every request stores a device code: counted per network before client
+	// authentication (SEC-006, ABU-001).
+	if oe := a.OAuth.NetworkBudget(r.Context(), rlm, oauth.EndpointDevice, reqctx.From(r.Context()).ClientIP); oe != nil {
+		a.writeOAuthError(w, oe)
+		return nil
+	}
 	res, oe := a.OAuth.DeviceAuthorize(r.Context(), rlm, a.clientAuthFrom(r), rlm.Issuer+"/oauth/device_authorization", r.PostForm)
 	if oe != nil {
 		a.writeOAuthError(w, oe)
@@ -582,13 +597,15 @@ func (a *App) par(w http.ResponseWriter, r *http.Request, rlm *realm.Realm) erro
 		writeJSON(w, http.StatusBadRequest, &oauth.Error{Code: "invalid_dpop_proof", Description: "one DPoP proof header is required", Status: http.StatusBadRequest})
 		return nil
 	}
-	endpoint := rlm.Issuer + "/oauth/par"
-	c, err := a.Apps.Authenticate(r.Context(), rlm.ID, rlm.Issuer, endpoint, a.clientAuthFrom(r))
-	if err != nil {
-		a.writeOAuthError(w, oauth.ErrInvalidClient)
+	// The network's failure budget, before client authentication (SEC-006,
+	// ABU-001); PAR counts the request against it if it fails.
+	ip := reqctx.From(r.Context()).ClientIP
+	if oe := a.OAuth.NetworkBudget(r.Context(), rlm, oauth.EndpointPAR, ip); oe != nil {
+		a.writeOAuthError(w, oe)
 		return nil
 	}
-	res, oe := a.OAuth.PushAuthorizationRequest(r.Context(), rlm, c, r.PostForm, r.Header.Get("DPoP"), endpoint)
+	endpoint := rlm.Issuer + "/oauth/par"
+	res, oe := a.OAuth.PAR(r.Context(), rlm, a.clientAuthFrom(r), endpoint, r.PostForm, r.Header.Get("DPoP"), ip)
 	if oe != nil {
 		a.writeOAuthError(w, oe)
 		return nil

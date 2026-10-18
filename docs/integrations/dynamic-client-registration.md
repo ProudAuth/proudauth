@@ -131,9 +131,11 @@ both with `Retry-After`. Before 0.2.0-alpha.6 these were problem details.
 Requested scopes outside these sets are dropped without error; the
 response's `scope` lists what was granted (it can be empty).
 
-**Budgets.** 20 registration requests per hour per client address and 500
-per hour per realm, in fixed hourly windows; every `POST` counts, also
-refused ones. Beyond them `429 slow_down` with `Retry-After`. The budgets
+**Budgets.** `security.rate_limits.dcr_per_network` (20) registration
+requests per client network (an IPv4 address or an IPv6 /64, with the wider
+/24 or /48 at `network_coarse_factor` times) per `dcr_window` (1 hour), and
+500 per hour per realm, in fixed windows; every `POST` counts, also refused
+ones. Beyond them `429 slow_down` with `Retry-After`. The budgets
 fail closed: when the limiter is unavailable the answer is `503
 temporarily_unavailable`, also with `Retry-After`.
 

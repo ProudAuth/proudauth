@@ -65,11 +65,28 @@ write failure exits `1`; usable partial data is kept when it can be written.
   100 per 15 minutes), `login_per_realm` (50000), `login_per_client` (20000
   password attempts per client per 15 minutes; it used to follow
   `token_per_client`, and a soak run of `mixed` signs in tens of thousands of
-  times through the one web client), `token_per_client` (600 per minute)
-  and, from 0.2.0-alpha.6, `start_per_network` (300 transaction starts per
-  network per 15 minutes; the wider /24 or /48 budgets follow at
-  `network_coarse_factor` times each raised value),
-  and **publish the values you used with the results**. Leave the
+  times through the one web client), `token_per_client` (600 per minute
+  before 0.2.0-alpha.6, 2000 from it) and, from 0.2.0-alpha.6,
+  `start_per_network` (300 transaction starts per network per 15 minutes),
+  `token_failures_per_network` (300 failed token requests per network per
+  minute, read before client authentication; `refresh-race` and
+  `metadata-fetch` make token requests that fail on purpose),
+  `token_per_network_client` (100 failed grants per network per public
+  client per minute), `par_failures_per_network` (300 failed pushed requests
+  per network per minute), `par_per_client` (2000 pushed requests per public
+  client per minute), `device_per_network` (300 device authorizations per
+  network per 15 minutes) and `user_code_failures_per_network` (30 wrong
+  device user codes per network per 15 minutes); the wider /24 or /48
+  budgets follow at `network_coarse_factor` times each raised value.
+  `make bench-local` (`scripts/bench-local.sh`) raises all eleven to
+  1000000 (`BENCH_LOGIN_PER_IP`, `BENCH_LOGIN_PER_REALM`,
+  `BENCH_LOGIN_PER_CLIENT`, `BENCH_TOKEN_PER_CLIENT`,
+  `BENCH_START_PER_NETWORK`, `BENCH_TOKEN_FAILURES_PER_NETWORK`,
+  `BENCH_TOKEN_PER_NETWORK_CLIENT`, `BENCH_PAR_FAILURES_PER_NETWORK`,
+  `BENCH_PAR_PER_CLIENT`, `BENCH_DEVICE_PER_NETWORK`,
+  `BENCH_USER_CODE_FAILURES_PER_NETWORK` override each) and records them in
+  `environment.json` under `raised_budgets`. **Publish the values
+  you used with the results**. Leave the
   per-identifier, send and lock budgets as configured: the adversarial
   scenarios measure them ([configuration.md](configuration.md#security)), and
   the workloads sign users in in turn so no account reaches its

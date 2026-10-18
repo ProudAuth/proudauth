@@ -431,6 +431,35 @@ budgets in ways an upgrade notices
   `known_login_per_device` and `known_login_per_identifier`; add them only
   for new processes (the defaults apply without them).
 
+The protocol endpoints gain budgets of their own (owner decision 9, no
+migration; [configuration.md](configuration.md#security)):
+
+- The token endpoint and PAR keep a failure budget per network
+  (`token_failures_per_network` and `par_failures_per_network`, 300 per
+  `token_window` per IPv4 address or IPv6 /64): failed client
+  authentications and failed grants or pushed requests count, successful
+  requests never do. A network that has spent it gets `429 slow_down` for
+  every request until the window ends, valid clients included, so a backend
+  that shares its address with a source of many failures (a misconfigured
+  client sending a wrong secret, an expired-code retry loop) is refused with
+  it; fix the failing client or raise the budget.
+- `token_per_client` defaults to `2000` instead of `600` and counts only the
+  failed grants of public clients; confidential clients count every request
+  as before. A configuration that sets it keeps its value.
+- Device authorization counts against `device_per_network`, wrong device
+  user codes against `user_code_failures_per_network`, a public client's
+  pushed requests against `par_per_client`, and dynamic client registration
+  against `dcr_per_network` per `dcr_window` (20 per hour, as the fixed
+  budget it replaces, now with the wider /24 or /48 budget).
+- In the mixed-version window, older servers keep the old token budget
+  (every request of every client against 600 per minute) and none of the
+  per-network ones, so the new bounds hold only once every server runs the
+  new version.
+- Older binaries reject the new keys `token_failures_per_network`,
+  `token_per_network_client`, `par_failures_per_network`, `par_per_client`,
+  `device_per_network`, `user_code_failures_per_network`, `dcr_per_network`
+  and `dcr_window`; add them only for new processes.
+
 New binaries also change the user ownership transfer: `POST
 /users/{user}/ownership-transfer` moves hooks, webhook subscriptions and
 authorization policies too and so also needs `realm.hooks.write`,

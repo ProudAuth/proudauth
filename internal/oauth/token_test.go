@@ -150,3 +150,26 @@ func TestFirstNonEmpty(t *testing.T) {
 		}
 	}
 }
+
+// TestFailedRequestClassification covers REG-012 and SEC-006 (owner decision
+// 9 of 0.2.0-alpha.6): the errors that count against the failure budgets of
+// the token endpoint and PAR (per network, and a public client's) are those
+// of a failed client authentication or an invalid request or grant;
+// device-flow polling answers, budget refusals (429 slow_down, the same code
+// as device polling with another status) and server errors do not.
+func TestFailedRequestClassification(t *testing.T) {
+	for _, e := range []*Error{ErrInvalidClient, ErrInvalidRequest("x"), ErrInvalidGrant("x"), ErrInvalidScope("x"), ErrInvalidTarget("x"),
+		ErrUnauthorizedClient("x"), ErrUnsupportedGrantType, oerr(400, "invalid_dpop_proof", "x"), oerr(400, "unsupported_response_type", "x"),
+		oerr(400, "request_not_supported", "x")} {
+		if !failedRequest(e) {
+			t.Errorf("%s does not count as a failed request", e.Code)
+		}
+	}
+	slow := oerr(429, "slow_down", "budget")
+	for _, e := range []*Error{nil, ErrAuthorizationPending, ErrSlowDown, ErrExpiredToken, ErrAccessDenied, slow, ErrServerError,
+		ErrTemporarilyUnavailable, oerr(503, "invalid_request", "x")} {
+		if failedRequest(e) {
+			t.Errorf("%+v counts as a failed request", e)
+		}
+	}
+}

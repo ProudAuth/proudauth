@@ -264,6 +264,34 @@ type RateLimitConfig struct {
 	KnownLoginPerNetwork    int `yaml:"known_login_per_network"`
 	KnownLoginPerDevice     int `yaml:"known_login_per_device"`
 	KnownLoginPerIdentifier int `yaml:"known_login_per_identifier"`
+	// Pre-authentication budgets of the protocol endpoints (owner decision 9
+	// of 0.2.0-alpha.6; SEC-006, ABU-001, REG-012), per network with the
+	// wider network at network_coarse_factor times the limit, checked before
+	// the client is authenticated and before anything is audited.
+	// TokenFailuresPerNetwork and PARFailuresPerNetwork bound the failed
+	// requests (client authentication, invalid grants or pushed requests)
+	// one network makes per token_window: successful requests never count.
+	// DevicePerNetwork bounds every device authorization request per
+	// login_window. The browser authorization endpoint and the headless
+	// start are bounded by start_per_network.
+	TokenFailuresPerNetwork int `yaml:"token_failures_per_network"`
+	// TokenPerNetworkClient bounds the failed grants one network makes
+	// through one public client per token_window, so one network cannot use
+	// up the client's token_per_client budget, which counts only the failed
+	// grants of a public client, for everyone.
+	TokenPerNetworkClient int `yaml:"token_per_network_client"`
+	PARFailuresPerNetwork int `yaml:"par_failures_per_network"`
+	// PARPerClient bounds the pushed authorization requests made through one
+	// public client per token_window, from every network.
+	PARPerClient     int `yaml:"par_per_client"`
+	DevicePerNetwork int `yaml:"device_per_network"`
+	// UserCodeFailuresPerNetwork bounds the device-approval user-code
+	// lookups that find no pending code, per network per login_window.
+	UserCodeFailuresPerNetwork int `yaml:"user_code_failures_per_network"`
+	// DCRPerNetwork bounds dynamic client registrations per network per
+	// DCRWindow.
+	DCRPerNetwork int           `yaml:"dcr_per_network"`
+	DCRWindow     time.Duration `yaml:"dcr_window"`
 }
 
 // MaxKnownQuotaDays bounds security.rate_limits.known_quota_days: how long
@@ -291,14 +319,18 @@ func (rl RateLimitConfig) validate() []string {
 		{"login_window", rl.LoginWindow, []limit{{"login_per_identifier", rl.LoginPerIdentifier}, {"login_per_ip", rl.LoginPerIP},
 			{"login_per_realm", rl.LoginPerRealm}, {"login_per_client", rl.LoginPerClient}, {"login_per_organization", rl.LoginPerOrganization},
 			{"start_per_network", rl.StartPerNetwork}, {"known_login_per_network", rl.KnownLoginPerNetwork},
-			{"known_login_per_device", rl.KnownLoginPerDevice}, {"known_login_per_identifier", rl.KnownLoginPerIdentifier}}},
+			{"known_login_per_device", rl.KnownLoginPerDevice}, {"known_login_per_identifier", rl.KnownLoginPerIdentifier},
+			{"device_per_network", rl.DevicePerNetwork}, {"user_code_failures_per_network", rl.UserCodeFailuresPerNetwork}}},
 		{"send_window", rl.SendWindow, []limit{{"send_per_identifier", rl.SendPerIdentifier}, {"send_per_ip", rl.SendPerIP},
 			{"send_per_client", rl.SendPerClient}, {"send_per_organization", rl.SendPerOrganization}, {"send_per_realm", rl.SendPerRealm}}},
 		{"send_cooldown", rl.SendCooldown, nil},
 		{"otp_verify_window", rl.OTPVerifyWindow, []limit{{"otp_verify_per_account", rl.OTPVerifyPerAccount}}},
 		{"signup_window", rl.SignupWindow, []limit{{"signup_per_ip", rl.SignupPerIP}, {"signup_per_client", rl.SignupPerClient},
 			{"signup_per_realm", rl.SignupPerRealm}}},
-		{"token_window", rl.TokenWindow, []limit{{"token_per_client", rl.TokenPerClient}, {"organization_per_window", rl.OrganizationPerWindow}}},
+		{"token_window", rl.TokenWindow, []limit{{"token_per_client", rl.TokenPerClient}, {"organization_per_window", rl.OrganizationPerWindow},
+			{"token_failures_per_network", rl.TokenFailuresPerNetwork}, {"token_per_network_client", rl.TokenPerNetworkClient},
+			{"par_failures_per_network", rl.PARFailuresPerNetwork}, {"par_per_client", rl.PARPerClient}}},
+		{"dcr_window", rl.DCRWindow, []limit{{"dcr_per_network", rl.DCRPerNetwork}}},
 		{"temporary_lock", rl.TemporaryLock, []limit{{"failures_before_lock", rl.FailuresBeforeLock}}},
 		{"invitation_window", rl.InvitationWindow, []limit{{"invitations_per_organization", rl.InvitationsPerOrganization},
 			{"invitations_per_recipient", rl.InvitationsPerRecipient}}},
@@ -737,7 +769,10 @@ func Defaults() Config {
 				SendPerIdentifier: 5, SendPerIP: 50, SendWindow: time.Hour, SendCooldown: 30 * time.Second,
 				OTPVerifyPerAccount: 10, OTPVerifyWindow: 15 * time.Minute,
 				SignupPerIP: 20, SignupWindow: time.Hour,
-				TokenPerClient: 600, TokenWindow: time.Minute,
+				// Token requests per client per minute, consistent with
+				// login_per_client (owner decision 9 of 0.2.0-alpha.6); a
+				// public client's budget counts only its failed grants.
+				TokenPerClient: 2000, TokenWindow: time.Minute,
 				OrganizationPerWindow: 2000,
 				TemporaryLock:         15 * time.Minute, FailuresBeforeLock: 10,
 				SignupPerClient: 500, SignupPerRealm: 2000,
@@ -751,6 +786,11 @@ func Defaults() Config {
 				// (owner decision 9 of 0.2.0-alpha.6).
 				StartPerNetwork: 300, NetworkCoarseFactor: 10,
 				KnownQuotaDays: 30, KnownLoginPerNetwork: 50, KnownLoginPerDevice: 20, KnownLoginPerIdentifier: 10,
+				// Pre-authentication budgets of the protocol endpoints
+				// (owner decision 9): about 300 failed requests per minute
+				// per network at the token endpoint and PAR.
+				TokenFailuresPerNetwork: 300, TokenPerNetworkClient: 100, PARFailuresPerNetwork: 300, PARPerClient: 2000,
+				DevicePerNetwork: 300, UserCodeFailuresPerNetwork: 30, DCRPerNetwork: 20, DCRWindow: time.Hour,
 			},
 			// Ten failures, the default per-window proof budget, before the
 			// backoff starts; a notice at 20; code factors off at 100.

@@ -318,7 +318,10 @@ func TestPerNetworkBudgets(t *testing.T) {
 // per aggregate budget family, the highest count/limit of the current window
 // over the family's keys, ignores per-identifier and per-network budgets
 // (their keys never become label values), goes above 1 while refused
-// attempts keep counting, and drops to 0 when the window ends.
+// attempts keep counting, and drops to 0 when the window ends. The protocol
+// endpoints' aggregate families token-client (also when read by Check) and
+// par-client are in the label set; their per-network budgets (token-ip,
+// token-ip-client, par-ip, device-ip, device-code-ip) are not.
 func TestUtilizationOfAggregateBudgets(t *testing.T) {
 	l, _, clk := newLimiter(t)
 	ctx := context.Background()
@@ -354,6 +357,37 @@ func TestUtilizationOfAggregateBudgets(t *testing.T) {
 	if strings.Contains(out, "pwd-ip") || strings.Contains(out, "app-a") || strings.Contains(out, "r1") {
 		t.Errorf("a key or a per-network budget became a label:\n%s", out)
 	}
+	// The protocol endpoints' aggregate budgets are families too: a public
+	// client's failed grants (token-client, read by Check before the grant)
+	// and its pushed requests (par-client); their per-network budgets are
+	// not (B3 of 0.2.0-alpha.6).
+	tokenClient := Budget{Key: "token-client:app-a", Limit: 8, Window: time.Minute}
+	parClient := Budget{Key: "par-client:r1:app-a", Limit: 10, Window: time.Minute}
+	for _, k := range []string{"token-ip:r1:", "token-ip-client:r1:app-a:", "par-ip:r1:", "device-ip:r1:", "device-code-ip:r1:"} {
+		if _, err := l.Hit(ctx, PerNetwork(k, "2001:db8::1", 100, time.Minute, 10)...); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := l.Hit(ctx, tokenClient, tokenClient, parClient); err != nil {
+		t.Fatal(err)
+	}
+	if d, err := l.Check(ctx, tokenClient); err != nil || !d.Allowed {
+		t.Fatalf("check of token-client: %+v %v", d, err)
+	}
+	out = scrape()
+	for _, want := range []string{
+		`proudauth_rate_budget_utilization{budget="token-client"} 0.25`,
+		`proudauth_rate_budget_utilization{budget="par-client"} 0.1`,
+	} {
+		if !strings.Contains(out, want+"\n") {
+			t.Errorf("missing %q in\n%s", want, out)
+		}
+	}
+	for _, family := range []string{"token-ip", "par-ip", "device-ip", "device-code-ip", "token-ip-client"} {
+		if strings.Contains(out, `"`+family+`"`) {
+			t.Errorf("per-network family %s became a label:\n%s", family, out)
+		}
+	}
 	if n := strings.Count(out, UtilizationMetric+"{"); n != len(AggregateBudgets) {
 		t.Errorf("%d series, want one per aggregate family (%d)", n, len(AggregateBudgets))
 	}
@@ -368,5 +402,52 @@ func TestUtilizationOfAggregateBudgets(t *testing.T) {
 	clk.Advance(15 * time.Minute)
 	if u := l.Utilization("pwd-client"); u != 0 {
 		t.Errorf("utilization %v after the window ended", u)
+	}
+}
+
+// TestCheckConsumesNothing covers SEC-006 (owner decision 9 of
+// 0.2.0-alpha.6): Check reads every live budget of a call in one statement
+// and stores nothing, refuses once a budget has no unit left (count at its
+// limit, where Hit refuses only beyond it), names the first exhausted budget
+// in argument order with the time left in its window, and skips disabled
+// budgets without touching the database. It is how failure budgets are
+// checked before an attempt that Hit charges only when it fails.
+func TestCheckConsumesNothing(t *testing.T) {
+	l, qc, clk := newLimiter(t)
+	ctx := context.Background()
+	failures := Budget{Key: "token-ip-client:r1:app:2001:db8::/64", Limit: 2, Window: time.Minute}
+	client := Budget{Key: "token-client:app", Limit: 3, Window: time.Minute}
+	off := Budget{Key: "off", Limit: 0, Window: time.Minute}
+	qc.reset()
+	if d, err := l.Check(ctx, failures, client, off); err != nil || !d.Allowed {
+		t.Fatalf("check of fresh budgets: %+v %v", d, err)
+	}
+	if n := qc.n.Load(); n != 1 {
+		t.Fatalf("check sent %d statements, want 1", n)
+	}
+	var rows int
+	if err := l.d.DB.Pool.QueryRow(ctx, `SELECT count(*) FROM rate_limit_counters`).Scan(&rows); err != nil || rows != 0 {
+		t.Fatalf("check stored %d counters (%v)", rows, err)
+	}
+	for range 2 {
+		if _, err := l.Hit(ctx, failures, client); err != nil {
+			t.Fatal(err)
+		}
+	}
+	clk.Advance(15 * time.Second)
+	d, err := l.Check(ctx, client, failures)
+	if err != nil || d.Allowed || d.Bucket != failures.Key || d.RetryAfter != 25*time.Second {
+		t.Fatalf("check at the limit: %+v %v", d, err)
+	}
+	if got := stored(t, l, failures); got != 2 {
+		t.Fatalf("check consumed: %d", got)
+	}
+	qc.reset()
+	if d, err := l.Check(ctx, off, Budget{Key: "", Limit: 1, Window: time.Minute}); err != nil || !d.Allowed || qc.n.Load() != 0 {
+		t.Fatalf("check of disabled budgets: %+v %v, %d statements", d, err, qc.n.Load())
+	}
+	clk.Advance(time.Minute)
+	if d, err := l.Check(ctx, failures, client); err != nil || !d.Allowed {
+		t.Fatalf("check in the next window: %+v %v", d, err)
 	}
 }
