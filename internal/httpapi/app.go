@@ -171,6 +171,15 @@ func Build(d *runtime.Deps, metrics *observability.Metrics) (*App, error) {
 	a.KeyMgr = token.NewKeyManager(d)
 	a.Signer = &token.Signer{Keys: a.KeyMgr, OnFailure: func(reason string) { a.Metrics.SigningFailures.Inc(reason) }}
 	a.Apps.SigningAlgorithm = a.Signer.ActiveAlgorithm
+	// Client assertions name the issuer as their only audience unless the
+	// realm re-admits endpoint URLs (client_auth.allow_endpoint_audience).
+	a.Apps.EndpointAudience = func(ctx context.Context, realmID string) (bool, error) {
+		r, err := a.Realms.ByID(ctx, nil, realmID)
+		if err != nil {
+			return false, err
+		}
+		return r.Policy.ClientAuth.AllowEndpointAudience, nil
+	}
 	// Security events for shared-signals receivers (AUD-016) are queued in
 	// the transaction that records their audit evidence.
 	a.SSF = ssf.New(d)

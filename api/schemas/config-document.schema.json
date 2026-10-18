@@ -198,6 +198,17 @@
           "properties": {
             "enabled": {"type": "boolean"}
           }
+        },
+        "client_auth": {
+          "description": "Client authentication (APP-009, MCH-010). The aud of a private_key_jwt client assertion must be a single JSON string equal to the realm's issuer.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "allow_endpoint_audience": {
+              "type": "boolean",
+              "description": "Also accept, for clients other than fapi2 ones, the URL of the endpoint receiving the assertion (the token endpoint URL at the token endpoint) and an array of one or two values each naming the issuer or that URL, as versions before 0.2.0-alpha.6 did. Off by default; fapi2 clients always need the issuer as a single string."
+            }
+          }
         }
       }
     },

@@ -6,6 +6,7 @@ import (
 	"github.com/proudauth/proudauth/internal/application"
 	"github.com/proudauth/proudauth/internal/authentication"
 	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/token"
 )
 
 // JARM (ADV-002): with response_mode=jwt or query.jwt the authorization
@@ -13,8 +14,10 @@ import (
 // realm key and, when the client registered authorization response
 // encryption, encrypted to it (nested). The JWT carries iss, aud (the
 // client_id), exp and the response parameters, so the client checks the
-// issuer and that the response was meant for it. fragment.jwt and
-// form_post.jwt are not offered.
+// issuer and that the response was meant for it. Its typ is
+// oauth-authz-resp+jwt, never the ID token's JWT, so a response anyone can
+// obtain from the authorization endpoint is never accepted as an ID token
+// hint (decision 15). fragment.jwt and form_post.jwt are not offered.
 const jarmTTL = 600 // seconds; the response is consumed at once
 
 // IsJARM reports a JWT response mode ("jwt" means query.jwt for the code
@@ -36,7 +39,7 @@ func (s *Service) AuthorizationResponse(ctx context.Context, rlm *realm.Realm, c
 			claims[k] = v
 		}
 	}
-	tok, err := s.Signer.Sign(ctx, rlm.ID, "JWT", claims)
+	tok, err := s.Signer.Sign(ctx, rlm.ID, token.TypeJARM, claims)
 	if err != nil {
 		return "", err
 	}

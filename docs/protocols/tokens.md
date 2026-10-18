@@ -13,8 +13,8 @@ Requirements: §14, TOK-001..TOK-024, JWT-AT (RFC 9068), OIDC-003. Code:
 | Access token, `exchange_access` | JWT `at+jwt` (or opaque) | One business resource | ≤ remaining lifetime of the subject token |
 | Access token, `impersonation_access` | Opaque `pa_it_` only | Resources implementing the support contract | ≤ 5 min |
 | ID token | JWT `typ: JWT`; for clients with `id_token_encrypted_response_alg` a JWE wrapping it (`cty: JWT`, TOK-020) | The OIDC client | `tokens.id_token_ttl` (5 min) |
-| Authorization response (JARM, ADV-002) | JWT `typ: JWT` in the `response` parameter, optionally encrypted | The client | 10 min |
-| UserInfo response | JSON, or `application/jwt` (signed and/or encrypted, OIDC-013) for clients that ask for it | The OIDC client | — |
+| Authorization response (JARM, ADV-002) | JWT `typ: oauth-authz-resp+jwt` in the `response` parameter, optionally encrypted | The client | 10 min |
+| UserInfo response | JSON, or `application/jwt` (signed with `typ: userinfo+jwt` and/or encrypted, OIDC-013) for clients that ask for it | The OIDC client | — |
 | Logout token | JWT `typ: logout+jwt` | Back-channel logout endpoint of a client | 2 min |
 | Refresh token | Opaque `pa_rt_` | Token endpoint only | Family idle/absolute ([ADR 0011](../architecture-decisions/0011-refresh-token-families.md)) |
 | Authorization code | Opaque `pa_ac_` | Token endpoint | 60 s |
@@ -97,7 +97,11 @@ authorization.
   `TestScheduledRotationKeepsRealmAlgorithm`, `TestKeyRotationGuardsAllCallers`,
   `TestKeyRotationKeepsFAPI2Algorithm`; [keys.md](../operations/keys.md#scheduled-automatic)).
 - `kid` format: `<alg lowercased>-<YYYYMMDD>-<16 hex>`; opaque to verifiers.
-- `typ`: `at+jwt` (access), `JWT` (ID token), `logout+jwt` (logout token).
+- `typ`: `at+jwt` (access), `JWT` (ID token), `logout+jwt` (logout token),
+  `oauth-authz-resp+jwt` (JARM authorization response), `userinfo+jwt`
+  (signed UserInfo response). Every JWT the realm key signs names its type,
+  so none passes as another; before 0.2.0-alpha.6 JARM and signed UserInfo
+  responses were typed `JWT` like ID tokens (decision 15).
 
 ## Access token claims (`user_access`)
 
@@ -192,8 +196,14 @@ customer is asserted (IMP-018).
 | profile claims | Released per scope as for UserInfo and narrowed by the `id_token` member of an OIDC `claims` request ([oauth-oidc-profile.md](oauth-oidc-profile.md#claims-parameter)), plus the client's `id_token_claims` (static values and attribute mappings, APP-011), which can never set reserved claims, OIDC standard user claims (`email`, `email_verified`, `name`, …) or a claim already released by scope |
 
 ID tokens are not access tokens: their `typ` is `JWT`, and every access-token
-verifier in this repository rejects them (TEST-002). For clients that register
-`id_token_encrypted_response_alg`, the signed ID token is encrypted to the
+verifier in this repository rejects them (TEST-002). As `id_token_hint` at the
+logout endpoint the server accepts only an ID token of the realm: `typ` `JWT`
+(an absent `typ` is refused), `sub`, `aud`, `exp` and `iat`, and none of the
+authorization-response members `code`, `error` and `state`; a client's
+`id_token_claims` mapping that names one of those three is left out of the ID
+token ([oauth-oidc-profile.md](oauth-oidc-profile.md#logout)). For clients
+that register `id_token_encrypted_response_alg`, the signed ID token is
+encrypted to the
 client's registered key (a nested JWT); decrypt it, then validate the inner
 token as above ([response-security.md](response-security.md#encrypted-id-tokens)).
 

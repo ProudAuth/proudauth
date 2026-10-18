@@ -127,6 +127,32 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   probes at port `internal` and bind `server.internal_listen` to the pod's
   addresses (`":9090"`, as `overlays/example` does), not the default
   `127.0.0.1:9090`.
+- JWT-secured authorization responses (JARM) carry `typ`
+  `oauth-authz-resp+jwt` and signed UserInfo responses `typ` `userinfo+jwt`
+  instead of `JWT`; ID tokens keep `JWT`, and a nested JWE keeps `cty` `JWT`
+  (ADV-002, OIDC-013,
+  [response-security.md](docs/protocols/response-security.md)). A
+  `private_key_jwt` client assertion's `aud` must be the realm's issuer as a
+  single JSON string in every realm; the token endpoint URL (or the URL of
+  whichever endpoint receives the assertion) and arrays, also
+  `["<issuer>"]`, are refused with `401 invalid_client` (APP-009, MCH-010,
+  [decision 16](docs/releases/2026-10-alpha.6-decisions.md)). A `GET
+  /oidc/logout` from a browser with a session whose `id_token_hint` names
+  another session or user answers `400 invalid_request` instead of `200`
+  with `session_ended: false` (SES-016, decision 15). All three follow from
+  the security fixes below.
+  **Migration:** a relying party that checks the `typ` of a JARM or signed
+  UserInfo response accepts the new values; none of the five ProudAuth SDKs
+  verifies JARM or signed UserInfo responses, so no first-party verifier
+  changes. A `private_key_jwt` client that sends the token endpoint URL or an
+  array as `aud` switches to `"aud": "<issuer>"` (the `issuer` of the realm's
+  discovery document); until it can, set the realm policy
+  `client_auth.allow_endpoint_audience: true` (`PUT /settings` or a
+  configuration document), which re-admits what earlier versions accepted for
+  every client but `fapi2` ones, and turn it off once the clients are
+  updated. No ProudAuth SDK creates client assertions. A relying party that
+  logs users out with a `GET` and a hint from another session uses that
+  session's ID token or `POST`.
 
 ### Fixed
 
@@ -326,6 +352,48 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   grant issued without asking records the consent it rests on. Affected:
   every earlier 0.2.0 prerelease; regression tests
   `TestOrganizationSwitchConsent`, `TestOrganizationSwitchPreauthorization`.
+- A JARM response or a signed UserInfo response no longer passes as
+  `id_token_hint` at the logout endpoint. Both were signed with the realm key
+  and typed `JWT` like ID tokens, and the hint check verified only the
+  signature, `typ` (an absent one too) and `iss`. Anyone could obtain a
+  signed JARM error response without credentials, from a valid `client_id`
+  and registered `redirect_uri` with `response_mode=jwt` and no PKCE, and by
+  luring a browser to `GET /oidc/logout?id_token_hint=<it>` end its SSO
+  session, with front- and back-channel logout to the clients: the response
+  has no `sid`, so the cookie session was the one revoked. JARM responses
+  are now typed `oauth-authz-resp+jwt` and signed UserInfo `userinfo+jwt`;
+  a hint must be typed `JWT` and have the shape of an ID token (`sub`, `aud`,
+  `exp` and `iat`, none of `code`, `error` and `state`), which also refuses
+  responses signed by earlier versions; and a `GET` ends the cookie session
+  only when the hint's `sid` is that session or its `sub` is the session
+  user's subject at the hint's client, otherwise it answers `400
+  invalid_request` and leaves the session alone
+  ([decision 15](docs/releases/2026-10-alpha.6-decisions.md)); `POST` keeps
+  its rules. A client `id_token_claims` mapping named `code`, `error` or
+  `state` is left out of ID tokens, so ID tokens always pass the shape check
+  (SES-016, ADV-002, OIDC-013, TOK-015,
+  [oauth-oidc-profile.md](docs/protocols/oauth-oidc-profile.md#logout)).
+  Affected: every earlier 0.2.0 prerelease; regression tests
+  `TestLogoutHintTypes`, `TestIDTokenHintTypes`,
+  `TestIDTokenLeavesOutAuthorizationResponseMembers`, and `typ` assertions
+  in `TestJARM` and `TestEncryptedResponses`.
+- `private_key_jwt` client assertions must name the realm's issuer as their
+  only audience, as a single JSON string, for every client including `fapi2`
+  ones. `aud` could be an array of one or two values, each the issuer or the
+  URL of the endpoint receiving the assertion; the FAPI 2.0 Security Profile
+  and RFC 7523bis accept only the issuer, because endpoint-URL audiences
+  allow the audience-injection attack published in 2025: an authorization
+  server that advertises another server's endpoint URL as its own gets
+  assertions from a shared client that the other server accepts. The check
+  reads the raw `aud` claim, since a JWT library decodes `"aud": "x"` and
+  `"aud": ["x"]` alike. The new realm policy
+  `client_auth.allow_endpoint_audience` (default `false`) re-admits the old
+  forms for clients other than `fapi2` ones
+  ([decision 16](docs/releases/2026-10-alpha.6-decisions.md); APP-009,
+  MCH-010, ADV-001,
+  [oauth-oidc-profile.md](docs/protocols/oauth-oidc-profile.md#clients)).
+  Affected: every earlier 0.2.0 prerelease; regression tests
+  `TestPrivateKeyJWT`, `TestFAPI2Profile`, `TestAssertionAudience`.
 
 ## [0.2.0-alpha.5] - 2026-10-18
 
