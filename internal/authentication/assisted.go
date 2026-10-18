@@ -12,6 +12,7 @@ import (
 	"github.com/proudauth/proudauth/internal/platform/ids"
 	"github.com/proudauth/proudauth/internal/platform/problem"
 	"github.com/proudauth/proudauth/internal/realm"
+	"github.com/proudauth/proudauth/internal/session"
 )
 
 // AssistedRecoveryInput is an operator's recovery request (MFA-009).
@@ -40,7 +41,14 @@ func (s *Service) ExecuteAssistedRecoveryTx(ctx context.Context, tx pgx.Tx, rlm 
 			return "", err
 		}
 	}
-	if _, err := s.Sessions.RevokeUserTx(ctx, tx, rlm.ID, in.UserID, "assisted_recovery", true); err != nil {
+	if _, err := s.Sessions.RevokeUserTx(ctx, tx, rlm.ID, in.UserID, session.ReasonAssistedRecovery, true); err != nil {
+		return "", err
+	}
+	// The account's personal access tokens and API keys end with its
+	// sessions: whoever controlled the account may have minted them
+	// (CRED-008, MCH-007).
+	if err := s.revokeUserCredentialsTx(ctx, tx, rlm.ID, in.UserID, session.ReasonAssistedRecovery, actor,
+		"assisted account recovery by an administrator"); err != nil {
 		return "", err
 	}
 	st, err := s.IssueAccountSetupTx(ctx, tx, rlm.ID, in.UserID, 2*time.Hour, true, rlm.DisplayName)

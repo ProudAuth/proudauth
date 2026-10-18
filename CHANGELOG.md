@@ -20,6 +20,9 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   sender-bound refresh families, re-approval of changed dynamic registrations,
   logout-hint handling, the issuer-only client-assertion audience, the merge
   model and the benchmark method for the alpha.6 phase.
+- Mandatory notification template `credentials_revoked` (variables `realm`,
+  `change`, `credentials`, `time`), which names the personal access tokens and
+  API keys an account recovery revoked.
 
 ### Changed
 
@@ -71,6 +74,32 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   ([relationship-authorization.md](docs/integrations/relationship-authorization.md#sharing)).
   Affected: every earlier 0.2.0 prerelease; regression test
   `TestResourceSharesKeepForeignTuples`.
+
+### Security
+
+- A password reset, marking the password compromised (by an administrator or
+  a received shared signal) and assisted recovery revoke the user's personal
+  access tokens and the API keys the user owns, in the transaction that
+  revokes the sessions, with `revoke_reason` `password_reset`,
+  `credential_compromised` or `assisted_recovery` and one
+  `automation_credential.revoked` audit record each; the owner receives a
+  `credentials_revoked` notice naming them by name and display prefix. These
+  flows ended only sessions and grants, so someone who briefly controlled an
+  account and minted a token kept up to 365 days of access after the owner
+  reset the password or an operator recovered the account. Introspection also
+  treats a user-owned credential created before the owner's latest such
+  revocation as inactive. "Log out everywhere", an administrator's session
+  revocation and a password change still leave personal access tokens alone
+  (CRED-008, MCH-007, SES-005). Affected: every earlier 0.2.0 prerelease;
+  regression tests `TestPersonalAccessTokensEndWithAccountRecovery`,
+  `TestPersonalAccessTokenIntrospectionHonoursUserRevocation`.
+- `POST /me/personal-tokens` on an account with an active TOTP, HOTP or
+  passkey needs a session that completed MFA: a password-only or
+  remembered-device session gets `403 step_up_required` with a
+  `reauthenticate` obligation for the `mfa` profile, so a stolen password no
+  longer turns into a year-long token. Accounts without a second factor are
+  unchanged (MCH-006, MFA-006). Affected: every earlier 0.2.0 prerelease;
+  regression test `TestPersonalAccessTokenMintingNeedsFactorProof`.
 
 ## [0.2.0-alpha.5] - 2026-10-18
 

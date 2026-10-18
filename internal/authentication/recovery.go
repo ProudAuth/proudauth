@@ -15,6 +15,7 @@ import (
 	"github.com/proudauth/proudauth/internal/platform/ids"
 	"github.com/proudauth/proudauth/internal/platform/problem"
 	"github.com/proudauth/proudauth/internal/ratelimit"
+	"github.com/proudauth/proudauth/internal/session"
 )
 
 // ResetRequested is the enumeration-resistant public response (SEC-005, §27.6). A
@@ -105,7 +106,7 @@ func (s *Service) CompletePasswordReset(ctx context.Context, realmID, resetID, c
 		if err := s.SetPasswordTx(ctx, tx, realmID, u.ID, newPassword, rlm.Policy.Password.MinLength, rlm.Policy.Password.HistoryCount, words...); err != nil {
 			return err
 		}
-		if _, err := s.Sessions.RevokeUserTx(ctx, tx, realmID, u.ID, "password_reset", true); err != nil {
+		if _, err := s.Sessions.RevokeUserTx(ctx, tx, realmID, u.ID, session.ReasonPasswordReset, true); err != nil {
 			return err
 		}
 		if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "recovery.password_reset.completed", RealmID: realmID,
@@ -116,7 +117,13 @@ func (s *Service) CompletePasswordReset(ctx context.Context, realmID, resetID, c
 			AggregateID: u.ID, Data: map[string]any{"user_id": u.ID}}); err != nil {
 			return err
 		}
-		return s.notifySecurity(ctx, tx, realmID, u.ID, notification.TplPasswordChanged, "password reset")
+		if err := s.notifySecurity(ctx, tx, realmID, u.ID, notification.TplPasswordChanged, "password reset"); err != nil {
+			return err
+		}
+		// Personal access tokens minted by whoever knew the old password end
+		// with it (CRED-008, MCH-007).
+		return s.revokeUserCredentialsTx(ctx, tx, realmID, u.ID, session.ReasonPasswordReset, audit.Ref{Type: "user", ID: u.ID},
+			"a password reset")
 	})
 	if err != nil {
 		if problem.Is(err, problem.ErrPasswordPolicy) {

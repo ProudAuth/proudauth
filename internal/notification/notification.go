@@ -69,6 +69,11 @@ const (
 	// send (EXT-015): the definition picks a server-defined notice, never
 	// free text; realms customize the wording like any other template.
 	TplWorkflowNotice = "workflow_notice"
+	// TplCredentialsRevoked names the personal access tokens and API keys a
+	// password reset, password-compromise marking or assisted recovery
+	// revoked (CRED-008, MCH-007), so the owner knows which automation stops
+	// working and why.
+	TplCredentialsRevoked = "credentials_revoked"
 )
 
 // Message is a message to enqueue. Data values are untrusted and are always escaped.

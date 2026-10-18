@@ -16,6 +16,7 @@ import (
 	"github.com/proudauth/proudauth/internal/platform/ids"
 	"github.com/proudauth/proudauth/internal/platform/problem"
 	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/session"
 	"github.com/proudauth/proudauth/internal/storage"
 )
 
@@ -178,16 +179,21 @@ func (s *Service) MarkPasswordCompromised(ctx context.Context, realmID, userID s
 		if tag.RowsAffected() == 0 {
 			return problem.ErrNotFound
 		}
-		if _, err := s.Sessions.RevokeUserTx(ctx, tx, realmID, userID, "credential_compromised", true); err != nil {
+		if _, err := s.Sessions.RevokeUserTx(ctx, tx, realmID, userID, session.ReasonCredentialCompromised, true); err != nil {
 			return err
 		}
 		if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "credential.password.compromised", RealmID: realmID, Actor: actor,
 			Subject: &audit.Ref{Type: "user", ID: userID}, ReasonCode: reason}); err != nil {
 			return err
 		}
-		_, err = s.d.Outbox.Publish(ctx, tx, events.Event{EventType: "security.credential_compromised", RealmID: realmID, AggregateType: "user",
-			AggregateID: userID, Data: map[string]any{"user_id": userID}})
-		return err
+		if _, err := s.d.Outbox.Publish(ctx, tx, events.Event{EventType: "security.credential_compromised", RealmID: realmID, AggregateType: "user",
+			AggregateID: userID, Data: map[string]any{"user_id": userID}}); err != nil {
+			return err
+		}
+		// Whoever held the password may have minted personal access tokens
+		// with it; they end with the password (CRED-008, MCH-007).
+		return s.revokeUserCredentialsTx(ctx, tx, realmID, userID, session.ReasonCredentialCompromised, actor,
+			"your password was marked compromised")
 	})
 }
 
@@ -604,21 +610,28 @@ func (s *Service) ConsumeRecoveryCodeTx(ctx context.Context, tx pgx.Tx, userID, 
 	return false, 0, nil
 }
 
-// notifySecurity enqueues a mandatory security notification to the primary email.
 // NotifyMFAChange sends the mandatory security notice for an authenticator change.
 func (s *Service) NotifyMFAChange(ctx context.Context, tx pgx.Tx, realmID, userID, change string) error {
 	return s.notifySecurity(ctx, tx, realmID, userID, notification.TplMFAChanged, change)
 }
 
+// notifySecurity enqueues a mandatory security notification to the primary email.
 func (s *Service) notifySecurity(ctx context.Context, tx pgx.Tx, realmID, userID, tpl, change string) error {
+	return s.notifySecurityWith(ctx, tx, realmID, userID, tpl, map[string]string{"change": change})
+}
+
+// notifySecurityWith is notifySecurity with the template's own data; the
+// realm name and the time are added.
+func (s *Service) notifySecurityWith(ctx context.Context, tx pgx.Tx, realmID, userID, tpl string, data map[string]string) error {
 	var email, realmName string
 	err := tx.QueryRow(ctx, `SELECT i.original_value, r.display_name FROM user_identifiers i JOIN realms r ON r.id=i.realm_id
 		WHERE i.user_id=$1 AND i.type='email' AND i.verified_at IS NOT NULL ORDER BY i.is_primary DESC LIMIT 1`, userID).Scan(&email, &realmName)
 	if err != nil {
 		return nil // no verified contact: nothing to notify
 	}
+	data["realm"], data["time"] = realmName, notification.Timestamp(s.d.Now())
 	_, err = s.Notify.EnqueueTx(ctx, tx, notification.Message{RealmID: realmID, Template: tpl, Recipient: email, Mandatory: true,
-		ReferenceType: "user", ReferenceID: userID, Data: map[string]string{"realm": realmName, "change": change, "time": notification.Timestamp(s.d.Now())}})
+		ReferenceType: "user", ReferenceID: userID, Data: data})
 	return err
 }
 

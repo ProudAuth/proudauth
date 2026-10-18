@@ -217,7 +217,8 @@ identity-cli api POST /api-keys '{"service_principal_id":"svc_...","name":"sync"
 ## Personal access tokens
 
 Users create their own automation tokens (`pa_pat_...`) through self-service, with
-authentication within `security.recent_auth_window`:
+authentication within `security.recent_auth_window` and, when the account has
+a second factor, from a session that proved it:
 
 ```sh
 identity-cli api --audience account POST /me/personal-tokens \
@@ -226,6 +227,15 @@ identity-cli api --audience account POST /me/personal-tokens \
 
 - Requires `identity-cli login --audience account` first (the CLI stores one
   credential per audience).
+- An account with an active TOTP, HOTP (where the realm allows it) or passkey
+  mints a token only from a session that completed MFA (MCH-006, MFA-006): a
+  password alone, or a password plus a remembered device, gets
+  `403 step_up_required` ("verify your second factor before creating a
+  personal access token") with the obligation
+  `{"type": "reauthenticate", "required_profile": "mfa"}`, so a stolen
+  password cannot turn into a token that outlives the session. Accounts
+  without a second factor mint from a password session as before
+  (`TestPersonalAccessTokenMintingNeedsFactorProof`).
 - Shown once; listed without the secret (`GET /me/personal-tokens`); revoked with
   `DELETE /me/personal-tokens/{id}`.
 - Scopes never exceed the owner's current authority (MCH-006): at creation, a
@@ -246,6 +256,44 @@ identity-cli api --audience account POST /me/personal-tokens \
   the owner is no longer active or, for organization-bound tokens, loses the
   membership. Deleting the user revokes their tokens.
 - Support (impersonation) tokens cannot create personal tokens (IMP-012).
+
+### When the owner's account is recovered
+
+A password reset, marking the password compromised
+(`POST /users/{user}/credentials/password/compromised`, also from a received
+shared signal) and assisted recovery revoke the owner's personal access tokens
+and the API keys the user owns (`owner_type: user`), in the same transaction
+that revokes the sessions (CRED-008, MCH-007). Whoever briefly controlled the
+account may have minted them, and they would otherwise last up to 365 days.
+
+- The credentials get state `revoked` and `revoke_reason` `password_reset`,
+  `credential_compromised` or `assisted_recovery`; each is audited as
+  `automation_credential.revoked` (actor: the user for a reset, the operator
+  or shared-signals transmitter otherwise; reason code as above; metadata
+  `kind` and `display_prefix`).
+- The owner's verified primary address receives the mandatory
+  `credentials_revoked` notice, which names each revoked credential by name
+  and display prefix (up to 20, then a count) and the flow that revoked it.
+  Nothing is sent when the account had no live credential.
+- Introspection also treats a user-owned credential created before the owner's
+  latest user-level revocation with one of those three reasons as inactive,
+  whatever its row says (defence in depth, for example a token minted
+  concurrently with the reset).
+- The other account-wide revocations end sessions and grants, which is
+  session authority (SES-005), and leave personal access tokens alone: "log
+  out everywhere" (`POST /me/sessions/revoke-all`), an administrator's
+  `POST /users/{user}/revoke-sessions`, bulk session revocation jobs and a
+  received shared signal that does not mark the password compromised. The
+  owner revokes a token with `DELETE /me/personal-tokens/{id}`. A password
+  change (`POST /me/password`) does not revoke them either; on an account
+  with a second factor it needs an MFA session, as minting does. Suspension
+  and locking make them inactive while the account is not active, without
+  revoking them.
+- API keys of service principals the user owns are not revoked: the
+  principal is the owner. Revoke them as in
+  [incidents.md](../operations/incidents.md#compromised-administrator-account).
+- `TestPersonalAccessTokensEndWithAccountRecovery`,
+  `TestPersonalAccessTokenIntrospectionHonoursUserRevocation`.
 
 ## Inventory and expiry
 
