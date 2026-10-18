@@ -57,6 +57,21 @@ type Policy struct {
 	// SharedSignals declares the Shared Signals Framework transmitter
 	// (AUD-016); off by default.
 	SharedSignals SharedSignalsPolicy `json:"shared_signals"`
+	// ClientAuth tunes client authentication at the protocol endpoints
+	// (APP-009, MCH-010).
+	ClientAuth ClientAuthPolicy `json:"client_auth"`
+}
+
+// ClientAuthPolicy tunes client authentication (APP-009, MCH-010). A
+// private_key_jwt client assertion's aud must be a single JSON string equal
+// to the realm's issuer (FAPI 2.0 Security Profile, RFC 7523bis; decision
+// 16). AllowEndpointAudience re-admits, for clients other than fapi2 ones,
+// what earlier versions accepted: the URL of the endpoint that receives the
+// assertion (the token endpoint URL at the token endpoint) and an array of
+// one or two values, each the issuer or that URL. Off by default; a fapi2
+// client is held to the issuer-only rule whatever it says.
+type ClientAuthPolicy struct {
+	AllowEndpointAudience bool `json:"allow_endpoint_audience"`
 }
 
 // SharedSignalsPolicy turns on the SSF transmitter: transmitter metadata,

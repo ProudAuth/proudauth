@@ -218,8 +218,9 @@ func (s *Service) userInfo(ctx context.Context, rlm *realm.Realm, raw string) (m
 }
 
 // UserInfoResponse renders UserInfo claims for the client that holds the
-// access token (OIDC-013): plain JSON by default; a signed JWT carrying iss
-// and aud when the client registered userinfo_signed_response_alg; and
+// access token (OIDC-013): plain JSON by default; a signed JWT (typ
+// userinfo+jwt, so it never passes as an ID token) carrying iss and aud when
+// the client registered userinfo_signed_response_alg; and
 // encrypted to the client (nested when also signed) when it registered
 // userinfo_encrypted_response_alg. It returns the body and its media type.
 func (s *Service) UserInfoResponse(ctx context.Context, rlm *realm.Realm, raw string) ([]byte, string, *token.Confirmation, error) {
@@ -241,7 +242,7 @@ func (s *Service) renderUserInfo(ctx context.Context, rlm *realm.Realm, claims m
 	cty := ""
 	if client.UserinfoSignedResponseAlg != "" {
 		claims["iss"], claims["aud"] = rlm.Issuer, client.ClientID
-		signed, err := s.Signer.Sign(ctx, rlm.ID, "JWT", claims)
+		signed, err := s.Signer.Sign(ctx, rlm.ID, token.TypeUserInfo, claims)
 		if err != nil {
 			return nil, "", err
 		}
@@ -269,6 +270,12 @@ type LogoutRequest struct {
 	// UpstreamLogout asks to also end the federated provider's session
 	// (FED-013, extension parameter upstream_logout=true).
 	UpstreamLogout bool
+	// HintMustMatchSession is set for a GET carrying id_token_hint, which a
+	// lured top-level navigation can send with the browser's cookie: the
+	// cookie session ends only when the hint names it (its sid) or its user
+	// (its sub); any other hint is refused with 400 and the session is left
+	// alone (SES-016, decision 15).
+	HintMustMatchSession bool
 }
 
 // UpstreamLogoutStatus reports what happened to a federated provider's
@@ -318,9 +325,10 @@ func (s *Service) Logout(ctx context.Context, rlm *realm.Realm, req LogoutReques
 	}
 	res := &LogoutResult{ClearCookie: true}
 	var target *session.Session
+	fromCookie := false
 	if req.SessionCookie != "" {
 		if sess, err := s.Sessions.ByCookie(ctx, rlm.ID, req.SessionCookie); err == nil {
-			target = sess
+			target, fromCookie = sess, true
 		}
 	}
 	if target == nil && hint != nil && hint.SessionID != "" {
@@ -329,8 +337,19 @@ func (s *Service) Logout(ctx context.Context, rlm *realm.Realm, req LogoutReques
 			target = sess
 		}
 	}
-	if target != nil {
-		if hint != nil && hint.SessionID != "" && hint.SessionID != target.ID && req.SessionCookie != "" {
+	if fromCookie && hint != nil {
+		switch {
+		case req.HintMustMatchSession:
+			// A GET: the cookie session ends only when the hint belongs to it.
+			// Anything else is refused before anything changes (decision 15).
+			ok, err := s.hintMatchesSession(ctx, rlm, hint, target)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				return nil, problem.ErrBadRequest.WithDetail("id_token_hint does not match the browser session")
+			}
+		case hint.SessionID != "" && hint.SessionID != target.ID:
 			// The hint refers to a different session than the browser's: do not end
 			// the browser session on the strength of a foreign hint.
 			target = nil
@@ -435,6 +454,35 @@ func (s *Service) Logout(ctx context.Context, rlm *realm.Realm, req LogoutReques
 		}
 	}
 	return res, nil
+}
+
+// hintMatchesSession reports whether a verified ID token hint belongs to the
+// browser's session: its sid is that session, or its sub is the subject the
+// session's user has at the hint's client (public, or the stored pairwise
+// value of the client's sector; a pairwise value is never created here).
+func (s *Service) hintMatchesSession(ctx context.Context, rlm *realm.Realm, hint *token.IDClaims, sess *session.Session) (bool, error) {
+	if hint.SessionID != "" && hint.SessionID == sess.ID {
+		return true, nil
+	}
+	if hint.Subject == "" || len(hint.Audience) == 0 {
+		return false, nil
+	}
+	c, err := s.Apps.ClientByClientID(ctx, nil, rlm.ID, hint.Audience[0])
+	if err != nil || c.SubjectType != "pairwise" {
+		// A client that no longer exists issued public subjects as far as
+		// this check can tell; a pairwise value never equals a user ID.
+		return hint.Subject == sess.UserID, nil
+	}
+	var sub string
+	err = s.d.DB.Pool.QueryRow(ctx, `SELECT subject FROM pairwise_subjects WHERE realm_id=$1 AND sector=$2 AND user_id=$3`,
+		rlm.ID, c.SectorIdentifier, sess.UserID).Scan(&sub)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return hint.Subject == sub, nil
 }
 
 // frontChannelURIs returns the front-channel logout URIs of the active

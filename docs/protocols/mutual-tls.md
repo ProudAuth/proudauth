@@ -45,8 +45,8 @@ introspection and revocation authentication methods. With `mtls_origin` it
 also publishes `mtls_endpoint_aliases`: the token, introspection,
 revocation, UserInfo, PAR and device authorization endpoints on that origin
 (`<mtls_origin>/realms/<realm>/...`). Clients send requests that need a
-certificate to the alias. DPoP proofs (`htu`) and `private_key_jwt`
-assertions (`aud`) must still name the public URLs, never the alias.
+certificate to the alias. DPoP proofs (`htu`) must still name the public
+URLs, never the alias; `private_key_jwt` assertions name the issuer (`aud`).
 
 ## Trust anchors
 

@@ -252,7 +252,7 @@ paths:
           schema:
             type: string
             enum: [query, query.jwt, jwt]
-          description: "query (default), or query.jwt / jwt (the same for the code flow) for a JWT-secured authorization response (JARM, ADV-002): the redirect carries one parameter, response, a JWT signed by the realm (iss, aud=client_id, exp, code or error, state) and encrypted to the client when it registered authorization_encrypted_response_alg. Errors returned to the redirect use the same mode."
+          description: "query (default), or query.jwt / jwt (the same for the code flow) for a JWT-secured authorization response (JARM, ADV-002): the redirect carries one parameter, response, a JWT signed by the realm (typ oauth-authz-resp+jwt; iss, aud=client_id, exp, code or error, state) and encrypted to the client when it registered authorization_encrypted_response_alg. Errors returned to the redirect use the same mode."
         - name: prompt
           in: query
           required: false
@@ -488,7 +488,7 @@ paths:
                   const: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
                 client_assertion:
                   type: string
-                  description: private_key_jwt assertion (audience is the endpoint URL).
+                  description: "private_key_jwt assertion: aud is the realm's issuer as a single string. The realm policy client_auth.allow_endpoint_audience also admits this endpoint's URL and arrays for clients other than fapi2."
                 grant_type:
                   type: string
                   enum:
@@ -596,7 +596,7 @@ paths:
                   const: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
                 client_assertion:
                   type: string
-                  description: private_key_jwt assertion (audience is the endpoint URL).
+                  description: "private_key_jwt assertion: aud is the realm's issuer as a single string. The realm policy client_auth.allow_endpoint_audience also admits this endpoint's URL and arrays for clients other than fapi2."
                 token:
                   type: string
                   x-secret: true
@@ -657,7 +657,7 @@ paths:
                   const: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
                 client_assertion:
                   type: string
-                  description: private_key_jwt assertion (audience is the endpoint URL).
+                  description: "private_key_jwt assertion: aud is the realm's issuer as a single string. The realm policy client_auth.allow_endpoint_audience also admits this endpoint's URL and arrays for clients other than fapi2."
                 token:
                   type: string
                   x-secret: true
@@ -716,7 +716,7 @@ paths:
                   const: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
                 client_assertion:
                   type: string
-                  description: private_key_jwt assertion (audience is the endpoint URL).
+                  description: "private_key_jwt assertion: aud is the realm's issuer as a single string. The realm policy client_auth.allow_endpoint_audience also admits this endpoint's URL and arrays for clients other than fapi2."
                 scope:
                   type: string
                 resource:
@@ -779,7 +779,7 @@ paths:
                   const: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
                 client_assertion:
                   type: string
-                  description: private_key_jwt assertion (audience is the endpoint URL).
+                  description: "private_key_jwt assertion: aud is the realm's issuer as a single string. The realm policy client_auth.allow_endpoint_audience also admits this endpoint's URL and arrays for clients other than fapi2."
                 response_type:
                   type: string
                   const: code
@@ -880,7 +880,7 @@ paths:
             application/jwt:
               schema:
                 type: string
-              description: "OIDC-013: for a client that registered userinfo_signed_response_alg, a JWT signed with the realm key whose claims add iss and aud (the client_id); for one that registered userinfo_encrypted_response_alg, a JWE encrypted to its newest suitable registered key (nested, cty JWT, when also signed)."
+              description: "OIDC-013: for a client that registered userinfo_signed_response_alg, a JWT (typ userinfo+jwt) signed with the realm key whose claims add iss and aud (the client_id); for one that registered userinfo_encrypted_response_alg, a JWE encrypted to its newest suitable registered key (nested, cty JWT, when also signed)."
         "400":
           description: "The client registered response encryption but has no registered public key that can receive it (error invalid_request)."
         "401":
@@ -919,7 +919,7 @@ paths:
             application/jwt:
               schema:
                 type: string
-              description: "OIDC-013: for a client that registered userinfo_signed_response_alg, a JWT signed with the realm key whose claims add iss and aud (the client_id); for one that registered userinfo_encrypted_response_alg, a JWE encrypted to its newest suitable registered key (nested, cty JWT, when also signed)."
+              description: "OIDC-013: for a client that registered userinfo_signed_response_alg, a JWT (typ userinfo+jwt) signed with the realm key whose claims add iss and aud (the client_id); for one that registered userinfo_encrypted_response_alg, a JWE encrypted to its newest suitable registered key (nested, cty JWT, when also signed)."
         "400":
           description: "The client registered response encryption but has no registered public key that can receive it (error invalid_request)."
         "401":
@@ -1007,7 +1007,7 @@ paths:
       tags:
         - OIDC
       summary: RP-initiated logout (GET)
-      description: A GET without id_token_hint never ends the browser session silently (the client must POST). Redirects (302) to a registered post_logout_redirect_uri when valid.
+      description: "A GET without id_token_hint never ends the browser session silently (the client must POST). With a hint, the browser's cookie session ends only when the hint's sid is that session or its sub is the session's user; any other hint is refused with 400 invalid_request and the session is left alone (SES-016, owner decision 15). The hint must be an ID token of this realm (typ JWT, with sub, aud, exp and iat and without code, error or state); JWT-secured authorization responses (typ oauth-authz-resp+jwt) and signed UserInfo responses (typ userinfo+jwt) are refused. Redirects (302) to a registered post_logout_redirect_uri when valid."
       security: []
       x-trust-class: public-protocol-initiation
       x-optional-security:
@@ -1021,7 +1021,7 @@ paths:
           schema:
             type: string
             x-secret: true
-          description: id_token_hint
+          description: "An ID token this realm issued (signed, not encrypted; expiry is not checked). Other JWTs the realm signs are refused."
         - name: client_id
           in: query
           required: false
@@ -1091,6 +1091,8 @@ paths:
               "$ref": "#/components/headers/Location"
             Set-Cookie:
               "$ref": "#/components/headers/Set-Cookie"
+        "400":
+          "$ref": "#/components/responses/OAuthError"
         "404":
           "$ref": "#/components/responses/OAuthError"
         "500":
@@ -1102,6 +1104,7 @@ paths:
       tags:
         - OIDC
       summary: RP-initiated logout (POST)
+      description: "Ends the browser's cookie session unless id_token_hint names a different session (sid); without a cookie, the session the hint's sid names. The hint must be an ID token of this realm, as for GET."
       security: []
       x-trust-class: public-protocol-initiation
       x-optional-security:
@@ -1363,7 +1366,7 @@ paths:
                 response_mode:
                   type: string
                   enum: [query, query.jwt, jwt]
-                  description: "query (default), or a JWT-secured authorization response (JARM, ADV-002): redirect_to then carries response=<JWT> instead of code, state and iss."
+                  description: "query (default), or a JWT-secured authorization response (JARM, ADV-002): redirect_to then carries response=<JWT> (typ oauth-authz-resp+jwt) instead of code, state and iss."
               additionalProperties: false
       responses:
         "201":
@@ -13247,7 +13250,7 @@ paths:
                   const: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
                 client_assertion:
                   type: string
-                  description: private_key_jwt assertion (audience is the endpoint URL).
+                  description: "private_key_jwt assertion: aud is the realm's issuer as a single string. The realm policy client_auth.allow_endpoint_audience also admits this endpoint's URL and arrays for clients other than fapi2."
                 handoff_code:
                   type: string
                   x-secret: true
@@ -33907,7 +33910,7 @@ components:
         userinfo_signed_response_alg:
           type: string
           enum: [RS256, PS256, ES256, EdDSA]
-          description: "OIDC-013: return UserInfo as a JWT signed with the realm key; must be the realm's signing algorithm."
+          description: "OIDC-013: return UserInfo as a JWT (typ userinfo+jwt) signed with the realm key; must be the realm's signing algorithm."
         userinfo_encrypted_response_alg:
           type: string
           enum: [RSA-OAEP-256, ECDH-ES, ECDH-ES+A128KW, ECDH-ES+A256KW]
@@ -33917,7 +33920,7 @@ components:
         authorization_signed_response_alg:
           type: string
           enum: [RS256, PS256, ES256, EdDSA]
-          description: "JARM (ADV-002): the signing algorithm of JWT authorization responses; must be the realm's (responses are always signed with the realm key)."
+          description: "JARM (ADV-002): the signing algorithm of JWT authorization responses (typ oauth-authz-resp+jwt); must be the realm's (responses are always signed with the realm key)."
         authorization_encrypted_response_alg:
           type: string
           enum: [RSA-OAEP-256, ECDH-ES, ECDH-ES+A128KW, ECDH-ES+A256KW]
@@ -34130,7 +34133,7 @@ components:
         userinfo_signed_response_alg:
           type: string
           enum: [RS256, PS256, ES256, EdDSA]
-          description: "OIDC-013: return UserInfo as a JWT signed with the realm key; must be the realm's signing algorithm."
+          description: "OIDC-013: return UserInfo as a JWT (typ userinfo+jwt) signed with the realm key; must be the realm's signing algorithm."
         userinfo_encrypted_response_alg:
           type: string
           enum: [RSA-OAEP-256, ECDH-ES, ECDH-ES+A128KW, ECDH-ES+A256KW]
@@ -34140,7 +34143,7 @@ components:
         authorization_signed_response_alg:
           type: string
           enum: [RS256, PS256, ES256, EdDSA]
-          description: "JARM (ADV-002): the signing algorithm of JWT authorization responses; must be the realm's (responses are always signed with the realm key)."
+          description: "JARM (ADV-002): the signing algorithm of JWT authorization responses (typ oauth-authz-resp+jwt); must be the realm's (responses are always signed with the realm key)."
         authorization_encrypted_response_alg:
           type: string
           enum: [RSA-OAEP-256, ECDH-ES, ECDH-ES+A128KW, ECDH-ES+A256KW]
@@ -40563,6 +40566,15 @@ components:
           properties:
             owner_departure: {type: string, enum: [flag, disable]}
             owner_departure_grace_days: {type: integer, minimum: 0, maximum: 90}
+        client_auth:
+          type: object
+          additionalProperties: false
+          description: "Client authentication (APP-009, MCH-010). The aud of a private_key_jwt client assertion must be a single JSON string equal to the realm's issuer; an endpoint URL or an array is refused (401 invalid_client)."
+          properties:
+            allow_endpoint_audience:
+              type: boolean
+              default: false
+              description: "Also accept, for clients other than fapi2 ones, the URL of the endpoint receiving the assertion (the token endpoint URL at the token endpoint) and an array of one or two values each naming the issuer or that URL, as versions before 0.2.0-alpha.6 did. fapi2 clients always need the issuer as a single string."
         tokens:
           type: object
           additionalProperties: false

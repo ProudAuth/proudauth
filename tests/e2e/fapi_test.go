@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
 	"testing"
@@ -18,13 +19,15 @@ import (
 
 	"github.com/proudauth/proudauth/internal/configuration"
 	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestFAPI2Profile covers ADV-001: the fapi2 client profile is a separately
 // enforced rule set (confidential client, private_key_jwt or mutual TLS with
-// FAPI algorithms, PAR, PKCE, sender-constrained tokens, https redirects,
-// 60-second codes, short access tokens, no refresh-token rotation, a realm
-// signing algorithm FAPI allows), not ordinary defaults with a label.
+// FAPI algorithms and the issuer as the assertion's only audience, PAR, PKCE,
+// sender-constrained tokens, https redirects, 60-second codes, short access
+// tokens, no refresh-token rotation, a realm signing algorithm FAPI allows),
+// not ordinary defaults with a label.
 func TestFAPI2Profile(t *testing.T) {
 	h := NewHarness(t, func(c *configuration.Config) { c.Keys.SigningAlgorithm = "PS256" })
 	f := fixtureOn(t, h)
@@ -117,6 +120,42 @@ func TestFAPI2Profile(t *testing.T) {
 			t.Fatalf("refresh %d rotated the token", i)
 		}
 	}
+	// The assertion's aud is the issuer as a single JSON string (FAPI 2.0,
+	// RFC 7523bis, decision 16): an endpoint URL, which the audience-injection
+	// attack relies on, and arrays are refused, also when the realm re-admits
+	// them for other clients (client_auth.allow_endpoint_audience).
+	audAssertion := func(aud any) string {
+		s, _ := jose.NewSigner(jose.SigningKey{Algorithm: jose.PS256, Key: jose.JSONWebKey{Key: key, KeyID: "c1"}}, nil)
+		out, _ := jwt.Signed(s).Claims(map[string]any{"iss": "bank-app", "sub": "bank-app", "aud": aud, "jti": secret.Numeric(16),
+			"iat": h.Clock.Now().Unix(), "exp": h.Clock.Now().Add(time.Minute).Unix()}).Serialize()
+		return out
+	}
+	refreshWith := func(aud any) *Resp {
+		return h.Do(Req{Method: "POST", Path: "/realms/main/oauth/token", Headers: map[string]string{"DPoP": dpop()}, Form: url.Values{
+			"grant_type": {"refresh_token"}, "refresh_token": {rt}, "client_id": {"bank-app"},
+			"client_assertion_type": {"urn:ietf:params:oauth:client-assertion-type:jwt-bearer"}, "client_assertion": {audAssertion(aud)}}})
+	}
+	tokenURL := h.Realm.Issuer + "/oauth/token"
+	refused := map[string]any{
+		"token endpoint URL":         tokenURL,
+		"issuer in an array":         []string{h.Realm.Issuer},
+		"token endpoint in an array": []string{tokenURL},
+		"endpoint and issuer":        []string{tokenURL, h.Realm.Issuer},
+	}
+	for _, strict := range []bool{true, false} {
+		mustStatus(t, f.SetPolicy(func(p *realm.Policy) { p.ClientAuth.AllowEndpointAudience = !strict }), 200, "realm client_auth policy")
+		for name, aud := range refused {
+			mustStatus(t, refreshWith(aud), 401, fmt.Sprintf("fapi2 assertion with %s (allow_endpoint_audience %v)", name, !strict))
+		}
+		mustStatus(t, refreshWith(h.Realm.Issuer), 200, fmt.Sprintf("fapi2 assertion with the issuer (allow_endpoint_audience %v)", !strict))
+	}
+	_, parChallenge := PKCE()
+	par := h.Do(Req{Method: "POST", Path: "/realms/main/oauth/par", Form: url.Values{"response_type": {"code"}, "redirect_uri": {"https://bank.test/cb"},
+		"scope": {"orders:read"}, "resource": {f.OrdersAud}, "code_challenge": {parChallenge}, "code_challenge_method": {"S256"}, "client_id": {"bank-app"},
+		"client_assertion_type": {"urn:ietf:params:oauth:client-assertion-type:jwt-bearer"}, "client_assertion": {audAssertion(h.Realm.Issuer + "/oauth/par")}}})
+	mustStatus(t, par, 401, "fapi2 assertion naming the PAR endpoint")
+	mustStatus(t, f.SetPolicy(func(p *realm.Policy) { p.ClientAuth.AllowEndpointAudience = false }), 200, "strict realm")
+
 	// Codes live at most 60 seconds.
 	code, verifier = login()
 	h.Clock.Advance(61 * time.Second)

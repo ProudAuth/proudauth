@@ -10,6 +10,7 @@ import (
 	"errors"
 	"hash"
 	"io"
+	"slices"
 	"strings"
 	"time"
 
@@ -18,13 +19,24 @@ import (
 )
 
 // JOSE "typ" values. Each artifact has its own type so one can never be accepted as
-// another (§14.1, JWT-BCP).
+// another (§14.1, JWT-BCP). JWT-secured authorization responses (JARM) and
+// signed UserInfo responses are signed with the realm key like ID tokens, so
+// they carry their own types too: neither can pass as an ID token hint at
+// logout (decision 15).
 const (
-	TypeAccess = "at+jwt"
-	TypeID     = "JWT"
-	TypeLogout = "logout+jwt"
-	TypeAudit  = "audit-batch+jwt"
+	TypeAccess   = "at+jwt"
+	TypeID       = "JWT"
+	TypeLogout   = "logout+jwt"
+	TypeAudit    = "audit-batch+jwt"
+	TypeJARM     = "oauth-authz-resp+jwt"
+	TypeUserInfo = "userinfo+jwt"
 )
+
+// AuthorizationResponseMembers are the members of an authorization response
+// (RFC 6749 §4.1.2, §4.1.2.1) that a JARM response carries. An ID token never
+// carries them: IDClaims leaves them out even when a client's claim mapping
+// names them, and an ID token hint that has one is refused.
+var AuthorizationResponseMembers = []string{"code", "error", "state"}
 
 // Token kinds (product-defined token_kind claim).
 const (
@@ -197,7 +209,7 @@ func (c IDClaims) MarshalJSON() ([]byte, error) {
 	var m map[string]any
 	_ = json.Unmarshal(b, &m)
 	for k, v := range c.Claims {
-		if ReservedClaims[k] {
+		if ReservedClaims[k] || slices.Contains(AuthorizationResponseMembers, k) {
 			continue
 		}
 		m[k] = v
@@ -326,16 +338,39 @@ func (v *Verifier) VerifyAccess(ctx context.Context, realmID, issuer, audience, 
 }
 
 // VerifyIDTokenHint validates an ID token used as id_token_hint at logout: signature,
-// issuer and type must be valid; expiry is not enforced (OIDC RP-initiated logout).
+// issuer and type must be valid and the claims must have the shape of an ID token
+// (IDTokenShaped); expiry is not enforced (OIDC RP-initiated logout).
 func (v *Verifier) VerifyIDTokenHint(ctx context.Context, realmID, issuer, raw string) (*IDClaims, error) {
 	var c IDClaims
-	if err := v.verify(ctx, realmID, raw, TypeID, &c); err != nil {
+	var members map[string]json.RawMessage
+	if err := v.verify(ctx, realmID, raw, TypeID, &c, &members); err != nil {
 		return nil, err
 	}
 	if c.Issuer != issuer {
 		return nil, ErrIssuer
 	}
+	if !IDTokenShaped(&c, members) {
+		return nil, ErrWrongType
+	}
 	return &c, nil
+}
+
+// IDTokenShaped reports whether verified claims have the shape of an ID token
+// (OIDC Core §2): a subject, an audience, exp and iat, and none of the
+// AuthorizationResponseMembers. The realm key signs other JWTs too; tokens
+// issued before JARM and signed UserInfo had their own typ (JWT, like ID
+// tokens) fail here: a JARM response has no sub and no iat and carries code
+// or error, a signed UserInfo response has no exp or iat.
+func IDTokenShaped(c *IDClaims, members map[string]json.RawMessage) bool {
+	if c.Subject == "" || len(c.Audience) == 0 || c.Audience[0] == "" || c.Expiry == 0 || c.IssuedAt == 0 {
+		return false
+	}
+	for _, m := range AuthorizationResponseMembers {
+		if _, ok := members[m]; ok {
+			return false
+		}
+	}
+	return true
 }
 
 func (v *Verifier) checkTimes(iat, nbf, exp int64) error {
@@ -353,7 +388,7 @@ func (v *Verifier) checkTimes(iat, nbf, exp int64) error {
 	return nil
 }
 
-func (v *Verifier) verify(ctx context.Context, realmID, raw, expectedTyp string, out any) error {
+func (v *Verifier) verify(ctx context.Context, realmID, raw, expectedTyp string, out ...any) error {
 	max := v.MaxBytes
 	if max == 0 {
 		max = 8192
@@ -403,18 +438,18 @@ func (v *Verifier) verify(ctx context.Context, realmID, raw, expectedTyp string,
 		// The header algorithm must match the key's registered algorithm (no confusion).
 		return ErrAlgorithm
 	}
-	if err := tok.Claims(pk.JWK.Key, out); err != nil {
+	if err := tok.Claims(pk.JWK.Key, out...); err != nil {
 		return ErrSignature
 	}
 	return nil
 }
 
+// typeMatches compares a JOSE typ case-insensitively, with or without the
+// "application/" prefix (RFC 7515 §4.1.9). An absent typ never matches: every
+// token this server signs names its type.
 func typeMatches(got, want string) bool {
 	got = strings.ToLower(got)
 	want = strings.ToLower(want)
-	if want == "jwt" {
-		return got == "jwt" || got == ""
-	}
 	return got == want || got == "application/"+want
 }
 

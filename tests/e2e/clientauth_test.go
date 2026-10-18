@@ -14,11 +14,16 @@ import (
 	"github.com/go-jose/go-jose/v4/jwt"
 
 	"github.com/proudauth/proudauth/internal/platform/secret"
+	"github.com/proudauth/proudauth/internal/realm"
 )
 
 // TestPrivateKeyJWT covers APP-009 and MCH-010: a machine client
 // authenticates with a signed assertion from its registered key; the
-// assertion is single-use, short-lived and addressed to this server only.
+// assertion is single-use, short-lived and addressed to this server only:
+// its aud is the issuer as a single JSON string (decision 16). The token
+// endpoint URL and arrays, even ["<issuer>"], are refused unless the realm
+// sets client_auth.allow_endpoint_audience, which re-admits them but never
+// an audience naming another party.
 func TestPrivateKeyJWT(t *testing.T) {
 	f := NewFixture(t)
 	h := f.H
@@ -44,10 +49,12 @@ func TestPrivateKeyJWT(t *testing.T) {
 		t.Fatal(err)
 	}
 	endpoint := h.Realm.Issuer + "/oauth/token"
-	assertion := func(aud []string, ttl time.Duration, jti string) string {
+	// aud is a string or a []string, serialized as given: a JWT library
+	// would write a one-element list as a string.
+	assertion := func(aud any, ttl time.Duration, jti string) string {
 		now := h.Clock.Now()
-		s, err := jwt.Signed(signer).Claims(jwt.Claims{Issuer: "jwt-job", Subject: "jwt-job", Audience: aud, ID: jti,
-			IssuedAt: jwt.NewNumericDate(now), Expiry: jwt.NewNumericDate(now.Add(ttl))}).Serialize()
+		s, err := jwt.Signed(signer).Claims(map[string]any{"iss": "jwt-job", "sub": "jwt-job", "aud": aud, "jti": jti,
+			"iat": now.Unix(), "exp": now.Add(ttl).Unix()}).Serialize()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -57,31 +64,56 @@ func TestPrivateKeyJWT(t *testing.T) {
 		return h.TokenRequest(url.Values{"grant_type": {"client_credentials"}, "resource": {f.BillingAud}, "scope": {"billing:read"}, "organization": {f.Acme},
 			"client_id": {"jwt-job"}, "client_assertion_type": {"urn:ietf:params:oauth:client-assertion-type:jwt-bearer"}, "client_assertion": {a}}, "", "")
 	}
-	good := assertion([]string{endpoint}, time.Minute, hex.EncodeToString(secret.Random(8)))
+	jti := func() string { return hex.EncodeToString(secret.Random(8)) }
+	good := assertion(h.Realm.Issuer, time.Minute, jti())
 	if r := token(good); r.Status != 200 || r.Str("access_token") == "" {
 		t.Fatalf("private_key_jwt: %d %s", r.Status, r.Raw)
 	}
 	if r := token(good); r.Status != 401 {
 		t.Fatalf("replayed assertion: %d %s", r.Status, r.Raw)
 	}
-	for name, a := range map[string]string{
-		"another audience too": assertion([]string{endpoint, "https://other.test/token"}, time.Minute, "j-aud"),
-		"long-lived":           assertion([]string{endpoint}, time.Hour, "j-ttl"),
-		"issuer as audience":   assertion([]string{h.Realm.Issuer}, time.Minute, "j-iss"),
-	} {
-		r := token(a)
-		if name == "issuer as audience" {
-			mustStatus(t, r, 200, name)
-			continue
-		}
-		if r.Status != 401 {
-			t.Fatalf("%s accepted: %d %s", name, r.Status, r.Raw)
-		}
+	// Refused by default (decision 16), and the audiences refused whatever
+	// the realm allows.
+	legacy := map[string]any{
+		"token endpoint URL":         endpoint,
+		"issuer in an array":         []string{h.Realm.Issuer},
+		"token endpoint in an array": []string{endpoint},
+		"endpoint and issuer":        []string{endpoint, h.Realm.Issuer},
 	}
+	never := map[string]any{
+		"another audience too":   []string{endpoint, "https://other.test/token"},
+		"issuer and another":     []string{h.Realm.Issuer, "https://other.test"},
+		"three audiences":        []string{h.Realm.Issuer, endpoint, h.Realm.Issuer},
+		"another server":         "https://other.test",
+		"issuer with a slash":    h.Realm.Issuer + "/",
+		"the introspection URL":  h.Realm.Issuer + "/oauth/introspect",
+		"an empty audience list": []string{},
+	}
+	for name, aud := range legacy {
+		mustStatus(t, token(assertion(aud, time.Minute, jti())), 401, name+" by default")
+	}
+	for name, aud := range never {
+		mustStatus(t, token(assertion(aud, time.Minute, jti())), 401, name)
+	}
+	mustStatus(t, token(assertion(h.Realm.Issuer, time.Hour, jti())), 401, "long-lived")
+
+	// client_auth.allow_endpoint_audience re-admits the endpoint URL and
+	// arrays naming this server for clients other than fapi2 ones.
+	mustStatus(t, f.SetPolicy(func(p *realm.Policy) { p.ClientAuth.AllowEndpointAudience = true }), 200, "allow endpoint audiences")
+	for name, aud := range legacy {
+		mustStatus(t, token(assertion(aud, time.Minute, jti())), 200, name+" with allow_endpoint_audience")
+	}
+	for name, aud := range never {
+		mustStatus(t, token(assertion(aud, time.Minute, jti())), 401, name+" with allow_endpoint_audience")
+	}
+	mustStatus(t, token(assertion(h.Realm.Issuer, time.Minute, jti())), 200, "issuer with allow_endpoint_audience")
+	mustStatus(t, f.SetPolicy(func(p *realm.Policy) { p.ClientAuth.AllowEndpointAudience = false }), 200, "strict again")
+	mustStatus(t, token(assertion(endpoint, time.Minute, jti())), 401, "token endpoint URL once the realm is strict again")
+
 	// A different key than the registered one never authenticates.
 	other, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	signer, _ = jose.NewSigner(jose.SigningKey{Algorithm: jose.ES256, Key: other}, (&jose.SignerOptions{}).WithType("JWT").WithHeader("kid", "k1"))
-	mustStatus(t, token(assertion([]string{endpoint}, time.Minute, "j-other")), 401, "unregistered key")
+	mustStatus(t, token(assertion(h.Realm.Issuer, time.Minute, "j-other")), 401, "unregistered key")
 }
 
 // TestClientSecretLifecycle covers APP-003, APP-008, MCH-009, TOK-010 and

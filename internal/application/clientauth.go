@@ -137,8 +137,8 @@ func (s *Service) authSecret(ctx context.Context, realmID, clientID, presented, 
 }
 
 // authAssertion validates private_key_jwt (APP-009, MCH-010): registered asymmetric
-// key, iss = sub = client_id, audience = token endpoint or issuer, bounded lifetime,
-// and single-use jti.
+// key, iss = sub = client_id, audience = the issuer (assertionAudience), bounded
+// lifetime, and single-use jti.
 func (s *Service) authAssertion(ctx context.Context, realmID, issuer, endpoint, formClientID, assertion string) (*Client, error) {
 	if len(assertion) > 8192 {
 		return nil, ErrClientAuth
@@ -171,6 +171,9 @@ func (s *Service) authAssertion(ctx context.Context, realmID, issuer, endpoint, 
 	}
 	kid := tok.Headers[0].KeyID
 	var claims jwt.Claims
+	// The raw members tell "aud":"x" from "aud":["x"], which jwt.Claims
+	// does not: it reads both as a list.
+	var members map[string]json.RawMessage
 	verified := false
 	for _, k := range keys {
 		if kid != "" && k.KeyID != "" && k.KeyID != kid {
@@ -179,7 +182,7 @@ func (s *Service) authAssertion(ctx context.Context, realmID, issuer, endpoint, 
 		if k.Algorithm != "" && k.Algorithm != tok.Headers[0].Algorithm {
 			continue
 		}
-		if err := tok.Claims(k.Key, &claims); err == nil {
+		if err := tok.Claims(k.Key, &claims, &members); err == nil {
 			verified = true
 			break
 		}
@@ -198,13 +201,16 @@ func (s *Service) authAssertion(ctx context.Context, realmID, issuer, endpoint, 
 	if claims.NotBefore != nil && now.Add(30*time.Second).Before(claims.NotBefore.Time()) {
 		return nil, ErrClientAuth
 	}
-	// Every audience value must name this authorization server (MCH-010): an
-	// assertion also addressed to another party is not accepted here.
-	if len(claims.Audience) == 0 || len(claims.Audience) > 2 {
-		return nil, ErrClientAuth
-	}
-	for _, a := range claims.Audience {
-		if a != endpoint && a != issuer {
+	// The audience is this authorization server's issuer identifier, as a
+	// single string (MCH-010, FAPI 2.0, RFC 7523bis; decision 16): an
+	// endpoint URL invites the audience-injection attack, where an assertion
+	// meant for one server is replayed at another.
+	if !assertionAudience(members["aud"], issuer, endpoint, false) {
+		if c.FAPI2() || s.EndpointAudience == nil {
+			return nil, ErrClientAuth
+		}
+		allowed, err := s.EndpointAudience(ctx, realmID)
+		if err != nil || !allowed || !assertionAudience(members["aud"], issuer, endpoint, true) {
 			return nil, ErrClientAuth
 		}
 	}
@@ -215,6 +221,37 @@ func (s *Service) authAssertion(ctx context.Context, realmID, issuer, endpoint, 
 		return nil, ErrClientAuth
 	}
 	return c, nil
+}
+
+// assertionAudience checks the raw aud member of a client assertion. Strict
+// (the default for every realm, always for fapi2 clients): one JSON string
+// equal to the issuer; ["<issuer>"] is refused too. With allowEndpoint (realm
+// policy client_auth.allow_endpoint_audience) it also accepts what earlier
+// versions did: the URL of the endpoint receiving the assertion as a string,
+// or an array of one or two values each naming the issuer or that endpoint,
+// so an assertion also addressed to another party is still refused.
+func assertionAudience(raw json.RawMessage, issuer, endpoint string, allowEndpoint bool) bool {
+	raw = bytes.TrimSpace(raw)
+	if len(raw) > 0 && raw[0] == '"' {
+		var one string
+		if json.Unmarshal(raw, &one) != nil || one == "" {
+			return false
+		}
+		return one == issuer || (allowEndpoint && one == endpoint)
+	}
+	if !allowEndpoint || len(raw) == 0 || raw[0] != '[' {
+		return false
+	}
+	var many []string
+	if json.Unmarshal(raw, &many) != nil || len(many) == 0 || len(many) > 2 {
+		return false
+	}
+	for _, a := range many {
+		if a == "" || (a != issuer && a != endpoint) {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Service) clientKeys(ctx context.Context, ref string) ([]jose.JSONWebKey, error) {

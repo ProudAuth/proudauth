@@ -6,6 +6,7 @@ UserInfo), ADV-002 (JARM, JWT-secured authorization responses). Code:
 `internal/oauth/jarm.go`, `internal/oauth/mint.go`,
 `internal/oauth/discovery.go`, migration `0050`. Tests:
 `TestEncryptedResponses` and `TestJARM` (`tests/e2e/jwe_test.go`),
+`TestLogoutHintTypes` (`tests/e2e/logout_hint_test.go`),
 `TestConfigClientProtocolOptions` (`tests/e2e/ops_test.go`).
 
 By default ID tokens are signed JWTs, UserInfo is plain JSON and the
@@ -103,11 +104,14 @@ For a client with `userinfo_signed_response_alg` or
 
 | Options | Body |
 | --- | --- |
-| Signed | JWS (`typ: JWT`) with the usual claims plus `iss` (the realm issuer) and `aud` (the client ID); no `iat` or `exp` |
+| Signed | JWS (`typ: userinfo+jwt`) with the usual claims plus `iss` (the realm issuer) and `aud` (the client ID); no `iat` or `exp` |
 | Encrypted | JWE whose payload is the plain JSON claims (no `iss` or `aud` added). Its header has no `cty` |
 | Both | Nested: the signed JWS, encrypted (`cty: JWT`) |
 
-Clients without these options keep getting `application/json`.
+Clients without these options keep getting `application/json`. The signed
+response has its own `typ` so it is never taken for an ID token, for example
+as `id_token_hint` at logout (decision 15); before 0.2.0-alpha.6 it was typed
+`JWT`.
 
 ## JARM (ADV-002)
 
@@ -127,7 +131,8 @@ jwt", `invalid_request`): at the authorization endpoint as an error redirect
 in plain query mode, at PAR as `400` JSON, at the headless start as a `400`
 problem.
 
-`response` is a JWT signed with the realm's active key (`typ: JWT`) with:
+`response` is a JWT signed with the realm's active key (`typ:
+oauth-authz-resp+jwt`; `JWT` before 0.2.0-alpha.6) with:
 
 - `iss` (the realm issuer), `aud` (the client ID), `exp` (10 minutes);
 - the response parameters: `code` and `state` (plus `session_state` where the
@@ -136,8 +141,16 @@ problem.
 
 With `authorization_encrypted_response_alg` it is then encrypted to the
 client (nested, `cty: JWT`). Validate it like any JWT from the issuer:
-signature against the JWKS, `iss`, `aud` equal to your client ID, `exp`, then
-compare `state`.
+signature against the JWKS, `typ` `oauth-authz-resp+jwt`, `iss`, `aud` equal
+to your client ID, `exp`, then compare `state`.
+
+Anyone who knows a client ID and one of its redirect URIs can get a signed
+error response from the authorization endpoint (an invalid request is enough).
+Its own `typ` and the ID-token checks of the logout endpoint keep it from
+passing as an `id_token_hint`; before 0.2.0-alpha.6 it was typed `JWT`, and a
+lured `GET` to the logout endpoint with such a response as hint ended the
+browser's session ([oauth-oidc-profile.md](oauth-oidc-profile.md#logout),
+`TestLogoutHintTypes`).
 
 Errors returned to the redirect URI use the same mode: validation errors
 once the client and redirect URI are trusted, `prompt=none` failures
@@ -174,7 +187,9 @@ algorithm other than the realm's.
 Tests cover the 422 cases, discovery, an RSA-encrypted ID token, ECDH-ES
 nested UserInfo, encrypt-only UserInfo (no `cty`), a client with only a
 signing key (token endpoint `400`, the code not consumed and redeemed once a
-key is registered) and JARM in the headless flow (signed, and encrypted on
-cancel). Not covered: JARM through the browser authorization endpoint and
-PAR, `prompt=none` errors in JARM mode, the `server_error` fallback and the
-UserInfo `400`.
+key is registered), JARM in the headless flow (signed, and encrypted on
+cancel), the `typ` of each response, and a JARM error response from the
+browser authorization endpoint and a signed UserInfo response refused as
+logout hints (`TestLogoutHintTypes`). Not covered: a JARM code response
+through the browser authorization endpoint and PAR, `prompt=none` errors in
+JARM mode, the `server_error` fallback and the UserInfo `400`.

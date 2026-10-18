@@ -41,9 +41,15 @@ curl -u "batch-job:$CLIENT_SECRET" https://id.example.com/realms/main/oauth/toke
 - `private_key_jwt` is available instead of a shared secret: register the client
   with `token_endpoint_auth_method: private_key_jwt`, add public keys with
   `POST /clients/{client}/credentials {"jwks": {...}}` (`404` for an unknown
-  client), and sign assertions with `iss` = `sub` = client ID, `aud` = the token
-  endpoint URL or the issuer (every `aud` value must be one of them, at most
-  two), `exp` ≤ 5 minutes, a unique `jti` (MCH-010, `TestPrivateKeyJWT`).
+  client), and sign assertions with `iss` = `sub` = client ID, `aud` = the
+  issuer as a single JSON string (`"aud": "https://id.example.com/realms/main"`,
+  not the token endpoint URL and not an array), `exp` ≤ 5 minutes, a unique
+  `jti` (MCH-010, `TestPrivateKeyJWT`). A client that cannot change its
+  assertions yet keeps working while the realm policy
+  `client_auth.allow_endpoint_audience` is `true`: it re-admits the token
+  endpoint URL and arrays of one or two values naming the issuer or that URL,
+  for every client but `fapi2` ones (decision 16,
+  [oauth-oidc-profile.md](../protocols/oauth-oidc-profile.md#clients)).
 - Mutual-TLS client authentication (`tls_client_auth`,
   `self_signed_tls_client_auth`) and certificate-bound tokens are available
   where the deployment accepts client certificates (MCH-014,

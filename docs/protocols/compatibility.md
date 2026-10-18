@@ -88,6 +88,7 @@ realm, so existing clients keep their behavior:
 | Dynamic client registration (APP-016) | Realm policy `client_registration.enabled` | None; no `registration_endpoint` until enabled |
 | OIDC Session Management (OIDC-014) | Realm policy `sessions.check_session_iframe` | None; `check_session_iframe` and the `session_state` response parameter appear only in realms that turn it on (clients must ignore unknown response parameters) |
 | Shared signals transmitter (AUD-016) | Realm policy `shared_signals.enabled` | None; metadata and stream endpoints answer `404` until enabled |
+| Endpoint-URL and array audiences in client assertions (APP-009, decision 16) | Realm policy `client_auth.allow_endpoint_audience` | None for clients that send the issuer as a single string; while it is off (the default) other audiences are refused. Never applies to `fapi2` clients |
 
 Discovery changed compatibly: `response_modes_supported` now lists
 `query.jwt` and `jwt`, `userinfo_signing_alg_values_supported` lists the
@@ -110,7 +111,15 @@ with `fapi2` clients, which need `PS256`, `ES256` or `EdDSA`
 Validation that was tightened as a security fix, without a deprecation
 window: every `aud` value of a `private_key_jwt` client assertion must name
 this server (an assertion also addressed to another party is refused), and
-`post_logout_redirect_uri` is checked before the session ends.
+`post_logout_redirect_uri` is checked before the session ends. In
+0.2.0-alpha.6 (decisions 15 and 16): the `aud` of a client assertion must be
+the issuer as a single JSON string, unless the realm policy
+`client_auth.allow_endpoint_audience` re-admits the endpoint URL and arrays
+for clients other than `fapi2` ones; JARM responses are typed
+`oauth-authz-resp+jwt` and signed UserInfo responses `userinfo+jwt` instead of
+`JWT`; and a `GET` logout whose `id_token_hint` belongs neither to the browser
+session (`sid`) nor to its user (`sub`) is refused with `400` instead of
+leaving the session alone with `200`.
 
 ## Events
 

@@ -90,6 +90,9 @@ func TestEncryptedResponses(t *testing.T) {
 	if claims["aud"] == nil || claims["sub"] != f.Users["bob"] || claims["email"] != "bob@example.test" {
 		t.Fatalf("inner ID token: %v", claims)
 	}
+	if typ := jwsType(t, string(inner)); typ != "JWT" {
+		t.Fatalf("inner ID token typ: %q", typ)
+	}
 	// The inner, signed ID token is what the client sends back as a hint.
 	mustStatus(t, h.Do(Req{Method: "GET", Path: "/realms/main/oidc/logout?id_token_hint=" + string(inner)}), 200, "logout with the inner token")
 
@@ -111,6 +114,11 @@ func TestEncryptedResponses(t *testing.T) {
 	uc := jwtPayload(string(signed))
 	if uc["iss"] != h.Realm.Issuer || uc["aud"] != "jwe-app" || uc["email"] != "bob@example.test" {
 		t.Fatalf("signed userinfo: %v", uc)
+	}
+	// Signed UserInfo has its own typ, so it never passes as an ID token
+	// (decision 15, TestLogoutHintTypes).
+	if typ := jwsType(t, string(signed)); typ != "userinfo+jwt" {
+		t.Fatalf("signed userinfo typ: %q", typ)
 	}
 
 	// Encryption without a usable key is refused clearly at issuance.
@@ -230,6 +238,11 @@ func TestJARM(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		// JARM responses have their own typ, so one never passes as an ID
+		// token (decision 15, TestLogoutHintTypes).
+		if typ := sig.Signatures[0].Header.ExtraHeaders[jose.HeaderType]; typ != "oauth-authz-resp+jwt" {
+			t.Fatalf("JARM response typ: %v", typ)
+		}
 		keys := set.Key(sig.Signatures[0].Header.KeyID)
 		if len(keys) == 0 {
 			t.Fatal("response signed with an unpublished key")
@@ -288,4 +301,19 @@ func TestJARM(t *testing.T) {
 	if ec := verify(string(inner)); ec["error"] != "access_denied" || ec["aud"] != "jarm-enc" {
 		t.Fatalf("JARM error claims: %v", ec)
 	}
+}
+
+// jwsType returns the typ header of a compact JWS.
+func jwsType(t *testing.T, compact string) string {
+	t.Helper()
+	seg, err := base64.RawURLEncoding.DecodeString(strings.SplitN(compact, ".", 2)[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var hdr map[string]any
+	if err := json.Unmarshal(seg, &hdr); err != nil {
+		t.Fatal(err)
+	}
+	typ, _ := hdr["typ"].(string)
+	return typ
 }

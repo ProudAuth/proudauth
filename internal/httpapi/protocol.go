@@ -470,13 +470,16 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request, rlm *realm.Realm) e
 		cookie = c.Value
 	}
 	// GET without an ID token hint is not allowed to end the browser session silently:
-	// the client must POST (confirmation behavior, SES-016).
-	if r.Method == http.MethodGet && v.Get("id_token_hint") == "" {
+	// the client must POST (confirmation behavior, SES-016). A GET with a hint
+	// ends the browser session only when the hint belongs to it; otherwise it
+	// is refused (400) and the session left alone (decision 15).
+	getWithHint := r.Method == http.MethodGet && v.Get("id_token_hint") != ""
+	if r.Method == http.MethodGet && !getWithHint {
 		cookie = ""
 	}
 	res, err := a.OAuth.Logout(r.Context(), rlm, oauth.LogoutRequest{IDTokenHint: v.Get("id_token_hint"), ClientID: v.Get("client_id"),
 		PostLogoutRedirectURI: v.Get("post_logout_redirect_uri"), State: v.Get("state"), SessionCookie: cookie,
-		UpstreamLogout: v.Get("upstream_logout") == "true"})
+		UpstreamLogout: v.Get("upstream_logout") == "true", HintMustMatchSession: getWithHint})
 	if err != nil {
 		return err
 	}

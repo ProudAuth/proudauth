@@ -72,10 +72,20 @@ issuer and endpoints, and tokens, DPoP proofs (`htu`) and client assertions
 - `private_key_jwt` (MCH-010, APP-009): RS256, PS256, ES256 or EdDSA (no HMAC;
   `fapi2` clients PS256, ES256 or EdDSA only); signed by one of the client's
   registered keys (`kid` and `alg` must match where the key names them);
-  `iss` = `sub` = `client_id`; `aud` has one or two values and **every** value
-  must be this server's endpoint URL or the issuer, so an assertion also
-  addressed to another party is refused; `exp` required, at most 5 minutes
-  ahead (30 s tolerance); `jti` required and single-use (`TestPrivateKeyJWT`).
+  `iss` = `sub` = `client_id`; `aud` must be the realm's issuer as a **single
+  JSON string** (`"aud": "https://id.example.com/realms/main"`) at every
+  endpoint that accepts client authentication. An endpoint URL, also the
+  token endpoint's, and an array, also `["<issuer>"]`, are refused (`401
+  invalid_client`): this is the FAPI 2.0 Security Profile and RFC 7523bis
+  rule against the audience-injection attack, where an assertion addressed to
+  an endpoint URL is replayed at another server (decision 16). The realm
+  policy `client_auth.allow_endpoint_audience` (default `false`) re-admits,
+  for clients other than `fapi2` ones, what earlier versions accepted: the URL
+  of the endpoint receiving the assertion as a string, or an array of one or
+  two values each naming the issuer or that URL; an audience naming another
+  party is refused either way. `exp` required, at most 5 minutes ahead (30 s
+  tolerance); `jti` required and single-use (`TestPrivateKeyJWT`,
+  `TestAssertionAudience`).
 - `password` and `implicit` are rejected at registration and at the token endpoint.
 - `client_credentials` requires a linked service principal.
 - `jwt-bearer` (`urn:ietf:params:oauth:grant-type:jwt-bearer`, RFC 7523) is
@@ -213,7 +223,7 @@ issuer and endpoints, and tokens, DPoP proofs (`htu`) and client assertions
 | Parameter | Rule |
 | --- | --- |
 | `response_type` | `code` only |
-| `response_mode` | absent or `query`; `query.jwt` or `jwt` for a JWT-secured response (JARM, ADV-002, [response-security.md](response-security.md#jarm-adv-002)). Others are refused with an error redirect in query mode |
+| `response_mode` | absent or `query`; `query.jwt` or `jwt` for a JWT-secured response (JARM, ADV-002, `typ: oauth-authz-resp+jwt`, [response-security.md](response-security.md#jarm-adv-002)). Others are refused with an error redirect in query mode |
 | `code_challenge`, `code_challenge_method` | **Required**: `S256` and a 43-character base64url value. `plain` is rejected. |
 | `redirect_uri` | Required; exact match (see above) |
 | `scope` | Space-separated, at most 50; every scope must exist and be allowed for the client (see Scopes and resources) |
@@ -571,8 +581,8 @@ be bound to it. Deployment (how certificates reach the server):
   Introspection returns `cnf`; resource servers must compare the thumbprint
   with the certificate of their own connection; Go `SenderVerifier` performs
   this check, while ordinary SDK token-only paths reject bound tokens.
-- DPoP proofs and `private_key_jwt` assertions must still name the public
-  token endpoint (`htu`, `aud`), not the mutual-TLS alias.
+- DPoP proofs must still name the public token endpoint (`htu`), not the
+  mutual-TLS alias, and `private_key_jwt` assertions the issuer (`aud`).
 
 ## FAPI 2.0 security profile (ADV-001)
 
@@ -585,6 +595,7 @@ conformance suite has been run** ([interoperability.md](../integrations/interope
 | --- | --- |
 | Confidential clients only | `client_type: confidential` (`422` on `security_profile` otherwise) |
 | Client authentication with `private_key_jwt` or mutual TLS | `private_key_jwt`, `tls_client_auth` or `self_signed_tls_client_auth` (`422`). Client assertions must be signed with `PS256`, `ES256` or `EdDSA`; an `RS256` assertion is refused at the token endpoint (`401 invalid_client`) |
+| Client assertion audience is the issuer only | `aud` must be the realm's issuer as a single JSON string at the token, PAR and every other endpoint; an endpoint URL or an array is refused (`401 invalid_client`), whatever the realm's `client_auth.allow_endpoint_audience` says |
 | Authorization code flow only | Grants `authorization_code` and `refresh_token` only (`422`); default both |
 | Sender-constrained access tokens | `token_policy.require_dpop` or `tls_client_certificate_bound_access_tokens` is required (`422`) |
 | Pushed authorization requests | `token_policy.require_par` is forced on; requests without PAR are refused. `request_uri` lives 60 s (as for every client) |
@@ -656,7 +667,7 @@ a `claims` request with a `userinfo` member, the response is narrowed to those
 claims (see [Claims parameter](#claims-parameter)). The response is unsigned JSON,
 unless the client registered `userinfo_signed_response_alg` or
 `userinfo_encrypted_response_alg` (OIDC-013): then it is `application/jwt`,
-signed (with `iss` and `aud` added) and/or encrypted
+signed (`typ: userinfo+jwt`, with `iss` and `aud` added) and/or encrypted
 ([response-security.md](response-security.md#signed-and-encrypted-userinfo)).
 A sender-constrained token must come with its DPoP proof or client certificate
 ([DPoP](#dpop-rfc-9449), [Mutual TLS](#mutual-tls-rfc-8705)).
@@ -664,20 +675,35 @@ A sender-constrained token must come with its DPoP proof or client certificate
 ## Logout
 
 - **RP-initiated** (`I/oidc/logout`): parameters `id_token_hint`, `client_id`,
-  `post_logout_redirect_uri`, `state`. The hint's signature and issuer are verified
-  (expiry is not). A `GET` without `id_token_hint` never ends the browser session
-  (prevents silent logout CSRF); use `POST` or include the hint. With a session
-  cookie, the cookie's session is ended unless the hint names a different session;
-  without a cookie, the hint's `sid` session is ended. `post_logout_redirect_uri`
-  must be registered for the client (named by `client_id` or the hint);
-  otherwise `400 invalid_request` ("post_logout_redirect_uri is not
-  registered", or "post_logout_redirect_uri requires client_id or
-  id_token_hint"). It is checked **before** anything is revoked, so a bad
-  redirect leaves the session intact. Response: `302` to the registered URI
-  (with `state`), or `200 {"session_ended": bool, "upstream_logout": {...}}`
-  without one; when clients registered front-channel logout, the page or JSON
-  described [below](#front-channel-logout-ses-018) instead. Clients with
-  encrypted ID tokens send the decrypted, signed ID token as `id_token_hint`.
+  `post_logout_redirect_uri`, `state`. The hint must be an ID token of the
+  realm: signature and issuer are verified (expiry is not), `typ` must be
+  `JWT` (an absent `typ` is refused), and it must have `sub`, `aud`, `exp` and
+  `iat` and none of `code`, `error` and `state`. Other JWTs the realm key
+  signs are refused with `400 invalid_request` ("invalid id_token_hint"),
+  among them JWT-secured authorization responses (`typ: oauth-authz-resp+jwt`,
+  which anyone can obtain from the authorization endpoint) and signed UserInfo
+  (`typ: userinfo+jwt`). A `GET` without `id_token_hint` never ends the
+  browser session (prevents silent logout CSRF); use `POST` or include the
+  hint. A `GET` with a hint ends the cookie session only when the hint's `sid`
+  is that session or its `sub` is the session user's subject at the hint's
+  client (pairwise subjects included); any other hint is refused with `400
+  invalid_request` ("id_token_hint does not match the browser session") and
+  the session, its cookie and the clients' sessions are left alone, so a lured
+  top-level navigation cannot log a user out with someone else's token
+  (decision 15, `TestLogoutHintTypes`). A relying party that cannot present a
+  matching hint uses `POST`. With `POST` and a session cookie, the cookie's
+  session is ended unless the hint names a different session (`200` with
+  `session_ended: false` then); without a cookie, the hint's `sid` session is
+  ended. `post_logout_redirect_uri` must be registered for the client (named
+  by `client_id` or the hint); otherwise `400 invalid_request`
+  ("post_logout_redirect_uri is not registered", or "post_logout_redirect_uri
+  requires client_id or id_token_hint"). It is checked **before** anything is
+  revoked, so a bad redirect leaves the session intact. Response: `302` to the
+  registered URI (with `state`), or `200 {"session_ended": bool,
+  "upstream_logout": {...}}` without one; when clients registered
+  front-channel logout, the page or JSON described
+  [below](#front-channel-logout-ses-018) instead. Clients with encrypted ID
+  tokens send the decrypted, signed ID token as `id_token_hint`.
 - **`upstream_logout`** in every response describes the upstream provider
   session (FED-013): `{"provider": "<connection alias>", "status": ...}` with
   `status` `not_federated` (the session was not federated; no `provider`),

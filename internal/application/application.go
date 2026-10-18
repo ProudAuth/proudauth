@@ -261,6 +261,11 @@ type Service struct {
 	// SigningAlgorithm, when set, reports a realm's active token signing
 	// algorithm, which signed responses use (OIDC-013).
 	SigningAlgorithm func(ctx context.Context, realmID string) (string, error)
+	// EndpointAudience, when set, reports whether a realm's policy re-admits
+	// endpoint-URL and array audiences in client assertions
+	// (client_auth.allow_endpoint_audience, decision 16). Unset, only the
+	// issuer is accepted.
+	EndpointAudience func(ctx context.Context, realmID string) (bool, error)
 }
 
 // NewService returns the registry service.
