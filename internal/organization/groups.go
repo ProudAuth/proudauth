@@ -236,16 +236,22 @@ func (s *Service) UpdateGroup(ctx context.Context, realmID, orgID, id string, ex
 	return out, err
 }
 
-// DeleteGroup deletes a group without children.
-func (s *Service) DeleteGroup(ctx context.Context, realmID, orgID, id string, auditActor audit.Ref) error {
+// DeleteGroup deletes a group without children on behalf of actor, who must
+// be able to assign every role the group grants (TEN-008).
+func (s *Service) DeleteGroup(ctx context.Context, realmID, orgID, id string, actor authorization.Subject, auditActor audit.Ref) error {
 	return s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
-		return s.DeleteGroupTx(ctx, tx, realmID, orgID, id, auditActor)
+		return s.DeleteGroupTx(ctx, tx, realmID, orgID, id, &actor, auditActor)
 	})
 }
 
 // DeleteGroupTx is DeleteGroup inside tx. The role assignments the group
-// held end with it, each recorded like any other unassignment.
-func (s *Service) DeleteGroupTx(ctx context.Context, tx pgx.Tx, realmID, orgID, id string, auditActor audit.Ref) error {
+// held end with it, each recorded like any other unassignment. Deleting the
+// group takes from its members the roles it grants, its ancestors' included,
+// so actor must be able to assign each of them, as for unassigning a role or
+// adding a member (TEN-007, TEN-008, AZ-006). actor is nil only for trusted
+// callers that applied their own authority (a SCIM connector deleting a
+// group it owns, PROV-007).
+func (s *Service) DeleteGroupTx(ctx context.Context, tx pgx.Tx, realmID, orgID, id string, actor *authorization.Subject, auditActor audit.Ref) error {
 	// Group mutations take the group before connector mappings and members
 	// (PROV-008, DB-014). Deleting members first can deadlock a connector
 	// holding this group while waiting to update a member's revision.
@@ -255,6 +261,11 @@ func (s *Service) DeleteGroupTx(ctx context.Context, tx pgx.Tx, realmID, orgID, 
 			return problem.ErrNotFound
 		}
 		return err
+	}
+	if actor != nil {
+		if err := s.checkGroupCeilingTx(ctx, tx, realmID, orgID, id, *actor); err != nil {
+			return err
+		}
 	}
 	var children int
 	if err := tx.QueryRow(ctx, `SELECT count(*) FROM groups WHERE parent_id=$1`, id).Scan(&children); err != nil {
@@ -439,14 +450,21 @@ func groupRolesTx(ctx context.Context, q storage.Querier, orgID, groupID string)
 	return roles, rows.Err()
 }
 
-// RemoveGroupMember removes a membership from a group.
-func (s *Service) RemoveGroupMember(ctx context.Context, realmID, orgID, groupID, membershipID string, auditActor audit.Ref) error {
+// RemoveGroupMember removes a membership from a group on behalf of actor.
+// Leaving the group takes from the member the roles it grants, its
+// ancestors' included, so actor must be able to assign each of them, as for
+// adding a member (TEN-007, TEN-008). Trusted callers that applied their own
+// authority (lifecycle workflows) use RemoveGroupMemberTx.
+func (s *Service) RemoveGroupMember(ctx context.Context, realmID, orgID, groupID, membershipID string, actor authorization.Subject, auditActor audit.Ref) error {
 	return s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
 		var dynamic bool
 		// The share lock orders the removal with a SCIM write to the group,
 		// which locks the row before comparing its entity tag (TEST-050).
 		if err := tx.QueryRow(ctx, `SELECT dynamic_rule IS NOT NULL FROM groups WHERE organization_id=$1 AND id=$2 FOR SHARE`, orgID, groupID).Scan(&dynamic); err == nil && dynamic {
 			return problem.ErrConflict.WithDetail("members of a dynamic group come from its rule (TEN-014)")
+		}
+		if err := s.checkGroupCeilingTx(ctx, tx, realmID, orgID, groupID, actor); err != nil {
+			return err
 		}
 		tag, err := tx.Exec(ctx, `DELETE FROM group_memberships WHERE organization_id=$1 AND group_id=$2 AND membership_id=$3`, orgID, groupID, membershipID)
 		if err != nil {

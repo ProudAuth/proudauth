@@ -474,6 +474,8 @@ func (s *Service) DeleteGroup(ctx context.Context, c *Connector, id, ifMatch str
 		if !matchVersion(ifMatch, g.version) {
 			return errPrecondition
 		}
-		return s.Orgs.DeleteGroupTx(ctx, tx, c.RealmID, c.OrganizationID, id, c.Ref())
+		// The connector owns the group (lockOwnedGroup): its deletion is not
+		// bounded by an administrator's ceiling (PROV-007).
+		return s.Orgs.DeleteGroupTx(ctx, tx, c.RealmID, c.OrganizationID, id, nil, c.Ref())
 	})
 }

@@ -11,8 +11,11 @@ import (
 
 // RemoveGroupMemberTx is RemoveGroupMember inside the caller's transaction,
 // for callers whose removal must commit together with their own record
-// (lifecycle workflow steps and their compensation, EXT-016). It returns
-// ErrNotFound when the membership is not in the group.
+// (lifecycle workflow steps and their compensation, EXT-016). It applies no
+// actor's ceiling: the caller establishes its own authority (a workflow
+// step re-checks its publisher's group authority in tx, and compensation
+// removes only a membership its run added; TEN-008). It returns ErrNotFound
+// when the membership is not in the group.
 func (s *Service) RemoveGroupMemberTx(ctx context.Context, tx pgx.Tx, realmID, orgID, groupID, membershipID string, auditActor audit.Ref) error {
 	var dynamic bool
 	if err := tx.QueryRow(ctx, `SELECT dynamic_rule IS NOT NULL FROM groups WHERE organization_id=$1 AND id=$2`, orgID, groupID).Scan(&dynamic); err == nil && dynamic {

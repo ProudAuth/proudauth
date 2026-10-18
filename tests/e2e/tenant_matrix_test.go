@@ -32,6 +32,8 @@ func TestTenantCrossingMatrix(t *testing.T) {
 	dom := f.must(f.AdminAPI("POST", "/organizations/"+f.Acme+"/domains", map[string]any{"domain": "acme-corp.test"}), 201, "acme domain").Str("domain.id")
 	role := f.must(f.AdminAPI("POST", "/organizations/"+f.Acme+"/roles", map[string]any{"name": "acme-only", "permissions": []string{"orders.read"}}), 201, "acme role").Str("id")
 	bobAcme := f.MemberAcme["bob"]
+	f.must(h.API("POST", "/organizations/"+f.Acme+"/groups/"+grp+"/members", alice, map[string]any{"membership_id": bobAcme}), 204, "acme group member")
+	grpRole := f.must(f.AdminAPI("POST", "/organizations/"+f.Acme+"/groups/"+grp+"/roles", map[string]any{"role_id": role}), 201, "acme group role").Str("id")
 
 	acme := "/organizations/" + f.Acme
 	cases := []struct {
@@ -66,6 +68,8 @@ func TestTenantCrossingMatrix(t *testing.T) {
 		{"groups", "GET", acme + "/groups/" + grp + "/members", nil},
 		{"groups", "POST", acme + "/groups/" + grp + "/members", map[string]any{"membership_id": bobAcme}},
 		{"groups", "POST", acme + "/groups/" + grp + "/roles", map[string]any{"role_id": f.Roles["orders-refunder"]}},
+		{"groups", "DELETE", acme + "/groups/" + grp + "/roles/" + grpRole, nil},
+		{"groups", "DELETE", acme + "/groups/" + grp + "/members/" + bobAcme, nil},
 		{"domains", "GET", acme + "/domains", nil},
 		{"domains", "POST", acme + "/domains", map[string]any{"domain": "evil.test"}},
 		{"domains", "POST", acme + "/domains/" + dom + "/verify", nil},

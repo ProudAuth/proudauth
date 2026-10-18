@@ -339,7 +339,11 @@ Groups are ordinary groups of the connector's organization (source `scim`).
   published. The members keep their organization memberships. A group with
   child groups cannot be deleted (`409 uniqueness`, "delete or move child
   groups first"). Deleting a group through the administration API
-  (`DELETE /organizations/{org}/groups/{group}`) records the same events.
+  (`DELETE /organizations/{org}/groups/{group}`) records the same events and
+  requires that the administrator could assign every role the group grants,
+  inherited ones included (`403 grant_ceiling_exceeded` otherwise); the
+  connector's deletion of its own group, and its removal of members, are
+  not bounded by an administrator's ceiling.
   Both paths remove inbound/directory Group links atomically, allowing the
   connector to provision that external ID again. A create also repairs a
   legacy link whose local group was already deleted; a link to a live group

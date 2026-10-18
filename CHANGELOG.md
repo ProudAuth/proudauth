@@ -65,6 +65,15 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   their plan items, and `server.MigrateAsOwner` passes them on. Regression
   tests `TestOutOfOrderMigrations`, `TestMigratePlanLine`,
   `TestWarnOutOfOrder`.
+- `DELETE /organizations/{org}/groups/{group}/roles/{assignment}` removes a
+  role assignment from a group within its organization (`org.roles.assign`,
+  from an MFA session). Before, only the realm route
+  `DELETE /role-assignments/{assignment}` could. The assignment must be that
+  group's in that organization (`404` otherwise, also for a user's
+  assignment), and the caller must be able to assign the role
+  (`403 grant_ceiling_exceeded`); the members of the group and of its
+  descendant groups lose the role, recorded as `role.unassigned`
+  (TEN-007, TEN-008, TEN-013, `TestGroupRoleUnassignRoute`).
 
 ### Changed
 
@@ -233,6 +242,42 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   reaches the reserve, where authentication refuses it. Regression tests
   `TestReservedPoolAdmission`, `TestLoadShedding`. Affects 0.2.0-alpha.5 and
   earlier.
+- Removing a member from a group
+  (`DELETE /organizations/{org}/groups/{group}/members/{member}`) and
+  deleting a group (`DELETE /organizations/{org}/groups/{group}`) require
+  that the administrator could assign every role the group grants, including
+  roles inherited from its ancestor groups, as adding a member and
+  unassigning a role already did: `403 forbidden` without
+  `org.roles.assign`, `403 grant_ceiling_exceeded` for a role beyond the
+  administrator's delegable set. Both needed only `org.groups.write`, and
+  deleting a group removed its role assignments without the ceiling check,
+  so an organization administrator who could not add members to a group
+  could still take its roles from every member, one removal at a time or by
+  deleting a leaf group (TEN-007, TEN-008, AZ-006, TEN-013). SCIM connectors
+  still remove members from and delete the groups they own, and lifecycle
+  workflows still check their publisher's authority themselves
+  ([ADR 0006](docs/architecture-decisions/0006-realm-and-organization-boundaries.md#update-2026-10)).
+  Affects 0.2.0-alpha.5 and earlier; regression tests
+  `TestGroupRemovalNeedsTheGroupCeiling`, `TestTenantCrossingMatrix`.
+- ABAC conditions with `in` and `contains` are unknown over a mistyped
+  attribute, as the policy language promises and as `eq`, `ne` and the
+  numeric operators already were, so the rule applies: a deny rule is
+  answered `POLICY_ATTRIBUTE_MISSING`. `in` returned false when the attribute
+  could not be compared with any list element (a number, list or object
+  checked against a list of strings), and `contains` when the attribute was
+  a list none of whose elements could be compared with the value, so a
+  positive deny rule such as `context.classification in ["secret"]` did not
+  apply to a wrongly typed value while `eq "secret"` did. `in` is now false
+  only when at least one list element was comparable with the attribute, and
+  `contains` only when the attribute is a list with at least one element
+  comparable with the value, or an empty list. A rule with the comparison
+  under `not` already applied; its denial now carries
+  `POLICY_ATTRIBUTE_MISSING` instead of the rule's own reason code (AZ-007,
+  AZ-015). Only the authenticated calling service's context and resource
+  attributes, or the IdP's own records, reach a condition. Affects
+  0.2.0-alpha.5 and earlier; regression tests
+  `TestPolicyInContainsUnknownOnMistypedAttributes`,
+  `TestPolicyInOverMistypedAttributeFailsClosed`.
 
 ### Security
 

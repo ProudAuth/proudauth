@@ -7592,6 +7592,7 @@ paths:
       tags:
         - Organizations
       summary: Delete a group
+      description: "A group with child groups is refused (409). The role assignments the group holds end with it (role.unassigned, reason GROUP_DELETED), so the caller must be able to assign every role the group grants, including roles inherited from its ancestor groups (403 forbidden without org.roles.assign, 403 grant_ceiling_exceeded beyond the caller's delegable set; TEN-008)."
       security:
         - accountToken: []
         - adminToken: []
@@ -7734,6 +7735,7 @@ paths:
       tags:
         - Organizations
       summary: Remove a group member
+      description: "The member loses the roles the group grants, so the caller must be able to assign every one of them, including roles inherited from ancestor groups (403 forbidden without org.roles.assign, 403 grant_ceiling_exceeded beyond the caller's delegable set; TEN-008). Members of a dynamic group come from its rule (409)."
       security:
         - accountToken: []
         - adminToken: []
@@ -7823,6 +7825,43 @@ paths:
           "$ref": "#/components/responses/UnsupportedMediaType"
         "422":
           "$ref": "#/components/responses/UnprocessableEntity"
+        "500":
+          "$ref": "#/components/responses/InternalError"
+        "503":
+          "$ref": "#/components/responses/ServiceUnavailable"
+  "/api/v1/realms/{realm}/organizations/{org}/groups/{group}/roles/{assignment}":
+    delete:
+      operationId: unassignGroupRole
+      tags:
+        - Organizations
+      summary: Remove a role assignment from a group
+      description: "TEN-008. The assignment must be this group's, in this organization (404 otherwise, also for another group's, another organization's or a user's assignment). The caller must be able to assign the role (403 grant_ceiling_exceeded beyond the caller's delegable set) and act from an MFA session (MFA-003). Members of the group and of its descendant groups lose the role; recorded as role.unassigned."
+      security:
+        - accountToken: []
+        - adminToken: []
+      x-trust-class: user-self-service-or-administrative
+      x-permissions:
+        - org.roles.assign
+      parameters:
+        - "$ref": "#/components/parameters/Path_realm"
+        - "$ref": "#/components/parameters/Path_org"
+        - "$ref": "#/components/parameters/Path_group"
+        - "$ref": "#/components/parameters/Path_assignment"
+        - "$ref": "#/components/parameters/RequestId"
+      responses:
+        "204":
+          description: No Content
+          headers:
+            X-Request-Id:
+              "$ref": "#/components/headers/X-Request-Id"
+        "401":
+          "$ref": "#/components/responses/Unauthorized"
+        "403":
+          "$ref": "#/components/responses/Forbidden"
+        "404":
+          "$ref": "#/components/responses/NotFound"
+        "409":
+          "$ref": "#/components/responses/Conflict"
         "500":
           "$ref": "#/components/responses/InternalError"
         "503":
@@ -34554,7 +34593,7 @@ components:
       additionalProperties: false
     PolicyCondition:
       type: object
-      description: Exactly one of all, any, not or op. Comparisons over missing attributes are unknown, and unknown rule conditions apply the rule (fail closed).
+      description: "Exactly one of all, any, not or op. Comparisons over missing or mistyped attributes are unknown, and unknown rule conditions apply the rule (fail closed): eq and ne need two comparable scalars, starts_with two strings, lt, le, gt and ge two numbers; in is unknown unless the attribute is comparable with at least one list element; contains is unknown unless the attribute is a list with at least one element comparable with the value (an empty list contains nothing). not of unknown is unknown; all is false if any member is false, any is true if any member is true, otherwise either is unknown when a member is."
       properties:
         all:
           type: array

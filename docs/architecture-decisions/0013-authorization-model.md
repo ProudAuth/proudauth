@@ -138,9 +138,12 @@ restrict:
   Validation errors about `incompatible_role_ids` are reported under the field
   `composite_role_ids`.
 - **Group grants need the authority of the whole chain** (TEN-008, TEN-013):
-  adding a group member, or moving a group under another parent, requires
-  that the administrator could assign every role of the group (or new parent)
-  and its ancestors ([ADR 0006](0006-realm-and-organization-boundaries.md#update-2026-10)).
+  adding or removing a group member, deleting a group, or moving a group
+  under another parent requires that the administrator could assign every
+  role of the group (or new parent) and its ancestors
+  ([ADR 0006](0006-realm-and-organization-boundaries.md#update-2026-10)).
+  Removing a member and deleting a group require it since 0.2.0-alpha.6;
+  before, they needed only `org.groups.write`.
 - **Conditional role-permission edits** (API-010):
   `POST /roles/{role}/permissions` and
   `POST /organizations/{org}/roles/{role}/permissions` accept an optional
