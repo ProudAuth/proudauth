@@ -129,15 +129,20 @@ audit log shows unwraps you cannot attribute to a process start.
    user's personal access tokens inactive at introspection.
    If the compromised account is the only realm administrator, create a new one
    from the operator channel: `identity-cli bootstrap -realm <r> -email ... -username ... -break-glass`.
-2. **Revoke automation the account controls.** List credentials:
-   `GET /api-keys?owner_type=user&owner_id={user}` and API keys of service principals
-   it owns (`GET /service-principals`, check `owner_user_id`); revoke with
-   `DELETE /api-keys/{id}`. Disable service principals it created if in doubt
-   (`POST /service-principals/{id}/disable`).
+2. **Revoke automation the account controls.** Step 4 revokes the user's own
+   personal access tokens and API keys
+   (`GET /api-keys?owner_type=user&owner_id={user}` lists them). API keys of
+   service principals it owns are the principal's and stay: find the
+   principals (`GET /service-principals`, check `owner_user_id`), list their
+   keys (`GET /api-keys?owner_type=service_principal&owner_id={principal}`) and
+   revoke with `DELETE /api-keys/{id}`. Disable service principals it created
+   if in doubt (`POST /service-principals/{id}/disable`).
 3. **Remove privileges**: `GET /role-assignments?subject_type=user&subject_id={user}`,
    then `DELETE /role-assignments/{assignment}`.
 4. **Reset credentials**: `POST /users/{user}/credentials/password/compromised`
-   (the password stops working; sessions and grants are revoked) and, if the second
+   (the password stops working; sessions, grants, personal access tokens and the
+   user's own API keys are revoked, and the owner gets a `credentials_revoked`
+   notice naming them) and, if the second
    factor may be compromised, assisted recovery:
    `POST /users/{user}/recovery-requests {"reason":"...","evidence_reference":"INC-...","reset_mfa":true}`
    (revokes TOTP, passkeys and recovery codes and forces TOTP re-enrollment).
@@ -151,6 +156,18 @@ audit log shows unwraps you cannot attribute to a process start.
 
 The same steps apply to ordinary user accounts, using organization-scoped actions
 where the realm-wide account must stay active.
+
+**An owner who reports a takeover** does not need suspension. Their own password
+reset (`POST /password-resets`), or assisted recovery when they lost the second
+factor or the address, revokes every session and grant, offline ones included,
+and every personal access token and API key the user owns, in one transaction
+(CRED-008, MCH-007; [account-recovery.md](account-recovery.md#rules-that-apply-to-every-path)).
+Tokens minted while someone else controlled the account stop at the next
+introspection, and introspection refuses any user-owned credential created
+before that revocation. Then review `automation_credential.created` events for
+the account (`GET /audit-events?subject_id={user}`) for tokens the attacker
+minted and what they could reach, and the service principals it owns as in
+step 2. "Log out everywhere" alone does **not** end personal access tokens.
 
 ## Compromised client secret
 

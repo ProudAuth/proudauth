@@ -330,8 +330,11 @@ list, unknown types and events without a matched subject are only recorded.
   left alone (outcome `already_<state>`).
 - `mark_password_compromised` revokes sessions and grants and marks the
   user's active password compromised, as
-  `POST /users/{user}/credentials/password/compromised` does; the marking runs
-  after the receiving transaction commits.
+  `POST /users/{user}/credentials/password/compromised` does, which also
+  revokes the user's personal access tokens and user-owned API keys
+  ([machine-clients.md](machine-clients.md#when-the-owners-account-is-recovered));
+  the marking runs after the receiving transaction commits. An account
+  without a password is not marked, so its tokens stay.
 - SSF `verification` events are accepted with outcome `verified`.
 
 Revocations made here are ordinary revocations: they reach back-channel

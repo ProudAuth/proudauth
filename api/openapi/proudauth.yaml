@@ -3360,6 +3360,7 @@ paths:
       tags:
         - Interaction
       summary: Complete a password reset
+      description: "Replaces the password (CRED-007) and revokes every session and grant of the account, offline ones included, and its personal access tokens and user-owned API keys, which a credentials_revoked notice names (CRED-008, MCH-007). MFA requirements are kept."
       security: []
       x-trust-class: public-protocol-initiation
       parameters:
@@ -4945,7 +4946,7 @@ paths:
       tags:
         - Self-service
       summary: Revoke all own sessions
-      description: Any request body is ignored.
+      description: "Any request body is ignored. Revokes every session and grant of the user, offline ones included (SES-005). Personal access tokens are not session authority and stay active; revoke them with DELETE /me/personal-tokens/{id}."
       security:
         - accountToken: []
       x-trust-class: user-self-service
@@ -5413,7 +5414,7 @@ paths:
       tags:
         - Self-service
       summary: Create a personal access token
-      description: "Requires recent authentication. Bounded by the caller's own grant ceiling; expiry is mandatory."
+      description: "Requires recent authentication and, when the account has an active TOTP, HOTP or passkey, a session that completed MFA: a password-only or remembered-device session gets 403 step_up_required with a reauthenticate obligation for the mfa profile (MCH-006, MFA-006). Bounded by the caller's own grant ceiling; expiry is mandatory. A password reset, password-compromise marking or assisted recovery revokes the token (CRED-008)."
       security:
         - accountToken: []
       x-trust-class: user-self-service
@@ -9087,7 +9088,7 @@ paths:
       tags:
         - Users
       summary: Mark the password compromised
-      description: "Note: the body is decoded leniently (decode errors are ignored)."
+      description: "The password stops working; every session and grant of the user, offline ones included, and the user's personal access tokens and user-owned API keys are revoked, and a credentials_revoked notice names those credentials (CRED-008, MCH-007). Note: the body is decoded leniently (decode errors are ignored)."
       security:
         - adminToken: []
       x-trust-class: administrative
@@ -9143,7 +9144,7 @@ paths:
       tags:
         - Users
       summary: Start assisted account recovery
-      description: "Revokes sessions, optionally resets MFA (requires realm.users.credentials.manage), notifies the user and issues a setup link delivered to the primary email address. Operators cannot assist their own recovery. 409 when the primary email address is not verified: recovery is never delivered to an unverified address (verify it with POST /users/{user}/verification-overrides, or make a verified address primary with POST /users/{user}/identifiers/{id}/primary)."
+      description: "Revokes sessions, grants and the user's personal access tokens and user-owned API keys (a credentials_revoked notice names them; CRED-008, MCH-007), optionally resets MFA (requires realm.users.credentials.manage), notifies the user and issues a setup link delivered to the primary email address. Operators cannot assist their own recovery. 409 when the primary email address is not verified: recovery is never delivered to an unverified address (verify it with POST /users/{user}/verification-overrides, or make a verified address primary with POST /users/{user}/identifiers/{id}/primary)."
       security:
         - adminToken: []
       x-trust-class: administrative

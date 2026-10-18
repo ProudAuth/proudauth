@@ -50,14 +50,16 @@ support tokens: grant active and unexpired; actor and target users active; targe
 membership and organization active; actor session active; actor still holds
 `support.impersonation.start` in the organization. For API keys and personal
 tokens: credential active and unexpired; owner active; owner's membership active
-when the credential is organization-bound.
+when the credential is organization-bound; for a user-owned credential, created
+after the owner's latest password-reset, password-compromise or
+assisted-recovery revocation record (CRED-008, MCH-007).
 
 ## Events
 
 | Event | IdP APIs and introspection | Refresh | Offline JWT verifiers | Notifications |
 | --- | --- | --- | --- | --- |
 | Single logout (`/oidc/logout`, `DELETE /me/sessions/{id}`) | Session revoked → tokens with that `sid` inactive. Grants of that session (except offline grants) and their refresh families revoked | Denied for the session's grants; **offline grants survive** | Valid until expiry | Back-channel logout for clients with a client session; `session.revoked` |
-| Logout everywhere (`/me/sessions/revoke-all`), admin `revoke-sessions`, user suspend/lock, password marked compromised, password reset, assisted recovery, deletion request, account deletion | All sessions, all grants **including offline**, refresh families, opaque tokens and support grants (as actor or target) revoked. Every access token of the user issued at or before the revocation is inactive at once, offline-grant tokens without `sid` included (a user-level `token_revocations` record, SES-005; a JWT issued in the same second as the revocation counts as before it). Suspension/lock/deletion also make every token of the user inactive (user state check) | Denied | Valid until expiry | Back-channel logout per session; `session.revoked`, `user.suspended`, ... |
+| Logout everywhere (`/me/sessions/revoke-all`), admin `revoke-sessions`, user suspend/lock, password marked compromised, password reset, assisted recovery, deletion request, account deletion | All sessions, all grants **including offline**, refresh families, opaque tokens and support grants (as actor or target) revoked. Every access token of the user issued at or before the revocation is inactive at once, offline-grant tokens without `sid` included (a user-level `token_revocations` record, SES-005; a JWT issued in the same second as the revocation counts as before it). Suspension/lock/deletion also make every token of the user inactive (user state check). **Password reset, password marked compromised and assisted recovery also revoke the user's personal access tokens and user-owned API keys** (`automation_credential.revoked`); the other events in this row leave them active, except that suspension, lock and a deletion request make them inactive through the owner state check and deletion revokes them | Denied | Valid until expiry | Back-channel logout per session; `session.revoked`, `user.suspended`, ...; `credentials_revoked` notice naming the revoked tokens and keys |
 | Membership removed or suspended | User's grants for that organization revoked; tokens with that `org_id` inactive | Denied | Valid until expiry | `organization.membership.removed` / `.suspended` |
 | Organization suspended, archived or deleted | All grants and support grants bound to it revoked; tokens with that `org_id` inactive | Denied | Valid until expiry | `organization.*` |
 | Role or permission change | Not reflected in tokens (tokens carry scopes, not roles). Introspection returns the current `authz_version`; the decision API evaluates current permissions | Scopes unchanged (they follow the client's resource grant and consent) | Unchanged | `authorization.role.*` |
@@ -68,7 +70,7 @@ when the credential is organization-bound.
 | Consent revoked (`DELETE /me/consents/{id}`, `DELETE /users/{user}/consents/{id}`, or a revoked consent pre-authorization) | The client's grants for the user, their refresh families and opaque tokens revoked | Denied | Valid until expiry | — |
 | Client `consent_terms_version` changed | Nothing revoked; the next authorization asks for consent again | Unaffected | Unaffected | — |
 | Service principal disabled (also by the owner-departure policy `machine.owner_departure: disable`) | Service tokens inactive; client credentials fail | — | Valid until expiry | `service_principal.state_changed` |
-| API key / personal token revoked or owner deactivated | Inactive at the next introspection | — | — (opaque only) | — |
+| API key / personal token revoked, owner deactivated, or the owner's password reset, marked compromised or recovered by an administrator | Inactive at the next introspection | — | — (opaque only) | `credentials_revoked` to the owner for the last three |
 | Support grant revoked or expired | Inactive at the next introspection | Never refreshable | — (opaque only) | `support.impersonation.ended` (on revoke) |
 | Emergency signing-key rotation | Tokens signed with the compromised key rejected within 5 s | Unaffected (refresh tokens are not signed) | **Accepted until the verifier drops the key from its JWKS cache** | `signing_key.rotated` |
 | Realm suspended | New authorizations, token requests and refresh fail; IdP custom APIs reject | Denied | Valid until expiry | — |

@@ -856,6 +856,13 @@ func (a *App) selfRoutes(mux *http.ServeMux) {
 		if err := a.requireRecentAuth(p, 0); err != nil {
 			return err
 		}
+		// A token lives up to a year without a session behind it, so an
+		// account with a second factor mints one only from a session that
+		// proved it: a password alone, or with a remembered device, cannot
+		// (MCH-006).
+		if err := a.requireFactorProof(r, p, "verify your second factor before creating a personal access token"); err != nil {
+			return err
+		}
 		var in struct {
 			Name           string   `json:"name"`
 			Audience       string   `json:"audience"`
@@ -945,6 +952,14 @@ func (a *App) restoreAssuranceTx(ctx context.Context, tx pgx.Tx, p *Principal) e
 // code factor the realm no longer allows cannot be proved, so it is not an
 // existing factor here (MFA-005).
 func (a *App) requireFactorAuthority(r *http.Request, p *Principal) error {
+	return a.requireFactorProof(r, p, "verify an existing factor before adding another")
+}
+
+// requireFactorProof refuses a session that did not complete MFA when the
+// account holds a second factor the realm allows (TOTP, HOTP or a passkey),
+// with 403 step_up_required, detail and a reauthenticate obligation for the
+// mfa profile. Accounts without such a factor pass.
+func (a *App) requireFactorProof(r *http.Request, p *Principal, detail string) error {
 	if p.Session == nil || p.Session.HasMFA() {
 		return nil
 	}
@@ -954,7 +969,7 @@ func (a *App) requireFactorAuthority(r *http.Request, p *Principal) error {
 		return err
 	}
 	if enrolled {
-		return problem.ErrStepUpRequired.WithDetail("verify an existing factor before adding another").
+		return problem.ErrStepUpRequired.WithDetail(detail).
 			WithExtension("obligations", []map[string]any{{"type": "reauthenticate", "required_profile": "mfa"}})
 	}
 	return nil

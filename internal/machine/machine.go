@@ -19,6 +19,7 @@ import (
 	"github.com/proudauth/proudauth/internal/platform/problem"
 	"github.com/proudauth/proudauth/internal/platform/secret"
 	"github.com/proudauth/proudauth/internal/runtime"
+	"github.com/proudauth/proudauth/internal/session"
 	"github.com/proudauth/proudauth/internal/storage"
 )
 
@@ -424,7 +425,16 @@ func (s *Service) Introspect(ctx context.Context, realmID, issuer, plain string,
 	// Owner must still be eligible.
 	var ok, agent bool
 	if c.OwnerType == "user" {
-		_ = s.d.DB.Pool.QueryRow(ctx, `SELECT state='active' FROM users WHERE id=$1`, c.OwnerID).Scan(&ok)
+		// A user-owned credential also needs to postdate the owner's latest
+		// password reset, password-compromise marking and assisted recovery
+		// (CRED-008, MCH-007). Those flows revoke the credential in their
+		// own transaction; this check keeps one they missed inactive anyway
+		// (defence in depth). Other account-wide revocations, such as "log
+		// out everywhere", do not end personal access tokens
+		// (session.CredentialRevocationReasons).
+		_ = s.d.DB.Pool.QueryRow(ctx, `SELECT u.state='active' AND NOT EXISTS (SELECT 1 FROM token_revocations r WHERE r.realm_id=$2
+			AND r.reference_type='user' AND r.reference_id=u.id AND r.reason = ANY($3) AND r.effective_at > $4)
+			FROM users u WHERE u.id=$1`, c.OwnerID, realmID, session.CredentialRevocationReasons, c.CreatedAt).Scan(&ok)
 		if ok && c.OrganizationID != "" {
 			_, err := s.Orgs.ActiveMembership(ctx, nil, realmID, c.OrganizationID, c.OwnerID)
 			ok = err == nil

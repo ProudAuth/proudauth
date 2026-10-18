@@ -38,6 +38,7 @@ var Variables = map[string][]string{
 	TplIdentifierChanged:    {"realm", "change", "time"},
 	TplRecovery:             {"realm", "change", "time"},
 	TplCredentialExpiry:     {"realm", "credential", "expires"},
+	TplCredentialsRevoked:   {"realm", "change", "credentials", "time"},
 	TplTest:                 {"realm", "time"},
 	TplJoinRequest:          {"realm", "organization"},
 	TplDeletion:             {"realm", "scheduled"},
@@ -97,6 +98,8 @@ func DefaultCatalog() *Catalog {
 		"An account recovery action occurred: {{.change}} at {{.time}}. If this was not you, contact support immediately.")
 	add(TplCredentialExpiry, "en", "A {{.realm}} credential expires soon",
 		"The credential {{.credential}} expires at {{.expires}}. Rotate it before it expires.")
+	add(TplCredentialsRevoked, "en", "Your {{.realm}} personal access tokens were revoked",
+		"These personal access tokens and API keys of your account were revoked at {{.time}} after {{.change}}: {{.credentials}}.\n\nScripts and integrations that use them stop working. If you still need them, sign in and create new ones. If you did not expect this, contact your administrator.")
 	add(TplTest, "en", "{{.realm}} delivery test", "This is a configuration test sent at {{.time}}. Provider acceptance does not prove inbox delivery.")
 	add(TplRegistrationReview, "en", "Your {{.realm}} registration was reviewed",
 		"Your registration was {{.decision}}. If it was approved you can now sign in.")

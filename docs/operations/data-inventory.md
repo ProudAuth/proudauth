@@ -99,7 +99,7 @@ whichever section they are in
 | `role_assignment_requests`: subject, `requested_by_id`, `decided_by_id`, `reason` | Pending and decided two-party role requests | Separation of duties (AZ-018) | Kept (pending requests expire after 7 days) | plain |
 | `impersonation_requests`: actor, target, `reason`, `ticket_reference` | Support justification (free text) | Support access evidence | Kept | plain |
 | `impersonation_grants`, `impersonation_handoffs` | Actor/target, times, revocation reason; handoff code digest | Support access | Kept | plain / SHA-256 |
-| `automation_credentials`: owner, `name`, `display_prefix`, `last_used_at` | API keys and personal tokens | Machine access | Kept (revoked when the owning user is deleted) | secret SHA-256 |
+| `automation_credentials`: owner, `name`, `display_prefix`, `last_used_at` | API keys and personal tokens | Machine access | Kept (a user's are revoked when the user is deleted, and by a password reset, password-compromise marking or assisted recovery) | secret SHA-256 |
 | `client_credentials`: `display_prefix`, `last_used_at` | Client secrets / public keys | Client authentication | Kept | secret SHA-256 |
 | `clients`: `contacts`, `owner_user_id` | Technical contact emails | Ownership | Kept | plain |
 | `hooks`: `url`, `secret_ciphertext`, `last_error` | Hook endpoint and signing secret; last failure text | Pre-action hooks | Kept until the hook is deleted | plain; secret AEAD |
