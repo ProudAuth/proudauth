@@ -107,6 +107,11 @@ func Timestamp(t time.Time) string { return t.UTC().Format(time.RFC3339) }
 
 var timeKeys = []string{"time", "expires", "scheduled"}
 
+// timeLayout renders the times in notices. Dates are shown in a locale-neutral
+// numeric form until per-locale formatting exists: a month name would be
+// English inside a Spanish or operator-translated message (MSG-006).
+const timeLayout = "2006-01-02 15:04 MST"
+
 // LocalTime renders t in the user's time zone (UTC when unknown), for times
 // that appear inside free text rather than under a time key (MSG-006).
 func (s *Service) LocalTime(ctx context.Context, q storage.Querier, userID string, t time.Time) string {
@@ -117,7 +122,7 @@ func (s *Service) LocalTime(ctx context.Context, q storage.Querier, userID strin
 			zone = loc
 		}
 	}
-	return t.In(zone).Format("2 Jan 2006 15:04 MST")
+	return t.In(zone).Format(timeLayout)
 }
 
 // localize resolves the recipient's locale (when the message has none) and
@@ -147,7 +152,7 @@ func (s *Service) localize(ctx context.Context, q storage.Querier, m *Message) {
 		data[k] = v
 		if slices.Contains(timeKeys, k) {
 			if t, err := time.Parse(time.RFC3339, v); err == nil {
-				data[k] = t.In(zone).Format("2 Jan 2006 15:04 MST")
+				data[k] = t.In(zone).Format(timeLayout)
 			}
 		}
 	}
