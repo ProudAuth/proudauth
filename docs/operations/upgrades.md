@@ -58,6 +58,18 @@ transport/status fallback remains as documented.
   ([no-transaction migrations](#no-transaction-migrations)).
 - If the database contains a migration the binary does not know (the database is
   newer), `migrate` refuses to run.
+- **Out-of-order migrations (OPS-008).** A pending migration can sort before
+  migrations the database has applied already: a fix backported with a lower
+  number, or a file merged after a later one shipped (the numbering has
+  gaps). It still runs, in lexical order, but it was written against a
+  schema without the newer migrations, so `migrate -plan` marks it
+  `out-of-order (sorts before <newest>, already applied)`, `identity-cli
+  migrate` prints a warning when it applies it, and `identity-server
+  -migrate` and `migrate_on_start` log `migration applied out of order` with
+  the migration and the newest applied one. A migration whose file carries
+  `-- proudauth:allow-out-of-order: <reason>` was reviewed for this and is
+  not reported. Read the release notes of such a migration before applying
+  it.
 - There are **no down migrations**.
 - **Safety gates (OPS-008).** A migration marked `-- proudauth:compat=contract`
   (it removes or rewrites schema older binaries need) runs only when the operator
@@ -69,7 +81,8 @@ transport/status fallback remains as documented.
   queries, for example "no rows still use the old column"); every precondition must
   hold or the run stops before changing anything.
 - `identity-cli migrate -plan` lists pending migrations with their compatibility
-  class and precondition results without applying them; it is read-only and
+  class, whether they run outside a transaction or out of order, and
+  precondition results without applying them; it is read-only and
   runs with the runtime role. Preconditions of later pending migrations are
   evaluated against the current schema. Every run that applies migrations is
   recorded in the audit log as the operator event
@@ -80,6 +93,19 @@ transport/status fallback remains as documented.
 - With `storage.migration_database_url` set, migrations run as that
   (schema-owner) role and `storage.runtime_role` is granted data privileges
   after each run ([installation.md](installation.md#database-roles)).
+- **Migration lint (OPS-008, DEP-012, TEST-061).** CI lints every migration
+  before it ships (`TestMigrationLint`): no plain `CREATE INDEX` on an
+  existing table (concurrent builds in
+  [no-transaction migrations](#no-transaction-migrations) instead), no table
+  rewrite (`ALTER COLUMN ... TYPE`) and no default that is not a constant on
+  `ADD COLUMN`, unless the file explains why it is safe there; and no
+  destructive DDL (drops, renames, `SET NOT NULL`, `DROP NOT NULL`, type
+  changes, `TRUNCATE`) unless the file is a contract migration or carries a
+  reviewed reason why older binaries keep working
+  ([CONTRIBUTING.md](../../CONTRIBUTING.md#database-migrations)). The
+  findings of migrations `0001`–`0087`, which predate the lint, are listed
+  with their reasons in `migrations/lint-baseline.txt`; among them, `0045`
+  holds write locks on hot tables until it commits (below).
 
 ### No-transaction migrations
 
@@ -166,7 +192,8 @@ the new schema:
 
 During steps 3–5, old and new binaries run against the new schema. This is safe only
 when the new release's migrations are expand-only, which is the project rule for
-every release. The window should last only for the rollout itself; do not run two
+every release; the migration lint refuses destructive DDL that is not marked
+contract or reviewed ([How migrations work](#how-migrations-work)). The window should last only for the rollout itself; do not run two
 versions side by side as a steady state. Older binaries do not know controls that
 newer migrations add: for example, binaries without migrations `0024`–`0027`
 ignore emergency grant controls, maintenance mode, debug windows and account

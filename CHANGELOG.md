@@ -23,6 +23,48 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 - Mandatory notification template `credentials_revoked` (variables `realm`,
   `change`, `credentials`, `time`), which names the personal access tokens and
   API keys an account recovery revoked.
+- A migration lint in CI: `TestMigrationLint` (`tests/contract`) reads every
+  migration with the runner's statement splitter and fails on DDL that
+  blocks a hot table or breaks older binaries in the mixed-version window,
+  which until now only review caught (OPS-008, DEP-012, TEST-061). Lock
+  findings: a plain `CREATE INDEX` on a table the file does not create (and
+  `ADD UNIQUE`, `ADD PRIMARY KEY` or a `UNIQUE` column, which build an index
+  under `ACCESS EXCLUSIVE`), `ALTER COLUMN ... TYPE` and stored generated
+  columns (table rewrite), and `ADD COLUMN` with a default that is not a
+  constant (`now()`, `gen_random_uuid()`, `nextval()`, a `serial` type or an
+  identity); `CONCURRENTLY` in a file without `-- proudauth:no-transaction`
+  is reported before the runner refuses it. A file allows a lock finding
+  with `-- proudauth:allow-<rule>: <reason>`. Destructive or contracting DDL
+  (`DROP TABLE`, `DROP COLUMN`, `DROP INDEX`, `DROP CONSTRAINT` and other
+  drops, `DROP NOT NULL`, `SET NOT NULL`, `DROP DEFAULT`, column type
+  changes, renames, `ALTER TYPE`, `ALTER DOMAIN`, `TRUNCATE`) passes only in
+  a file marked `-- proudauth:compat=contract` or carrying the new
+  `-- proudauth:reviewed-expand: <why older binaries keep working>`. The
+  lint understands schema-qualified and quoted names, `IF [NOT] EXISTS`,
+  `ONLY`, several actions in one `ALTER TABLE`, comments and DO blocks, and
+  never reports DDL on a table the same file creates. The 46 findings of
+  migrations `0001`–`0087`, which shipped before the lint and cannot change
+  (their checksums are verified), are listed with their reasons in
+  `migrations/lint-baseline.txt` (37 plain index builds, 6 replaced check or
+  unique constraints, one replaced index, `0065`'s `DROP NOT NULL` and
+  `0012`'s `pg_current_xact_id()` default); the baseline is exact and
+  history only. Migration files are unchanged. The real N-1 upgrade job of
+  TEST-061 is still planned for 0.2.0-alpha.7
+  ([CONTRIBUTING.md](CONTRIBUTING.md#database-migrations)). Regression tests
+  `TestMigrationLint`, `TestLintMigrationRules`, `TestLintFindingText`,
+  `TestLintBaseline`.
+- `migrate` warns about a migration that sorts before the newest one the
+  database has applied (a backported fix, or a file merged late): it still
+  runs, but `identity-cli migrate -plan` marks it `out-of-order` with that
+  newest migration, `identity-cli migrate` prints a warning when it applies
+  it, and `identity-server -migrate` and `storage.migrate_on_start` log
+  `migration applied out of order`. A file reviewed for this carries
+  `-- proudauth:allow-out-of-order: <reason>` (OPS-008,
+  [upgrades.md](docs/operations/upgrades.md#how-migrations-work)).
+  `storage.DB.MigrateWith` now returns the migrations a run applied with
+  their plan items, and `server.MigrateAsOwner` passes them on. Regression
+  tests `TestOutOfOrderMigrations`, `TestMigratePlanLine`,
+  `TestWarnOutOfOrder`.
 
 ### Changed
 

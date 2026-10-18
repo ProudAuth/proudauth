@@ -111,7 +111,8 @@ func initEnv(ctx context.Context, configPath string, migrate, honorMigrateOnStar
 	}
 	var migrated []string
 	if migrate || honorMigrateOnStart && cfg.Storage.MigrateOnStart {
-		ran, err := MigrateAsOwner(ctx, &cfg, db, storage.MigrateOptions{})
+		ran, applied, err := MigrateAsOwner(ctx, &cfg, db, storage.MigrateOptions{})
+		warnOutOfOrder(log, applied)
 		if err != nil {
 			db.Close()
 			return nil, fmt.Errorf("migrate: %w", err)
@@ -144,8 +145,9 @@ func initEnv(ctx context.Context, configPath string, migrate, honorMigrateOnStar
 // MigrateAsOwner applies migrations with storage.migration_database_url when
 // it is set (a schema-owner role separate from the runtime role, OPS-013),
 // otherwise with the runtime connection, then grants the runtime role its
-// data privileges when storage.runtime_role is set.
-func MigrateAsOwner(ctx context.Context, cfg *configuration.Config, runtimeDB *storage.DB, opt storage.MigrateOptions) ([]string, error) {
+// data privileges when storage.runtime_role is set. It returns the names of
+// the migrations applied and their plan items (storage.DB.MigrateWith).
+func MigrateAsOwner(ctx context.Context, cfg *configuration.Config, runtimeDB *storage.DB, opt storage.MigrateOptions) ([]string, []storage.MigrationPlanItem, error) {
 	// Bounds the caller left unset come from storage.migration_lock_timeout
 	// and storage.migration_statement_timeout, where 0 means no limit
 	// (negative in MigrateOptions, where zero selects the default).
@@ -159,25 +161,37 @@ func MigrateAsOwner(ctx context.Context, cfg *configuration.Config, runtimeDB *s
 	if cfg.Storage.MigrationDatabaseURL != "" {
 		dsn, err := configuration.ResolveSecret(cfg.Storage.MigrationDatabaseURL)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		owner, err := storage.Open(ctx, dsn, storage.Options{MaxConns: 2, StatementTimeout: 0})
 		if err != nil {
-			return nil, fmt.Errorf("migration database: %w", err)
+			return nil, nil, fmt.Errorf("migration database: %w", err)
 		}
 		defer owner.Close()
 		db = owner
 	}
-	ran, _, err := db.MigrateWith(ctx, opt)
+	ran, applied, err := db.MigrateWith(ctx, opt)
 	if err != nil || opt.Plan {
-		return ran, err
+		return ran, applied, err
 	}
 	if role := cfg.Storage.RuntimeRole; role != "" {
 		if err := db.GrantRuntime(ctx, role); err != nil {
-			return ran, fmt.Errorf("grant runtime role: %w", err)
+			return ran, applied, fmt.Errorf("grant runtime role: %w", err)
 		}
 	}
-	return ran, nil
+	return ran, applied, nil
+}
+
+// warnOutOfOrder logs a warning for each applied migration that sorts
+// before a migration the database had applied already
+// (storage.MigrationPlanItem.OutOfOrder, OPS-008).
+func warnOutOfOrder(log *slog.Logger, applied []storage.MigrationPlanItem) {
+	for _, m := range applied {
+		if m.OutOfOrder {
+			log.Warn("migration applied out of order", "migration", m.Name, "newest_applied", m.NewestApplied,
+				"hint", "it sorts before a migration the database had applied already: check that it does not depend on the schema before that one; a reviewed file says so with -- proudauth:allow-out-of-order: <reason>")
+		}
+	}
 }
 
 // MigrationBound converts a configured or flag migration bound, where 0

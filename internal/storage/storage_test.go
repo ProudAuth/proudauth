@@ -3,7 +3,9 @@ package storage_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -113,6 +115,58 @@ func TestMigrationSafetyGates(t *testing.T) {
 	src["9991_needs_condition.sql"] = &fstest.MapFile{Data: []byte("-- proudauth:precondition SELECT false\nCREATE TABLE never_created (id int);\n")}
 	if _, err := db.Migrate(ctx); err == nil || !strings.Contains(err.Error(), "precondition failed") {
 		t.Fatalf("failed precondition ignored: %v", err)
+	}
+}
+
+// TestOutOfOrderMigrations covers OPS-008: a pending migration that sorts
+// before the newest applied one (a backported fix, or a file merged after a
+// later one shipped) is marked out of order in the plan and in the run's
+// results, with the newest applied migration, so identity-cli migrate and
+// the server warn about it. It still runs, in lexical order. A file with
+// "-- proudauth:allow-out-of-order: <reason>" is not marked; a marker
+// without a reason does not count.
+func TestOutOfOrderMigrations(t *testing.T) {
+	db := testutil.NewDB(t)
+	ctx := context.Background()
+	src := migrationSource(t)
+	newest := ""
+	for name := range src {
+		newest = max(newest, name)
+	}
+	src["0050_backport.sql"] = &fstest.MapFile{Data: []byte("CREATE TABLE ooo_backport (id int);\n")}
+	src["0051_reviewed.sql"] = &fstest.MapFile{Data: []byte("-- proudauth:allow-out-of-order: creates a table no later migration touches\nCREATE TABLE ooo_reviewed (id int);\n")}
+	src["0052_no_reason.sql"] = &fstest.MapFile{Data: []byte("-- proudauth:allow-out-of-order:\nCREATE TABLE ooo_no_reason (id int);\n")}
+	src["9990_next.sql"] = &fstest.MapFile{Data: []byte("CREATE TABLE ooo_next (id int);\n")}
+	want := []string{"0050_backport.sql out-of-order", "0051_reviewed.sql", "0052_no_reason.sql out-of-order", "9990_next.sql"}
+	marks := func(items []storage.MigrationPlanItem) []string {
+		var out []string
+		for _, m := range items {
+			switch {
+			case m.OutOfOrder && m.NewestApplied == newest:
+				out = append(out, m.Name+" out-of-order")
+			case !m.OutOfOrder && m.NewestApplied == "":
+				out = append(out, m.Name)
+			default:
+				out = append(out, fmt.Sprintf("%s %v %q", m.Name, m.OutOfOrder, m.NewestApplied))
+			}
+		}
+		return out
+	}
+	_, plan, err := db.MigrateWith(ctx, storage.MigrateOptions{Plan: true})
+	if err != nil || !slices.Equal(marks(plan), want) {
+		t.Fatalf("plan %v (newest applied %s): %v", marks(plan), newest, err)
+	}
+	ran, applied, err := db.MigrateWith(ctx, storage.MigrateOptions{})
+	if err != nil || !slices.Equal(marks(applied), want) || len(ran) != 4 || ran[0] != "0050_backport.sql" {
+		t.Fatalf("run %v, applied %v: %v", ran, marks(applied), err)
+	}
+	for _, m := range want {
+		if n := recorded(t, db, strings.Fields(m)[0]); n != 1 {
+			t.Fatalf("%s recorded %d times", m, n)
+		}
+	}
+	if ran, applied, err := db.MigrateWith(ctx, storage.MigrateOptions{}); err != nil || len(ran) != 0 || len(applied) != 0 {
+		t.Fatalf("second run: %v %v %v", ran, applied, err)
 	}
 }
 

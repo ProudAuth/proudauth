@@ -1,0 +1,68 @@
+# Migration lint baseline (OPS-008, DEP-012, TEST-061).
+#
+# The findings of migrations 0001-0087, which shipped in v0.2.0-alpha.1,
+# before the lint existed. They are applied on real databases and the runner
+# verifies the checksum of every applied file, so they cannot change. All of
+# them first shipped together, so a release installation applies them to a
+# new, empty database; each entry says why the finding was also acceptable
+# for a database upgraded file by file. This list is history only:
+# a new migration never gets an entry here. It avoids the finding, or
+# carries the marker that allows it (CONTRIBUTING.md, "Database
+# migrations"). TestMigrationLint (tests/contract) fails on a finding without
+# an entry, on an entry without a finding, and on an entry for a file after
+# 0087_restore_marker.sql. internal/storage/migrationlint.go defines the rules.
+#
+# Plain CREATE INDEX: CREATE INDEX CONCURRENTLY needs a no-transaction
+# migration, which the runner only supports since 0.2.0-alpha.6. A plain
+# build holds SHARE on its table (writes wait, reads continue) until the
+# migration commits; since alpha.6 it no longer queues behind long queries
+# (lock_timeout) and is retried instead.
+#
+# <file> <rule> <subject> <reason>
+
+0005_passkeys.sql blocking-index users_webauthn_handle partial unique index over webauthn_user_handle, which the same file adds as NULL: one scan of users, few entries; no CONCURRENTLY before alpha.6
+0005_passkeys.sql blocking-index webauthn_credentials_user lookup of a user's active passkeys; no CONCURRENTLY before alpha.6
+0006_federation.sql blocking-index external_identities_user lookup of a user's federated links; no CONCURRENTLY before alpha.6
+0008_policy_lifecycle.sql blocking-index policies_active partial index over active policies, a handful per realm; no CONCURRENTLY before alpha.6
+0012_outbox_commit_horizon.sql volatile-default outbox_events.tx_id pg_current_xact_id() is stable, not volatile: PostgreSQL 11+ stores it once as a fast default without a rewrite, giving existing rows the migration's transaction ID, which orders them before every later event (SES-019)
+0012_outbox_commit_horizon.sql blocking-index outbox_events_stream stream-order index for the session event stream (SES-019); no CONCURRENTLY before alpha.6
+0014_invitation_binding.sql blocking-index invitations_batch partial index over batch_id, which the same file adds as NULL: one scan of invitations, few entries; no CONCURRENTLY before alpha.6
+0019_notification_preferences.sql blocking-index notification_jobs_provider partial index over provider message IDs for delivery feedback; no CONCURRENTLY before alpha.6
+0027_user_lifecycle.sql blocking-index users_deactivate_due partial index over deactivate_at, which the same file adds as NULL: one scan of users, few entries; no CONCURRENTLY before alpha.6
+0030_domain_recheck.sql blocking-index organization_domains_recheck partial index over verified domains, a few per organization; no CONCURRENTLY before alpha.6
+0040_flow_challenges.sql drop-constraint challenges.challenges_purpose_check replaced in the same transaction by a wider CHECK (adds flow_challenge): every value older binaries write stays valid (upgrades.md, 0040)
+0040_flow_challenges.sql drop-constraint hooks.hooks_kind_check replaced in the same transaction by a wider CHECK (adds authentication.risk): every value older binaries write stays valid (upgrades.md, 0040)
+0040_flow_challenges.sql drop-constraint identity_providers.identity_providers_adapter_check replaced in the same transaction by a wider CHECK (any adapter name matching the pattern, oidc and github included): older binaries' values stay valid (upgrades.md, 0040)
+0042_scim_membership_source.sql drop-constraint memberships.memberships_source_check replaced in the same transaction by a wider CHECK that also allows scim: older binaries' values stay valid (upgrades.md, 0042)
+0043_custom_domain_claims.sql drop-index realm_custom_domains_host replaced in the same transaction by the two unique indexes below, over verified hosts and per realm; older binaries keep working and only see pending hosts of other realms as taken (upgrades.md, 0043)
+0043_custom_domain_claims.sql blocking-index realm_custom_domains_verified_host realm_custom_domains (0041, same release) holds one row per registered custom domain; no CONCURRENTLY before alpha.6
+0043_custom_domain_claims.sql blocking-index realm_custom_domains_realm_host realm_custom_domains (0041, same release) holds one row per registered custom domain; no CONCURRENTLY before alpha.6
+0045_cleanup_indexes.sql blocking-index authorization_codes_expiry cleanup indexes (DB-011) in one transaction; upgrades.md (0045) documents the lock window and the quiet-period procedure for large deployments
+0045_cleanup_indexes.sql blocking-index opaque_access_tokens_expiry cleanup indexes (DB-011) in one transaction; upgrades.md (0045) documents the lock window and the quiet-period procedure for large deployments
+0045_cleanup_indexes.sql blocking-index opaque_access_tokens_subject cleanup indexes (DB-011) in one transaction; upgrades.md (0045) documents the lock window and the quiet-period procedure for large deployments
+0045_cleanup_indexes.sql blocking-index dpop_proof_jtis_expiry cleanup indexes (DB-011) in one transaction; upgrades.md (0045) documents the lock window and the quiet-period procedure for large deployments
+0045_cleanup_indexes.sql blocking-index pushed_authorization_requests_expiry cleanup indexes (DB-011) in one transaction; upgrades.md (0045) documents the lock window and the quiet-period procedure for large deployments
+0045_cleanup_indexes.sql blocking-index device_codes_expiry cleanup indexes (DB-011) in one transaction; upgrades.md (0045) documents the lock window and the quiet-period procedure for large deployments
+0045_cleanup_indexes.sql blocking-index idempotency_records_expiry cleanup indexes (DB-011) in one transaction; upgrades.md (0045) documents the lock window and the quiet-period procedure for large deployments
+0045_cleanup_indexes.sql blocking-index outbox_events_dispatched cleanup indexes (DB-011) in one transaction; upgrades.md (0045) documents the lock window and the quiet-period procedure for large deployments
+0045_cleanup_indexes.sql blocking-index sessions_ended cleanup indexes (DB-011) in one transaction; upgrades.md (0045) documents the lock window and the quiet-period procedure for large deployments
+0045_cleanup_indexes.sql blocking-index notification_jobs_sms_recent cleanup indexes (DB-011) in one transaction; upgrades.md (0045) documents the lock window and the quiet-period procedure for large deployments
+0045_cleanup_indexes.sql blocking-index notification_jobs_payload cleanup indexes (DB-011) in one transaction; upgrades.md (0045) documents the lock window and the quiet-period procedure for large deployments
+0048_notification_user.sql blocking-index notification_jobs_user partial index over user_id, which the same file adds as NULL: one scan of notification_jobs, few entries; no CONCURRENTLY before alpha.6
+0049_hotp.sql blocking-index credentials_one_hotp partial unique index over active HOTP credentials, which the same release introduced (MFA-013): one scan of credentials, no entries; no CONCURRENTLY before alpha.6
+0053_resource_types.sql blocking-index resource_relationships_object relationship lookups for the authorization checks of the same release (AZ-021); no CONCURRENTLY before alpha.6
+0053_resource_types.sql blocking-index resource_relationships_subject relationship lookups for the authorization checks of the same release (AZ-021); no CONCURRENTLY before alpha.6
+0056_certificates.sql drop-constraint clients.clients_token_endpoint_auth_method_check replaced in the same transaction by a wider CHECK that adds the RFC 8705 methods: older binaries' values stay valid
+0065_directory_integration.sql drop-not-null provisioning_connectors.organization_id realm-wide directory connectors (FED-015); older binaries read connectors only through an organization ID, so they never see the rows without one (upgrades.md, 0065)
+0065_directory_integration.sql blocking-index provisioning_connectors_realm_kind one row per connector, a handful per realm; no CONCURRENTLY before alpha.6
+0065_directory_integration.sql blocking-index connector_external_ids_local lookup of an account's connector links for directory sign-in (PROV-004); no CONCURRENTLY before alpha.6
+0065_directory_integration.sql blocking-index connector_external_ids_one_directory partial unique index over link_kind 'directory', which the same file adds as NULL: one scan of connector_external_ids, no entries; no CONCURRENTLY before alpha.6
+0071_plugins.sql blocking-index hooks_plugin partial index over plugin_id, which the same file adds as NULL: one scan of hooks, no entries; no CONCURRENTLY before alpha.6
+0071_plugins.sql blocking-index webhook_subscriptions_plugin partial index over plugin_id, which the same file adds as NULL: one scan of webhook_subscriptions, no entries; no CONCURRENTLY before alpha.6
+0085_directory_retention.sql blocking-index directory_sync_findings_local retention and erasure index (PRV-005) on directory_sync_findings (0065); no CONCURRENTLY before alpha.6
+0085_directory_retention.sql blocking-index directory_sync_runs_finished retention index on directory_sync_runs (0065), one row per synchronization run; no CONCURRENTLY before alpha.6
+0085_directory_retention.sql blocking-index outbound_deliveries_finished retention index on outbound_deliveries (0065); no CONCURRENTLY before alpha.6
+0085_directory_retention.sql blocking-index directory_sync_runs_active partial index over queued and running runs on directory_sync_runs (0065); no CONCURRENTLY before alpha.6
+0086_anchor_readd_share_expiry.sql blocking-index certificate_trust_anchors_active partial unique index built before the table constraint goes, so duplicate active anchors stay refused throughout; trust anchors are a handful per realm; no CONCURRENTLY before alpha.6
+0086_anchor_readd_share_expiry.sql drop-constraint certificate_trust_anchors.certificate_trust_anchors_realm_id_purpose_fingerprint_key replaced by the partial unique index the same file creates first: widening only, older binaries keep working (upgrades.md, 0086)
+0086_anchor_readd_share_expiry.sql blocking-index resource_shares_due partial index over due shares for the expiry sweep (AZ-027); no CONCURRENTLY before alpha.6

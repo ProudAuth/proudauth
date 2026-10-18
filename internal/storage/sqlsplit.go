@@ -33,12 +33,15 @@ type sqlToken struct {
 	text string
 }
 
-// sqlStatement is one statement of a no-transaction migration.
+// sqlStatement is one statement of a no-transaction migration (or of any
+// migration, for the lint).
 type sqlStatement struct {
 	// SQL is the statement as sent to the server: its text up to, not
 	// including, the terminating semicolon, comments included.
 	SQL    string
 	tokens []sqlToken
+	// line is the 1-based line of the statement's first token.
+	line int
 }
 
 // indexDDL is a CREATE INDEX statement of a no-transaction migration: the
@@ -119,18 +122,28 @@ func splitSQL(src string) ([]sqlStatement, error) {
 	var out []sqlStatement
 	var toks []sqlToken
 	start, depth := 0, 0
+	// line counts the newlines before lineAt; first is the offset of the
+	// current statement's first token.
+	line, lineAt, first := 1, 0, 0
 	end := func(at int) error {
 		if depth != 0 {
 			return fmt.Errorf("unbalanced parentheses in statement ending at offset %d", at)
 		}
 		if len(toks) > 0 {
-			out = append(out, sqlStatement{SQL: strings.TrimSpace(src[start:at]), tokens: toks})
+			line += strings.Count(src[lineAt:first], "\n")
+			lineAt = first
+			out = append(out, sqlStatement{SQL: strings.TrimSpace(src[start:at]), tokens: toks, line: line})
 		}
 		toks = nil
 		return nil
 	}
 	for i := 0; i < len(src); {
 		c := src[i]
+		if len(toks) == 0 {
+			// Spaces and comments are skipped without a token; the offset
+			// is overwritten until the statement's first token is read.
+			first = i
+		}
 		switch {
 		case isSQLSpace(c):
 			i++
