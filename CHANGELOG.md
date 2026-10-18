@@ -12,6 +12,10 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
 
 ## [Unreleased]
 
+No changes recorded after 0.2.0-alpha.5.
+
+## [0.2.0-alpha.5] - 2026-10-18
+
 ### Added
 
 - `internal/testutil` fault-injection helpers for reliability tests: a TCP
@@ -333,7 +337,8 @@ builds and are not guarantees for this release.
 Changes made before the first prerelease, 0.2.0-alpha.1, are kept in
 [docs/history/CHANGELOG-pre-0.2.0.md](docs/history/CHANGELOG-pre-0.2.0.md).
 
-[Unreleased]: https://github.com/proudauth/proudauth/compare/v0.2.0-alpha.4...main
+[Unreleased]: https://github.com/proudauth/proudauth/compare/v0.2.0-alpha.5...main
+[0.2.0-alpha.5]: https://github.com/proudauth/proudauth/compare/v0.2.0-alpha.4...v0.2.0-alpha.5
 [0.2.0-alpha.4]: https://github.com/proudauth/proudauth/compare/v0.2.0-alpha.3...v0.2.0-alpha.4
 [0.2.0-alpha.3]: https://github.com/proudauth/proudauth/compare/v0.2.0-alpha.2...v0.2.0-alpha.3
 [0.2.0-alpha.2]: https://github.com/proudauth/proudauth/compare/v0.2.0-alpha.1...v0.2.0-alpha.2
