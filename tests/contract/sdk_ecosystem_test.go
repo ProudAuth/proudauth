@@ -39,7 +39,7 @@ func TestSDKRepositoryBoundaries(t *testing.T) {
 	if strings.Contains(gomod, "replace ") || strings.Contains(gomod, "replace (") {
 		t.Error("published service must consume normal pinned modules without local replacements")
 	}
-	const sdkVersion = "v0.0.0-20261015160744-4c3faf77751b"
+	const sdkVersion = "v0.2.0" // tag on proudauth-sdk-go commit 1be1ba20
 	if !strings.Contains(gomod, "github.com/proudauth/proudauth-sdk-go "+sdkVersion) {
 		t.Error("service Go SDK dependency must identify the verified public source")
 	}
@@ -73,7 +73,7 @@ func TestSDKRepositoryBoundaries(t *testing.T) {
 		if sdk.Repository != "proudauth/proudauth-sdk-"+sdk.Language || !regexp.MustCompile(`^[a-f0-9]{40}$`).MatchString(sdk.Revision) {
 			t.Errorf("%s must name the public owner and immutable source revision", sdk.Language)
 		}
-		if sdk.Language == "go" && !strings.HasPrefix(sdk.Revision, "4c3faf77751b") {
+		if sdk.Language == "go" && !strings.HasPrefix(sdk.Revision, "1be1ba206169") {
 			t.Error("Go SDK snapshot revision differs from the service dependency")
 		}
 		if sdk.WorkflowPath != ".github/workflows/ci.yml" || sdk.CIConclusion != "success" ||

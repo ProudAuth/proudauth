@@ -68,8 +68,8 @@ github.com/philhofer/fwd v1.2.0/go.mod h1:RqIHx9QI14HlwKwm98g9Re5prTQ6LdeRQn+gXJ
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pquerna/otp v1.5.0 h1:NMMR+WrmaqXU4EzdGJEE1aUUI0AMRzsp96fFFWNPwxs=
 github.com/pquerna/otp v1.5.0/go.mod h1:dkJfzwRKNiegxyNb54X/3fLwhCynbMspSyWKnvi1AEg=
-github.com/proudauth/proudauth-sdk-go v0.0.0-20261015160744-4c3faf77751b h1:uT1yyfhte+slgpAAKUkHkPPKMNoM7V8EU9Nf+CZf3Os=
-github.com/proudauth/proudauth-sdk-go v0.0.0-20261015160744-4c3faf77751b/go.mod h1:n6ZMbKnVDQyihVyQqUeo4bsM+5KKfVYyAisbMsKcUeQ=
+github.com/proudauth/proudauth-sdk-go v0.2.0 h1:5PaHsBta4rjObitJrdQcM0niI+5mzk6VGMu43dbjLuA=
+github.com/proudauth/proudauth-sdk-go v0.2.0/go.mod h1:vBNSlil9uRFOep67VwJJXphr636utJ0mtaU0JNiNRLU=
 github.com/rogpeppe/go-internal v1.16.0 h1:O9DK+vNMDVGLr2BeZqmpLeMjiMNkuXfcqntWbZV6S5g=
 github.com/rogpeppe/go-internal v1.16.0/go.mod h1:DrUVZyrJU+txYW5/1kwtXQSMFio52ZOxX7yM1VHvnxs=
 github.com/russellhaering/goxmldsig v1.6.1 h1:SB7R5ttvrGIDB2juJAK/i7DQ2Ivr7agG+ohfNJjwyYU=

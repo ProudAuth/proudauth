@@ -54,6 +54,9 @@ var releaseStateStale = []string{
 	"postgres:17",
 	"ci runs against postgresql 17",
 	"postgresql 17 (ci)",
+	// proudauth-sdk-go v0.2.0 was tagged on 2026-10-18.
+	"has no version tag yet",
+	"resolves to a pseudo-version of `main`",
 }
 
 // TestDocsDoNotDenyPublishedReleases covers GOV-005, GOV-008 and SEC-019:
