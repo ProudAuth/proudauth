@@ -283,6 +283,9 @@ See [keys.md](keys.md) before changing anything here.
 | `rate_limits.invitations_per_organization` | `500` | Invitations created or resent per organization per `invitation_window` (INV-009). Revoking and re-creating an invitation does not reset it. |
 | `rate_limits.invitations_per_recipient` | `10` | Invitations created or resent to one address per `invitation_window`, across organizations of the realm. |
 | `rate_limits.invitation_window` | `24h` | Window for invitation budgets. |
+| `rate_limits.join_requests_per_user` | `10` | Join requests one user files per `join_request_window`, across the organizations of the realm (INV-013, REG-012). Withdrawing a request does not refund it, so a request-withdraw loop meets it; an attempt answered `409` (a request already pending, or a membership) counts too. Excess returns `429 rate_limited` with `Retry-After`. `0` disables it. |
+| `rate_limits.join_requests_per_organization` | `100` | Join requests filed to one organization per `join_request_window`, from all requesters (TEN-018). It is checked after the requester's budget, and a request that budget refuses does not count here, so one account cannot use up an organization's budget. Excess returns `429 rate_limited` with `Retry-After`. `0` disables it. |
+| `rate_limits.join_request_window` | `24h` | Window for the join-request budgets. It also de-duplicates reviewer notices: a request filed within this time after the same user's previous request to the same organization (whatever became of it) is recorded and audited, but does not notify the reviewers again. `0` turns that de-duplication off too, and needs both join-request limits at `0`. |
 
 Rate-limit counters are fixed windows stored in PostgreSQL (`rate_limit_counters`)
 with digested keys, so every node shares them. A limit of `0` disables its budget,
@@ -291,14 +294,17 @@ any `rate_limits` key, and a positive limit whose window is `0`: the `login_*`
 limits use `login_window`, the `send_*` limits `send_window`,
 `otp_verify_per_account` `otp_verify_window`, the `signup_*` limits
 `signup_window`, `token_per_client` and `organization_per_window` `token_window`,
-`failures_before_lock` `temporary_lock`, and the `invitations_*` limits
-`invitation_window` (set the limit to `0` to disable a budget instead). A check
+`failures_before_lock` `temporary_lock`, the `invitations_*` limits
+`invitation_window`, and the `join_requests_*` limits `join_request_window`
+(set the limit to `0` to disable a budget instead). A check
 counts all the budgets of an attempt in one database statement and consumes every
 one of them even when one is exhausted, so a refused attempt still counts toward
-the others. The send cooldown is the exception: it is checked on its own before
+the others. The send cooldown is an exception: it is checked on its own before
 the other send budgets, and a send it refuses consumes nothing but the cooldown
 (no unit of `send_per_identifier`, `send_per_ip` or the client, organization and
-realm send budgets). Exhausted budgets on the custom APIs return
+realm send budgets). Join requests are the other: `join_requests_per_user` is
+checked first, and a request it refuses consumes no unit of
+`join_requests_per_organization`. Exhausted budgets on the custom APIs return
 `429 rate_limited` with `Retry-After`; the token endpoint answers `429 slow_down`.
 
 Fixed budgets (not configurable): shared-signals pushes 600 per minute per

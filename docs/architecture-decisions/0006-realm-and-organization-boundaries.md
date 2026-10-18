@@ -70,7 +70,14 @@ after acceptance:
   Self-approval is refused. The requester sees only their own requests
   (`GET /me/join-requests`, never reviewers or member lists), can withdraw a
   pending one (`POST .../join-requests/{id}/withdraw`), and is emailed the
-  decision. Requests expire after 14 days.
+  decision. Requests expire after 14 days. Filing a request spends the
+  requester's budget (`security.rate_limits.join_requests_per_user`, across the
+  realm) and then the organization's (`join_requests_per_organization`), per
+  `join_request_window`; withdrawing refunds neither, and a refusal is
+  `429 rate_limited` with `Retry-After` (REG-012, TEN-018). A user's repeat
+  request to the same organization within that window is recorded and audited
+  but does not notify the reviewers again (`TestJoinRequestBudgets`,
+  `TestJoinRequestReviewerNotices`).
 - **Domain re-verification** (TEN-009, migration `0030`, `TestDomainReverification`):
   a verified domain keeps a digest of the DNS proof that verified it and is
   re-checked by the worker (`domains.recheck`) every realm policy

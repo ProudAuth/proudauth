@@ -228,6 +228,8 @@ func TestValidateRateLimits(t *testing.T) {
 		"temporary_lock": {func(r *RateLimitConfig, d time.Duration) { r.TemporaryLock = d }, []string{"failures_before_lock"}},
 		"invitation_window": {func(r *RateLimitConfig, d time.Duration) { r.InvitationWindow = d },
 			[]string{"invitations_per_organization", "invitations_per_recipient"}},
+		"join_request_window": {func(r *RateLimitConfig, d time.Duration) { r.JoinRequestWindow = d },
+			[]string{"join_requests_per_user", "join_requests_per_organization"}},
 	}
 	for window, w := range windows {
 		c := validDev()
