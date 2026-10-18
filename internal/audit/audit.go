@@ -15,6 +15,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/proudauth/proudauth/internal/platform/ids"
 	"github.com/proudauth/proudauth/internal/platform/reqctx"
@@ -214,6 +216,19 @@ func (r *Recorder) Record(ctx context.Context, q storage.Querier, ev Event) (str
 	if ev.Actor.ID == "" {
 		ev.Actor = System
 	}
+	// Identifiers can come from the request (a client_id, a Basic user
+	// name): each is stored bounded and printable (BoundID).
+	ev.Actor.ID = BoundID(ev.Actor.ID)
+	if ev.Subject != nil {
+		s := *ev.Subject
+		s.ID = BoundID(s.ID)
+		ev.Subject = &s
+	}
+	if ev.Target != nil {
+		t := *ev.Target
+		t.ID = BoundID(t.ID)
+		ev.Target = &t
+	}
 	ev.Metadata = Redact(ev.Metadata)
 	ev.ContentHash = ContentHash(ev)
 
@@ -267,6 +282,56 @@ func (r *Recorder) Record(ctx context.Context, q storage.Querier, ev Event) (str
 		}
 	}
 	return ev.ID, nil
+}
+
+// MaxIDBytes bounds the actor, subject and target identifiers an audit record
+// stores (AUD-001; the finding httpapi-surface/unauth-audit-amplification).
+const MaxIDBytes = 128
+
+// BoundID is the form in which an audit record stores an actor, subject or
+// target identifier. An identifier of at most MaxIDBytes bytes, all of them
+// printable UTF-8, is stored as it is (every identifier ProudAuth issues is).
+// Any other value, which only a request can supply (an unknown client_id, a
+// Basic user name), keeps its printable characters up to MaxIDBytes bytes,
+// cut at a character boundary, followed by "~" and the first 16 hexadecimal
+// digits of the SHA-256 of the whole value: control characters and invalid
+// UTF-8 are never stored, the stored value stays far below the size of an
+// index row however large the request, and the same value always gives the
+// same identifier, so repeated junk still correlates. Audit queries bound
+// their identifier filters the same way, so the original value finds its
+// records.
+func BoundID(id string) string {
+	if len(id) <= MaxIDBytes && printable(id) {
+		return id
+	}
+	var b strings.Builder
+	for i := 0; i < len(id); {
+		r, size := utf8.DecodeRuneInString(id[i:])
+		i += size
+		if (r == utf8.RuneError && size == 1) || !unicode.IsPrint(r) {
+			continue
+		}
+		if b.Len()+size > MaxIDBytes {
+			break
+		}
+		b.WriteRune(r)
+	}
+	sum := sha256.Sum256([]byte(id))
+	return b.String() + "~" + hex.EncodeToString(sum[:8])
+}
+
+// printable reports whether s is valid UTF-8 made only of printable
+// characters (unicode.IsPrint: no control or format characters, no space
+// but U+0020).
+func printable(s string) bool {
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if (r == utf8.RuneError && size == 1) || !unicode.IsPrint(r) {
+			return false
+		}
+		i += size
+	}
+	return true
 }
 
 // ContentHash is the integrity digest of an event's security-relevant content.

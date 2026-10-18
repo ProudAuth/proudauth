@@ -73,6 +73,11 @@ func (s *Service) token(ctx context.Context, rlm *realm.Realm, req TokenRequest)
 	if !rlm.Active() {
 		return nil, nil, ErrInvalidGrant("identity domain unavailable")
 	}
+	// A client_id no client can have is refused before it is looked up or
+	// audited; Token counts it as a failed client authentication.
+	if req.Auth.ClientIDTooLong() {
+		return nil, nil, ErrInvalidClient
+	}
 	c, err := s.Apps.Authenticate(ctx, rlm.ID, rlm.Issuer, req.Endpoint, req.Auth)
 	if err != nil {
 		_, _ = s.d.Audit.Record(ctx, s.d.DB.Pool, audit.Event{Type: "client.authentication.failed", RealmID: rlm.ID,

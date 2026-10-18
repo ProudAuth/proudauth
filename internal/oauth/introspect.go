@@ -23,13 +23,29 @@ func crypto256() crypto.Hash { return crypto.SHA256 }
 // Inactive is the protocol's inactive response; it never explains why (TOK-009).
 var Inactive = map[string]any{"active": false}
 
-// Introspect validates a token with authoritative live state (strict-online). Only
-// clients registered as resource servers for the token's audience learn anything
-// about it; everyone else receives the inactive response (TEST-037).
-func (s *Service) Introspect(ctx context.Context, rlm *realm.Realm, auth application.ClientAuthInput, endpoint, raw string) (map[string]any, *Error) {
+// IntrospectionCaller authenticates the caller of the introspection
+// endpoint, which must be a confidential client. The caller has checked the
+// network's failure budget (NetworkBudget with EndpointToken: introspection
+// and revocation authenticate clients as the token endpoint does and share
+// its budget); a failed authentication, or a public client, is
+// invalid_client and counts against it (SEC-006).
+func (s *Service) IntrospectionCaller(ctx context.Context, rlm *realm.Realm, auth application.ClientAuthInput, endpoint, ip string) (*application.Client, *Error) {
 	caller, err := s.Apps.Authenticate(ctx, rlm.ID, rlm.Issuer, endpoint, auth)
 	if err != nil || caller.Public() {
+		s.chargeFailures(ctx, rlm, EndpointToken, nil, ip)
 		return nil, ErrInvalidClient
+	}
+	return caller, nil
+}
+
+// Introspect validates a token with authoritative live state (strict-online). Only
+// clients registered as resource servers for the token's audience learn anything
+// about it; everyone else receives the inactive response (TEST-037). The
+// caller is authenticated by IntrospectionCaller.
+func (s *Service) Introspect(ctx context.Context, rlm *realm.Realm, auth application.ClientAuthInput, endpoint, raw, ip string) (map[string]any, *Error) {
+	caller, oe := s.IntrospectionCaller(ctx, rlm, auth, endpoint, ip)
+	if oe != nil {
+		return nil, oe
 	}
 	allowed, err := s.Apps.IntrospectableResources(ctx, caller.Ref)
 	if err != nil {
@@ -237,9 +253,14 @@ func (s *Service) introspectOpaque(ctx context.Context, rlm *realm.Realm, raw st
 // revocation the server could not record (the database or the audit write
 // failed) is 503 temporarily_unavailable with Retry-After (RFC 7009 §2.2.1),
 // so the client retries instead of treating the token as revoked.
-func (s *Service) Revoke(ctx context.Context, rlm *realm.Realm, auth application.ClientAuthInput, endpoint, raw, hint string) *Error {
+//
+// The caller has checked the network's failure budget (NetworkBudget with
+// EndpointToken, shared with the token endpoint and introspection); a failed
+// client authentication counts against it (SEC-006).
+func (s *Service) Revoke(ctx context.Context, rlm *realm.Realm, auth application.ClientAuthInput, endpoint, raw, hint, ip string) *Error {
 	c, err := s.Apps.Authenticate(ctx, rlm.ID, rlm.Issuer, endpoint, auth)
 	if err != nil {
+		s.chargeFailures(ctx, rlm, EndpointToken, nil, ip)
 		return ErrInvalidClient
 	}
 	actor := audit.Ref{Type: "client", ID: c.Ref}

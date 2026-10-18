@@ -25,8 +25,13 @@ import (
 // confidential client's backend or a NAT whose requests succeed never uses
 // it, however many it sends, while a flood of junk client IDs, wrong secrets,
 // bad codes or stolen tokens from one network is cut off before client
-// authentication. Device authorization stores a row for every request, so
-// its network budget counts every request instead. The browser authorization
+// authentication. Introspection and revocation authenticate clients as the
+// token endpoint does and share its failure budget: a network cannot add up
+// three budgets by spreading its failures, and once one is spent its requests
+// at all three are refused before anything is looked up or audited (the
+// finding httpapi-surface/unauth-audit-amplification). Device authorization
+// stores a row for every request, so its network budget counts every request
+// instead. The browser authorization
 // endpoint and the headless start write a row only by starting a
 // transaction, which the transaction-start budget (start_per_network)
 // already counts.
@@ -47,8 +52,9 @@ type Endpoint string
 
 // Endpoints with a pre-authentication network budget.
 const (
-	// EndpointToken is the token endpoint: failed requests per network,
-	// token_failures_per_network per token_window.
+	// EndpointToken is the token endpoint, with introspection and
+	// revocation: failed requests per network, token_failures_per_network
+	// per token_window.
 	EndpointToken Endpoint = "token-ip"
 	// EndpointPAR is the pushed authorization request endpoint: failed
 	// requests per network, par_failures_per_network per token_window.

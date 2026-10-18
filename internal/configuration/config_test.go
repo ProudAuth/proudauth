@@ -227,7 +227,8 @@ func TestValidateRateLimits(t *testing.T) {
 		"signup_window": {func(r *RateLimitConfig, d time.Duration) { r.SignupWindow = d },
 			[]string{"signup_per_ip", "signup_per_client", "signup_per_realm"}},
 		"token_window": {func(r *RateLimitConfig, d time.Duration) { r.TokenWindow = d },
-			[]string{"token_per_client", "organization_per_window", "token_failures_per_network", "token_per_network_client", "par_failures_per_network", "par_per_client"}},
+			[]string{"token_per_client", "organization_per_window", "token_failures_per_network", "token_per_network_client", "par_failures_per_network", "par_per_client",
+				"api_token_failures_per_network"}},
 		"dcr_window":     {func(r *RateLimitConfig, d time.Duration) { r.DCRWindow = d }, []string{"dcr_per_network"}},
 		"temporary_lock": {func(r *RateLimitConfig, d time.Duration) { r.TemporaryLock = d }, []string{"failures_before_lock"}},
 		"invitation_window": {func(r *RateLimitConfig, d time.Duration) { r.InvitationWindow = d },
@@ -314,19 +315,23 @@ func TestNetworkBudgetConfig(t *testing.T) {
 // per network per token_window; PAR 2000 per public client per token_window; device
 // authorization 300 per network and wrong user codes 30 per network per
 // login_window; dynamic client registration 20 per network per dcr_window
-// (1h), which used to be fixed in code. Every new limit refuses a zero window
-// while positive and validates at 0 (TestValidateRateLimits walks them all).
+// (1h), which used to be fixed in code; support tokens presented to the
+// identity and administration APIs 300 per network per token_window (the
+// finding httpapi-surface/unauth-audit-amplification). Every new limit
+// refuses a zero window while positive and validates at 0
+// (TestValidateRateLimits walks them all).
 func TestProtocolEndpointBudgetConfig(t *testing.T) {
 	rl := Defaults().Security.RateLimits
 	if rl.TokenPerClient != 2000 || rl.TokenWindow != time.Minute || rl.TokenFailuresPerNetwork != 300 || rl.TokenPerNetworkClient != 100 ||
 		rl.PARFailuresPerNetwork != 300 || rl.PARPerClient != 2000 || rl.DevicePerNetwork != 300 || rl.UserCodeFailuresPerNetwork != 30 ||
-		rl.DCRPerNetwork != 20 || rl.DCRWindow != time.Hour {
+		rl.DCRPerNetwork != 20 || rl.DCRWindow != time.Hour || rl.APITokenFailuresPerNetwork != 300 {
 		t.Fatalf("defaults: %+v", rl)
 	}
 	c := validDev()
 	r := &c.Security.RateLimits
 	r.TokenFailuresPerNetwork, r.TokenPerNetworkClient, r.PARFailuresPerNetwork, r.PARPerClient, r.DevicePerNetwork, r.UserCodeFailuresPerNetwork, r.DCRPerNetwork =
 		0, 0, 0, 0, 0, 0, 0
+	r.APITokenFailuresPerNetwork = 0
 	r.DCRWindow = 0
 	if err := c.Validate(); err != nil {
 		t.Errorf("protocol endpoint budgets at 0 (off) refused: %v", err)

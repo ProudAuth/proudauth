@@ -61,11 +61,13 @@ func Query(ctx context.Context, q storage.Querier, f Filter) ([]Event, int64, er
 	if f.EventID != "" {
 		add("id = ?", f.EventID)
 	}
+	// Identifiers are stored bounded (BoundID): a filter on the original
+	// value finds them.
 	if f.ActorID != "" {
-		add("actor_id = ?", f.ActorID)
+		add("actor_id = ?", BoundID(f.ActorID))
 	}
 	if f.SubjectID != "" {
-		add("subject_id = ?", f.SubjectID)
+		add("subject_id = ?", BoundID(f.SubjectID))
 	}
 	if f.Type != "" {
 		add("type = ?", f.Type)
@@ -99,7 +101,7 @@ func Query(ctx context.Context, q storage.Querier, f Filter) ([]Event, int64, er
 		add("(session_id = ? OR actor_session_id = ?)", f.SessionID)
 	}
 	if f.TargetID != "" {
-		add("target_id = ?", f.TargetID)
+		add("target_id = ?", BoundID(f.TargetID))
 	}
 	if f.Category != "" {
 		add("category = ?", f.Category)

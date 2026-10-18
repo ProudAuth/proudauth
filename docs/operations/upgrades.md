@@ -459,6 +459,29 @@ migration; [configuration.md](configuration.md#security)):
   `token_per_network_client`, `par_failures_per_network`, `par_per_client`,
   `device_per_network`, `user_code_failures_per_network`, `dcr_per_network`
   and `dcr_window`; add them only for new processes.
+- Introspection and revocation share the token endpoint's failure budget:
+  a resource server or backend sending a wrong secret to
+  `POST /oauth/introspect` or `POST /oauth/revoke` spends its network's
+  `token_failures_per_network` like a failing token request, and once it is
+  spent its introspection, revocation and token requests get `429 slow_down`
+  until the window ends. A `client_id` longer than 255 bytes is refused as
+  `invalid_client` without being looked up or audited (registered client IDs
+  have at most 128 characters).
+- Support tokens (`pa_it_`) presented to the identity and administration
+  APIs count against the new `api_token_failures_per_network` (300 per
+  `token_window` per network); older binaries reject the key.
+- Audit records store actor, subject and target IDs of at most 128 printable
+  bytes; a longer value, or one with control characters (only an unknown
+  `client_id` or Basic user name from a request can be one), is cut and
+  followed by `~` and 16 hexadecimal digits of its SHA-256. Records written by
+  older binaries are unchanged, and `actor_id`, `subject_id` and `target_id`
+  filters of `GET /audit-events` bound their value the same way, so the
+  original value still finds new records.
+- `proudauth_tokens_total` labels `grant_type` values the endpoint does not
+  implement, and outcomes that are not known OAuth error codes, as `other`
+  (they used to be the request's own value), and the new counter
+  `proudauth_metrics_series_dropped_total{metric}` appears; adjust dashboards
+  that matched unknown grant types.
 
 New binaries also change the user ownership transfer: `POST
 /users/{user}/ownership-transfer` moves hooks, webhook subscriptions and

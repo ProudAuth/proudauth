@@ -133,6 +133,10 @@ func Build(d *runtime.Deps, metrics *observability.Metrics) (*App, error) {
 	if metrics == nil {
 		metrics = observability.NewMetrics()
 	}
+	if d.Log != nil {
+		// A metric reaching its series cap is logged once (OPS-002).
+		metrics.Registry.SetLogger(d.Log)
+	}
 	a := &App{D: d, Metrics: metrics, Maintenance: &maintenance.Cache{TTL: 2 * time.Second}}
 	a.Realms = realm.NewService(d)
 	a.Apps = application.NewService(d)

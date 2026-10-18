@@ -161,6 +161,16 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   Regression tests `TestProtocolEndpointBudgetConfig`,
   `TestValidateRateLimits`, `TestUtilizationOfAggregateBudgets`,
   `TestCheckConsumesNothing`, `TestFailedRequestClassification`.
+- The configuration key `security.rate_limits.api_token_failures_per_network`
+  (default `300` support tokens presented to the identity and administration
+  APIs per network per `token_window`, with the wider /24 or /48 at
+  `network_coarse_factor` times; `0` disables it), validated like the other
+  `rate_limits` keys (see Security). The counter
+  `proudauth_metrics_series_dropped_total{metric}`, one series per counter
+  and histogram, `0` until it drops an update at its series cap, with a
+  suggested alert ([monitoring.md](docs/operations/monitoring.md)); see
+  Fixed. Regression tests `TestProtocolEndpointBudgetConfig`,
+  `TestValidateRateLimits`, `TestDroppedSeriesCounted`.
 
 ### Changed
 
@@ -433,6 +443,20 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   [exit-and-export.md](docs/operations/exit-and-export.md#user-import-request)).
   Affected: every earlier 0.2.0 prerelease; regression test
   `TestLegacySHA256TypedPassword`.
+- `proudauth_tokens_total` no longer takes label values from the request
+  (finding `httpapi-surface/metrics-silent-drops`, parts 1 and 2). Its
+  `grant_type` label was the request's raw `grant_type` (up to 64
+  characters), counted even when client authentication failed, so an
+  unauthenticated caller could fill the counter's 1000-series cap with junk,
+  after which every new legitimate series was dropped, silently, until a
+  restart. `grant_type` is now one of the six grants the endpoint implements
+  or `other`, and `outcome` is `success`, one of the known OAuth error codes
+  or `other`, at most 7 × 19 series. Updates that a counter (1000 series) or
+  histogram (500) drops at its cap are now counted in the new
+  `proudauth_metrics_series_dropped_total{metric}`, and the first one of each
+  metric logs a warning ([monitoring.md](docs/operations/monitoring.md#metrics))
+  (OPS-002, SEC-006). Affected: every earlier 0.2.0 prerelease; regression
+  tests `TestTokenMetricFixedLabels`, `TestDroppedSeriesCounted`.
 
 ### Security
 
@@ -745,6 +769,40 @@ GOV-003). Requirement IDs refer to [docs/plan.md](docs/plan.md).
   `TestDynamicClientRegistrationNetworkBudget`,
   `TestTokenEndpointLimiterFailsClosed`, `TestCheckConsumesNothing`,
   `TestFailedRequestClassification`.
+- Unauthenticated requests can no longer write unbounded audit records
+  (finding `httpapi-surface/unauth-audit-amplification`). Every failed client
+  authentication at the token endpoint recorded `client.authentication.failed`
+  with the presented `client_id` or Basic user name as `actor_id`, stored
+  unbounded (up to the 256 KiB body or the 16 KiB header) in an indexed column
+  for 400 days; an incompressible one past the index row limit (about 2.7 KB)
+  made the insert fail and raised a false `audit_write_failed` signal. Every
+  bearer starting with `pa_it_` on the identity and administration APIs cost a
+  token lookup and a `support.token.rejected` record, with no budget, and
+  introspection and revocation had no budget at all. Now audit records store
+  actor, subject and target IDs as at most 128 printable bytes, followed by
+  `~` and 16 hexadecimal digits of the SHA-256 of the whole value when
+  anything was cut or dropped, so the same junk still correlates and control
+  characters are never stored (identifiers ProudAuth issues are unchanged;
+  audit searches by `actor_id`, `subject_id` and `target_id` bound their value
+  the same way); a `client_id` longer than 255 bytes is `invalid_client`
+  before it is looked up or audited and counts as a failed request;
+  introspection and revocation read the token endpoint's failure budget per
+  network (`token_failures_per_network`) before client authentication and
+  count their failed client authentications against it, so once a network
+  has spent it, its token, introspection and revocation requests get `429
+  slow_down` and write no audit record; support tokens on the APIs count
+  against the new `api_token_failures_per_network` (300 per `token_window`
+  per network) before they are looked up, after which the network's get `429
+  rate_limited` and write nothing, while its other bearer tokens are
+  unaffected. Each budget fails closed. Within its budgets one network still
+  writes up to about 300 records of each kind per minute
+  ([threat model](docs/threat-models/system.md)) (SEC-006, AUD-001, AUD-014,
+  IMP-012, ABU-001). Affected: every earlier 0.2.0 prerelease; regression
+  tests `TestFailureBudgetsStopAuditAmplification`,
+  `TestRecordBoundsIdentifiers`, `TestQueryFilterUsesBoundIdentifiers`,
+  `TestOversizedClientIDRefusedBeforeAuthentication`,
+  `TestAuthenticateRefusesOversizedClientID`,
+  `TestTokenEndpointLimiterFailsClosed`.
 
 ## [0.2.0-alpha.5] - 2026-10-18
 

@@ -292,6 +292,14 @@ type RateLimitConfig struct {
 	// DCRWindow.
 	DCRPerNetwork int           `yaml:"dcr_per_network"`
 	DCRWindow     time.Duration `yaml:"dcr_window"`
+	// APITokenFailuresPerNetwork bounds the support tokens (pa_it_) one
+	// network presents to the identity and administration APIs per
+	// token_window, with the wider network: every presentation is refused
+	// and audited, and once the budget is spent the network's are refused
+	// with 429 before the token is looked up or anything is audited
+	// (SEC-006, IMP-012; the finding
+	// httpapi-surface/unauth-audit-amplification).
+	APITokenFailuresPerNetwork int `yaml:"api_token_failures_per_network"`
 }
 
 // MaxKnownQuotaDays bounds security.rate_limits.known_quota_days: how long
@@ -329,7 +337,8 @@ func (rl RateLimitConfig) validate() []string {
 			{"signup_per_realm", rl.SignupPerRealm}}},
 		{"token_window", rl.TokenWindow, []limit{{"token_per_client", rl.TokenPerClient}, {"organization_per_window", rl.OrganizationPerWindow},
 			{"token_failures_per_network", rl.TokenFailuresPerNetwork}, {"token_per_network_client", rl.TokenPerNetworkClient},
-			{"par_failures_per_network", rl.PARFailuresPerNetwork}, {"par_per_client", rl.PARPerClient}}},
+			{"par_failures_per_network", rl.PARFailuresPerNetwork}, {"par_per_client", rl.PARPerClient},
+			{"api_token_failures_per_network", rl.APITokenFailuresPerNetwork}}},
 		{"dcr_window", rl.DCRWindow, []limit{{"dcr_per_network", rl.DCRPerNetwork}}},
 		{"temporary_lock", rl.TemporaryLock, []limit{{"failures_before_lock", rl.FailuresBeforeLock}}},
 		{"invitation_window", rl.InvitationWindow, []limit{{"invitations_per_organization", rl.InvitationsPerOrganization},
@@ -791,6 +800,9 @@ func Defaults() Config {
 				// per network at the token endpoint and PAR.
 				TokenFailuresPerNetwork: 300, TokenPerNetworkClient: 100, PARFailuresPerNetwork: 300, PARPerClient: 2000,
 				DevicePerNetwork: 300, UserCodeFailuresPerNetwork: 30, DCRPerNetwork: 20, DCRWindow: time.Hour,
+				// Support tokens presented to the identity and
+				// administration APIs, per network (all refused).
+				APITokenFailuresPerNetwork: 300,
 			},
 			// Ten failures, the default per-window proof budget, before the
 			// backoff starts; a notice at 20; code factors off at 100.

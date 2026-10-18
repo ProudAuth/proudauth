@@ -467,7 +467,7 @@ paths:
       tags:
         - OAuth
       summary: Token endpoint
-      description: "Issues tokens for the enabled grants. Parameters must be form-encoded in the body (query parameters are rejected) and must not repeat (except resource). Optional DPoP proof in the DPoP header. A refresh token whose family was first issued with a DPoP proof or a TLS client certificate is accepted only with a proof of the same key or the same certificate, and a code requested with dpop_jkt only with a proof of that key (400 invalid_grant otherwise). When issuance fails for a configuration reason (the client registered response encryption but has no key that can receive it: 400 unauthorized_client; no active signing key: 503 temporarily_unavailable), the issuance is rolled back and the code, device code or refresh token is not consumed, so a retry is not treated as replay. Budgets (SEC-006, owner decision 9 of 0.2.0-alpha.6): before client authentication every request reads its network's failure budget (security.rate_limits.token_failures_per_network per IPv4 address or IPv6 /64), which failed requests, failed client authentication included, count against and successful ones never do; then a confidential client's request counts against token_per_client, and a public client's failed grants count against token_per_client and token_per_network_client. A spent budget answers 429 slow_down with Retry-After; an unreachable limiter 503 temporarily_unavailable."
+      description: "Issues tokens for the enabled grants. Parameters must be form-encoded in the body (query parameters are rejected) and must not repeat (except resource). Optional DPoP proof in the DPoP header. A refresh token whose family was first issued with a DPoP proof or a TLS client certificate is accepted only with a proof of the same key or the same certificate, and a code requested with dpop_jkt only with a proof of that key (400 invalid_grant otherwise). When issuance fails for a configuration reason (the client registered response encryption but has no key that can receive it: 400 unauthorized_client; no active signing key: 503 temporarily_unavailable), the issuance is rolled back and the code, device code or refresh token is not consumed, so a retry is not treated as replay. Budgets (SEC-006, owner decision 9 of 0.2.0-alpha.6): before client authentication every request reads its network's failure budget (security.rate_limits.token_failures_per_network per IPv4 address or IPv6 /64, shared with introspection and revocation), which failed requests, failed client authentication included, count against and successful ones never do; a client_id over 255 bytes is invalid_client without being looked up or audited; then a confidential client's request counts against token_per_client, and a public client's failed grants count against token_per_client and token_per_network_client. A spent budget answers 429 slow_down with Retry-After; an unreachable limiter 503 temporarily_unavailable."
       security:
         - clientSecretBasic: []
         - {}
@@ -581,7 +581,7 @@ paths:
       tags:
         - OAuth
       summary: Token introspection (RFC 7662)
-      description: Only confidential clients registered as introspectors for the token audience see active results. API keys (pa_key_) and personal tokens (pa_pat_) are introspected with the same rules.
+      description: "Only confidential clients registered as introspectors for the token audience see active results. API keys (pa_key_) and personal tokens (pa_pat_) are introspected with the same rules. Budget (SEC-006): before client authentication every request reads its network's failure budget, the token endpoint's (security.rate_limits.token_failures_per_network per IPv4 address or IPv6 /64, shared by the token, introspection and revocation endpoints); a failed client authentication (invalid_client, a client_id over 255 bytes included) counts against it. A spent budget answers 429 slow_down with Retry-After and nothing is looked up or audited; an unreachable limiter 503 temporarily_unavailable."
       security:
         - clientSecretBasic: []
         - {}
@@ -632,6 +632,8 @@ paths:
           "$ref": "#/components/responses/OAuthError"
         "404":
           "$ref": "#/components/responses/OAuthError"
+        "429":
+          "$ref": "#/components/responses/OAuthError"
         "500":
           "$ref": "#/components/responses/OAuthError"
         "503":
@@ -642,7 +644,7 @@ paths:
       tags:
         - OAuth
       summary: Token revocation (RFC 7009)
-      description: "Returns 200 with an empty body for valid and unknown tokens alike, and for tokens of another client. A revocation that could not be recorded (storage or audit failure) returns 503 temporarily_unavailable with Retry-After (RFC 7009 §2.2.1); the token stays valid and the client should retry."
+      description: "Returns 200 with an empty body for valid and unknown tokens alike, and for tokens of another client. A revocation that could not be recorded (storage or audit failure) returns 503 temporarily_unavailable with Retry-After (RFC 7009 §2.2.1); the token stays valid and the client should retry. Budget (SEC-006): before client authentication every request reads its network's failure budget, shared with the token endpoint and introspection (security.rate_limits.token_failures_per_network); a failed client authentication counts against it, and a spent budget answers 429 slow_down with Retry-After without looking anything up or auditing it."
       security:
         - clientSecretBasic: []
         - {}
@@ -691,6 +693,8 @@ paths:
         "401":
           "$ref": "#/components/responses/OAuthError"
         "404":
+          "$ref": "#/components/responses/OAuthError"
+        "429":
           "$ref": "#/components/responses/OAuthError"
         "500":
           "$ref": "#/components/responses/OAuthError"
@@ -33015,12 +33019,12 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: "User access token whose audience is the realm's account resource and which carries the proudauth:account scope, sent only in the Authorization header (tokens in query strings are rejected). The session, user and client must be live (strict-online). Refresh tokens, authorization codes, exchange tokens and support (impersonation) tokens are rejected."
+      description: "User access token whose audience is the realm's account resource and which carries the proudauth:account scope, sent only in the Authorization header (tokens in query strings are rejected). The session, user and client must be live (strict-online). Refresh tokens, authorization codes, exchange tokens and support (impersonation) tokens are rejected; each support token presented counts against its network's budget (security.rate_limits.api_token_failures_per_network) before it is looked up, and a spent budget answers 429 rate_limited with Retry-After without auditing the refusal."
     adminToken:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: "Access token whose audience is the realm's admin resource and which carries the proudauth:admin scope. User tokens must come from an MFA session that is not recovery-restricted; service-principal (client_credentials) tokens are accepted where the operation allows. Support tokens are rejected (impersonation_restricted)."
+      description: "Access token whose audience is the realm's admin resource and which carries the proudauth:admin scope. User tokens must come from an MFA session that is not recovery-restricted; service-principal (client_credentials) tokens are accepted where the operation allows. Support tokens are rejected (impersonation_restricted), and once their network's budget (security.rate_limits.api_token_failures_per_network) is spent with 429 rate_limited and Retry-After, without auditing the refusal."
     transactionToken:
       type: apiKey
       in: header

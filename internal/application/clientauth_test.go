@@ -1,7 +1,9 @@
 package application
 
 import (
+	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -46,5 +48,29 @@ func TestAssertionAudience(t *testing.T) {
 		if got := assertionAudience(raw, iss, endpoint, true); got != c.legacy {
 			t.Errorf("aud %s with allow_endpoint_audience: %v, want %v", c.aud, got, c.legacy)
 		}
+	}
+}
+
+// TestAuthenticateRefusesOversizedClientID covers SEC-006 (the finding
+// httpapi-surface/unauth-audit-amplification): every protocol endpoint that
+// authenticates clients (token, PAR, device authorization, introspection,
+// revocation, support handoff redemption) refuses a client_id over
+// MaxClientIDBytes, in the form or as the Basic user name, before anything
+// is looked up. The service here has no database: a lookup would panic.
+func TestAuthenticateRefusesOversizedClientID(t *testing.T) {
+	var s *Service
+	long := strings.Repeat("k", MaxClientIDBytes+1)
+	for _, in := range []ClientAuthInput{{FormClientID: long}, {HasBasic: true, BasicID: long, BasicSecret: "pa_cs_x"},
+		{FormClientID: long, FormSecret: "pa_cs_x"}, {FormClientID: strings.Repeat("k", 256*1024)}} {
+		func() {
+			defer func() {
+				if p := recover(); p != nil {
+					t.Fatalf("a %d-byte client_id was looked up: %v", max(len(in.FormClientID), len(in.BasicID)), p)
+				}
+			}()
+			if c, err := s.Authenticate(context.Background(), "rlm_1", "https://id.test", "https://id.test/oauth/token", in); err != ErrClientAuth || c != nil {
+				t.Fatalf("got %v, %v", c, err)
+			}
+		}()
 	}
 }

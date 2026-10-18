@@ -397,9 +397,13 @@ A scope with `sensitivity: privileged` and no `step_up_acr` requires
   audited, every request reads the requesting network's failure budget
   (`security.rate_limits.token_failures_per_network`, 300 failed requests
   per `token_window` per IPv4 address or IPv6 /64, with the wider /24 or
-  /48); a network that has spent it is refused. A request that fails, a
-  failed client authentication included, counts against it; successful
-  requests never do. Then a confidential client's request counts against
+  /48); a network that has spent it is refused, and nothing is audited. A
+  request that fails, a failed client authentication included, counts
+  against it; successful requests never do. Introspection and revocation
+  share this budget (below). A `client_id`, in the form or as the Basic user
+  name, longer than 255 bytes is `invalid_client` without being looked up or
+  audited, and counts as a failure (registered client IDs have at most 128
+  characters). Then a confidential client's request counts against
   `security.rate_limits.token_per_client` (2000 per `token_window`). A public
   client authenticates with its `client_id` alone, so only its failed grants
   count against `token_per_client` (`invalid_request`, `invalid_grant`,
@@ -705,11 +709,22 @@ where PAR, the 60-second code lifetime and the other rules above apply.
   `support_mode` and `impersonation_grant_id`; API keys and personal tokens return
   `token_kind` `api_key` / `personal_access` and `subject_type`.
 - Every introspection of a support token is audited (`support.token.introspected`).
+- Budget (SEC-006): before client credentials are checked, every request reads
+  the requesting network's failure budget, the token endpoint's
+  (`security.rate_limits.token_failures_per_network`); a failed client
+  authentication, or a public client, counts against it, and a network that
+  has spent it, at any of the three endpoints, gets `429 slow_down` with
+  `Retry-After` for every introspection until the window ends, valid callers
+  included (`TestFailureBudgetsStopAuditAmplification`).
 
 ## Revocation
 
 - Any authenticated client (public clients authenticate with `client_id` only).
   The response is `200` whether or not the token existed or belonged to the caller.
+- Budget (SEC-006): like introspection, every request first reads the token
+  endpoint's failure budget of its network; a failed client authentication
+  counts against it, and a network that has spent it gets `429 slow_down`
+  with `Retry-After`, without anything being looked up, revoked or audited.
 - When the revocation cannot be recorded (the database write or, for a JWT,
   the `token.access.revoked` audit event, which commits in the same
   transaction, fails) the response is `503 temporarily_unavailable` with

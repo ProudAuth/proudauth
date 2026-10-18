@@ -27,8 +27,11 @@ import (
 // network failure budgets of the token endpoint and PAR (read before client
 // authentication) and the network budget of device authorization, a public
 // client's failure budgets (read before its grant) and a confidential
-// client's token budget once the network budget is off, and the user-code
-// budget of device approval (503 unavailable).
+// client's token budget once the network budget is off, the user-code
+// budget of device approval (503 unavailable), the token endpoint's failure
+// budget at introspection and revocation, and the network budget of support
+// tokens presented to the APIs (503 unavailable, nothing looked up or
+// audited).
 func TestTokenEndpointLimiterFailsClosed(t *testing.T) {
 	f := NewFixture(t)
 	h := f.H
@@ -68,6 +71,19 @@ func TestTokenEndpointLimiterFailsClosed(t *testing.T) {
 		"scope": {"proudauth:account"}, "resource": {h.Realm.Issuer + "/account"}}}), "device authorization")
 	if r := h.API("POST", "/auth/transactions", "", map[string]any{"device_user_code": "BCDF-GHJK"}); r.Status != 503 {
 		t.Fatalf("user-code lookup with an unavailable limiter: %d %s", r.Status, r.Raw)
+	}
+	// Introspection and revocation read the token endpoint's failure
+	// budget before client authentication; support tokens on the APIs count
+	// against theirs before they are looked up or audited.
+	unavailable(h.Introspect("orders-rs", f.Clients["orders-rs"].Secret, "pa_at_bogus"), "introspection")
+	unavailable(h.Do(Req{Method: "POST", Path: "/realms/main/oauth/revoke", Basic: [2]string{"web-bff", f.Clients["web"].Secret},
+		Form: url.Values{"token": {"pa_rt_bogus"}}}), "revocation")
+	appLimiter := h.App.Limiter
+	h.App.Limiter = h.App.OAuth.Limiter
+	r = h.API("GET", "/me", "pa_it_"+strings.Repeat("u", 40), nil)
+	h.App.Limiter = appLimiter
+	if r.Status != 503 {
+		t.Fatalf("support token on an API with an unavailable limiter: %d %s", r.Status, r.Raw)
 	}
 	// With the network budgets off, the client budgets still fail closed.
 	h.App.D.Cfg.Security.RateLimits.TokenFailuresPerNetwork = 0

@@ -165,25 +165,59 @@ func Redact(_ []string, a slog.Attr) slog.Attr {
 
 type labelSet string
 
+// Series caps (OPS-002): a counter keeps at most MaxCounterSeries label sets
+// and a histogram MaxHistogramSeries. An update that would open a series past
+// the cap is dropped; proudauth_metrics_series_dropped_total{metric} counts
+// it, and the first one of each metric logs a warning.
+const (
+	MaxCounterSeries   = 1000
+	MaxHistogramSeries = 500
+	// SeriesDroppedMetric is the counter of dropped updates, one series per
+	// capped metric of the registry, so it is bounded by the metrics
+	// registered and never drops anything itself.
+	SeriesDroppedMetric = "proudauth_metrics_series_dropped_total"
+)
+
+// capGuard is what a capped metric (counter or histogram) shares with its
+// registry: the count of its dropped updates and whether the cap was logged.
+type capGuard struct {
+	reg     *Registry
+	dropped atomic.Uint64
+	warned  atomic.Bool
+}
+
+// drop counts an update dropped at the cap of metric name and logs the
+// first one.
+func (g *capGuard) drop(name string, max int) {
+	g.dropped.Add(1)
+	if g.warned.CompareAndSwap(false, true) {
+		g.reg.logger().Warn("metric series cap reached; updates with new label sets are dropped", "component", "observability",
+			"event_code", "metrics.series_dropped", "metric", name, "max_series", max)
+	}
+}
+
 // Counter is a monotonically increasing counter with bounded labels.
 type Counter struct {
 	name, help string
 	labels     []string
 	mu         sync.Mutex
 	values     map[labelSet]*atomic.Uint64
+	guard      *capGuard
 }
 
 // Inc increments with label values (must match label names).
 func (c *Counter) Inc(vals ...string) { c.Add(1, vals...) }
 
-// Add adds n.
+// Add adds n. A label set that would be the counter's series number
+// MaxCounterSeries+1 is dropped and counted (SeriesDroppedMetric).
 func (c *Counter) Add(n uint64, vals ...string) {
 	key := labelSet(strings.Join(vals, "\x00"))
 	c.mu.Lock()
 	v, ok := c.values[key]
 	if !ok {
-		if len(c.values) > 1000 { // cardinality guard
+		if len(c.values) >= MaxCounterSeries { // cardinality guard
 			c.mu.Unlock()
+			c.guard.drop(c.name, MaxCounterSeries)
 			return
 		}
 		v = &atomic.Uint64{}
@@ -219,6 +253,7 @@ type Histogram struct {
 	buckets    []float64
 	mu         sync.Mutex
 	series     map[labelSet]*hseries
+	guard      *capGuard
 }
 
 type hseries struct {
@@ -227,14 +262,17 @@ type hseries struct {
 	count  uint64
 }
 
-// Observe records a value with labels.
+// Observe records a value with labels. A label set that would be the
+// histogram's series number MaxHistogramSeries+1 is dropped and counted
+// (SeriesDroppedMetric).
 func (h *Histogram) Observe(v float64, vals ...string) {
 	key := labelSet(strings.Join(vals, "\x00"))
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	s, ok := h.series[key]
 	if !ok {
-		if len(h.series) > 500 {
+		if len(h.series) >= MaxHistogramSeries {
+			h.guard.drop(h.name, MaxHistogramSeries)
 			return
 		}
 		s = &hseries{counts: make([]uint64, len(h.buckets))}
@@ -256,15 +294,44 @@ type Registry struct {
 	gauges     []*Gauge
 	gaugeVecs  []*GaugeVec
 	histograms []*Histogram
+	// guards are the dropped-update counts of the capped metrics, by name.
+	guards map[string]*capGuard
+	log    atomic.Pointer[slog.Logger]
 }
 
 // NewRegistry returns an empty registry.
 func NewRegistry() *Registry { return &Registry{} }
 
+// SetLogger sets the logger of the registry's warnings (a series cap
+// reached); without one they go to slog.Default().
+func (r *Registry) SetLogger(l *slog.Logger) { r.log.Store(l) }
+
+func (r *Registry) logger() *slog.Logger {
+	if l := r.log.Load(); l != nil {
+		return l
+	}
+	return slog.Default()
+}
+
+// guard returns the dropped-update count of the capped metric name; metrics
+// registered twice under one name share it. The caller holds r.mu.
+func (r *Registry) guard(name string) *capGuard {
+	if r.guards == nil {
+		r.guards = map[string]*capGuard{}
+	}
+	g, ok := r.guards[name]
+	if !ok {
+		g = &capGuard{reg: r}
+		r.guards[name] = g
+	}
+	return g
+}
+
 // Counter registers a counter.
 func (r *Registry) Counter(name, help string, labels ...string) *Counter {
 	c := &Counter{name: name, help: help, labels: labels, values: map[labelSet]*atomic.Uint64{}}
 	r.mu.Lock()
+	c.guard = r.guard(name)
 	r.counters = append(r.counters, c)
 	r.mu.Unlock()
 	return c
@@ -296,6 +363,7 @@ func (r *Registry) Histogram(name, help string, labels ...string) *Histogram {
 	h := &Histogram{name: name, help: help, labels: labels, series: map[labelSet]*hseries{},
 		buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10}}
 	r.mu.Lock()
+	h.guard = r.guard(name)
 	r.histograms = append(r.histograms, h)
 	r.mu.Unlock()
 	return h
@@ -338,6 +406,20 @@ func (r *Registry) WriteText(w io.Writer) {
 		}
 		c.mu.Unlock()
 	}
+	if len(r.guards) > 0 {
+		// One series per capped metric, 0 until it drops an update, so an
+		// alert on its increase sees the first drop.
+		fmt.Fprintf(w, "# HELP %s %s\n# TYPE %s counter\n", SeriesDroppedMetric,
+			"Metric updates dropped because they would have opened a series past the metric's cap (OPS-002)", SeriesDroppedMetric)
+		names := make([]string, 0, len(r.guards))
+		for n := range r.guards {
+			names = append(names, n)
+		}
+		sort.Strings(names)
+		for _, n := range names {
+			fmt.Fprintf(w, "%s{metric=%q} %d\n", SeriesDroppedMetric, n, r.guards[n].dropped.Load())
+		}
+	}
 	for _, g := range r.gauges {
 		fmt.Fprintf(w, "# HELP %s %s\n# TYPE %s gauge\n", g.name, g.help, g.name)
 		v := float64(g.v.Load())
@@ -379,7 +461,6 @@ type Metrics struct {
 	HTTPRequests     *Counter
 	HTTPLatency      *Histogram
 	Logins           *Counter
-	Tokens           *Counter
 	RateLimited      *Counter
 	SecurityEvents   *Counter
 	Shed             *Counter
@@ -400,6 +481,10 @@ type Metrics struct {
 	WebhookAge       *Gauge
 	JobAge           *Gauge
 	ClockSkew        *Gauge
+
+	// tokens is proudauth_tokens_total; TokenResult maps its labels to
+	// their fixed sets.
+	tokens *Counter
 }
 
 // NewMetrics registers the standard metrics.
@@ -410,7 +495,7 @@ func NewMetrics() *Metrics {
 		HTTPRequests:     r.Counter("proudauth_http_requests_total", "HTTP requests by route and status class", "route", "status"),
 		HTTPLatency:      r.Histogram("proudauth_http_request_duration_seconds", "HTTP latency by route", "route"),
 		Logins:           r.Counter("proudauth_authentications_total", "Authentication outcomes", "outcome"),
-		Tokens:           r.Counter("proudauth_tokens_total", "Token endpoint outcomes", "grant_type", "outcome"),
+		tokens:           r.Counter("proudauth_tokens_total", "Token endpoint outcomes", "grant_type", "outcome"),
 		RateLimited:      r.Counter("proudauth_rate_limited_total", "Requests rejected by abuse budgets", "surface"),
 		SecurityEvents:   r.Counter("proudauth_security_events_total", "Alertable security events", "type"),
 		Shed:             r.Counter("proudauth_load_shed_total", "Requests shed under load", "pool"),
@@ -432,6 +517,53 @@ func NewMetrics() *Metrics {
 		JobAge:           r.Gauge("proudauth_jobs_oldest_queued_seconds", "How long the oldest runnable background job has waited (OPS-002)", nil),
 		ClockSkew:        r.Gauge("proudauth_clock_skew_milliseconds", "Observed clock skew versus the database", nil),
 	}
+}
+
+// tokenGrantTypes are the grant_type label values of proudauth_tokens_total
+// besides "other": the grants the token endpoint implements.
+var tokenGrantTypes = map[string]bool{
+	"authorization_code": true, "refresh_token": true, "client_credentials": true,
+	"urn:ietf:params:oauth:grant-type:device_code":    true,
+	"urn:ietf:params:oauth:grant-type:token-exchange": true,
+	"urn:ietf:params:oauth:grant-type:jwt-bearer":     true,
+}
+
+// tokenOutcomes are the outcome label values of proudauth_tokens_total
+// besides "other": success and the OAuth error codes of the token endpoint
+// (RFC 6749, 8628, 8693, 8707, 9449, OpenID Connect).
+var tokenOutcomes = map[string]bool{
+	"success": true, "invalid_request": true, "invalid_client": true, "invalid_grant": true, "unauthorized_client": true,
+	"unsupported_grant_type": true, "invalid_scope": true, "invalid_target": true, "invalid_dpop_proof": true, "use_dpop_nonce": true,
+	"invalid_client_metadata": true, "unmet_authentication_requirements": true, "authorization_pending": true, "slow_down": true,
+	"expired_token": true, "access_denied": true, "temporarily_unavailable": true, "server_error": true,
+}
+
+// TokenGrantLabel is the grant_type label of a token request: its grant_type
+// when the token endpoint implements it, otherwise "other" (a missing,
+// unknown or refused one, whatever its length), so a request can never open
+// a series of its choosing (OPS-002; the finding
+// httpapi-surface/metrics-silent-drops).
+func TokenGrantLabel(grant string) string {
+	if tokenGrantTypes[grant] {
+		return grant
+	}
+	return "other"
+}
+
+// TokenOutcomeLabel is the outcome label of a token response: "success", a
+// known OAuth error code, or "other".
+func TokenOutcomeLabel(outcome string) string {
+	if tokenOutcomes[outcome] {
+		return outcome
+	}
+	return "other"
+}
+
+// TokenResult counts a token endpoint response in proudauth_tokens_total,
+// with labels from the fixed sets of TokenGrantLabel and TokenOutcomeLabel:
+// at most 7 × 19 series.
+func (m *Metrics) TokenResult(grant, outcome string) {
+	m.tokens.Inc(TokenGrantLabel(grant), TokenOutcomeLabel(outcome))
 }
 
 // Timer measures a duration.

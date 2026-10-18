@@ -914,7 +914,7 @@
           "default": 300
         },
         "network_coarse_factor": {
-          "description": "Every configurable per-network budget (login_per_ip, send_per_ip, signup_per_ip, start_per_network, token_failures_per_network, token_per_network_client, par_failures_per_network, device_per_network, user_code_failures_per_network, dcr_per_network and the proof and setup budgets that use login_per_ip) also counts the wider network, IPv4 /24 or IPv6 /48, with this many times its limit (ABU-001); 0 disables the wider budgets.",
+          "description": "Every configurable per-network budget (login_per_ip, send_per_ip, signup_per_ip, start_per_network, token_failures_per_network, token_per_network_client, par_failures_per_network, device_per_network, user_code_failures_per_network, dcr_per_network, api_token_failures_per_network and the proof and setup budgets that use login_per_ip) also counts the wider network, IPv4 /24 or IPv6 /48, with this many times its limit (ABU-001); 0 disables the wider budgets.",
           "type": "integer",
           "minimum": 0,
           "maximum": 1000,
@@ -946,7 +946,7 @@
           "default": 10
         },
         "token_failures_per_network": {
-          "description": "Failed token endpoint requests per network (IPv4 /32, IPv6 /64) per token_window: failed client authentications and failed grants of any client, as for token_per_client (owner decision 9 of 0.2.0-alpha.6: about 300 per minute per network, bounding failures; SEC-006, ABU-001). Read before client authentication and before anything is audited; a network that has spent it gets 429 slow_down with Retry-After for every request until the window ends. Successful requests never count. The wider /24 or /48 counts network_coarse_factor times as many; an unavailable limiter answers 503 temporarily_unavailable. 0 disables.",
+          "description": "Failed token endpoint, introspection and revocation requests per network (IPv4 /32, IPv6 /64) per token_window, one budget for the three: failed client authentications (a client_id over 255 bytes included) and failed grants of any client, as for token_per_client (owner decision 9 of 0.2.0-alpha.6: about 300 per minute per network, bounding failures; SEC-006, ABU-001). Read before client authentication and before anything is audited; a network that has spent it gets 429 slow_down with Retry-After for every request at the three endpoints until the window ends, and writes no audit record. Successful requests never count. The wider /24 or /48 counts network_coarse_factor times as many; an unavailable limiter answers 503 temporarily_unavailable. 0 disables.",
           "type": "integer",
           "minimum": 0,
           "default": 300
@@ -991,6 +991,12 @@
           "description": "Window for dcr_per_network.",
           "$ref": "#/$defs/nonNegativeDuration",
           "default": "1h"
+        },
+        "api_token_failures_per_network": {
+          "description": "Support tokens (pa_it_) presented to the identity and administration APIs per network (IPv4 /32, IPv6 /64) per token_window, with the wider /24 or /48 at network_coarse_factor times. Every presentation is refused (403 impersonation_restricted) and audited as support.token.rejected; each one counts before the token is looked up, and once the budget is spent the network's presentations answer 429 rate_limited with Retry-After and write no audit record until the window ends. Other bearer tokens from the network are unaffected. An unavailable limiter answers 503. 0 disables (SEC-006, IMP-012).",
+          "type": "integer",
+          "minimum": 0,
+          "default": 300
         }
       }
     },
