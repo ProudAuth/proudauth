@@ -163,18 +163,23 @@ type Code struct {
 	Challenge     string
 	Method        string
 	Nonce         string
-	ExpiresAt     time.Time
+	// DPoPJKT is the dpop_jkt of the authorization request (RFC 9449 §10):
+	// the code is redeemed only with a DPoP proof of that key. Empty: no
+	// binding.
+	DPoPJKT   string
+	ExpiresAt time.Time
 }
 
 // IssueCodeTx creates a single-use authorization code bound to client, redirect,
-// PKCE challenge and transaction (§14.1). Only its digest is stored.
+// PKCE challenge, transaction (§14.1) and, when the request named one, a DPoP
+// key (TOK-019). Only its digest is stored.
 func (s *Service) IssueCodeTx(ctx context.Context, tx pgx.Tx, realmID string, c Code, ttl time.Duration) (string, error) {
 	plain := secret.Token(secret.PrefixAuthCode)
 	now := s.d.Now()
 	_, err := tx.Exec(ctx, `INSERT INTO authorization_codes (id, realm_id, code_digest, client_ref, transaction_id, grant_id, redirect_uri,
-		code_challenge, code_challenge_method, nonce, expires_at, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+		code_challenge, code_challenge_method, nonce, expires_at, created_at, dpop_jkt) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
 		ids.New(ids.AuthCode), realmID, secret.Digest(plain), c.ClientRef, c.TransactionID, c.GrantID, c.RedirectURI, c.Challenge, c.Method,
-		nilIfEmpty(c.Nonce), now.Add(ttl), now)
+		nilIfEmpty(c.Nonce), now.Add(ttl), now, nilIfEmpty(c.DPoPJKT))
 	return plain, err
 }
 
@@ -189,19 +194,17 @@ func (s *Service) ConsumeCodeTx(ctx context.Context, tx pgx.Tx, realmID, plain s
 	}
 	var c Code
 	var consumed *time.Time
-	var nonce *string
-	err := tx.QueryRow(ctx, `SELECT id, client_ref, transaction_id, grant_id, redirect_uri, code_challenge, code_challenge_method, nonce, expires_at, consumed_at
-		FROM authorization_codes WHERE realm_id=$1 AND code_digest=$2 FOR UPDATE`, realmID, secret.Digest(plain)).Scan(&c.ID, &c.ClientRef,
-		&c.TransactionID, &c.GrantID, &c.RedirectURI, &c.Challenge, &c.Method, &nonce, &c.ExpiresAt, &consumed)
+	var nonce, jkt *string
+	err := tx.QueryRow(ctx, `SELECT id, client_ref, transaction_id, grant_id, redirect_uri, code_challenge, code_challenge_method, nonce, expires_at, consumed_at,
+		dpop_jkt FROM authorization_codes WHERE realm_id=$1 AND code_digest=$2 FOR UPDATE`, realmID, secret.Digest(plain)).Scan(&c.ID, &c.ClientRef,
+		&c.TransactionID, &c.GrantID, &c.RedirectURI, &c.Challenge, &c.Method, &nonce, &c.ExpiresAt, &consumed, &jkt)
 	if err != nil {
 		if storage.IsNoRows(err) {
 			return nil, problem.ErrInvalidProof
 		}
 		return nil, err
 	}
-	if nonce != nil {
-		c.Nonce = *nonce
-	}
+	c.Nonce, c.DPoPJKT = deref(nonce), deref(jkt)
 	if consumed != nil {
 		return &c, ErrCodeReplay
 	}
@@ -225,10 +228,47 @@ type Family struct {
 	State             string
 	IdleExpiresAt     time.Time
 	AbsoluteExpiresAt time.Time
+	// Binding is the sender constraint of the family's first issuance,
+	// kept for its whole life (TOK-019).
+	Binding SenderBinding
 }
 
-// IssueRefreshTx creates a new family with its first generation.
-func (s *Service) IssueRefreshTx(ctx context.Context, tx pgx.Tx, realmID, grantID, clientRef string, idle, absolute time.Duration, absoluteCap *time.Time) (string, *Family, error) {
+// SenderBinding is a sender constraint (TOK-019): the JWK SHA-256
+// thumbprint of a DPoP key (RFC 9449, the cnf.jkt of a token) or the
+// SHA-256 thumbprint of a TLS client certificate (RFC 8705, cnf.x5t#S256).
+// For a refresh family it is what the first issuance was bound to (both
+// empty: unbound); for a token request it is what the request proves, its
+// DPoP proof's key and the certificate of its connection, whatever the
+// client's binding policy.
+type SenderBinding struct {
+	JKT     string
+	X5TS256 string
+}
+
+// refusal reports what a request that proves p fails to prove of the
+// binding b: the binding kind ("dpop" or "mtls") and why ("missing" or
+// "mismatch"), or two empty strings when p satisfies b. An unbound b is
+// satisfied by any request.
+func (b SenderBinding) refusal(p SenderBinding) (kind, why string) {
+	switch {
+	case b.JKT != "" && p.JKT == "":
+		return "dpop", "missing"
+	case b.JKT != "" && p.JKT != b.JKT:
+		return "dpop", "mismatch"
+	case b.X5TS256 != "" && p.X5TS256 == "":
+		return "mtls", "missing"
+	case b.X5TS256 != "" && p.X5TS256 != b.X5TS256:
+		return "mtls", "mismatch"
+	}
+	return "", ""
+}
+
+// IssueRefreshTx creates a new family with its first generation. A family
+// issued with a sender constraint (bind) keeps it for its whole life: every
+// later use must prove the same DPoP key or TLS client certificate
+// (UseRefresh), and rotation never changes it.
+func (s *Service) IssueRefreshTx(ctx context.Context, tx pgx.Tx, realmID, grantID, clientRef string, bind SenderBinding, idle, absolute time.Duration,
+	absoluteCap *time.Time) (string, *Family, error) {
 	now := s.d.Now()
 	abs := now.Add(absolute)
 	if absoluteCap != nil && absoluteCap.Before(abs) {
@@ -238,9 +278,11 @@ func (s *Service) IssueRefreshTx(ctx context.Context, tx pgx.Tx, realmID, grantI
 	if idleAt.After(abs) {
 		idleAt = abs
 	}
-	f := &Family{ID: ids.New(ids.RefreshFamily), GrantID: grantID, ClientRef: clientRef, Generation: 1, State: "active", IdleExpiresAt: idleAt, AbsoluteExpiresAt: abs}
-	if _, err := tx.Exec(ctx, `INSERT INTO refresh_families (id, realm_id, grant_id, client_ref, idle_expires_at, absolute_expires_at, created_at, idle_window_seconds)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, f.ID, realmID, grantID, clientRef, idleAt, abs, now, int(idle.Seconds())); err != nil {
+	f := &Family{ID: ids.New(ids.RefreshFamily), GrantID: grantID, ClientRef: clientRef, Generation: 1, State: "active", IdleExpiresAt: idleAt,
+		AbsoluteExpiresAt: abs, Binding: bind}
+	if _, err := tx.Exec(ctx, `INSERT INTO refresh_families (id, realm_id, grant_id, client_ref, idle_expires_at, absolute_expires_at, created_at, idle_window_seconds,
+		cnf_jkt, cnf_x5t_s256) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, f.ID, realmID, grantID, clientRef, idleAt, abs, now, int(idle.Seconds()),
+		nilIfEmpty(bind.JKT), nilIfEmpty(bind.X5TS256)); err != nil {
 		return "", nil, err
 	}
 	plain := secret.Token(secret.PrefixRefresh)
@@ -259,29 +301,33 @@ type RotateResult struct {
 }
 
 // RotateRefresh implements the §24.3 transaction. The family row and presented
-// generation are locked; a reused generation marks the family compromised, commits
+// generation are locked. A sender-bound family that the request's proof (the
+// DPoP key and TLS client certificate it presents) does not satisfy is
+// refused with ErrRefreshSender before anything else, recording only an
+// audit event. A reused generation marks the family compromised, commits
 // that state with audit/outbox, and returns ErrRefreshReuse without issuing tokens.
 // Otherwise validate re-evaluates permitted scope and access, and mint creates the
 // access artifacts inside the same transaction before the successor is committed.
-func (s *Service) RotateRefresh(ctx context.Context, realmID, presented, clientRef string, idle time.Duration,
+func (s *Service) RotateRefresh(ctx context.Context, realmID, presented, clientRef string, proof SenderBinding, idle time.Duration,
 	validate func(tx pgx.Tx, g *Grant) error, mint func(tx pgx.Tx, g *Grant, f *Family) error) (*RotateResult, error) {
-	return s.UseRefresh(ctx, realmID, presented, clientRef, idle, false, validate, mint)
+	return s.UseRefresh(ctx, realmID, presented, clientRef, proof, idle, false, validate, mint)
 }
 
 // UseRefresh is RotateRefresh with a choice: keep leaves the presented token
 // current instead of rotating it, for clients whose profile forbids
 // rotation (FAPI 2.0, ADV-001). Such clients are confidential and their
-// tokens sender-constrained, so a stolen refresh token alone is not usable;
-// the family's idle and absolute expiry still apply.
-func (s *Service) UseRefresh(ctx context.Context, realmID, presented, clientRef string, idle time.Duration, keep bool,
+// tokens sender-constrained, so a stolen refresh token alone is not usable
+// (their families are sender-bound as well); the family's idle and absolute
+// expiry still apply.
+func (s *Service) UseRefresh(ctx context.Context, realmID, presented, clientRef string, proof SenderBinding, idle time.Duration, keep bool,
 	validate func(tx pgx.Tx, g *Grant) error, mint func(tx pgx.Tx, g *Grant, f *Family) error) (*RotateResult, error) {
 	if !secret.HasPrefix(presented, secret.PrefixRefresh) || len(presented) > 100 {
 		return nil, ErrRefreshInvalid
 	}
 	var result *RotateResult
-	var reuse bool
+	var reuse, refused bool
 	err := s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
-		reuse = false
+		reuse, refused = false, false
 		var tokenID, familyID, sessionID, owner string
 		var offline bool
 		var generation int
@@ -314,8 +360,10 @@ func (s *Service) UseRefresh(ctx context.Context, realmID, presented, clientRef 
 		}
 		var f Family
 		var window *int
-		err = tx.QueryRow(ctx, `SELECT id, grant_id, client_ref, current_generation, state, idle_expires_at, absolute_expires_at, idle_window_seconds
-			FROM refresh_families WHERE id=$1 FOR UPDATE`, familyID).Scan(&f.ID, &f.GrantID, &f.ClientRef, &f.Generation, &f.State, &f.IdleExpiresAt, &f.AbsoluteExpiresAt, &window)
+		var cnfJKT, cnfX5T *string
+		err = tx.QueryRow(ctx, `SELECT id, grant_id, client_ref, current_generation, state, idle_expires_at, absolute_expires_at, idle_window_seconds,
+			cnf_jkt, cnf_x5t_s256 FROM refresh_families WHERE id=$1 FOR UPDATE`, familyID).Scan(&f.ID, &f.GrantID, &f.ClientRef, &f.Generation, &f.State,
+			&f.IdleExpiresAt, &f.AbsoluteExpiresAt, &window, &cnfJKT, &cnfX5T)
 		if window != nil && *window > 0 {
 			// Rotation keeps the family's own idle window (remember-me and
 			// offline families are not shortened to the browser idle timeout).
@@ -329,6 +377,31 @@ func (s *Service) UseRefresh(ctx context.Context, realmID, presented, clientRef 
 			return ErrRefreshInvalid
 		}
 		now := s.d.Now()
+		// Sender binding (TOK-019, RFC 9449 §5, RFC 8705 §3; owner decision
+		// 13): a family whose first issuance was bound to a DPoP key or a TLS
+		// client certificate is used only by a request that proves the same
+		// one, whatever the client's require_dpop says now. It is checked
+		// before reuse detection and changes nothing but the audit trail: a
+		// presenter that cannot prove possession cannot use the token, of the
+		// current generation or an earlier one, so it must not be able to
+		// revoke the holder's family, grant and session through reuse
+		// detection either. Families issued before migration 0089 have no
+		// binding and are not checked.
+		f.Binding = SenderBinding{JKT: deref(cnfJKT), X5TS256: deref(cnfX5T)}
+		if kind, why := f.Binding.refusal(proof); kind != "" {
+			g, err := s.Grant(ctx, tx, f.GrantID)
+			if err != nil {
+				return err
+			}
+			if _, err := s.d.Audit.Record(ctx, tx, audit.Event{Type: "token.refresh.binding_failed", RealmID: realmID, OrgID: g.OrgID,
+				Actor: audit.Ref{Type: "client", ID: clientRef}, Subject: &audit.Ref{Type: g.SubjectType, ID: g.SubjectID}, Outcome: audit.Denied,
+				GrantID: g.ID, SessionID: g.SessionID, ReasonCode: "REFRESH_BINDING_FAILED", Metadata: map[string]any{"token_family_id": f.ID,
+					"presented_generation": generation, "binding": kind, "proof": why}}); err != nil {
+				return err
+			}
+			refused = true
+			return nil // commit the audit record only
+		}
 		if consumedAt != nil || generation != f.Generation {
 			if f.State == "active" {
 				if _, err := tx.Exec(ctx, `UPDATE refresh_families SET state='compromised', revoked_at=$2, revoke_reason='reuse_detected' WHERE id=$1`, f.ID, now); err != nil {
@@ -438,6 +511,9 @@ func (s *Service) UseRefresh(ctx context.Context, realmID, presented, clientRef 
 	})
 	if err != nil {
 		return nil, err
+	}
+	if refused {
+		return nil, ErrRefreshSender
 	}
 	if reuse {
 		return nil, ErrRefreshReuse

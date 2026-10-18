@@ -37,6 +37,9 @@ type AuthorizeRequest struct {
 	Request             string
 	Intent              string
 	Claims              string
+	// DPoPJKT is the dpop_jkt parameter (RFC 9449 §10): the JWK SHA-256
+	// thumbprint of the DPoP key the authorization code is bound to.
+	DPoPJKT string
 }
 
 // ParseAuthorize extracts parameters, rejecting duplicated single-valued
@@ -53,7 +56,7 @@ func ParseAuthorize(v url.Values) (AuthorizeRequest, *Error) {
 		CodeChallenge: v.Get("code_challenge"), CodeChallengeMethod: v.Get("code_challenge_method"), Prompt: v.Get("prompt"),
 		MaxAge: v.Get("max_age"), ACRValues: v.Get("acr_values"), LoginHint: v.Get("login_hint"), UILocales: v.Get("ui_locales"),
 		Organization: v.Get("organization"), Resources: v["resource"], RequestURI: v.Get("request_uri"), Request: v.Get("request"),
-		Intent: v.Get("intent"), Claims: v.Get("claims"),
+		Intent: v.Get("intent"), Claims: v.Get("claims"), DPoPJKT: v.Get("dpop_jkt"),
 	}
 	if len(r.State) > 1024 || len(r.Nonce) > 512 || len(r.Scope) > 2048 || len(r.LoginHint) > 512 || len(r.Resources) > 5 {
 		return r, ErrInvalidRequest("parameter too long")
@@ -232,6 +235,9 @@ func (s *Service) validateInteractive(ctx context.Context, rlm *realm.Realm, req
 	if len(req.CodeChallenge) != 43 || strings.Trim(req.CodeChallenge, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_") != "" {
 		return nil, ErrInvalidRequest("code_challenge must be a base64url SHA-256 digest"), true
 	}
+	if req.DPoPJKT != "" && !validJKT(req.DPoPJKT) {
+		return nil, ErrInvalidRequest("dpop_jkt must be the base64url SHA-256 JWK thumbprint of the DPoP key"), true
+	}
 	claimACR, coe := parseClaimsParameter(req.Claims)
 	if coe != nil {
 		return nil, coe, true
@@ -331,7 +337,7 @@ func (s *Service) Authorize(ctx context.Context, rlm *realm.Realm, req Authorize
 		RedirectURI: req.RedirectURI, ResponseMode: req.ResponseMode, Scopes: res.Scopes, ResourceIDs: res.ResourceIDs, State: req.State, Nonce: req.Nonce,
 		CodeChallenge: req.CodeChallenge, ChallengeMethod: req.CodeChallengeMethod, Prompt: res.Prompt, MaxAge: res.MaxAge,
 		ACRValues: res.ACRValues, LoginHint: req.LoginHint, UILocales: req.UILocales, OrgID: res.OrgID, ClientIP: clientIP, UserAgent: ua,
-		ReuseSession: reuse, ClaimsRequest: res.ClaimsRequest})
+		ReuseSession: reuse, ClaimsRequest: res.ClaimsRequest, DPoPJKT: req.DPoPJKT})
 	if err != nil {
 		return &AuthorizeResult{Redirect: s.respond(ctx, rlm, req, res.Client, map[string]string{"error": "server_error", "state": req.State, "iss": rlm.Issuer})}
 	}
@@ -403,7 +409,13 @@ func (s *Service) StartHeadless(ctx context.Context, rlm *realm.Realm, req Autho
 		RedirectURI: req.RedirectURI, ResponseMode: req.ResponseMode, Scopes: res.Scopes, ResourceIDs: res.ResourceIDs, State: req.State, Nonce: req.Nonce,
 		CodeChallenge: req.CodeChallenge, ChallengeMethod: req.CodeChallengeMethod, Prompt: prompt, MaxAge: res.MaxAge,
 		ACRValues: res.ACRValues, LoginHint: req.LoginHint, UILocales: req.UILocales, OrgID: res.OrgID, ClientIP: clientIP, UserAgent: ua,
-		ClaimsRequest: res.ClaimsRequest})
+		ClaimsRequest: res.ClaimsRequest, DPoPJKT: req.DPoPJKT})
+}
+
+// validJKT reports whether s has the form of a JWK SHA-256 thumbprint
+// (RFC 7638): 43 base64url characters without padding.
+func validJKT(s string) bool {
+	return len(s) == 43 && strings.Trim(s, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_") == ""
 }
 
 func dedupe(in []string) []string {

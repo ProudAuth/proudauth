@@ -21,6 +21,7 @@ import (
 	"github.com/go-jose/go-jose/v4/jwt"
 
 	"github.com/proudauth/proudauth/internal/audit"
+	"github.com/proudauth/proudauth/internal/configuration"
 	"github.com/proudauth/proudauth/internal/platform/secret"
 	"github.com/proudauth/proudauth/internal/realm"
 )
@@ -626,6 +627,353 @@ func TestDPoPBoundTokens(t *testing.T) {
 		Headers: map[string]string{"Authorization": "DPoP " + at, "DPoP": athProof()}}); r.Status != 401 {
 		t.Fatalf("proof from another key accepted: %d", r.Status)
 	}
+}
+
+// dpopProof signs a DPoP proof (RFC 9449 §4.2) with key for one request.
+// Signing with a generated P-256 key cannot fail, so errors are ignored, as
+// in TestDPoPBoundTokens.
+func dpopProof(h *Harness, key *ecdsa.PrivateKey, method, htu string) string {
+	s, _ := jose.NewSigner(jose.SigningKey{Algorithm: jose.ES256, Key: key}, (&jose.SignerOptions{EmbedJWK: true}).WithType("dpop+jwt"))
+	out, _ := jwt.Signed(s).Claims(map[string]any{"jti": secret.Numeric(12), "htm": method, "htu": htu, "iat": h.Clock.Now().Unix()}).Serialize()
+	return out
+}
+
+// refreshBinding returns the family of a refresh token and the sender
+// binding stored with it (cnf_jkt, cnf_x5t_s256; "" for NULL).
+func refreshBinding(t *testing.T, h *Harness, refreshToken string) (family, jkt, x5t string) {
+	t.Helper()
+	if err := h.App.D.DB.Pool.QueryRow(context.Background(), `SELECT f.id, coalesce(f.cnf_jkt, ''), coalesce(f.cnf_x5t_s256, '')
+		FROM refresh_families f JOIN refresh_tokens t ON t.family_id=f.id WHERE t.token_digest=$1`, secret.Digest(refreshToken)).Scan(&family, &jkt, &x5t); err != nil {
+		t.Fatalf("family of refresh token: %v", err)
+	}
+	return family, jkt, x5t
+}
+
+// mustInvalidGrant fails unless r is 400 invalid_grant.
+func mustInvalidGrant(t *testing.T, r *Resp, what string) {
+	t.Helper()
+	if r.Status != 400 || r.Str("error") != "invalid_grant" {
+		t.Fatalf("%s: %d %s, want 400 invalid_grant", what, r.Status, r.Raw)
+	}
+}
+
+// TestSenderBoundRefreshFamilies covers owner decision 13 of 0.2.0-alpha.6
+// (TOK-019, SES-006, TEST-067; RFC 9449 §5, RFC 8705 §3): a refresh family
+// whose first issuance was bound to a DPoP key or a TLS client certificate
+// stores that binding (refresh_families.cnf_jkt and cnf_x5t_s256, migration
+// 0089), and every later refresh must prove the same key or certificate,
+// whatever the client's require_dpop or certificate policy says: a proof of
+// another key, another certificate or none is invalid_grant. A refusal is
+// not a reuse signal: it neither rotates nor compromises the family, so the
+// holder keeps refreshing, and it is audited as token.refresh.binding_failed.
+// Rotation keeps the family and its binding. A family without a binding (a
+// bearer family, or one issued before the change) refreshes as before.
+func TestSenderBoundRefreshFamilies(t *testing.T) {
+	h := NewHarness(t, func(c *configuration.Config) {
+		c.Server.ClientCertHeader = "X-Client-Cert"
+		c.Server.TrustedProxies = []string{"127.0.0.1/32", "::1/128"}
+	})
+	f := fixtureOn(t, h)
+	ctx := context.Background()
+	tokenURL := h.Realm.Issuer + "/oauth/token"
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	otherKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	jkt := thumbprint(t, &key.PublicKey)
+	webToken := func(form url.Values, k *ecdsa.PrivateKey) *Resp {
+		t.Helper()
+		rq := Req{Method: "POST", Path: "/realms/main/oauth/token", Basic: [2]string{"web-bff", f.Clients["web"].Secret}, Form: form}
+		if k != nil {
+			rq.Headers = map[string]string{"DPoP": dpopProof(h, k, "POST", tokenURL)}
+		}
+		return h.Do(rq)
+	}
+	refresh := func(rt string, k *ecdsa.PrivateKey) *Resp {
+		t.Helper()
+		return webToken(url.Values{"grant_type": {"refresh_token"}, "refresh_token": {rt}}, k)
+	}
+	loginDPoP := func(t *testing.T, user string) string {
+		t.Helper()
+		code, verifier := f.codeFor(t, user)
+		r := webToken(url.Values{"grant_type": {"authorization_code"}, "code": {code}, "code_verifier": {verifier}, "redirect_uri": {webRedirect}}, key)
+		mustStatus(t, r, 200, "code redemption with a DPoP proof")
+		if r.Str("token_type") != "DPoP" || r.Str("refresh_token") == "" {
+			t.Fatalf("DPoP-bound tokens: %s", r.Raw)
+		}
+		return r.Str("refresh_token")
+	}
+
+	t.Run("DPoP-bound family", func(t *testing.T) {
+		rt := loginDPoP(t, "bob")
+		family, boundJKT, boundX5T := refreshBinding(t, h, rt)
+		if boundJKT != jkt || boundX5T != "" {
+			t.Fatalf("stored binding cnf_jkt %q, cnf_x5t_s256 %q; want cnf_jkt %q", boundJKT, boundX5T, jkt)
+		}
+		mustInvalidGrant(t, refresh(rt, otherKey), "refresh with a proof from another key")
+		// web-bff has no require_dpop: before the binding, a refresh
+		// without a proof got a bearer token from a DPoP-bound family.
+		mustInvalidGrant(t, refresh(rt, nil), "refresh without a proof")
+		next := refresh(rt, key)
+		mustStatus(t, next, 200, "refresh with the bound key after refused attempts")
+		if c, _ := jwtPayload(next.Str("access_token"))["cnf"].(map[string]any); next.Str("token_type") != "DPoP" || c == nil || c["jkt"] != jkt {
+			t.Fatalf("refreshed tokens are not bound to the key: %s", next.Raw)
+		}
+		rt2 := next.Str("refresh_token")
+		if rt2 == "" || rt2 == rt {
+			t.Fatal("the refresh token must rotate")
+		}
+		if fam, j, x := refreshBinding(t, h, rt2); fam != family || j != jkt || x != "" {
+			t.Fatalf("after rotation: family %s, cnf_jkt %q, cnf_x5t_s256 %q; want family %s bound to %q", fam, j, x, family, jkt)
+		}
+		// The consumed generation, presented without the key, is refused as
+		// a binding failure and not treated as reuse: the holder's family
+		// is not revoked by someone who cannot use the token.
+		mustInvalidGrant(t, refresh(rt, otherKey), "consumed generation with another key")
+		mustInvalidGrant(t, refresh(rt, nil), "consumed generation without a proof")
+		third := refresh(rt2, key)
+		mustStatus(t, third, 200, "the holder refreshes after refused presentations of its old token")
+		// With the key, reuse detection is unchanged.
+		mustInvalidGrant(t, refresh(rt2, key), "reuse of a consumed generation with the bound key")
+		mustInvalidGrant(t, refresh(third.Str("refresh_token"), key), "the family after reuse")
+		var state string
+		var failures int
+		if err := h.App.D.DB.Pool.QueryRow(ctx, `SELECT state, (SELECT count(*) FROM audit_events WHERE type='token.refresh.binding_failed'
+			AND reason_code='REFRESH_BINDING_FAILED' AND metadata->>'token_family_id'=$1 AND metadata->>'binding'='dpop') FROM refresh_families WHERE id=$1`,
+			family).Scan(&state, &failures); err != nil {
+			t.Fatal(err)
+		}
+		if state != "compromised" || failures != 4 {
+			t.Fatalf("family state %q with %d audited binding failures; want compromised (by the reuse) and 4", state, failures)
+		}
+	})
+
+	t.Run("certificate-bound family", func(t *testing.T) {
+		_, cert, certPEM := issue(t, nil, "bound-web", "")
+		_, _, otherPEM := issue(t, nil, "someone-else", "")
+		withCert := func(p string) map[string]string { return map[string]string{"X-Client-Cert": url.QueryEscape(p)} }
+		reg := f.must(f.AdminAPI("POST", "/clients", map[string]any{"client_id": "bound-web", "name": "Certificate-bound web", "client_type": "confidential",
+			"first_party": true, "grant_types": []string{"authorization_code", "refresh_token"}, "redirect_uris": []string{"https://app.test/cb"},
+			"tls_client_certificate_bound_access_tokens": true}), 201, "certificate-bound client")
+		for _, it := range f.must(f.AdminAPI("GET", "/resources", nil), 200, "resources").Get("items").([]any) {
+			if m := it.(map[string]any); m["kind"] == "userinfo" {
+				f.must(f.AdminAPI("PUT", "/clients/"+reg.Str("client.id")+"/resource-grants/"+m["id"].(string), map[string]any{"allowed_scopes": []string{"openid"}}), 204, "grant")
+			}
+		}
+		clientSecret := reg.Str("client_secret")
+		token := func(form url.Values, headers map[string]string) *Resp {
+			t.Helper()
+			return h.Do(Req{Method: "POST", Path: "/realms/main/oauth/token", Form: form, Basic: [2]string{"bound-web", clientSecret}, Headers: headers})
+		}
+		refresh := func(rt string, headers map[string]string) *Resp {
+			t.Helper()
+			return token(url.Values{"grant_type": {"refresh_token"}, "refresh_token": {rt}}, headers)
+		}
+		start, verifier, cont := h.StartTx(LoginOpts{ClientID: "bound-web", RedirectURI: "https://app.test/cb", Scope: "openid"})
+		done := h.Drive(start.Str("transaction_id"), cont, &Resp{Status: 200, Body: start.Get("state").(map[string]any)}, LoginOpts{Identifier: "bob@example.test"})
+		code, _ := url.Parse(done.Str("redirect_to"))
+		first := token(url.Values{"grant_type": {"authorization_code"}, "code": {code.Query().Get("code")}, "code_verifier": {verifier},
+			"redirect_uri": {"https://app.test/cb"}}, withCert(certPEM))
+		mustStatus(t, first, 200, "certificate-bound tokens")
+		rt := first.Str("refresh_token")
+		family, j, x := refreshBinding(t, h, rt)
+		if x != x5t(cert) || j != "" {
+			t.Fatalf("stored binding cnf_jkt %q, cnf_x5t_s256 %q; want cnf_x5t_s256 %q", j, x, x5t(cert))
+		}
+		mustInvalidGrant(t, refresh(rt, withCert(otherPEM)), "refresh with another certificate")
+		next := refresh(rt, withCert(certPEM))
+		mustStatus(t, next, 200, "refresh with the bound certificate")
+		if c, _ := jwtPayload(next.Str("access_token"))["cnf"].(map[string]any); c == nil || c["x5t#S256"] != x5t(cert) {
+			t.Fatalf("refreshed access token is not bound to the certificate: %s", next.Raw)
+		}
+		rt = next.Str("refresh_token")
+		if fam, j, x := refreshBinding(t, h, rt); fam != family || x != x5t(cert) || j != "" {
+			t.Fatalf("after rotation: family %s, cnf_jkt %q, cnf_x5t_s256 %q", fam, j, x)
+		}
+		// The binding belongs to the family, not to the client's current
+		// policy: with certificate-bound tokens turned off, a refresh
+		// without the certificate (or with a DPoP proof instead) is still
+		// refused.
+		if _, err := h.App.D.DB.Pool.Exec(ctx, `UPDATE clients SET protocol_options = protocol_options - 'tls_client_certificate_bound_access_tokens'
+			WHERE realm_id=$1 AND client_id='bound-web'`, h.Realm.ID); err != nil {
+			t.Fatal(err)
+		}
+		mustInvalidGrant(t, refresh(rt, nil), "refresh without a certificate after the client's policy changed")
+		mustInvalidGrant(t, refresh(rt, map[string]string{"DPoP": dpopProof(h, key, "POST", tokenURL)}), "refresh with a DPoP proof instead of the certificate")
+		mustInvalidGrant(t, refresh(rt, withCert(otherPEM)), "refresh with another certificate after the client's policy changed")
+		mustStatus(t, refresh(rt, withCert(certPEM)), 200, "refresh with the bound certificate after the client's policy changed")
+	})
+
+	t.Run("unbound families refresh as before", func(t *testing.T) {
+		// A bearer family: its first issuance had no sender constraint.
+		rt := f.LoginWeb("alice", f.Acme, f.OrdersAud, "openid orders:read").Tokens.Str("refresh_token")
+		if _, j, x := refreshBinding(t, h, rt); j != "" || x != "" {
+			t.Fatalf("a bearer family got a binding: %q %q", j, x)
+		}
+		mustStatus(t, refresh(rt, nil), 200, "bearer family without a proof")
+		// A family issued before the change: DPoP-bound tokens, no stored
+		// binding (what migration 0089 leaves on existing rows).
+		legacy := loginDPoP(t, "alice")
+		family, _, _ := refreshBinding(t, h, legacy)
+		if _, err := h.App.D.DB.Pool.Exec(ctx, `UPDATE refresh_families SET cnf_jkt=NULL, cnf_x5t_s256=NULL WHERE id=$1`, family); err != nil {
+			t.Fatal(err)
+		}
+		bearer := refresh(legacy, nil)
+		mustStatus(t, bearer, 200, "legacy family without a proof")
+		if bearer.Str("token_type") != "Bearer" {
+			t.Fatalf("legacy family refreshed without a proof: %s", bearer.Raw)
+		}
+		// Rotation does not bind a family that was issued unbound.
+		next := bearer.Str("refresh_token")
+		if _, j, x := refreshBinding(t, h, next); j != "" || x != "" {
+			t.Fatalf("rotation bound a legacy family: %q %q", j, x)
+		}
+		mustStatus(t, refresh(next, otherKey), 200, "legacy family with any key")
+	})
+}
+
+// TestDPoPBoundAuthorizationCodes covers the dpop_jkt authorization-code
+// binding (RFC 9449 §10, TOK-019, owner decision 13): an authorization
+// request that names dpop_jkt, at the authorization endpoint, in a pushed
+// request or through the headless API, gets a code that only a DPoP proof
+// of that key redeems. A DPoP proof sent with the pushed request binds the
+// code to its key the same way (RFC 9449 §10.1), and a pushed request whose
+// dpop_jkt names another key is refused. A bound code redeemed with another
+// key or without a proof is invalid_grant and spent, like the other code
+// binding failures; codes without dpop_jkt are unchanged.
+func TestDPoPBoundAuthorizationCodes(t *testing.T) {
+	f := NewFixture(t, func(p *realm.Policy) { p.Interaction.LoginUIURL = "https://login.test/ui" })
+	h := f.H
+	tokenURL, parURL := h.Realm.Issuer+"/oauth/token", h.Realm.Issuer+"/oauth/par"
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	otherKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	jkt := thumbprint(t, &key.PublicKey)
+	bound := url.Values{"dpop_jkt": {jkt}}
+	redeem := func(code, verifier string, k *ecdsa.PrivateKey) *Resp {
+		t.Helper()
+		rq := Req{Method: "POST", Path: "/realms/main/oauth/token", Basic: [2]string{"web-bff", f.Clients["web"].Secret},
+			Form: url.Values{"grant_type": {"authorization_code"}, "code": {code}, "code_verifier": {verifier}, "redirect_uri": {webRedirect}}}
+		if k != nil {
+			rq.Headers = map[string]string{"DPoP": dpopProof(h, k, "POST", tokenURL)}
+		}
+		return h.Do(rq)
+	}
+	params := func(challenge string, extra url.Values) url.Values {
+		q := url.Values{"client_id": {"web-bff"}, "redirect_uri": {webRedirect}, "response_type": {"code"}, "scope": {"openid orders:read"},
+			"state": {"s1"}, "nonce": {"n1"}, "code_challenge": {challenge}, "code_challenge_method": {"S256"}, "resource": {f.OrdersAud}, "organization": {f.Acme}}
+		for k, v := range extra {
+			q[k] = v
+		}
+		return q
+	}
+	codeOf := func(t *testing.T, st *Resp) string {
+		t.Helper()
+		u, _ := url.Parse(st.Str("redirect_to"))
+		if u == nil || u.Query().Get("code") == "" {
+			t.Fatalf("no code: %d %s", st.Status, st.Raw)
+		}
+		return u.Query().Get("code")
+	}
+	// Sign-ins are spread over two users so that no subtest meets the
+	// per-identifier password budget.
+	viaAuthorize := func(t *testing.T, user string, extra url.Values) (code, verifier string) {
+		t.Helper()
+		verifier, challenge := PKCE()
+		b := newBrowser(h)
+		r := b.do("GET", "/realms/main/oauth/authorize?"+params(challenge, extra).Encode(), nil, nil)
+		mustStatus(t, r, 302, "authorize")
+		loc, _ := url.Parse(r.Header.Get("Location"))
+		return codeOf(t, b.drive(t, loc.Query().Get("transaction_id"), user+"@example.test")), verifier
+	}
+	headless := func(t *testing.T, user string, start *Resp) string {
+		t.Helper()
+		mustStatus(t, start, 201, "start transaction")
+		return codeOf(t, h.Drive(start.Str("transaction_id"), start.Str("continuation_token"), &Resp{Status: 200, Body: start.Get("state").(map[string]any)},
+			LoginOpts{Identifier: user + "@example.test", SelectOrg: f.Acme}))
+	}
+	push := func(challenge string, extra url.Values, k *ecdsa.PrivateKey) *Resp {
+		t.Helper()
+		rq := Req{Method: "POST", Path: "/realms/main/oauth/par", Basic: [2]string{"web-bff", f.Clients["web"].Secret}, Form: params(challenge, extra)}
+		if k != nil {
+			rq.Headers = map[string]string{"DPoP": dpopProof(h, k, "POST", parURL)}
+		}
+		return h.Do(rq)
+	}
+	viaPAR := func(t *testing.T, extra url.Values, k *ecdsa.PrivateKey) (code, verifier string) {
+		t.Helper()
+		verifier, challenge := PKCE()
+		par := push(challenge, extra, k)
+		mustStatus(t, par, 201, "PAR")
+		return headless(t, "alice", h.API("POST", "/auth/transactions", "", map[string]any{"client_id": "web-bff", "request_uri": par.Str("request_uri")})), verifier
+	}
+	issued := func(t *testing.T, r *Resp) {
+		t.Helper()
+		mustStatus(t, r, 200, "code redeemed with the bound key")
+		if c, _ := jwtPayload(r.Str("access_token"))["cnf"].(map[string]any); r.Str("token_type") != "DPoP" || c == nil || c["jkt"] != jkt {
+			t.Fatalf("tokens of a DPoP-bound code: %s", r.Raw)
+		}
+		// The refresh family starts bound to the same key (owner decision 13).
+		if _, j, _ := refreshBinding(t, h, r.Str("refresh_token")); j != jkt {
+			t.Fatalf("refresh family bound to %q, want %q", j, jkt)
+		}
+	}
+
+	t.Run("authorization endpoint", func(t *testing.T) {
+		code, verifier := viaAuthorize(t, "bob", bound)
+		mustInvalidGrant(t, redeem(code, verifier, otherKey), "code redeemed with another key")
+		mustInvalidGrant(t, redeem(code, verifier, key), "the code after a binding failure")
+		code, verifier = viaAuthorize(t, "bob", bound)
+		mustInvalidGrant(t, redeem(code, verifier, nil), "code redeemed without a proof")
+		code, verifier = viaAuthorize(t, "bob", bound)
+		issued(t, redeem(code, verifier, key))
+		// A dpop_jkt that is not a JWK SHA-256 thumbprint is refused at the
+		// client's redirect.
+		_, challenge := PKCE()
+		r := newBrowser(h).do("GET", "/realms/main/oauth/authorize?"+params(challenge, url.Values{"dpop_jkt": {"not-a-thumbprint"}}).Encode(), nil, nil)
+		loc, _ := url.Parse(r.Header.Get("Location"))
+		if r.Status != 302 || loc == nil || loc.Host != "app.test" || loc.Query().Get("error") != "invalid_request" {
+			t.Fatalf("malformed dpop_jkt: %d %s", r.Status, r.Header.Get("Location"))
+		}
+	})
+
+	t.Run("pushed authorization request", func(t *testing.T) {
+		code, verifier := viaPAR(t, bound, nil)
+		mustInvalidGrant(t, redeem(code, verifier, otherKey), "pushed dpop_jkt, code redeemed with another key")
+		code, verifier = viaPAR(t, bound, nil)
+		issued(t, redeem(code, verifier, key))
+		// A DPoP proof with the pushed request binds the code to its key.
+		code, verifier = viaPAR(t, nil, key)
+		mustInvalidGrant(t, redeem(code, verifier, otherKey), "proof at PAR, code redeemed with another key")
+		code, verifier = viaPAR(t, nil, key)
+		mustInvalidGrant(t, redeem(code, verifier, nil), "proof at PAR, code redeemed without a proof")
+		code, verifier = viaPAR(t, bound, key)
+		issued(t, redeem(code, verifier, key))
+		// dpop_jkt and a proof of another key in one pushed request.
+		_, challenge := PKCE()
+		if r := push(challenge, bound, otherKey); r.Status != 400 || r.Str("error") != "invalid_request" {
+			t.Fatalf("dpop_jkt naming another key than the proof: %d %s", r.Status, r.Raw)
+		}
+		if r := push(challenge, url.Values{"dpop_jkt": {"not-a-thumbprint"}}, nil); r.Status != 400 || r.Str("error") != "invalid_request" {
+			t.Fatalf("malformed dpop_jkt at PAR: %d %s", r.Status, r.Raw)
+		}
+	})
+
+	t.Run("headless API", func(t *testing.T) {
+		start := func() (*Resp, string) {
+			verifier, challenge := PKCE()
+			return h.API("POST", "/auth/transactions", "", map[string]any{"client_id": "web-bff", "redirect_uri": webRedirect, "scope": "openid orders:read",
+				"code_challenge": challenge, "code_challenge_method": "S256", "resource": []string{f.OrdersAud}, "organization": f.Acme, "dpop_jkt": jkt}), verifier
+		}
+		st, verifier := start()
+		mustInvalidGrant(t, redeem(headless(t, "bob", st), verifier, otherKey), "headless dpop_jkt, code redeemed with another key")
+		st, verifier = start()
+		issued(t, redeem(headless(t, "bob", st), verifier, key))
+	})
+
+	t.Run("codes without dpop_jkt are unchanged", func(t *testing.T) {
+		code, verifier := f.codeFor(t, "alice")
+		mustStatus(t, redeem(code, verifier, otherKey), 200, "an unbound code with any DPoP key")
+		code, verifier = f.codeFor(t, "alice")
+		mustStatus(t, redeem(code, verifier, nil), 200, "an unbound code without a proof")
+	})
 }
 
 func thumbprint(t *testing.T, pub *ecdsa.PublicKey) string {

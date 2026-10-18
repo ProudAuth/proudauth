@@ -49,11 +49,13 @@ request as a JSON string; see
 [oauth-oidc-profile.md](oauth-oidc-profile.md#claims-parameter)), `request_uri` (a
 PAR reference, usable once and only with the `client_id` that pushed it; with
 another client's it is refused without being spent,
-[oauth-oidc-profile.md](oauth-oidc-profile.md#par-rfc-9126)), `intent: "register"`, `device_user_code` (see Device flow), and
+[oauth-oidc-profile.md](oauth-oidc-profile.md#par-rfc-9126)), `intent: "register"`, `device_user_code` (see Device flow),
 `response_mode` (`query`, the default, or `query.jwt`/`jwt`: `redirect_to`
 then carries one signed `response` parameter, JARM, ADV-002,
 [response-security.md](response-security.md#jarm-adv-002); other values are
-`400 invalid_request`).
+`400 invalid_request`), and `dpop_jkt` (the JWK SHA-256 thumbprint of a DPoP
+key: the code is then redeemed only with a DPoP proof of that key, RFC 9449
+§10, [oauth-oidc-profile.md](oauth-oidc-profile.md#dpop-rfc-9449)).
 
 The transaction stores `login_hint` (at most 254 bytes), `ui_locales` (at most
 64 bytes) and the `User-Agent` (at most 256 bytes) shortened to that length on

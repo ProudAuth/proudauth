@@ -235,6 +235,7 @@ issuer and endpoints, and tokens, DPoP proofs (`htu`) and client assertions
 | `login_hint`, `ui_locales` | Hints passed to the login UI; never authority |
 | `organization` | Organization ID or slug to bind; not disclosed if unknown |
 | `request_uri` | A PAR reference |
+| `dpop_jkt` | Optional (RFC 9449 §10): the JWK SHA-256 thumbprint of a DPoP key (43 base64url characters; anything else is `invalid_request`). The code is then redeemed only with a DPoP proof of that key ([DPoP](#dpop-rfc-9449)) |
 | `intent=register` | Product extension, same as `prompt=create` |
 | `claims` | OIDC `claims` request (JSON, at most 4096 bytes; members `id_token` and `userinfo` only; standard claim names plus `acr`, `auth_time`, `amr`). Unknown members or claims return `invalid_request`. See [Claims parameter](#claims-parameter). |
 | `request` | Rejected (`request_not_supported`) |
@@ -384,8 +385,8 @@ A scope with `sensitivity: privileged` and no `step_up_acr` requires
 
 | Grant | Behavior |
 | --- | --- |
-| `authorization_code` | Requires `code`, `code_verifier` (43–128 characters), `redirect_uri` (exact). The code is single-use and bound to client, redirect, PKCE challenge and transaction; valid 60 s. Presenting a used code again revokes the grant and everything issued from it and fails with `invalid_grant`. A binding failure also revokes the grant. Returns access token, refresh token (if the client has the refresh grant), ID token (if `openid`). |
-| `refresh_token` | Rotation with reuse detection ([ADR 0011](../architecture-decisions/0011-refresh-token-families.md)); `fapi2` clients keep the same refresh token ([FAPI 2.0](#fapi-20-security-profile-adv-001)). `scope` may only narrow; scopes whose step-up policy the grant no longer meets are left out ([Scope step-up](#scope-step-up)). Live re-checks of user, client, session, organization and membership. |
+| `authorization_code` | Requires `code`, `code_verifier` (43–128 characters), `redirect_uri` (exact). The code is single-use and bound to client, redirect, PKCE challenge, transaction and, when the request named `dpop_jkt`, a DPoP key; valid 60 s. Presenting a used code again revokes the grant and everything issued from it and fails with `invalid_grant`. A binding failure also revokes the grant. Returns access token, refresh token (if the client has the refresh grant), ID token (if `openid`). |
+| `refresh_token` | Rotation with reuse detection ([ADR 0011](../architecture-decisions/0011-refresh-token-families.md)); `fapi2` clients keep the same refresh token ([FAPI 2.0](#fapi-20-security-profile-adv-001)). A family whose first issuance was bound to a DPoP key or a TLS client certificate is refreshed only with a proof of the same key or the same certificate ([sender-bound refresh tokens](#dpop-rfc-9449)). `scope` may only narrow; scopes whose step-up policy the grant no longer meets are left out ([Scope step-up](#scope-step-up)). Live re-checks of user, client, session, organization and membership. |
 | `client_credentials` | Confidential client with a service principal; `resource` must resolve to exactly one business resource (account and UserInfo audiences are refused); `organization` must be allowed for the service principal; no refresh token. |
 | `urn:ietf:params:oauth:grant-type:device_code` | RFC 8628 polling: `authorization_pending`, `slow_down` (interval +5 s when polled faster than the interval, initial 5 s), `access_denied`, `expired_token`; single redemption; client-bound. |
 | `urn:ietf:params:oauth:grant-type:token-exchange` | See below. |
@@ -505,7 +506,14 @@ never yields a user token. Trusts, profiles and verification:
 - Clients with `token_policy.require_par` (always for `high_assurance` and
   `fapi2`) must use it; an authorization request without it is
   `invalid_request` ("this client must use pushed authorization requests").
-- The headless API also accepts `request_uri`.
+- A pushed request may name `dpop_jkt`, or carry a `DPoP` header (RFC 9449
+  §10.1): the proof is verified like one at the token endpoint, with `htu`
+  the PAR endpoint, and the code is bound to its key as if the request had
+  named it in `dpop_jkt`. A `dpop_jkt` that names another key than the
+  proof's is `400 invalid_request` ("dpop_jkt does not match the key of the
+  DPoP proof"), and more than one `DPoP` header is `400 invalid_dpop_proof`
+  (`TestDPoPBoundAuthorizationCodes`).
+- The headless API also accepts `request_uri`, and `dpop_jkt`.
 
 ### DPoP (RFC 9449)
 
@@ -518,6 +526,39 @@ never yields a user token. Trusts, profiles and verification:
 - The access token gets `cnf.jkt` and `token_type: DPoP` (from every grant
   that accepts a proof, token exchange included); clients with
   `require_dpop` must send a proof.
+- **Sender-bound refresh tokens**
+  (RFC 9449 §5, RFC 8705 §3; TOK-019, owner decision 13 of
+  [the alpha.6 decisions](../releases/2026-10-alpha.6-decisions.md)): a
+  refresh token family whose first issuance (authorization code or device
+  code) was sender-constrained keeps that binding for its whole life,
+  whatever the client's `require_dpop` or certificate setting says, now or
+  later. The family stores the proof key's JWK thumbprint
+  (`refresh_families.cnf_jkt`) or the certificate's SHA-256 thumbprint
+  (`cnf_x5t_s256`, see [Mutual TLS](#mutual-tls-rfc-8705)), migration `0089`.
+  Every refresh must then carry a DPoP proof signed with that key, or come
+  over a connection presenting that certificate; a proof from another key,
+  another certificate or none is `400 invalid_grant` ("refresh token is
+  sender-constrained: ..."), also for a client without `require_dpop`,
+  which before got a bearer token from a DPoP-bound family. The refusal is
+  checked before reuse detection and is not a reuse signal: the token is
+  neither rotated nor its family compromised, so someone who holds a stolen
+  refresh token without the key cannot revoke the holder's family, grant
+  and session through it; it is audited as `token.refresh.binding_failed`
+  (outcome `denied`, reason `REFRESH_BINDING_FAILED`, metadata `binding`
+  `dpop` or `mtls` and `proof` `missing` or `mismatch`). Rotation keeps the
+  family and its binding, and `fapi2` clients, which keep one refresh
+  token, are bound the same way. A family issued without a sender
+  constraint, or before migration `0089`, stays unbound until it expires,
+  and rotation never binds it later (`TestSenderBoundRefreshFamilies`).
+- **Authorization codes bound to a DPoP key** (RFC 9449 §10): an
+  authorization request at the authorization endpoint, in a pushed
+  request (also by a `DPoP` header, see [PAR](#par-rfc-9126)) or through the
+  headless API may name `dpop_jkt`. The code is then redeemed only with a
+  DPoP proof of that key; another key or no proof is `400 invalid_grant`
+  ("authorization code binding failed: ..."), and, as for the other code
+  binding failures, the code is spent and its grant revoked. Codes without
+  `dpop_jkt` are unchanged (`TestDPoPBoundAuthorizationCodes`). Discovery
+  advertises nothing new: RFC 9449 defines no metadata for `dpop_jkt`.
 - The IdP's own APIs (account, organization and administration) and UserInfo
   enforce the binding (TOK-019): a DPoP-bound token is accepted only with the
   `DPoP` scheme and a fresh proof for that request whose `htu` is the
@@ -537,8 +578,8 @@ never yields a user token. Trusts, profiles and verification:
   (`TestUserInfoDPoPChallenge`). The account, organization and
   administration APIs still answer these refusals as `401` problem details
   with a `Bearer` challenge.
-- **Limits:** DPoP nonces are not supported; refresh tokens are not bound to the
-  key. The Go resource SDK checks proofs through `SenderVerifier`; token-only
+- **Limits:** DPoP nonces (`DPoP-Nonce`, RFC 9449 §8 and §9) are not
+  supported (deferred, issue #37). The Go resource SDK checks proofs through `SenderVerifier`; token-only
   methods in all SDKs reject bound tokens. Node.js, Dart and PHP have no
   request-level proof verifier ([resource profile](../integrations/resource-servers.md#sender-constrained-tokens)).
   Introspection returns `cnf` (also for opaque tokens) and `token_type: DPoP`
@@ -575,6 +616,13 @@ be bound to it. Deployment (how certificates reach the server):
   `400 invalid_request` ("use one sender constraint: DPoP or a TLS client
   certificate"). A client that requires DPoP and certificate binding at once
   can therefore get no token; registration does not refuse the combination.
+- A refresh token family issued with a certificate-bound access token is
+  bound to that certificate (`cnf_x5t_s256`): every refresh must present the
+  same certificate, also after the client's
+  `tls_client_certificate_bound_access_tokens` is turned off; another
+  certificate or none is `400 invalid_grant`
+  ([sender-bound refresh tokens](#dpop-rfc-9449),
+  `TestSenderBoundRefreshFamilies`).
 - The IdP's own APIs and UserInfo accept a certificate-bound token only on a
   connection presenting the same certificate (`401`, "this token is bound to
   a TLS client certificate; present it with the same certificate").
@@ -605,7 +653,7 @@ conformance suite has been run** ([interoperability.md](../integrations/interope
 | Signing algorithms `PS256`, `ES256` or `EdDSA` | The realm's signing algorithm (`keys.signing_algorithm`) must be one of them when the client is registered or updated (`422`), and a signing-key rotation to another algorithm is refused (`409`) while the realm has `fapi2` clients; the default `RS256` is not |
 | Short-lived authorization codes | At most 60 seconds, whatever `tokens.authorization_code_ttl` says |
 | Access token lifetime | At most 10 minutes |
-| Refresh tokens | Not rotated: the same refresh token stays valid until the family's idle or absolute expiry, the session ends or it is revoked; using it again is not treated as reuse (these clients are confidential and their tokens sender-constrained) |
+| Refresh tokens | Not rotated: the same refresh token stays valid until the family's idle or absolute expiry, the session ends or it is revoked; using it again is not treated as reuse (these clients are confidential, and their tokens and refresh token families are sender-constrained: every refresh must prove the DPoP key or certificate of the first issuance) |
 | TLS 1.2 or later | The mutual-TLS listener requires TLS 1.2; the public listener and any proxy in front of it are the operator's to configure (Go's defaults allow TLS 1.2 and 1.3) |
 | Message signing (optional part) | JARM is available ([response-security.md](response-security.md#jarm-adv-002)); signed request objects (JAR) are not supported, the `request` parameter is refused (`request_not_supported`) |
 

@@ -22,7 +22,12 @@ const parTTL = 60 * time.Second
 
 // PushAuthorizationRequest stores a validated authorization request submitted by an
 // authenticated client and returns a single-use request reference (RFC 9126).
-func (s *Service) PushAuthorizationRequest(ctx context.Context, rlm *realm.Realm, c *application.Client, v url.Values) (*PARResponse, *Error) {
+//
+// dpopProof is the request's DPoP header, verified for POST to htu when
+// present (RFC 9449 §10.1): the code is then bound to the proof's key as if
+// the request had named it in dpop_jkt, and a dpop_jkt naming another key
+// is refused.
+func (s *Service) PushAuthorizationRequest(ctx context.Context, rlm *realm.Realm, c *application.Client, v url.Values, dpopProof, htu string) (*PARResponse, *Error) {
 	if v.Get("request_uri") != "" {
 		return nil, ErrInvalidRequest("request_uri is not allowed in a pushed request")
 	}
@@ -32,6 +37,16 @@ func (s *Service) PushAuthorizationRequest(ctx context.Context, rlm *realm.Realm
 	}
 	if req.ClientID != "" && req.ClientID != c.ClientID {
 		return nil, ErrInvalidRequest("client_id mismatch")
+	}
+	if dpopProof != "" {
+		jkt, oe := s.VerifyDPoPProof(ctx, rlm, dpopProof, "POST", htu, "")
+		if oe != nil {
+			return nil, oe
+		}
+		if req.DPoPJKT != "" && req.DPoPJKT != jkt {
+			return nil, ErrInvalidRequest("dpop_jkt does not match the key of the DPoP proof")
+		}
+		req.DPoPJKT = jkt
 	}
 	req.ClientID = c.ClientID
 	req.RequestURI = "pushed"

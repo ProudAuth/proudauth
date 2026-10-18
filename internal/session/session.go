@@ -66,6 +66,10 @@ func (s *Session) HasMFA() bool { return s.MFATime != nil }
 var (
 	ErrRefreshInvalid = errors.New("refresh token invalid")
 	ErrRefreshReuse   = errors.New("refresh token reuse detected")
+	// ErrRefreshSender: the refresh family is sender-bound and the request
+	// does not prove possession of its DPoP key or TLS client certificate
+	// (TOK-019). It is not a reuse signal.
+	ErrRefreshSender = errors.New("refresh token is bound to another sender")
 )
 
 // Service manages sessions and grants.

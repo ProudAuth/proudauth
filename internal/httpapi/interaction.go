@@ -57,6 +57,8 @@ type startBody struct {
 	// ResponseMode is query (default), or jwt / query.jwt for JWT-secured
 	// authorization responses (ADV-002).
 	ResponseMode string `json:"response_mode"`
+	// DPoPJKT binds the authorization code to a DPoP key (RFC 9449 §10).
+	DPoPJKT string `json:"dpop_jkt"`
 }
 
 // startTransaction implements POST R/auth/transactions (AUT-001).
@@ -83,7 +85,7 @@ func (a *App) startTransaction(w http.ResponseWriter, r *http.Request, rlm *real
 	req := oauth.AuthorizeRequest{ClientID: b.ClientID, RedirectURI: b.RedirectURI, ResponseType: "code", Scope: b.Scope, State: b.State,
 		Nonce: b.Nonce, CodeChallenge: b.CodeChallenge, CodeChallengeMethod: b.CodeChallengeMethod, Prompt: b.Prompt, MaxAge: b.MaxAge,
 		ACRValues: b.ACRValues, LoginHint: b.LoginHint, UILocales: b.UILocales, Organization: b.Organization, Resources: b.Resource,
-		Intent: b.Intent, RequestURI: b.RequestURI, Claims: b.Claims, ResponseMode: b.ResponseMode}
+		Intent: b.Intent, RequestURI: b.RequestURI, Claims: b.Claims, ResponseMode: b.ResponseMode, DPoPJKT: b.DPoPJKT}
 	st, err := a.OAuth.StartHeadless(r.Context(), rlm, req, info.ClientIP, info.UserAgent)
 	if err != nil {
 		return err
