@@ -78,15 +78,18 @@ func (s *fakeScenario) Op(ctx context.Context, _ *Env, worker int, _ *rand.Rand)
 }
 
 func TestWarmup(t *testing.T) {
-	var discovery atomic.Int64
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/realms/bench/.well-known/openid-configuration" {
-			discovery.Add(1)
-		}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`{}`))
 	}))
 	defer srv.Close()
-	env := &Env{Client: NewClient(srv.URL, "bench", 4)}
+	client := NewClient(srv.URL, "bench", 4)
+	// Benign requests are counted on the client side, where a count is
+	// complete once warm-up has joined its workers. A server-side counter can
+	// still be incremented by a request the expiring warm-up had already sent
+	// while the next Run is being measured.
+	discovery := &countingTransport{next: client.HTTP.Transport, path: "/realms/bench/.well-known/openid-configuration"}
+	client.HTTP.Transport = discovery
+	env := &Env{Client: client}
 	opt := Options{Concurrency: 4, Operations: 5, Warmup: 50 * time.Millisecond, Seed: 1}
 
 	// Adversarial scenarios never run their own operations during warm-up.
@@ -98,7 +101,7 @@ func TestWarmup(t *testing.T) {
 	if adv.ops != 5 || res.Operations != 5 {
 		t.Fatalf("adversarial scenario ran %d operations (%d measured), want exactly the 5 measured", adv.ops, res.Operations)
 	}
-	if discovery.Load() == 0 {
+	if discovery.n.Load() == 0 {
 		t.Fatal("adversarial warm-up sent no benign requests")
 	}
 	if len(res.Notes) == 0 || !strings.Contains(res.Notes[0], "benign") {
@@ -106,7 +109,7 @@ func TestWarmup(t *testing.T) {
 	}
 
 	// Ordinary scenarios warm up with their own operations at full concurrency.
-	before := discovery.Load()
+	before := discovery.n.Load()
 	ord := &fakeScenario{}
 	res, err = Run(context.Background(), env, ord, opt)
 	if err != nil {
@@ -115,9 +118,23 @@ func TestWarmup(t *testing.T) {
 	if ord.ops <= 5 || len(ord.workers) < 2 {
 		t.Fatalf("warm-up ran %d operations on %d workers", ord.ops-5, len(ord.workers))
 	}
-	if discovery.Load() != before || len(res.Notes) != 0 {
+	if discovery.n.Load() != before || len(res.Notes) != 0 {
 		t.Fatalf("ordinary warm-up used benign requests (notes %q)", res.Notes)
 	}
+}
+
+// countingTransport counts the requests for one path before they are sent.
+type countingTransport struct {
+	next http.RoundTripper
+	path string
+	n    atomic.Int64
+}
+
+func (c *countingTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if r.URL.Path == c.path {
+		c.n.Add(1)
+	}
+	return c.next.RoundTrip(r)
 }
 
 func TestAdversarialScenariosSkipOwnWarmup(t *testing.T) {
